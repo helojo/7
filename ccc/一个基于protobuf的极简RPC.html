@@ -1,0 +1,269 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修一个基于protobuf的极简RPC' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>一个基于protobuf的极简RPC</center></div><div class='banquan'>原文出处:本文由博客园博主goyas提供。<br/>
+原文连接:https://www.cnblogs.com/goya/p/11660109.html</div><br>
+    <h1 id="前言">前言</h1>
+<p><span style="font-size: 16px;">RPC采用客户机/服务器模式实现两个进程之间的相互通信，socket是RPC经常采用的通信手段之一。当然，除了socket，RPC还有其他的通信方法：RDMA、http、管道&hellip;&hellip; 网络开源的RPC框架也比较多，一个功能比较完善的RPC框架代码比较多，如何快速的从这些代码盲海中梳理清楚主要脉络，对于初学者来说比较困难，本文介绍之前自己实现的一个C++极简版的RPC框架（<strong><a href="https://github.com/goyas/goya-rpc">https://github.com/goyas/goya-rpc</a></strong>），代码只有100多行，希望尽量用少的代码来描述框架以减轻初学者的学习负担，同时便于大家阅读网络上复杂的RPC源码。</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 16px;">1、经典的RPC框架echo例子里面，EchoServer_Stub类是哪里来的？</span><br /><span style="font-size: 16px;">2、为什么stub.Echo(&amp;controller, &amp;request, &amp;response, nullptr); 调用就执行到server端的Echo函数？</span><br /><span style="font-size: 16px;">3、stub.Echo(&amp;controller, &amp;request, &amp;response, nullptr); 最后一个参数是nullptr，调用到server端的Echo(controller, request, response, done) 函数时，done指针为什么不为空了？</span><br /><span style="font-size: 16px;"><strong>&hellip;</strong></span></p>
+<p><span style="font-size: 16px;">让我们通过下面这个简单的RPC框架，一层一层解开上面的疑惑。</span></p>
+<h1 id="echo_servercc">echo_server.cc</h1>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #0000ff;">class</span> EchoServerImpl : <span style="color: #0000ff;">public</span><span style="color: #000000;"> goya::rpc::echo::EchoServer {
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+  EchoServerImpl() {}
+  </span><span style="color: #0000ff;">virtual</span> ~<span style="color: #000000;">EchoServerImpl() {}
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+  </span><span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span> Echo(google::protobuf::RpcController*<span style="color: #000000;"> controller,
+                    </span><span style="color: #0000ff;">const</span> goya::rpc::echo::EchoRequest*<span style="color: #000000;"> request,
+                    goya::rpc::echo::EchoResponse</span>*<span style="color: #000000;"> response,
+                    google::protobuf::Closure</span>*<span style="color: #000000;"> done) 
+  {
+    std::cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">server received client msg: </span><span style="color: #800000;">"</span> &lt;&lt; request-&gt;message() &lt;&lt;<span style="color: #000000;"> std::endl;
+    response</span>-&gt;<span style="color: #000000;">set_message(
+      </span><span style="color: #800000;">"</span><span style="color: #800000;">server say: received msg: ***</span><span style="color: #800000;">"</span> + request-&gt;message() + std::<span style="color: #0000ff;">string</span>(<span style="color: #800000;">"</span><span style="color: #800000;">***</span><span style="color: #800000;">"</span><span style="color: #000000;">));
+    done</span>-&gt;<span style="color: #000000;">Run();
+  }
+};
+
+</span><span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> argv[]) 
+{
+  RpcServer rpc_server;
+
+  goya::rpc::echo::EchoServer</span>* echo_service = <span style="color: #0000ff;">new</span><span style="color: #000000;"> EchoServerImpl();
+  </span><span style="color: #0000ff;">if</span> (!rpc_server.RegisterService(echo_service, <span style="color: #0000ff;">false</span><span style="color: #000000;">)) {
+    std::cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">register service failed</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl;
+    </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+  }
+
+  std::</span><span style="color: #0000ff;">string</span> server_addr(<span style="color: #800000;">"</span><span style="color: #800000;">0.0.0.0:12321</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+  </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">rpc_server.Start(server_addr)) {
+    std::cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">start server failed</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl;
+    </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+  }
+
+  </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></span></pre>
+</div>
+<h1 id="echo_clientcc">echo_client.cc</h1>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> argv[]) 
+{ 
+  echo::EchoRequest   request;
+  echo::EchoResponse  response;
+  request.set_message(</span><span style="color: #800000;">"</span><span style="color: #800000;">hello tonull, from client</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+
+  </span><span style="color: #0000ff;">char</span>* ip          = argv[<span style="color: #800080;">1</span><span style="color: #000000;">];
+  </span><span style="color: #0000ff;">char</span>* port        = argv[<span style="color: #800080;">2</span><span style="color: #000000;">];
+  std::</span><span style="color: #0000ff;">string</span> addr  = std::<span style="color: #0000ff;">string</span>(ip) + <span style="color: #800000;">"</span><span style="color: #800000;">:</span><span style="color: #800000;">"</span> + std::<span style="color: #0000ff;">string</span><span style="color: #000000;">(port);
+  RpcChannel    rpc_channel(addr);
+  echo::EchoServer_Stub stub(</span>&amp;<span style="color: #000000;">rpc_channel);
+
+  RpcController controller;
+  stub.Echo(</span>&amp;controller, &amp;request, &amp;<span style="color: #000000;">response, nullptr);
+  
+  </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (controller.Failed()) 
+    std::cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">request failed: %s</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> controller.ErrorText().c_str();
+  </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+    std::cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">resp: </span><span style="color: #800000;">"</span> &lt;&lt; response.message() &lt;&lt;<span style="color: #000000;"> std::endl;
+
+  </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></span></pre>
+</div>
+<p>&nbsp;</p>
+<p>上<span style="font-size: 16px;">面是一个简单的Echo实例的代码，主要功能是：server端收到client发送来的消息，然后echo返回给client，功能非常简单，但是走完了整个流程。其他特性无非基于此的一些衍生。好了，我们现在来解析下这个源码，首先来看server端。</span></p>
+<div class="highlighter-rouge">
+<div class="highlight">
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #000000;">RpcServer rpc_server;
+goya::rpc::echo::EchoServer</span>* echo_service = <span style="color: #0000ff;">new</span><span style="color: #000000;"> EchoServerImpl();
+rpc_server.RegisterService(echo_service, </span><span style="color: #0000ff;">false</span><span style="color: #000000;">)
+rpc_server.Start(server_addr)</span></span></pre>
+</div>
+</div>
+</div>
+<p><span style="font-size: 16px;">最主要就上面四行代码，定义了两个对象rpc_server和echo_service，然后注册对象，启动服务。EchoServerImpl继承于EchoServer，讲到这里也许有人会问，我没有定义EchoServer这个类啊，它是从哪里来的？ok，那我们这里先跳到讲解下protobuf，讲完之后再回过头来继续。</span></p>
+<h1 id="protobuf">protobuf</h1>
+<p><span style="font-size: 16px;">通过socket，client和server可以互相交互消息，但这种通信效率不高，一般选择在发送的时候把消息经过序列化，而在接受的时候采用反序列化解析就可以了，本文采用谷歌开源的protobuf作为消息序列化的方法，其他序列化的方法还有json和rlp。。。</span></p>
+<p><span style="font-size: 16px;">首先按照proto格式，定义消息传输的内容， EchoRequest为请求消息，EchoRequest为响应消息，在EchoServer里面定义了Echo方法。</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;">syntax = <span style="color: #800000;">"</span><span style="color: #800000;">proto3</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+package goya.rpc.echo;
+option cc_generic_services </span>= <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+
+message EchoRequest {
+  </span><span style="color: #0000ff;">string</span> message = <span style="color: #800080;">1</span><span style="color: #000000;">;
+}
+message EchoResponse {
+  </span><span style="color: #0000ff;">string</span> message = <span style="color: #800080;">1</span><span style="color: #000000;">;
+}
+service EchoServer {
+  rpc Echo(EchoRequest) returns(EchoResponse);
+}</span></span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 16px;">把定义的proto文件用protoc工具生成对应的echo_service.pb.h和 echo_service.pb.cc文件，网上有很多介绍怎么使用proto文件生成对应的pb.h和pb.c的文档，这里就不在过多描述。具体的也可以看工程里面的&nbsp;<strong><a href="https://github.com/goyas/goya-rpc/blob/master/sample/echo/CMakeLists.txt">sample/echo/CMakeLists.txt</a></strong>&nbsp;文件。</span></p>
+<p><span style="font-size: 16px;">service EchoService这一句会生成EchoService和EchoService_Stub两个类，分别是 server 端和 client 端需要关心的。</span></p>
+<h1 id="回到server">回到server</h1>
+<p><span style="font-size: 16px;">对 server 端，通过EchoService::Echo来处理请求，代码未实现，需要子类来 override。</span></p>
+<div class="highlighter-rouge">
+<div class="highlight">
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #0000ff;">void</span> EchoService::Echo(::google::protobuf::RpcController*<span style="color: #000000;"> controller,
+                         </span><span style="color: #0000ff;">const</span> ::echo::EchoRequest*<span style="color: #000000;">,
+                         ::echo::EchoResponse</span>*<span style="color: #000000;">,
+                         ::google::protobuf::Closure</span>*<span style="color: #000000;"> done) {
+  </span><span style="color: #008000;">//</span><span style="color: #008000;"> 代码未实现，需要server返回给client什么内容，就在这里填写</span>
+  controller-&gt;SetFailed(<span style="color: #800000;">"</span><span style="color: #800000;">Method Echo() not implemented.</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+  done</span>-&gt;<span style="color: #000000;">Run();
+}</span></span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div>
+<p><span style="font-size: 16px;">好了，我们现在回到上面没有讲完的server，server定义了EchoServerImpl对象，实现了Echo方法，功能也就是把client发送来的消息又返回给client。 server里面还没讲解完的是&ldquo;注册&rdquo;和&ldquo;启动&rdquo;服务两个功能，我们直接跳到代码讲解。</span></p>
+<p><span style="font-size: 16px;">RegisterService注册的功能非常简单，就是把我们自己定义的EchoServerImpl对象echo_service给保存在services_这个数据结构里。</span></p>
+<div class="highlighter-rouge">
+<div class="highlight">
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #0000ff;">bool</span> RpcServerImpl::RegisterService(google::protobuf::Service* service, <span style="color: #0000ff;">bool</span><span style="color: #000000;"> ownership) {
+  services_[</span><span style="color: #800080;">0</span>] =<span style="color: #000000;"> service;
+  </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+}</span></span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div>
+<p><span style="font-size: 16px;">Start启动服务的功能也很简单，就是一个socket不断的accept远端传送过来的数据，然后进行处理。</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #0000ff;">bool</span> RpcServerImpl::Start(std::<span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> server_addr) {
+  ...
+  </span><span style="color: #0000ff;">while</span> (<span style="color: #0000ff;">true</span><span style="color: #000000;">) {
+    auto socket </span>= boost::make_shared&lt;boost::asio::ip::tcp::socket&gt;<span style="color: #000000;">(io);
+    acceptor.accept(</span>*<span style="color: #000000;">socket);
+
+    std::cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">recv from client: </span><span style="color: #800000;">"</span> &lt;&lt; socket-&gt;remote_endpoint().address() &lt;&lt;<span style="color: #000000;"> std::endl;
+
+    </span><span style="color: #0000ff;">int</span> request_data_len = <span style="color: #800080;">256</span><span style="color: #000000;">;
+    std::vector</span>&lt;<span style="color: #0000ff;">char</span>&gt; contents(request_data_len, <span style="color: #800080;">0</span><span style="color: #000000;">);
+    socket</span>-&gt;<span style="color: #000000;">receive(boost::asio::buffer(contents));
+
+    ProcRpcData(std::</span><span style="color: #0000ff;">string</span>(&amp;contents[<span style="color: #800080;">0</span><span style="color: #000000;">], contents.size()), socket);
+  }
+}</span></span></pre>
+</div>
+<h1 id="回到client">回到client</h1>
+<div class="highlighter-rouge">
+<div class="highlight">
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #000000;">RpcChannel    rpc_channel(addr);
+echo::EchoServer_Stub stub(</span>&amp;<span style="color: #000000;">rpc_channel);
+RpcController controller;
+stub.Echo(</span>&amp;controller, &amp;request, &amp;response, nullptr);</span></pre>
+</div>
+</div>
+</div>
+<p><span style="font-size: 16px;">对于client 端，最主要就上面四条语句，定义了RpcChannel、EchoServer_Stub、RpcController三个不同的对象，通过EchoService_Stub来发送数据，EchoService_Stub::Echo调用了::google::protobuf::Channel::CallMethod方法，但是Channel是一个纯虚类，需要 RPC 框架在子类里实现需要的功能。</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #0000ff;">class</span> EchoService_Stub : <span style="color: #0000ff;">public</span><span style="color: #000000;"> EchoService {
+  ...
+  </span><span style="color: #0000ff;">void</span> Echo(::google::protobuf::RpcController*<span style="color: #000000;"> controller,
+                       </span><span style="color: #0000ff;">const</span> ::echo::EchoRequest*<span style="color: #000000;"> request,
+                       ::echo::EchoResponse</span>*<span style="color: #000000;"> response,
+                       ::google::protobuf::Closure</span>*<span style="color: #000000;"> done);
+ </span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    ::google::protobuf::RpcChannel</span>*<span style="color: #000000;"> channel_;
+};
+
+</span><span style="color: #0000ff;">void</span> EchoService_Stub::Echo(::google::protobuf::RpcController*<span style="color: #000000;"> controller,
+                              </span><span style="color: #0000ff;">const</span> ::echo::EchoRequest*<span style="color: #000000;"> request,
+                              ::echo::EchoResponse</span>*<span style="color: #000000;"> response,
+                              ::google::protobuf::Closure</span>*<span style="color: #000000;"> done) {
+  channel_</span>-&gt;CallMethod(descriptor()-&gt;method(<span style="color: #800080;">0</span><span style="color: #000000;">), controller, request, response, done);
+}</span></span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 16px;">也就是说，执行stub.Echo(&amp;controller, &amp;request, &amp;response, nullptr); 这条语句实际是执行到了</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #0000ff;">void</span> RpcChannelImpl::CallMethod(<span style="color: #0000ff;">const</span> ::google::protobuf::MethodDescriptor*<span style="color: #000000;"> method, 
+  ::google::protobuf::RpcController</span>*<span style="color: #000000;"> controller,
+  </span><span style="color: #0000ff;">const</span> ::google::protobuf::Message*<span style="color: #000000;"> request,
+  ::google::protobuf::Message</span>*<span style="color: #000000;"> response,
+  ::google::protobuf::Closure</span>*<span style="color: #000000;"> done) {
+  std::</span><span style="color: #0000ff;">string</span> request_data = request-&gt;<span style="color: #000000;">SerializeAsString();
+  socket_</span>-&gt;<span style="color: #000000;">send(boost::asio::buffer(request_data));
+
+  </span><span style="color: #0000ff;">int</span>  resp_data_len = <span style="color: #800080;">256</span><span style="color: #000000;">;
+  std::vector</span>&lt;<span style="color: #0000ff;">char</span>&gt; resp_data(resp_data_len, <span style="color: #800080;">0</span><span style="color: #000000;">);
+  socket_</span>-&gt;<span style="color: #000000;">receive(boost::asio::buffer(resp_data));
+
+  response</span>-&gt;ParseFromString(std::<span style="color: #0000ff;">string</span>(&amp;resp_data[<span style="color: #800080;">0</span><span style="color: #000000;">], resp_data.size()));
+}</span></span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 16px;">RpcChannelImpl::CallMethod主要做了什么呢？主要两件事情：1、把request消息通过socket发送给远端；2、同时接受来自远端的reponse消息。</span></p>
+<p><span style="font-size: 16px;">讲到这里基本流程就梳理的差不多了，文章开头的几个问题也基本在讲解的过程中回答了，对于后面两个问题，这里再划重点讲解下，stub.Echo(&amp;controller, &amp;request, &amp;response, nullptr); 最后一个参数是nullptr，这里你填啥都没啥卵用，因为在RpcChannelImpl::CallMethod中根本就没使用到，而为什么又要加这个参数呢？这纯属是为了给人一种错觉：client端执行stub.Echo(&amp;controller, &amp;request, &amp;response, nullptr)；就是调用到了server端的EchoServerImpl::Echo(*controller, *request, *response, *done)，使远程调用看起来像本地调用一样（至少参数类型及个数是一致的）。而其实这也是最令初学者疑惑的地方。</span></p>
+<p><span style="font-size: 16px;">而本质上，server端的EchoServerImpl::Echo(*controller, *request, *response, *done)函数其实是在接受到数据后，从这里调用过来的，具体见下面代码：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #0000ff;">void</span> RpcServerImpl::ProcRpcData(<span style="color: #0000ff;">const</span> std::<span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> serialzied_data,
+  </span><span style="color: #0000ff;">const</span> boost::shared_ptr&lt;boost::asio::ip::tcp::socket&gt;&amp;<span style="color: #000000;"> socket) {
+  auto service      </span>= services_[<span style="color: #800080;">0</span><span style="color: #000000;">];
+  auto m_descriptor </span>= service-&gt;GetDescriptor()-&gt;method(<span style="color: #800080;">0</span><span style="color: #000000;">);
+  auto recv_msg </span>= service-&gt;<span style="color: #000000;">GetRequestPrototype(m_descriptor).New();
+  auto resp_msg </span>= service-&gt;<span style="color: #000000;">GetResponsePrototype(m_descriptor).New();
+  recv_msg</span>-&gt;<span style="color: #000000;">ParseFromString(serialzied_data);
+  
+  </span><span style="color: #008000;">//</span><span style="color: #008000;"> 构建NewCallback对象</span>
+  auto done =<span style="color: #000000;"> google::protobuf::NewCallback(
+    </span><span style="color: #0000ff;">this</span>, &amp;<span style="color: #000000;">RpcServerImpl::OnCallbackDone, resp_msg, socket);
+  RpcController controller;
+  service</span>-&gt;CallMethod(m_descriptor, &amp;<span style="color: #000000;">controller, recv_msg, resp_msg, done);
+}</span></span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 16px;">service-&gt;CallMethod(m_descriptor, &amp;controller, recv_msg, resp_msg, done); 会调用到EchoServer::CallMethod，protobuf会根据method-&gt;index()找到对应的执行函数，EchoServerImpl实现了Echo函数，所以上面的service-&gt;CallMethod(m_descriptor, &amp;controller, recv_msg, resp_msg, done); 会执行到EchoServerImpl::Echo，这进一步说明了 EchoServerImpl::Echo 跟stub.Echo()调用没有鸡毛关系，唯一有的关系，确实发起动作是stub.Echo(); 中间经过了无数次解析最后确实是调到了EchoServerImpl::Echo。</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #0000ff;">void</span> EchoServer::CallMethod(<span style="color: #0000ff;">const</span> ::PROTOBUF_NAMESPACE_ID::MethodDescriptor*<span style="color: #000000;"> method,
+                             ::PROTOBUF_NAMESPACE_ID::RpcController</span>*<span style="color: #000000;"> controller,
+                             </span><span style="color: #0000ff;">const</span> ::PROTOBUF_NAMESPACE_ID::Message*<span style="color: #000000;"> request,
+                             ::PROTOBUF_NAMESPACE_ID::Message</span>*<span style="color: #000000;"> response,
+                             ::google::protobuf::Closure</span>*<span style="color: #000000;"> done) {
+  GOOGLE_DCHECK_EQ(method</span>-&gt;service(), file_level_service_descriptors_echo_5fservice_2eproto[<span style="color: #800080;">0</span><span style="color: #000000;">]);
+  </span><span style="color: #0000ff;">switch</span>(method-&gt;<span style="color: #000000;">index()) {
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800080;">0</span><span style="color: #000000;">:
+      Echo(controller,
+             ::PROTOBUF_NAMESPACE_ID::</span><span style="color: #0000ff;">internal</span>::DownCast&lt;<span style="color: #0000ff;">const</span> ::goya::rpc::echo::EchoRequest*&gt;<span style="color: #000000;">(
+                 request),
+             ::PROTOBUF_NAMESPACE_ID::</span><span style="color: #0000ff;">internal</span>::DownCast&lt;::goya::rpc::echo::EchoResponse*&gt;<span style="color: #000000;">(
+                 response),
+             done);
+      </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">default</span><span style="color: #000000;">:
+      GOOGLE_LOG(FATAL) </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Bad method index; this should never happen.</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+      </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+  }
+}</span></span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

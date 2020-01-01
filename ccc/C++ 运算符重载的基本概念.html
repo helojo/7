@@ -1,0 +1,117 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ 运算符重载的基本概念' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ 运算符重载的基本概念</center></div><div class='banquan'>原文出处:本文由博客园博主小林coding提供。<br/>
+原文连接:https://www.cnblogs.com/xiaolincoding/p/11967836.html</div><br>
+    <h2 id="运算符重载的需求">01 运算符重载的需求</h2>
+<p>C++ 预定义的运算符，只能用于基本数据类型的运算：整型、实型、字符型、逻辑型等等，且不能用于对象的运算。但是我们有时候又很需要在对象之间能用运算符，那么这时我们就要<strong>重载运算符</strong>，使得运算符能用于对象之间的运算。</p>
+<p>比如，在数学上，两个复数可以直接进行+、-等运算，但在C++中，直接将+或-用于复数对象是不允许的。有时会希望，让对象也能通过运算符进行运算。这样代码就更简洁，也容易理解。</p>
+<p>例如：</p>
+<p>complex_a 和 complex_b 是两个复数对象，求两个复数的和，希望的能直接写成：complex_a + complex_b</p>
+<p>这时我们就需要对 <code>+</code> 号运算符进行重载。</p>
+<hr />
+<h2 id="运算符重载的形式">02 运算符重载的形式</h2>
+<p>运算符重载的实质就是函数重载，可以重载为<strong>普通函数</strong>，也可以重载为<strong>成员函数</strong>。运算符重载的基本形式如下：</p>
+<pre><code>返回值类型 operator 运算符(形参表)
+{
+    ...
+}</code></pre>
+<p>下面举个例子，实现对复数对象的 <code>+</code> 和 <code>-</code> 运算符重载：</p>
+<pre><code>class Complex // 复数类
+{
+public:
+    // 构造函数，如果不传参数，默认把实部和虚部初始化为0
+    Complex(double r = 0.0, double i = 0.0):m_real(r),m_imag(i) {  }
+
+    // 重载-号运算符，属于成员函数
+    Complex operator-(const Complex &amp; c)
+    {
+        // 返回一个临时对象
+        return Complex(m_real - c.m_real, m_imag - c.m_imag);
+    }
+
+    // 打印复数
+    void PrintComplex()
+    {
+        cout &lt;&lt; m_real &lt;&lt; &quot;,&quot; &lt;&lt; m_imag &lt;&lt; endl;
+    }
+    
+    // 将重载+号的普通函数，定义成友元函数
+    // 目的是为了友元函数能访问对象的私有成员
+    friend Complex operator+(const Complex &amp;a, const Complex &amp;b);
+    
+private:
+    double m_real;  // 实部的值
+    double m_imag;  // 虚部的值
+};
+
+// 重载+号运算符，属于普通函数，不是对象的成员函数
+Complex operator+(const Complex &amp;a, const Complex &amp;b)
+{
+    // 返回一个临时对象
+    return Complex(a.m_real + b.m_real, a.m_imag + b.m_imag);
+}
+
+int main() 
+{
+    Complex a(2,2);
+    Complex b(1,1);
+    Complex c;
+
+    c = a + b; // 等价于c = operator+(a,b)
+    c.PrintComplex();
+
+    c = a - b; // 等价于 c = a.operator-(b)
+    c.PrintComplex();
+
+    return 0;
+}</code></pre>
+<p>输出结果：</p>
+<pre><code>3,3
+1,1</code></pre>
+<p>从上面的例子中，我们可以知道重载为成员函数和普通函数的区别了：</p>
+<ul>
+<li>重载为成员函数时，参数个数为运算符目数减一。如：<code>c = a - b;</code> 等价于 <code>c = a.operator-(b)</code></li>
+<li>重载为普通函数时，参数个数为运算符目数。如：<code>c = a + b;</code> 等价于<code>c = operator+(a,b)</code></li>
+</ul>
+<p>在上面的代码中，我把重载 <code>+</code> 号运算符的<strong>普通函数</strong>，在<code>Complex</code>复数类中定义成了<strong>友元函数</strong>，目的是为了友元函数能<strong>访问对象的私有成</strong>员，否则会编译报错。</p>
+<hr />
+<h2 id="号和-号重载函数的返回值和参数表">03 +号和-号重载函数的返回值和参数表</h2>
+<p>这里还有个值得思考的问题：</p>
+<ul>
+<li>为什么重载-号和+号运算符函数的返回类型是<code>Complex</code>对象而不是<code>Complex &amp;</code>呢？</li>
+<li>为什么重载-号和+号的运算符函数的参数表是<code>const Complex &amp; c</code>常引用类型而不是<code>Complex c</code>呢？</li>
+</ul>
+<pre><code>// 重载-号运算符，属于成员函数
+Complex Complex::operator-(const Complex &amp; c)
+{
+    // 返回一个临时对象
+    return Complex(m_real - c.m_real, m_imag - c.m_imag);
+}</code></pre>
+<p>首先先说一下参数表为什么是<code>const Complex &amp; c</code>常引用类型，首先如果参数表如果普通的对象形式<code>Complex c</code>，那么在入参的时候，就会调用默认的赋值（拷贝）构造函数，产生了一个临时对象，这会<strong>增大开销</strong>，所以就采用引用的方式，同时又为了<strong>防止引用的对象被修</strong>改，所以就定义成了<code>const Complex &amp; c</code>常引用类型。</p>
+<p>再来说一下返回值为什么是普通<code>Complex</code>对象，因为本次 - 号和 + 号运算符的函数执行之后，需要返回一个新的对象给到左值。</p>
+<hr />
+<blockquote>
+<p><img src="./images/C++ 运算符重载的基本概念0.png" /></p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

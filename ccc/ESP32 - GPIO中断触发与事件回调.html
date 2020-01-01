@@ -1,0 +1,69 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修ESP32 - GPIO中断触发与事件回调' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>ESP32 - GPIO中断触发与事件回调</center></div><div class='banquan'>原文出处:本文由博客园博主TOKURE提供。<br/>
+原文连接:https://www.cnblogs.com/tokure/p/11398115.html</div><br>
+    <p>&nbsp;最近为项目增加了GPIO外部触发中断功能，原理是为GPIO32注册了上升沿触发事件，事件触发后，会向RTOS队列写入数据。在RTOS事件中检测到该队列中有新加入的事件，就读出，并执行相应代码。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">#define</span> GPIO_INPUT_IO_WAKEUP 32
+<span style="color: #0000ff;">#define</span> GPIO_INPUT_PIN_SEL (1ULL&lt;&lt;GPIO_INPUT_IO_WAKEUP)
+<span style="color: #0000ff;">#define</span> ESP_INTR_FLAG_DEFAULT 0
+
+<span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> IRAM_ATTR gpio_isr_handler(<span style="color: #0000ff;">void</span>*<span style="color: #000000;"> arg)
+{
+    uint32_t gpio_num </span>=<span style="color: #000000;"> (uint32_t) arg;
+    xQueueSendFromISR(gpio_evt_queue, </span>&amp;<span style="color: #000000;">gpio_num, NULL);
+}
+
+</span><span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> gpio_task_example(<span style="color: #0000ff;">void</span>*<span style="color: #000000;"> arg)
+{
+    uint32_t io_num;
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;">(;;) {
+        </span><span style="color: #0000ff;">if</span>(xQueueReceive(gpio_evt_queue, &amp;<span style="color: #000000;">io_num, portMAX_DELAY))<br />　　　　　{
+            printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">GPIO[%d] intr, val: %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, io_num, gpio_get_level(io_num));</span><span style="color: #000000;">
+        }
+    }
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> app_main()
+{
+   gpio_config_t io_conf;
+   io_conf.intr_type </span>= GPIO_PIN_INTR_POSEDGE;<span style="color: #008000;">//</span><span style="color: #008000;">interrupt of rising edge</span>
+   io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;<span style="color: #008000;">//</span><span style="color: #008000;">bit mask of the pins, use GPIO32 here</span>
+   io_conf.mode = GPIO_MODE_INPUT;<span style="color: #008000;">//</span><span style="color: #008000;">set as input mode</span>
+   io_conf.pull_up_en = <span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">enable pull-up mode</span>
+   gpio_config(&amp;<span style="color: #000000;">io_conf);
+
+   </span><span style="color: #008000;">//</span><span style="color: #008000;">install gpio isr service</span>
+<span style="color: #000000;">   gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
+   </span><span style="color: #008000;">//</span><span style="color: #008000;">hook isr handler for specific gpio pin</span>
+   gpio_isr_handler_add(GPIO_INPUT_IO_WAKEUP, gpio_isr_handler, (<span style="color: #0000ff;">void</span>*<span style="color: #000000;">) GPIO_INPUT_IO_WAKEUP);
+
+　　xTaskCreate(gpio_task_example, </span><span style="color: #800000;">"</span><span style="color: #800000;">gpio_task_example</span><span style="color: #800000;">"</span>, <span style="color: #800080;">2048</span>, NULL, <span style="color: #800080;">10</span><span style="color: #000000;">, NULL);
+　　</span><span style="color: #0000ff;">while</span>(<span style="color: #800080;">1</span><span style="color: #000000;">)
+　　{
+　　　　
+　　}
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

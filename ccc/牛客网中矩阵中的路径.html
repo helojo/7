@@ -1,0 +1,290 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修牛客网中矩阵中的路径' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>牛客网中矩阵中的路径</center></div><div class='banquan'>原文出处:本文由博客园博主盛夏落木提供。<br/>
+原文连接:https://www.cnblogs.com/wanshuafe/p/11732235.html</div><br>
+    <h3 id="牛客网的题目如下">牛客网的题目如下：</h3>
+<p>题目描述<br />
+请设计一个函数，用来判断在一个矩阵中是否存在一条包含某字符串所有字符的路径。路径可以从矩阵中的任意一个格子开始，每一步可以在矩阵中向左，向右，向上，向下移动一个格子。<br />
+如果一条路径经过了矩阵中的某一个格子，则该路径不能再进入该格子。 例如 a b c e s f c s a d e e 矩阵中包含一条字符串&quot;bcced&quot;的路径，<br />
+但是矩阵中不包含&quot;abcb&quot;路径，因为字符串的第一个字符b占据了矩阵中的第一行第二个格子之后，路径不能再次进入该格子。</p>
+<h3 id="解决思想">解决思想：</h3>
+<ol>
+<li>首先找到访问的起点，就是目标字符串的第一个字符与矩阵中的该字符的所有位置找出来。</li>
+<li>使用bfs，将起点位置，上下左右，都去访问，每访问矩阵中一个字符的时候，会判断该字符是否合法，合法性的判断标准为：<br />
+字符所在的位置，行x,列y，属于矩阵中，该字符没有已经被访问过，</li>
+<li>如果该字符和目标字符串的当前需要访问的字符相同，说明当前字符有可能是路径中的一员，需要保存当前访问的信息，并放入队列，当访问它的邻居的时候，<br />
+就可以把当前访问的下标，拿来使用，</li>
+<li>只要访问矩阵节点的保存的下标，与字符串的最后一个字符的下标相同，说明目前字符串中的字符完全访问完毕，路径就表示找到。</li>
+</ol>
+<h3 id="实现的代码">实现的代码</h3>
+<p>本文实现的代码，只能满足牛客网的测试用例，当测试用例较全的时候，该代码无法通过，但可以用于学习下bfs,</p>
+<pre><code>#include&lt;iostream&gt;
+#include&lt;queue&gt;
+#include&lt;cstring&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstdio&gt;
+using namespace std;
+
+struct MyPoint {
+    int x;
+    int y;
+    int index;
+     MyPoint(int x1, int y1, int k):x(x1), y(y1), index(k) {
+}};
+
+class Solution {
+  public:
+    int row;
+    int col;
+    char *ma;
+    char *s;
+    bool hasPath(char *matrix, int rows, int cols, char *str) {
+    if ((*str) == &#39;\0&#39;)
+        return false;
+
+    row = rows;
+    col = cols;
+    ma = matrix;
+    s = str;
+
+    vector &lt; int &gt;xs;
+     vector &lt; int &gt;ys;
+    int k;
+    int sLen = strlen(str);
+    int *visits = new int[rows * cols];
+
+
+
+    for (int i = 0; i &lt; rows; i++)
+        for (int j = 0; j &lt; cols; j++) {
+        k = i * cols + j;
+        if (matrix[k] == str[0]) {
+            xs.push_back(i);
+            ys.push_back(j);
+        }
+        } int xLen = xs.size();
+    for (int i = 0; i &lt; xLen; i++) {
+        memset(visits, 0, sizeof(int) * rows * cols);
+        visits[xs[i] * col + ys[i]] = 1;
+        if (bfs(visits, xs[i], ys[i], 0, sLen))
+        return true;
+    }
+    return false;
+    }
+
+    bool bfs(int *visits, int startX, int startY, int curIndex, int sLen) {
+    static int dx[] = { 0, 1, 0, -1 };
+    static int dy[] = { -1, 0, 1, 0 };
+    queue &lt; MyPoint * &gt;q;
+    MyPoint *p0 = new MyPoint(startX, startY, curIndex);
+    q.push(p0);
+
+    while (!q.empty()) {
+        MyPoint *p1 = q.front();
+        q.pop();
+        printf(&quot;x=%d y=%d index=%d\n&quot;, p1-&gt;x, p1-&gt;y, p1-&gt;index);
+        if (p1-&gt;index == (sLen - 1))
+        return true;
+
+        for (int i = 0; i &lt; 4; i++) {
+        int xx = dx[i] + p1-&gt;x;
+        int yy = dy[i] + p1-&gt;y;
+        int kk = xx * col + yy;
+        if (visitIsLegal(xx, yy, visits)
+            &amp;&amp; ma[kk] == s[p1-&gt;index + 1]) {
+            MyPoint *p2 = new MyPoint(xx, yy, p1-&gt;index + 1);
+            visits[kk] = 1;
+            q.push(p2);
+        }
+
+
+        }
+
+    }
+    return false;
+    }
+    bool visitIsLegal(int x, int y, int *visits) {
+
+    if (x &lt; 0 || x &gt;= row)
+        return false;
+
+    if (y &lt; 0 || y &gt;= col)
+        return false;
+
+    int k = x * col + y;
+    if (visits[k])
+        return false;
+
+    return true;
+    }
+
+
+};
+
+int main()
+{
+    char *matrix = &quot;AAAAAAAAAAAA&quot;;
+    // char *str=&quot;AAAAAAAAAAAA&quot;;
+    char *str = &quot;AAAAAAAAA&quot;;
+    int row = 3, col = 4;
+    Solution s;
+    cout &lt;&lt; &quot;res = &quot; &lt;&lt; s.hasPath(matrix, row, col, str) &lt;&lt; endl;
+
+}
+</code></pre>
+<h3 id="dfs解法">dfs解法</h3>
+<p>bfs算法不适合，是因为把相邻的节点，都访问了，如果，目标串有很多相同的字符，会造成，其中的一些字符以后不会再访问了，<br />
+从而目标串中字符未访问完毕，所以本题目的正确解法，用深度优先搜索，每访问完，目标字符串中的字符，就需要访问它的下一字符，<br />
+对应为矩阵中，该字符的四周，当找到路径时，就不需要再去查找了，要从下往上返回true,就可以了，这个要注意哈</p>
+<h3 id="dfs-的代码如下">dfs 的代码如下</h3>
+<pre><code>#include&lt;iostream&gt;
+#include&lt;queue&gt;
+#include&lt;cstring&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstdio&gt;
+using namespace std;
+
+
+/*
+struct MyPoint {
+    int x;
+    int y;
+    int index;
+    
+     MyPoint(int x1, int y1, int k):x(x1), y(y1), index(k) {
+}};
+*/
+
+class Solution {
+  public:
+    int row;
+    int col;
+    char *ma;
+    char *s;
+    bool hasPath(char *matrix, int rows, int cols, char *str) {
+    if ((*str) == &#39;\0&#39;)
+        return false;
+
+    row = rows;
+    col = cols;
+    ma = matrix;
+    s = str;
+
+    vector &lt; int &gt;xs;
+    vector &lt; int &gt;ys;
+    int k;
+    int sLen = strlen(str);
+    int *visits = new int[rows * cols];
+
+
+
+    for (int i = 0; i &lt; rows; i++)
+        for (int j = 0; j &lt; cols; j++) {
+        k = i * cols + j;
+        if (matrix[k] == str[0]) {
+            xs.push_back(i);
+            ys.push_back(j);
+        }
+        }
+    int xLen = xs.size();
+    for (int i = 0; i &lt; xLen; i++) {
+        memset(visits, 0, sizeof(int) * rows * cols);
+        visits[xs[i] * col + ys[i]] = 1;
+        // cout&lt;&lt;&quot;xs[i]&quot;&lt;&lt;xs[i]&lt;&lt;&quot; ys[i] &quot;&lt;&lt;ys[i]&lt;&lt;endl;
+        if (dfs(visits, xs[i], ys[i], 0, sLen))
+        return true;
+    }
+    return false;
+    }
+
+    bool dfs(int *visits, int startX, int startY, int curIndex, int sLen) {
+    static int dx[] = { 0, 1, 0, -1 };
+    static int dy[] = { -1, 0, 1, 0 };
+        if(curIndex &gt;= (sLen-1) )
+        return true;
+        // cout&lt;&lt;&quot;startX =&quot;&lt;&lt;startX&lt;&lt;&quot; startY =&quot;&lt;&lt;startY&lt;&lt;&quot; curIndex = &quot;&lt;&lt;curIndex&lt;&lt;endl; 
+
+        for (int i = 0; i &lt; 4; i++) {
+        int xx = dx[i] + startX;
+        int yy = dy[i] + startY;
+        int kk = xx * col + yy;
+        /*
+        if(startX == 0 &amp;&amp; startY ==2){
+        cout&lt;&lt;&quot;visits[3] =&quot;&lt;&lt;visits[3]&lt;&lt;endl;
+                cout&lt;&lt;&quot;xx= &quot;&lt;&lt;xx&lt;&lt;&quot; yy=&quot;&lt;&lt;yy&lt;&lt;endl;
+                cout&lt;&lt;&quot;ma[kk]= &quot;&lt;&lt;ma[kk]&lt;&lt;&quot; s=&quot;&lt;&lt;s[curIndex+1]&lt;&lt;endl;
+        cout&lt;&lt;&quot;visit index=&quot;&lt;&lt;visitIsLegal(xx, yy, visits)&lt;&lt;endl;
+        }
+        */
+
+        if (visitIsLegal(xx, yy, visits)
+            &amp;&amp; ma[kk] == s[curIndex + 1]) {
+            visits[kk] = 1;
+            /*
+            if(xx == 0 &amp;&amp; yy==3 &amp;&amp; startX == 0 &amp;&amp; startY ==2){
+              cout&lt;&lt;&quot;ok&quot;&lt;&lt;endl;
+              cout&lt;&lt;&quot;index+1&quot;&lt;&lt;curIndex+1&lt;&lt;endl;
+            }
+            */
+
+                    bool flag = dfs(visits,xx,yy,curIndex+1,sLen);
+            if( flag == true)
+                return true;
+            visits[kk] = 0;
+        }
+
+
+        }
+
+    return false;
+    }
+    bool visitIsLegal(int x, int y, int *visits) {
+
+    if (x &lt; 0 || x &gt;= row)
+        return false;
+
+    if (y &lt; 0 || y &gt;= col)
+        return false;
+
+    int k = x * col + y;
+    if (visits[k])
+        return false;
+
+    return true;
+    }
+
+
+};
+
+int main()
+{
+    char *matrix = &quot;AAAAAAAAAAAA&quot;;
+    // char *str=&quot;AAAAAAAAAAAA&quot;;
+    char *str = &quot;AAAAAAAAA&quot;;
+    int row = 3, col = 4;
+    Solution s;
+    cout &lt;&lt; &quot;res = &quot; &lt;&lt; s.hasPath(matrix, row, col, str) &lt;&lt; endl;
+}
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

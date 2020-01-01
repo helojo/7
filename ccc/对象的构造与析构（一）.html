@@ -1,0 +1,300 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修对象的构造与析构（一）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>对象的构造与析构（一）</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11529935.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#构造函数的定义">1. 构造函数的定义</a></li>
+        <li><a href="#构造函数的重载">2. 构造函数的重载</a></li>
+        <li><a href="#两个特殊的构造函数">3. 两个特殊的构造函数</a></li>
+        <li><a href="#初始化列表的使用">4. 初始化列表的使用</a></li>
+        </ul>
+    </div>
+</div>
+<h1 id="构造函数的定义">1. 构造函数的定义</h1>
+<p>从程序设计的角度，类的对象只是变量，<font color=red>在栈上和堆上创建对象时，成员变量初始为随机值；创建全局对象时，成员变量初始为0值。</font></p>
+<p>C++中可以定义与类名相同的特殊成员函数，叫做构造函数</p>
+<ul>
+<li>构造函数没有任何返回类型</li>
+<li>类的构造函数在<font color=magenta>对象定义时自动被调用</font>，进行对象的初始化工作</li>
+<li><font color=blue>对象的定义和声明是不同的</font></li>
+</ul>
+<pre><code>Test t1;         //定义对象，为对象分配内存空间，并调用构造函数
+extern Test t2;  //声明对象，告诉编译器存在这样一个对象</code></pre>
+<h1 id="构造函数的重载">2. 构造函数的重载</h1>
+<ul>
+<li>一个类中可以根据需要定义多个重载的构造函数</li>
+<li><font color=red>构造函数的重载遵循C++重载的规则</font></li>
+</ul>
+<pre><code>#include &lt;stdio.h&gt;
+
+class Test
+{
+public:
+    Test()
+    {
+        printf(&quot;Test()\n&quot;);
+    }
+    Test(int v)
+    {
+        printf(&quot;Test(int v), v = %d\n&quot;, v);
+    }
+    Test(int v1, int v2)
+    {
+        printf(&quot;Test(int v1, int v2), v1 = %d, v2 = %d\n&quot;, v1, v2);
+    }
+};
+
+int main()
+{
+    Test t;        //调用 Test()
+    Test t1(1);    //调用 Test(int v)
+    Test t2 = 2;   //调用 Test(int v)，只有一个参数时可以用赋值符号
+    Test t3(1, 2); //调用Test(int v1, int v2)
+    //Test t4 = ?; //多个参数时，不能用赋值符号
+
+    int i(100);
+    printf(&quot;i = %d\n&quot;, i);
+
+    return 0;
+}</code></pre>
+<p><img src="./images/对象的构造与析构（一）0.png" /></p>
+<p>对于多个重载的构造函数，在定义对象时C++会自动匹配选择使用哪一个，但在一些特殊情况下，可能需要显式调用构造函数，比如下面的例子。</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+class Test
+{
+private:
+    int value;
+public:
+    Test()
+    {
+        value = 0;
+    }
+    Test(int v)
+    {
+        value = v;
+    }
+    int getValue()
+    {
+        return value;
+    }
+};
+
+int main()
+{
+    Test t1[3];                              //自动调用构造函数，所有对象默认用Test()进行初始化
+    Test t2[3] = {Test(), Test(1), Test(2)}; //手动调用构造函数，对象使用Test(int v)进行初始化
+
+    for (int i = 0; i &lt; 3; i++)
+    {
+        printf(&quot;t1[%d].value = %d\n&quot;, i, t1[i].getValue());
+    }
+
+    for (int i = 0; i &lt; 3; i++)
+    {
+        printf(&quot;t2[%d].value = %d\n&quot;, i, t2[i].getValue());
+    }
+
+    return 0;
+}</code></pre>
+<p><img src="./images/对象的构造与析构（一）1.png" /></p>
+<h1 id="两个特殊的构造函数">3. 两个特殊的构造函数</h1>
+<ul>
+<li>有两个特殊的构造函数：<font color=red>无参构造函数</font>和<font color=red>拷贝构造函数</font>（参数为<code>const ClassName &amp;</code>的构造函数）</li>
+<li>当类中<font color=magenta>没有定义任何构造函数</font>时，编译器默认提供一个<font color=blue>函数体为空的无参构造函数</font></li>
+<li>当类中<font color=magenta>没有定义拷贝构造函数</font>时，编译器默认提供一个<font color=blue>浅拷贝的拷贝构造函数，</font>进行简单的成员变量值的复制</li>
+</ul>
+<pre><code>#include &lt;stdio.h&gt;
+
+class Test
+{
+private:
+    int i;
+    int j;
+public:
+    Test()
+    {
+        i = 1;
+        j = 2;
+    }
+    Test(const Test &amp;obj)
+    {
+        i = obj.i;
+        j = obj.j;
+    }
+    int getI()
+    {
+        return i;
+    }
+    int getJ()
+    {
+        return j;
+    }
+};
+
+int main()
+{
+    Test t1;       //调用无参构造函数
+    Test t2 = t1;  //调用拷贝构造函数
+
+    printf(&quot;t1.i = %d, t1.j = %d\n&quot;, t1.getI(), t1.getJ());
+    printf(&quot;t2.i = %d, t2.j = %d\n&quot;, t2.getI(), t2.getJ());
+
+    return 0;
+}</code></pre>
+<p><img src="./images/对象的构造与析构（一）2.png" /></p>
+<p>把代码第9-18行两个构造函数注释掉，看以看到运行结果和上面一致，只不过i和j的值变为了随机值。</p>
+<p><img src="./images/对象的构造与析构（一）3.png" /></p>
+<p><font color=magenta>拷贝构造函数有深拷贝和浅拷贝之分：</font></p>
+<ul>
+<li>浅拷贝后对象的物理状态相同，深拷贝后对象的逻辑状态相同</li>
+<li><font color=blue>编译器提供的拷贝构造函数只进行浅拷贝</font></li>
+</ul>
+<p><strong><font color=red>当对象中有成员指代了系统中的资源时，就需要进行深拷贝，</font></strong>比如：</p>
+<ul>
+<li><font color=orange>成员指向了堆空间内存</font></li>
+<li><font color=orange>成员打开了系统中的文件</font></li>
+<li><font color=orange>成员使用了系统中的网络端口</font></li>
+<li>......</li>
+</ul>
+<p><font color=red><strong>作为程序设计的一般性原则，只要自定义拷贝构造函数，必然需要实现深拷贝！！！</strong></font></p>
+<pre><code>#include &lt;stdio.h&gt;
+
+class Test
+{
+private:
+    int i;
+    int j;
+    int *p;
+public:
+    int getI()
+    {
+        return i;
+    }
+    int getJ()
+    {
+        return j;
+    }
+    int *getP()
+    {
+        return p;
+    }
+    Test(const Test &amp;t)
+    {
+        i = t.i;
+        j = t.j;
+        p = new int;
+        *p = *t.p;
+    }
+    Test(int v)
+    {
+        i = 1;
+        j = 2;
+        p = new int;
+        *p = v;
+    }
+};
+
+int main()
+{
+    Test t1(3);
+    Test t2(t1);
+
+    printf(&quot;t1.i = %d, t1.j = %d, t1.p = %p, *t1.p = %d\n&quot;, t1.getI(), t1.getJ(), t1.getP(), *t1.getP());
+    printf(&quot;t2.i = %d, t2.j = %d, t2.p = %p, *t2.p = %d\n&quot;, t2.getI(), t2.getJ(), t2.getP(), *t2.getP());
+
+    return 0;
+}</code></pre>
+<p><img src="./images/对象的构造与析构（一）4.png" /></p>
+<h1 id="初始化列表的使用">4. 初始化列表的使用</h1>
+<p>C++提供了初始化列表对成员变量进行初始化，语法规则为:</p>
+<pre><code>ClassName :: ClassName() : 
+             m1(v1), m2(v1, v2), m3(v3)
+{
+    // some other initialize operation
+}</code></pre>
+<p>关于初始化列表的使用，有以下几条规则：</p>
+<ul>
+<li><font color=red>const成员变量只能</font>通过初始化列表初始化</li>
+<li>如果<font color=magenta>成员变量为其他类的对象</font>，那么这些对象<font color=irange>既可以通过初始化列表初始化，也可以由编译器默认调用其他类的无参构造函数和默认参数构造函数进行初始化</font></li>
+<li><font color=blue>成员变量的初始化顺序与成员在类中的声明顺序相同，</font>与初始化列表中的位置无关</li>
+<li><font color=orange>初始化列表先于构造函数的函数体执行</font></li>
+</ul>
+<pre><code>#include &lt;stdio.h&gt;
+
+class Value
+{
+private:
+    int mi;
+public:
+    Value(int i)
+    {
+        printf(&quot;Value()::i = %d\n&quot;, i);
+        mi = i;
+    }
+    int getI()
+    {
+        return mi;
+    }
+};
+
+class Test
+{
+private:
+    const int ci;
+    Value m2;
+    Value m3;
+    Value m1;
+public:
+    Test() : m1(1), m2(2), m3(3), ci(100)
+    {
+        printf(&quot;Test::ci = %d\n&quot;, ci);
+    }
+    int getCI()
+    {
+        return ci;
+    }
+    int setCI(int v)
+    {
+        int *p = const_cast&lt;int *&gt;(&amp;ci);
+        *p = v;
+    }
+};
+
+int main()
+{
+    Test t;
+
+    printf(&quot;t.ci = %d\n&quot;, t.getCI());
+
+    t.setCI(10);
+
+    printf(&quot;t.ci = %d\n&quot;, t.getCI());
+
+    return 0;
+}</code></pre>
+<p><img src="./images/对象的构造与析构（一）5.png" /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

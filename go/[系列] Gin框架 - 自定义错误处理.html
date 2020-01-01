@@ -1,0 +1,499 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[系列] Gin框架 - 自定义错误处理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[系列] Gin框架 - 自定义错误处理</center></div><div class='banquan'>原文出处:本文由博客园博主新亮笔记提供。<br/>
+原文连接:https://www.cnblogs.com/xinliangcoder/p/11242337.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#概述">概述</a></li>
+        <li><a href="#错误处理">错误处理</a></li>
+        <li><a href="#自定义错误处理">自定义错误处理</a></li>
+        <li><a href="#panic-和-recover">panic 和 recover</a></li>
+        <li><a href="#推荐阅读">推荐阅读</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="概述">概述</h2>
+<p>很多读者在后台向我要 Gin 框架实战系列的 Demo 源码，在这里再说明一下，源码我都更新到 GitHub 上，地址：<a href="https://github.com/xinliangnote/Go" class="uri">https://github.com/xinliangnote/Go</a></p>
+<p>开始今天的文章，为什么要自定义错误处理？默认的错误处理方式是什么？</p>
+<p>那好，咱们就先说下默认的错误处理。</p>
+<p>默认的错误处理是 <code>errors.New(&quot;错误信息&quot;)</code>，这个信息通过 error 类型的返回值进行返回。</p>
+<p>举个简单的例子：</p>
+<pre><code><code>func hello(name string) (str string, err error) {
+    if name == &quot;&quot; {
+        err = errors.New(&quot;name 不能为空&quot;)
+        return
+    }
+    str = fmt.Sprintf(&quot;hello: %s&quot;, name)
+    return
+}</code></pre>
+<p>当调用这个方法时：</p>
+<pre><code><code>var name = &quot;&quot;
+str, err :=  hello(name)
+if err != nil {
+    fmt.Println(err.Error())
+    return
+}</code></pre>
+<p>这就是默认的错误处理，下面还会用这个例子进行说。</p>
+<p>这个默认的错误处理，只是得到了一个错误信息的字符串。</p>
+<p>然而...</p>
+<p>我还想得到发生错误时的 <code>时间</code>、<code>文件名</code>、<code>方法名</code>、<code>行号</code> 等信息。</p>
+<p>我还想得到错误时进行告警，比如 <code>短信告警</code>、<code>邮件告警</code>、<code>微信告警</code> 等。</p>
+<p>我还想调用的时候，不那么复杂，就和默认错误处理类似，比如：</p>
+<pre><code><code>alarm.WeChat(&quot;错误信息&quot;)
+return</code></pre>
+<p>这样，我们就得到了我们想要的信息（<code>时间</code>、<code>文件名</code>、<code>方法名</code>、<code>行号</code>），并通过 <code>微信</code> 的方式进行告警通知我们。</p>
+<p>同理，<code>alarm.Email(&quot;错误信息&quot;)</code>、<code>alarm.Sms(&quot;错误信息&quot;)</code> 我们得到的信息是一样的，只是告警方式不同而已。</p>
+<p>还要保证，我们业务逻辑中，获取错误的时候，只获取错误信息即可。</p>
+<p>上面这些想出来的，就是今天要实现的，自定义错误处理，我们就实现之前，先说下 Go 的错误处理。</p>
+<h2 id="错误处理">错误处理</h2>
+<pre><code><code>package main
+
+import (
+    &quot;errors&quot;
+    &quot;fmt&quot;
+)
+
+func hello(name string) (str string, err error) {
+    if name == &quot;&quot; {
+        err = errors.New(&quot;name 不能为空&quot;)
+        return
+    }
+    str = fmt.Sprintf(&quot;hello: %s&quot;, name)
+    return
+}
+
+func main() {
+    var name = &quot;&quot;
+    fmt.Println(&quot;param:&quot;, name)
+
+    str, err := hello(name)
+    if err != nil {
+        fmt.Println(err.Error())
+        return
+    }
+
+    fmt.Println(str)
+}</code></pre>
+<p>输出：</p>
+<pre><code><code>param: Tom
+hello: Tom</code></pre>
+<p>当 name = &quot;&quot; 时，输出：</p>
+<pre><code><code>param:
+name 不能为空</code></pre>
+<p>建议每个函数都要有错误处理，error 应该为最后一个返回值。</p>
+<p>咱们一起看下官方 errors.go</p>
+<pre><code><code>// Copyright 2011 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Package errors implements functions to manipulate errors.
+package errors
+
+// New returns an error that formats as the given text.
+func New(text string) error {
+    return &amp;errorString{text}
+}
+
+// errorString is a trivial implementation of error.
+type errorString struct {
+    s string
+}
+
+func (e *errorString) Error() string {
+    return e.s
+}</code></pre>
+<p>上面的代码，并不复杂，参照上面的，咱们进行写一个自定义错误处理。</p>
+<h2 id="自定义错误处理">自定义错误处理</h2>
+<p>咱们定义一个 alarm.go，用于处理告警。</p>
+<p>废话不多说，直接看代码。</p>
+<pre><code><code>package alarm
+
+import (
+    &quot;encoding/json&quot;
+    &quot;fmt&quot;
+    &quot;ginDemo/common/function&quot;
+    &quot;path/filepath&quot;
+    &quot;runtime&quot;
+    &quot;strings&quot;
+)
+
+type errorString struct {
+    s string
+}
+
+type errorInfo struct {
+    Time     string `json:&quot;time&quot;`
+    Alarm    string `json:&quot;alarm&quot;`
+    Message  string `json:&quot;message&quot;`
+    Filename string `json:&quot;filename&quot;`
+    Line     int    `json:&quot;line&quot;`
+    Funcname string `json:&quot;funcname&quot;`
+}
+
+func (e *errorString) Error() string {
+    return e.s
+}
+
+func New (text string) error {
+    alarm(&quot;INFO&quot;, text)
+    return &amp;errorString{text}
+}
+
+// 发邮件
+func Email (text string) error {
+    alarm(&quot;EMAIL&quot;, text)
+    return &amp;errorString{text}
+}
+
+// 发短信
+func Sms (text string) error {
+    alarm(&quot;SMS&quot;, text)
+    return &amp;errorString{text}
+}
+
+// 发微信
+func WeChat (text string) error {
+    alarm(&quot;WX&quot;, text)
+    return &amp;errorString{text}
+}
+
+// 告警方法
+func  alarm(level string, str string) {
+    // 当前时间
+    currentTime := function.GetTimeStr()
+
+    // 定义 文件名、行号、方法名
+    fileName, line, functionName := &quot;?&quot;, 0 , &quot;?&quot;
+
+    pc, fileName, line, ok := runtime.Caller(2)
+    if ok {
+        functionName = runtime.FuncForPC(pc).Name()
+        functionName = filepath.Ext(functionName)
+        functionName = strings.TrimPrefix(functionName, &quot;.&quot;)
+    }
+
+    var msg = errorInfo {
+        Time     : currentTime,
+        Alarm    : level,
+        Message  : str,
+        Filename : fileName,
+        Line     : line,
+        Funcname : functionName,
+    }
+
+    jsons, errs := json.Marshal(msg)
+
+    if errs != nil {
+        fmt.Println(&quot;json marshal error:&quot;, errs)
+    }
+
+    errorJsonInfo := string(jsons)
+
+    fmt.Println(errorJsonInfo)
+
+    if level == &quot;EMAIL&quot; {
+        // 执行发邮件
+
+    } else if level == &quot;SMS&quot; {
+        // 执行发短信
+
+    } else if level == &quot;WX&quot; {
+        // 执行发微信
+
+    } else if level == &quot;INFO&quot; {
+        // 执行记日志
+    }
+}</code></pre>
+<p>看下如何调用：</p>
+<pre><code><code>package v1
+
+import (
+    &quot;fmt&quot;
+    &quot;ginDemo/common/alarm&quot;
+    &quot;ginDemo/entity&quot;
+    &quot;github.com/gin-gonic/gin&quot;
+    &quot;net/http&quot;
+)
+
+func AddProduct(c *gin.Context)  {
+    // 获取 Get 参数
+    name := c.Query(&quot;name&quot;)
+
+    var res = entity.Result{}
+
+    str, err := hello(name)
+    if err != nil {
+        res.SetCode(entity.CODE_ERROR)
+        res.SetMessage(err.Error())
+        c.JSON(http.StatusOK, res)
+        c.Abort()
+        return
+    }
+
+    res.SetCode(entity.CODE_SUCCESS)
+    res.SetMessage(str)
+    c.JSON(http.StatusOK, res)
+}
+
+func hello(name string) (str string, err error) {
+    if name == &quot;&quot; {
+        err = alarm.WeChat(&quot;name 不能为空&quot;)
+        return
+    }
+    str = fmt.Sprintf(&quot;hello: %s&quot;, name)
+    return
+}</code></pre>
+<p>访问：<code>http://localhost:8080/v1/product/add?name=a</code></p>
+<pre><code><code>{
+    &quot;code&quot;: 1,
+    &quot;msg&quot;: &quot;hello: a&quot;,
+    &quot;data&quot;: null
+}</code></pre>
+<p>未抛出错误，不会输出信息。</p>
+<p>访问：<code>http://localhost:8080/v1/product/add</code></p>
+<pre><code><code>{
+    &quot;code&quot;: -1,
+    &quot;msg&quot;: &quot;name 不能为空&quot;,
+    &quot;data&quot;: null
+}</code></pre>
+<p>抛出了错误，输出信息如下：</p>
+<pre><code><code>{&quot;time&quot;:&quot;2019-07-23 22:19:17&quot;,&quot;alarm&quot;:&quot;WX&quot;,&quot;message&quot;:&quot;name 不能为空&quot;,&quot;filename&quot;:&quot;绝对路径/ginDemo/router/v1/product.go&quot;,&quot;line&quot;:33,&quot;funcname&quot;:&quot;hello&quot;}</code></pre>
+<p>可能这会有同学说：“用上一篇分享的数据绑定和验证，将传入的参数进行 binding:&quot;required&quot; 也可以实现呀”。</p>
+<p>我只能说：“同学呀，你不理解我的良苦用心，这只是个例子，大家可以在一些复杂的业务逻辑判断场景中使用自定义错误处理”。</p>
+<p>到这里，报错时我们收到了 <code>时间</code>、<code>错误信息</code>、<code>文件名</code>、<code>行号</code>、<code>方法名</code> 了。</p>
+<p>调用起来，也比较简单。</p>
+<p>虽然标记了告警方式，还是没有进行告警通知呀。</p>
+<p>我想说，在这里存储数据到队列中，再执行异步任务具体去消耗，这块就不实现了，大家可以去完善。</p>
+<p>读取 <code>文件名</code>、<code>方法名</code>、<code>行号</code> 使用的是 <code>runtime.Caller()</code>。</p>
+<p>我们还知道，Go 有 <code>panic</code> 和 <code>recover</code>，它们是干什么的呢，接下来咱们就说说。</p>
+<h2 id="panic-和-recover">panic 和 recover</h2>
+<p>当程序不能继续运行的时候，才应该使用 panic 抛出错误。</p>
+<p>当程序发生 panic 后，在 defer(延迟函数) 内部可以调用 recover 进行控制，不过有个前提条件，只有在相同的 Go 协程中才可以。</p>
+<p>panic 分两个，一种是有意抛出的，一种是无意的写程序马虎造成的，咱们一个个说。</p>
+<p>有意抛出的 panic：</p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+)
+
+func main() {
+
+    fmt.Println(&quot;-- 1 --&quot;)
+
+    defer func() {
+        if r := recover(); r != nil {
+            fmt.Printf(&quot;panic: %s\n&quot;, r)
+        }
+        fmt.Println(&quot;-- 2 --&quot;)
+    }()
+    
+    panic(&quot;i am panic&quot;)
+}</code></pre>
+<p>输出：</p>
+<pre><code><code>-- 1 --
+panic: i am panic
+-- 2 --</code></pre>
+<p>无意抛出的 panic：</p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+)
+
+func main() {
+
+    fmt.Println(&quot;-- 1 --&quot;)
+
+    defer func() {
+        if r := recover(); r != nil {
+            fmt.Printf(&quot;panic: %s\n&quot;, r)
+        }
+        fmt.Println(&quot;-- 2 --&quot;)
+    }()
+
+
+    var slice = [] int {1, 2, 3, 4, 5}
+
+    slice[6] = 6
+}</code></pre>
+<p>输出：</p>
+<pre><code><code>-- 1 --
+panic: runtime error: index out of range
+-- 2 --</code></pre>
+<p>上面的两个我们都通过 <code>recover</code> 捕获到了，那我们如何在 Gin 框架中使用呢？如果收到 <code>panic</code> 时，也想进行告警怎么实现呢？</p>
+<p>既然想实现告警，先在 ararm.go 中定义一个 <code>Panic()</code> 方法，当项目发生 <code>panic</code> 异常时，调用这个方法，这样就实现告警了。</p>
+<pre><code><code>// Panic 异常
+func Panic (text string) error {
+    alarm(&quot;PANIC&quot;, text)
+    return &amp;errorString{text}
+}</code></pre>
+<p>那我们怎么捕获到呢？</p>
+<p>使用中间件进行捕获，写一个 <code>recover</code> 中间件。</p>
+<pre><code><code>package recover
+
+import (
+    &quot;fmt&quot;
+    &quot;ginDemo/common/alarm&quot;
+    &quot;github.com/gin-gonic/gin&quot;
+)
+
+func Recover()  gin.HandlerFunc {
+    return func(c *gin.Context) {
+        defer func() {
+            if r := recover(); r != nil {
+                alarm.Panic(fmt.Sprintf(&quot;%s&quot;, r))
+            }
+        }()
+        c.Next()
+    }
+}</code></pre>
+<p>路由调用中间件：</p>
+<pre><code><code>r.Use(logger.LoggerToFile(), recover.Recover())
+
+//Use 可以传递多个中间件。</code></pre>
+<p>验证下吧，咱们先抛出两个异常，看看能否捕获到？</p>
+<p>还是修改 product.go 这个文件吧。</p>
+<p>有意抛出 panic：</p>
+<pre><code><code>package v1
+
+import (
+    &quot;fmt&quot;
+    &quot;ginDemo/entity&quot;
+    &quot;github.com/gin-gonic/gin&quot;
+    &quot;net/http&quot;
+)
+
+func AddProduct(c *gin.Context)  {
+    // 获取 Get 参数
+    name := c.Query(&quot;name&quot;)
+
+    var res = entity.Result{}
+
+    str, err := hello(name)
+    if err != nil {
+        res.SetCode(entity.CODE_ERROR)
+        res.SetMessage(err.Error())
+        c.JSON(http.StatusOK, res)
+        c.Abort()
+        return
+    }
+
+    res.SetCode(entity.CODE_SUCCESS)
+    res.SetMessage(str)
+    c.JSON(http.StatusOK, res)
+}
+
+func hello(name string) (str string, err error) {
+    if name == &quot;&quot; {
+        // 有意抛出 panic
+        panic(&quot;i am panic&quot;)
+        return
+    }
+    str = fmt.Sprintf(&quot;hello: %s&quot;, name)
+    return
+}</code></pre>
+<p>访问：<code>http://localhost:8080/v1/product/add</code></p>
+<p>界面是空白的。</p>
+<p>抛出了异常，输出信息如下：</p>
+<pre><code><code>{&quot;time&quot;:&quot;2019-07-23 22:42:37&quot;,&quot;alarm&quot;:&quot;PANIC&quot;,&quot;message&quot;:&quot;i am panic&quot;,&quot;filename&quot;:&quot;绝对路径/ginDemo/middleware/recover/recover.go&quot;,&quot;line&quot;:13,&quot;funcname&quot;:&quot;1&quot;}</code></pre>
+<p>很显然，定位的文件名、方法名、行号不是我们想要的。</p>
+<p>需要调整 <code>runtime.Caller(2)</code>，这个代码在 <code>alarm.go 的 alarm</code> 方法中。</p>
+<p>将 2 调整成 4 ，看下输出信息：</p>
+<pre><code><code>{&quot;time&quot;:&quot;2019-07-23 22:45:24&quot;,&quot;alarm&quot;:&quot;PANIC&quot;,&quot;message&quot;:&quot;i am panic&quot;,&quot;filename&quot;:&quot;绝对路径/ginDemo/router/v1/product.go&quot;,&quot;line&quot;:33,&quot;funcname&quot;:&quot;hello&quot;}</code></pre>
+<p>这就对了。</p>
+<p>无意抛出 panic：</p>
+<pre><code><code>// 上面代码不变
+
+func hello(name string) (str string, err error) {
+    if name == &quot;&quot; {
+        // 无意抛出 panic
+        var slice = [] int {1, 2, 3, 4, 5}
+        slice[6] = 6
+        return
+    }
+    str = fmt.Sprintf(&quot;hello: %s&quot;, name)
+    return
+}</code></pre>
+<p>访问：<code>http://localhost:8080/v1/product/add</code></p>
+<p>界面是空白的。</p>
+<p>抛出了异常，输出信息如下：</p>
+<pre><code><code>{&quot;time&quot;:&quot;2019-07-23 22:50:06&quot;,&quot;alarm&quot;:&quot;PANIC&quot;,&quot;message&quot;:&quot;runtime error: index out of range&quot;,&quot;filename&quot;:&quot;绝对路径/runtime/panic.go&quot;,&quot;line&quot;:44,&quot;funcname&quot;:&quot;panicindex&quot;}</code></pre>
+<p>很显然，定位的文件名、方法名、行号也不是我们想要的。</p>
+<p>将 4 调整成 5 ，看下输出信息：</p>
+<pre><code><code>{&quot;time&quot;:&quot;2019-07-23 22:55:27&quot;,&quot;alarm&quot;:&quot;PANIC&quot;,&quot;message&quot;:&quot;runtime error: index out of range&quot;,&quot;filename&quot;:&quot;绝对路径/ginDemo/router/v1/product.go&quot;,&quot;line&quot;:34,&quot;funcname&quot;:&quot;hello&quot;}</code></pre>
+<p>这就对了。</p>
+<p>奇怪了，这是为什么？</p>
+<p>在这里，有必要说下 <code>runtime.Caller(skip)</code> 了。</p>
+<p>skip 指的调用的深度。</p>
+<p>为 0 时，打印当前调用文件及行数。</p>
+<p>为 1 时，打印上级调用的文件及行数。</p>
+<p>依次类推...</p>
+<p>在这块，调用的时候需要注意下，我现在还没有好的解决方案。</p>
+<p>我是将 skip（调用深度），当一个参数传递进去。</p>
+<p>比如：</p>
+<pre><code><code>// 发微信
+func WeChat (text string) error {
+    alarm(&quot;WX&quot;, text, 2)
+    return &amp;errorString{text}
+}
+
+// Panic 异常
+func Panic (text string) error {
+    alarm(&quot;PANIC&quot;, text, 5)
+    return &amp;errorString{text}
+}</code></pre>
+<p>具体的代码就不贴了。</p>
+<p>但是，有意抛出 Panic 和 无意抛出 Panic 的调用深度又不同，怎么办？</p>
+<p>1、尽量将有意抛出的 Panic 改成抛出错误的方式。</p>
+<p>2、想其他办法搞定它。</p>
+<p>就到这吧。</p>
+<p>里面涉及到的代码，我会更新到 GitHub。</p>
+<h2 id="推荐阅读">推荐阅读</h2>
+<p><strong>gRPC</strong></p>
+<ul>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11268128.html">Go gRPC Hello World</a></li>
+</ul>
+<p><strong>Gin 框架</strong></p>
+<ul>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11242337.html">Gin 框架 - 自定义错误处理</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11234017.html">Gin 框架 - 数据绑定和验证</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11212573.html">Gin 框架 - 使用 Logrus 日志记录</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11200332.html">Gin 框架 - 安装和路由配置</a></li>
+</ul>
+<p><strong>基础篇</strong></p>
+<ul>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11286801.html">Go - chan 通道</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11187087.html">Go - 函数</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11169416.html">Go - 循环</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11156599.html">Go - Map 集合</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11134787.html">Go - Struct 结构体</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11113395.html">Go - Slice 切片</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11101116.html">Go - 数组</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11101098.html">Go - 变量声明</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11082216.html">Go - 环境安装</a></li>
+</ul>
+<p>本文欢迎转发，转发请注明作者和出处，谢谢！</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

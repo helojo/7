@@ -1,0 +1,266 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[系列] Gin框架 - 数据绑定和验证' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[系列] Gin框架 - 数据绑定和验证</center></div><div class='banquan'>原文出处:本文由博客园博主新亮笔记提供。<br/>
+原文连接:https://www.cnblogs.com/xinliangcoder/p/11234017.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#概述">概述</a></li>
+        <li><a href="#推荐阅读">推荐阅读</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="概述">概述</h2>
+<p>上篇文章分享了 Gin 框架使用 Logrus 进行日志记录，这篇文章分享 Gin 框架的数据绑定与验证。</p>
+<p>有读者咨询我一个问题，如何让框架的运行日志不输出控制台？</p>
+<p>解决方案：</p>
+<pre><code><code>engine := gin.Default() //修改成如下
+engine := gin.New() </code></pre>
+<p>我是怎么知道的？看框架代码。</p>
+<p><code>Default()</code>：</p>
+<pre><code><code>func Default() *Engine {
+    debugPrintWARNINGDefault()
+    engine := New()
+    engine.Use(Logger(), Recovery())
+    return engine
+}</code></pre>
+<p><code>New()</code> 代码我就不贴了。</p>
+<p>我们看到 <code>Default()</code> 使用了两个中间件 <code>Logger(), Recovery()</code>，如果不想使用，那就直接使用 <code>New()</code> 就可以了。</p>
+<p>开始今天的文章。</p>
+<p>比如，请求 <code>v1/member/add</code> 新增会员方法，<code>name</code>、<code>age</code> 为必填，同时 <code>name</code> 不能等于 admin 字符串，10 &lt;= age &lt;= 120。</p>
+<p>直接看代码吧。</p>
+<p>首先，先定义一个结构体。</p>
+<p><strong>entity/member.go</strong></p>
+<pre><code><code>package entity
+
+// 定义 Member 结构体
+type Member struct {
+    Name string `form:&quot;name&quot; json:&quot;name&quot; binding:&quot;required,NameValid&quot;`
+    Age  int    `form:&quot;age&quot;  json:&quot;age&quot;  binding:&quot;required,gt=10,lt=120&quot;`
+}</code></pre>
+<p>binding 中 <code>required</code>，这个是框架自带的，<code>NameValid</code>，这个是自己定义的。</p>
+<p>问题一：框架自带的 binding 参数还有哪些？</p>
+<p>问题二：自定义验证方法，怎么写？</p>
+<p>接下来要说的就是问题二，写一个验证方法。</p>
+<p><strong>validator/member/member.go</strong></p>
+<pre><code><code>package member
+
+import (
+    &quot;gopkg.in/go-playground/validator.v8&quot;
+    &quot;reflect&quot;
+)
+
+func NameValid(
+    v *validator.Validate, topStruct reflect.Value, currentStructOrField reflect.Value,
+    field reflect.Value, fieldType reflect.Type, fieldKind reflect.Kind, param string,
+) bool {
+    if s, ok := field.Interface().(string); ok {
+        if s == &quot;admin&quot; {
+            return false
+        }
+    }
+    return true
+}</code></pre>
+<p>接下来，在路由中绑定：</p>
+<p><strong>router/router.go</strong></p>
+<pre><code><code>package router
+
+import (
+    &quot;ginDemo/middleware/logger&quot;
+    &quot;ginDemo/middleware/sign&quot;
+    &quot;ginDemo/router/v1&quot;
+    &quot;ginDemo/router/v2&quot;
+    &quot;ginDemo/validator/member&quot;
+    &quot;github.com/gin-gonic/gin&quot;
+    &quot;github.com/gin-gonic/gin/binding&quot;
+    &quot;gopkg.in/go-playground/validator.v8&quot;
+)
+
+func InitRouter(r *gin.Engine)  {
+
+    r.Use(logger.LoggerToFile())
+
+    // v1 版本
+    GroupV1 := r.Group(&quot;/v1&quot;)
+    {
+        GroupV1.Any(&quot;/product/add&quot;, v1.AddProduct)
+        GroupV1.Any(&quot;/member/add&quot;, v1.AddMember)
+    }
+
+    // v2 版本
+    GroupV2 := r.Group(&quot;/v2&quot;).Use(sign.Sign())
+    {
+        GroupV2.Any(&quot;/product/add&quot;, v2.AddProduct)
+        GroupV2.Any(&quot;/member/add&quot;, v2.AddMember)
+    }
+
+    // 绑定验证器
+    if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+        v.RegisterValidation(&quot;NameValid&quot;, member.NameValid)
+    }
+}</code></pre>
+<p>最后，看一下调用的代码。</p>
+<p><strong>router/v1/member.go</strong></p>
+<pre><code><code>package v1
+
+import (
+    &quot;ginDemo/entity&quot;
+    &quot;github.com/gin-gonic/gin&quot;
+    &quot;net/http&quot;
+)
+
+func AddMember(c *gin.Context) {
+
+    res := entity.Result{}
+    mem := entity.Member{}
+
+    if err := c.ShouldBind(&amp;mem); err != nil {
+        res.SetCode(entity.CODE_ERROR)
+        res.SetMessage(err.Error())
+        c.JSON(http.StatusForbidden, res)
+        c.Abort()
+        return
+    }
+
+    // 处理业务(下次再分享)
+
+    data := map[string]interface{}{
+        &quot;name&quot; : mem.Name,
+        &quot;age&quot;  : mem.Age,
+    }
+    res.SetCode(entity.CODE_ERROR)
+    res.SetData(data)
+    c.JSON(http.StatusOK, res)
+}</code></pre>
+<p>访问看看效果吧。</p>
+<p>访问：<code>http://localhost:8080/v1/member/add</code></p>
+<pre><code><code>{
+    &quot;code&quot;: -1,
+    &quot;msg&quot;: &quot;Key: &#39;Member.Name&#39; Error:Field validation for &#39;Name&#39; failed on the &#39;required&#39; tag\nKey: &#39;Member.Age&#39; Error:Field validation for &#39;Age&#39; failed on the &#39;required&#39; tag&quot;,
+    &quot;data&quot;: null
+}</code></pre>
+<p>访问：<code>http://localhost:8080/v1/member/add?name=1</code></p>
+<pre><code><code>{
+    &quot;code&quot;: -1,
+    &quot;msg&quot;: &quot;Key: &#39;Member.Age&#39; Error:Field validation for &#39;Age&#39; failed on the &#39;required&#39; tag&quot;,
+    &quot;data&quot;: null
+}</code></pre>
+<p>访问：<code>http://localhost:8080/v1/member/add?age=1</code></p>
+<pre><code><code>{
+    &quot;code&quot;: -1,
+    &quot;msg&quot;: &quot;Key: &#39;Member.Age&#39; Error:Field validation for &#39;Age&#39; failed on the &#39;required&#39; tag&quot;,
+    &quot;data&quot;: null
+}</code></pre>
+<p>访问：<code>http://localhost:8080/v1/member/add?name=admin&amp;age=1</code></p>
+<pre><code><code>{
+    &quot;code&quot;: -1,
+    &quot;msg&quot;: &quot;Key: &#39;Member.Name&#39; Error:Field validation for &#39;Name&#39; failed on the &#39;NameValid&#39; tag&quot;,
+    &quot;data&quot;: null
+}</code></pre>
+<p>访问：<code>http://localhost:8080/v1/member/add?name=1&amp;age=1</code></p>
+<pre><code><code>{
+    &quot;code&quot;: -1,
+    &quot;msg&quot;: &quot;Key: &#39;Member.Age&#39; Error:Field validation for &#39;Age&#39; failed on the &#39;gt&#39; tag&quot;,
+    &quot;data&quot;: null
+}</code></pre>
+<p>访问：<code>http://localhost:8080/v1/member/add?name=1&amp;age=121</code></p>
+<pre><code><code>{
+    &quot;code&quot;: -1,
+    &quot;msg&quot;: &quot;Key: &#39;Member.Age&#39; Error:Field validation for &#39;Age&#39; failed on the &#39;lt&#39; tag&quot;,
+    &quot;data&quot;: null
+}</code></pre>
+<p>访问：<code>http://localhost:8080/v1/member/add?name=Tom&amp;age=30</code></p>
+<pre><code><code>{
+    &quot;code&quot;: 1,
+    &quot;msg&quot;: &quot;&quot;,
+    &quot;data&quot;: {
+        &quot;age&quot;: 30,
+        &quot;name&quot;: &quot;Tom&quot;
+    }
+}</code></pre>
+<p>未避免返回信息过多，错误提示咱们也可以统一。</p>
+<pre><code><code>if err := c.ShouldBind(&amp;mem); err != nil {
+    res.SetCode(entity.CODE_ERROR)
+    res.SetMessage(&quot;参数验证错误&quot;)
+    c.JSON(http.StatusForbidden, res)
+    c.Abort()
+    return
+}</code></pre>
+<p>这一次目录结构调整了一些，在这里说一下：</p>
+<pre><code><code>├─ ginDemo
+│  ├─ common        //公共方法
+│     ├── common.go
+│  ├─ config        //配置文件
+│     ├── config.go
+│  ├─ entity        //实体
+│     ├── ...
+│  ├─ middleware    //中间件
+│     ├── logger
+│         ├── ...
+│     ├── sign
+│         ├── ...
+│  ├─ router        //路由
+│     ├── ...
+│  ├─ validator     //验证器
+│     ├── ...
+│  ├─ vendor        //扩展包
+│     ├── github.com
+│         ├── ...
+│     ├── golang.org
+│         ├── ...
+│     ├── gopkg.in
+│         ├── ...
+│  ├─ Gopkg.toml
+│  ├─ Gopkg.lock
+│  ├─ main.go</code></pre>
+<p>将 <code>sign</code> 和 <code>logger</code> 调整为中间件，并放到 <code>middleware</code> 中间件 目录。</p>
+<p>新增了 <code>common</code> 公共方法目录。</p>
+<p>新增了 <code>validator</code> 验证器目录。</p>
+<p>新增了 <code>entity</code> 实体目录。</p>
+<p>具体代码我会放到 <code>GitHub</code>，有感兴趣的可以去看：<a href="https://github.com/xinliangnote/Go" class="uri">https://github.com/xinliangnote/Go</a>。</p>
+<p>上面还遗漏了问题一没解决，框架自带的 binding 参数还有哪些？</p>
+<p>从框架源码了解到验证使用的是：</p>
+<p><code>gopkg.in/go-playground/validator.v8</code></p>
+<p>文档地址为：</p>
+<p><a href="https://godoc.org/gopkg.in/go-playground/validator.v8" class="uri">https://godoc.org/gopkg.in/go-playground/validator.v8</a></p>
+<p>去探索文档吧，里面有很多验证规则。</p>
+<h2 id="推荐阅读">推荐阅读</h2>
+<p><strong>Gin 框架</strong></p>
+<ul>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11212573.html">Gin 框架 - 使用 Logrus 日志记录</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11200332.html">Gin 框架 - 安装和路由配置</a></li>
+</ul>
+<p><strong>基础篇</strong></p>
+<ul>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11187087.html">Go - 函数</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11169416.html">Go - 循环</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11156599.html">Go - Map 集合</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11134787.html">Go - Struct 结构体</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11113395.html">Go - Slice 切片</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11101116.html">Go - 数组</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11101098.html">Go - 变量声明</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11082216.html">Go - 环境安装</a></li>
+</ul>
+<p>本文欢迎转发，转发请注明作者和出处，谢谢！</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

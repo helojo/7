@@ -1,0 +1,208 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修VC遍历访问目录下的文件' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>VC遍历访问目录下的文件</center></div><div class='banquan'>原文出处:本文由博客园博主charlee44提供。<br/>
+原文连接:https://www.cnblogs.com/charlee44/p/10803025.html</div><br>
+    <p>访问目录文件夹下的文件是经常需要的操作，C/C++和win32接口都没有提供直接调用的函数。在这里总结了几个经常用到的函数，通过MFC的CFileFind函数递归遍历实现，包括以下几个功能函数：</p>
+<ol>
+<li>查找目录下所有的文件夹；</li>
+<li>查找目录下所有的文件(不遍历目录的目录)；<br />
+</li>
+<li>查找目录下所有的文件(遍历目录的目录) ；</li>
+<li>查找目录下某一类型文件 (不遍历目录的目录)；</li>
+<li>查找目录下某一类型文件 (遍历目录的目录)；</li>
+</ol>
+<pre><code>//查找目录下所有的文件夹
+void FindFolder(string dir, vector&lt;string&gt; &amp;folderPath)
+{
+    CFileFind fileFinder;
+    CString filePath = CString(dir.c_str()) + _T(&quot;\\*.*&quot;);
+
+    BOOL bFinished = fileFinder.FindFile(filePath);
+    while (bFinished)  //每次循环对应一个类别目录
+    {
+        bFinished = fileFinder.FindNextFile();
+        if (fileFinder.IsDirectory() &amp;&amp; !fileFinder.IsDots())  //fileFinder.IsDots()识别&quot;.&quot;文件和&quot;..&quot;文件
+        {
+            CString filePath = fileFinder.GetFilePath();
+            folderPath.push_back(filePath.GetBuffer());
+            filePath.ReleaseBuffer();
+        }
+    }
+
+    fileFinder.Close();
+}
+
+//查找目录下所有的文件(不遍历目录的目录)  
+void FindDirFileNoFormat(string dir, vector&lt;string&gt; &amp;filePath)
+{
+    CFileFind fileFinder;
+    CString path = CString(dir.c_str()) + _T(&quot;\\*.*&quot;);
+
+    BOOL bFinished = fileFinder.FindFile(path);
+    while (bFinished)  //每次循环对应一个类别目录
+    {
+        bFinished = fileFinder.FindNextFile();
+        if (fileFinder.IsDirectory() || fileFinder.IsDots())  //fileFinder.IsDots()识别&quot;.&quot;文件和&quot;..&quot;文件
+        {
+            continue;
+        }
+        else
+        {
+            CString findPath = fileFinder.GetFilePath();
+            filePath.push_back(findPath.GetBuffer());
+            findPath.ReleaseBuffer();
+        }
+    }
+
+    fileFinder.Close();
+}
+
+//查找目录下所有的文件(遍历目录的目录)   
+void FindAllFileNoFormat(string dir, vector&lt;string&gt; &amp;filePath)
+{
+    CFileFind fileFinder;
+    CString path = CString(dir.c_str()) + _T(&quot;\\*.*&quot;);
+
+    BOOL bFinished = fileFinder.FindFile(path);
+    while (bFinished)  //每次循环对应一个类别目录
+    {
+        bFinished = fileFinder.FindNextFile();
+
+        // 跳过 . 和 .. ; 否则会陷入无限循环中！！！
+        if (fileFinder.IsDots())
+        {
+            continue;
+        }
+
+        //
+        if (fileFinder.IsDirectory())
+        {
+            CString findPath = fileFinder.GetFilePath();
+            string subdir = findPath.GetBuffer();
+            FindAllFileNoFormat(subdir, filePath);
+            findPath.ReleaseBuffer();
+        }
+        else
+        {
+            CString findPath = fileFinder.GetFilePath();
+            filePath.push_back(findPath.GetBuffer());
+            findPath.ReleaseBuffer();
+        }
+    }
+
+    fileFinder.Close();
+}
+
+// 查找目录下某一类型文件 (不遍历目录的目录)
+void FindDirFile(string dir, string format, vector&lt;string&gt; &amp;filePath)
+{
+    CFileFind fileFinder;
+    CString path = CString(dir.c_str()) + _T(&quot;\\*&quot;) + CString(format.c_str());
+
+    BOOL bFinished = fileFinder.FindFile(path);
+    while (bFinished)  //每次循环对应一个类别目录
+    {
+        bFinished = fileFinder.FindNextFile();
+        if (fileFinder.IsDirectory() &amp;&amp; !fileFinder.IsDots())  //fileFinder.IsDots()识别&quot;.&quot;文件和&quot;..&quot;文件
+        {
+            continue;
+        }
+        else
+        {
+            CString findPath = fileFinder.GetFilePath();
+            filePath.push_back(findPath.GetBuffer());
+            findPath.ReleaseBuffer();
+        }
+    }
+
+    fileFinder.Close();
+}
+
+//得到文件路径的格式后缀
+string GetPathFormat(string filePath)
+{
+    string format = filePath;
+    size_t p = filePath.find_last_of(&#39;.&#39;);
+    if (p == -1)
+    {
+        return string();
+    }
+    format.erase(0, p);
+    return format;
+}
+
+// 查找目录下某一类型文件 (遍历目录的目录)    
+void FindDirAllFileEx(string dir, vector&lt;string&gt; &amp;format, vector&lt;string&gt;&amp; filePath)
+{
+    CFileFind fileFinder;
+    CString path = CString(dir.c_str()) + _T(&quot;\\*.*&quot;);
+
+    BOOL bFinished = fileFinder.FindFile(path);
+    while (bFinished)  //每次循环对应一个类别目录
+    {
+        bFinished = fileFinder.FindNextFile();
+
+        // 跳过 . 和 .. ; 否则会陷入无限循环中！！！
+        if (fileFinder.IsDots())
+        {
+            continue;
+        }
+
+        if (fileFinder.IsDirectory())
+        {
+            CString findPath = fileFinder.GetFilePath();
+            string subdir = findPath.GetBuffer();
+            FindDirAllFileEx(subdir, format, filePath);
+            findPath.ReleaseBuffer();
+        }
+        else
+        {
+            //获取文件类型
+            CString findPath = fileFinder.GetFilePath();
+            string file = findPath.GetBuffer();
+            string postfix = GetPathFormat(file);
+
+            bool flag = false;
+            for (auto it : format)
+            {
+                if (_stricmp(it.c_str(), postfix.c_str()) == 0)
+                {
+                    flag = true;
+                    break;
+                }
+            }
+
+            if (flag)
+            {
+                filePath.push_back(file);
+            }
+
+            findPath.ReleaseBuffer();
+        }
+    }
+
+    fileFinder.Close();
+}</code></pre>
+<p>有一点值得注意的是我这里函数的参数都封装成STL的string，在多字节下可以直接使用，在unicode下需要稍微修改下CString与string的转换。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

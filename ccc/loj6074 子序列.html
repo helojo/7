@@ -1,0 +1,137 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修loj6074 子序列' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>loj6074 子序列</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/loj6074.html</div><br>
+    <p><a href="https://loj.ac/problem/6074"><font size=5>题目链接</font></a></p>
+<h1 id="思路">思路</h1>
+<p><strong>首先考虑暴力<span class="math inline">\(dp\)</span></strong></p>
+<p>用<span class="math inline">\(f[i][j]\)</span>表示前<span class="math inline">\(i\)</span>个字符,以<span class="math inline">\(j\)</span>这个字符结尾的本质不同的字符串个数。</p>
+<p>然后就有如下的转移</p>
+<p><span class="math inline">\(if(s_i==j)\)</span><br />
+<span class="math display">\[f_{ij}=\sum\limits_{i=1}^9f_{i-1j} + 1\]</span><br />
+<span class="math inline">\(else\)</span><br />
+<span class="math display">\[f_{ij}=f_{i-1j}\]</span></p>
+<p><strong>然后就尝试一下用矩阵转移</strong></p>
+<p>对于第<span class="math inline">\(i\)</span>位置，设一个<span class="math inline">\(10 \times 10\)</span>的单位矩阵，将<span class="math inline">\(s_i\)</span>这一列全都是<span class="math inline">\(1\)</span>。</p>
+<p>为什么是<span class="math inline">\(10 \times 10\)</span>而不是<span class="math inline">\(9\times9\)</span>呢？</p>
+<p>因为第一个转移里面有个<span class="math inline">\(+1\)</span></p>
+<p>然后对于每次询问，都将初始的<span class="math inline">\(1 \times 10\)</span>的矩阵的第<span class="math inline">\(s_{l-1}\)</span>位和第<span class="math inline">\(10\)</span>位设成<span class="math inline">\(1\)</span>，其他的都是<span class="math inline">\(0\)</span>。</p>
+<p>然后依次乘上<span class="math inline">\(l\)</span>~<span class="math inline">\(r\)</span>的矩阵即可。</p>
+<p><strong>然后优化</strong></p>
+<p>可以发现，用矩阵转移更慢了。</p>
+<p>别慌，我们只要想办法快速的将<span class="math inline">\(l\)</span>~<span class="math inline">\(r\)</span>内的矩阵乘起来不就行了。</p>
+<p>对于这<span class="math inline">\(n\)</span>个矩阵先处理一个前缀和。然后只要用前<span class="math inline">\(r\)</span>个矩阵去除以前<span class="math inline">\(l - 1\)</span>个矩阵就行了。</p>
+<p>怎么除呢？？</p>
+<p>我们把每个矩阵的逆矩阵也求个前缀和就行了。</p>
+<p><strong><font color = red size=4>PS：</font></strong> 矩阵乘法不满足交换律，注意矩阵相乘的顺序。</p>
+<h1 id="代码">代码</h1>
+<pre><code>/* @Author: wxyww
+* @Date:   2019-03-28 20:43:54
+* @Last Modified time: 2019-03-29 13:53:49
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 100010,mod = 1e9 + 7;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+struct node {
+    int a[11][11];
+    int n,m;
+    node() {
+        memset(a,0,sizeof(a));
+    }
+    node(int x) {
+        n = m = x;
+        memset(a,0,sizeof(a));
+        for(int i = 1;i &lt;= x;++i) a[i][i] = 1;
+    }
+    node(int x,int y) {
+        n = x,m = y;
+        memset(a,0,sizeof(a));
+    }
+}tmp1[N],tmp2[N];
+char S[N];
+int n,s[N];
+node operator * (const node &amp;A,const node &amp;B) {
+    int n = A.n,m = B.n,K = A.m;
+    node ret(n,m);
+    for(int k = 1;k &lt;= K;++k) {
+        for(int i = 1;i &lt;= n;++i) {
+            for(int j = 1;j &lt;= m;++j) {
+                ret.a[i][j] += 1ll * A.a[i][k] * B.a[k][j] % mod;
+                ret.a[i][j] %= mod;
+            }
+        }
+    }
+    return ret;
+}
+void pre() {
+    tmp1[0] = tmp2[0] = node(10);
+    for(int i = 1;i &lt;= n;++i) {
+        int k = s[i];
+        tmp1[i] = tmp2[i] = node(10);
+        for(int j = 1;j &lt;= 10;++j) tmp1[i].a[j][k] = 1,tmp2[i].a[j][k] = mod - 1;
+        tmp2[i].a[k][k] = 1;
+        tmp1[i] = tmp1[i] * tmp1[i - 1];
+        tmp2[i] = tmp2[i - 1] * tmp2[i];
+    }
+}
+int main() {
+    scanf(&quot;%s&quot;,S + 1);
+    n = strlen(S + 1);
+    for(int i = 1;i &lt;= n;++i) s[i] = S[i] - &#39;a&#39; + 1;
+    pre();
+    int m = read();
+    while(m--) {
+        node ans(1,10);
+        int l = read(),r = read();
+        ans.a[1][10] = 1;
+        ans = ans * tmp1[r] * tmp2[l - 1];
+        int anss = 0;
+        for(int i = 1;i &lt;= 9;++i) anss += ans.a[1][i],anss %= mod;
+        printf(&quot;%d\n&quot;,anss);
+    }
+    return 0;
+}
+
+*/</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,404 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修操作符重载（一）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>操作符重载（一）</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11552782.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#操作符重载的概念">1. 操作符重载的概念</a><ul>
+        <li><a href="#操作符重载的本质">操作符重载的本质</a></li>
+        <li><a href="#操作符重载的规则">操作符重载的规则</a></li>
+        <li><a href="#操作符重载的实现">操作符重载的实现</a></li>
+        </ul></li>
+        <li><a href="#复数类的实现">2. 复数类的实现</a><ul>
+        <li><a href="#运算操作符重载">运算操作符重载</a></li>
+        <li><a href="#比较操作符重载">比较操作符重载</a></li>
+        <li><a href="#赋值操作符重载">赋值操作符重载</a></li>
+        <li><a href="#复数类测试">复数类测试</a></li>
+        </ul></li>
+        <li><a href="#赋值操作符重载和拷贝构造函数">3. 赋值操作符重载和拷贝构造函数</a><ul>
+        <li><a href="#赋值操作符重载与深拷贝">赋值操作符重载与深拷贝</a></li>
+        <li><a href="#数组类intarray改进">数组类IntArray改进</a></li>
+        </ul></li>
+        </ul>
+    </div>
+</div>
+<h1 id="操作符重载的概念">1. 操作符重载的概念</h1>
+<h2 id="操作符重载的本质">操作符重载的本质</h2>
+<p>操作符重载的本质是<font color=red>用特殊形式的函数扩展操作符的功能</font></p>
+<ul>
+<li>C++通过<code>operator</code>关键字定义操作符重载函数</li>
+<li>操作符重载遵循相同的函数重载规则</li>
+</ul>
+<h2 id="操作符重载的规则">操作符重载的规则</h2>
+<p>在进行操作符重载时，必须遵循以下三条规则</p>
+<ul>
+<li><font color=red>不能改变原操作符的优先级</font></li>
+<li><font color=magenta>不能改变操作数的个数</font></li>
+<li><font color=orange>不能改变操作符的原有语义</font></li>
+</ul>
+<h2 id="操作符重载的实现">操作符重载的实现</h2>
+<p>全局函数和成员函数都可以实现对操作符的重载，重载为全局函数的语法规则为</p>
+<pre><code>/*
+ * Sign为预定义的操作符，如：+, -, *, /;
+ * lp和rp分别为左操作数和右操作数.
+*/
+Type operator Sign (const Type &amp;lp, const Type &amp;rp)
+{
+}</code></pre>
+<p>如果重载为全局函数，则需要在友元的辅助下才能实现，因此，<font color=red>一般选择将操作符重载为类的成员函数</font></p>
+<pre><code>class Type
+{
+public:
+    Type operator Sign (const Type &amp;rp)
+    {
+    }
+};</code></pre>
+<ul>
+<li>比起全局操作符重载函数<font color=red>少一个参数（左操作数）</font></li>
+<li><font color=blue>不需要依赖友元</font>就可以完成操作符重载</li>
+<li><font color=magenta>编译器优先在成员函数中寻找操作符重载函数</font></li>
+</ul>
+<pre><code>#include &lt;stdio.h&gt;
+
+class Complex
+{
+    int a;
+    int b;
+public:
+    Complex(int a = 0, int b = 0)
+    {
+        this-&gt;a = a;
+        this-&gt;b = b;
+    }
+
+    int getA()
+    {
+        return a;
+    }
+
+    int getB()
+    {
+        return b;
+    }
+
+    Complex operator + (const Complex &amp;p)
+    {
+        Complex ret;
+        printf(&quot;Complex operator + (const Complex&amp; p)\n&quot;);
+        ret.a = this-&gt;a + p.a;
+        ret.b = this-&gt;b + p.b;
+
+        return ret;
+    }
+
+    friend Complex operator + (const Complex &amp;p1, const Complex &amp;p2);
+};
+
+Complex operator + (const Complex &amp;p1, const Complex &amp;p2)
+{
+    Complex ret;
+    printf(&quot;Complex operator + (const Complex&amp; p1, const Complex&amp; p2)\n&quot;);
+    ret.a = p1.a + p2.a;
+    ret.b = p1.b + p2.b;
+
+    return ret;
+}
+
+int main()
+{
+    Complex c1(1, 2);
+    Complex c2(3, 4);
+    Complex c3 = c1 + c2; // c1.operator + (c2)
+
+    printf(&quot;c3.a = %d, c3.b = %d\n&quot;, c3.getA(), c3.getB());
+
+    return 0;
+}</code></pre>
+<p><img src="./images/操作符重载（一）0.png" /></p>
+<h1 id="复数类的实现">2. 复数类的实现</h1>
+<p>下面，我们通过一个复数类，来分别实现<font color=red>算术运算操作符、比较操作符和赋值操作符</font>的重载，以下是头文件和源文件的非重载部分代码。</p>
+<p><strong>Complex.h</strong></p>
+<pre><code>#ifndef _COMPLEX_H_
+#define _COMPLEX_H_
+
+class Complex
+{
+    double a;
+    double b;
+public:
+    Complex(double a = 0, double b = 0);
+    double getA();
+    double getB();
+    double getModulus();
+
+    Complex operator + (const Complex &amp;c);
+    Complex operator - (const Complex &amp;c);
+    Complex operator * (const Complex &amp;c);
+    Complex operator / (const Complex &amp;c);
+
+    bool operator == (const Complex &amp;c);
+    bool operator != (const Complex &amp;c);
+
+    Complex &amp;operator = (const Complex &amp;c);
+};
+
+#endif</code></pre>
+<p><strong>Complex.cpp</strong></p>
+<pre><code>#include &quot;Complex.h&quot;
+#include &lt;cmath&gt;
+
+Complex::Complex(double a, double b)
+{
+    this-&gt;a = a;
+    this-&gt;b = b;
+}
+
+double Complex::getA()
+{
+    return a;
+}
+
+double Complex::getB()
+{
+    return b;
+}
+
+double Complex::getModulus()
+{
+    return sqrt(a * a + b * b);
+}</code></pre>
+<h2 id="运算操作符重载">运算操作符重载</h2>
+<p><strong>Complex.cpp</strong></p>
+<pre><code>Complex Complex::operator + (const Complex &amp;c)
+{
+    Complex ret;
+
+    ret.a = a + c.a;
+    ret.b = b + c.b;
+
+    return ret;
+}
+
+Complex Complex::operator - (const Complex &amp;c)
+{
+    Complex ret;
+
+    ret.a = a - c.a;
+    ret.b = b - c.b;
+
+    return ret;
+}
+
+Complex Complex::operator * (const Complex &amp;c)
+{
+    Complex ret;
+
+    ret.a = a * c.a - b * c.b;
+    ret.b = a * c.b + b * c.a;
+
+    return ret;
+}
+
+Complex Complex::operator / (const Complex &amp;c)
+{
+    Complex ret;
+    double cm = c.a * c.a + c.b * c.b;
+
+    ret.a = (a * c.a + b * c.b) / cm;
+    ret.b = (b * c.a - a * c.b) / cm;
+
+    return ret;
+}</code></pre>
+<h2 id="比较操作符重载">比较操作符重载</h2>
+<p><strong>Complex.cpp</strong></p>
+<pre><code>bool Complex::operator == (const Complex &amp;c)
+{
+    return (a == c.a) &amp;&amp; (b == c.b);
+}
+
+bool Complex::operator != (const Complex &amp;c)
+{
+    return !(*this == c);
+}</code></pre>
+<h2 id="赋值操作符重载">赋值操作符重载</h2>
+<p><strong>Complex.cpp</strong></p>
+<pre><code>Complex &amp;Complex::operator = (const Complex &amp;c)
+{
+    if (this != &amp;c)
+    {
+        a = c.a;
+        b = c.b;
+    }
+
+    return *this;
+}</code></pre>
+<p>注意，赋值操作符有几点特殊之处：</p>
+<ul>
+<li>C++规定<font color=red>赋值操作符只能重载为成员函数</font></li>
+<li><font color=magenta>赋值操作符重载函数返回类型为引用，目的是为了实现连等</font>，如<code>a = b = c</code></li>
+</ul>
+<h2 id="复数类测试">复数类测试</h2>
+<p><strong>main.cpp</strong></p>
+<pre><code>#include &quot;Complex.h&quot;
+#include &lt;cstdio&gt;
+
+int main()
+{
+    Complex c1(1, 2);
+    Complex c2(3, 6);
+    Complex c3 = c2 - c1;
+    Complex c4 = c1 * c3;
+    Complex c5 = c2 / c1;
+
+    printf(&quot;c3.a = %f, c3.b = %f\n&quot;, c3.getA(), c3.getB());
+    printf(&quot;c4.a = %f, c4.b = %f\n&quot;, c4.getA(), c4.getB());
+    printf(&quot;c5.a = %f, c5.b = %f\n&quot;, c5.getA(), c5.getB());
+
+    Complex c6(2, 4);
+
+    printf(&quot;c3 == c6 : %d\n&quot;, c3 == c6);
+    printf(&quot;c3 != c4 : %d\n&quot;, c3 != c4);
+
+    (c3 = c2) = c1;
+
+    printf(&quot;c1.a = %f, c1.b = %f\n&quot;, c1.getA(), c1.getB());
+    printf(&quot;c2.a = %f, c2.b = %f\n&quot;, c2.getA(), c2.getB());
+    printf(&quot;c3.a = %f, c3.b = %f\n&quot;, c3.getA(), c3.getB());
+
+    return 0;
+}</code></pre>
+<p><img src="./images/操作符重载（一）1.png" /></p>
+<h1 id="赋值操作符重载和拷贝构造函数">3. 赋值操作符重载和拷贝构造函数</h1>
+<h2 id="赋值操作符重载与深拷贝">赋值操作符重载与深拷贝</h2>
+<p><font color=red>赋值操作符重载和拷贝构造函数具有相同的作用和意义</font>，那么，C++什么时候调用赋值操作符重载函数？什么时候调用拷贝构造函数？</p>
+<pre><code>ClassName c1;
+ClassName c2 = c1; //调用拷贝构造函数
+ClassName c3(c1);  //调用拷贝构造函数
+
+ClassName c4;
+c4 = c1;           //调用赋值操作符重载函数</code></pre>
+<p>和拷贝构造函数类似</p>
+<ul>
+<li><font color=magenta>编译器为每个类默认重载了赋值操作符</font></li>
+<li>默认的赋值操作符重载函数<font color=blue>仅完成浅拷贝</font></li>
+<li><font color=orange>当需要进行深拷贝时，必须重载赋值操作符</font></li>
+</ul>
+<p><strong><font color=red>作为一般性原则，重载赋值操作符，必然需要实现深拷贝！！！</font></strong></p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Test
+{
+    int *m_pointer;
+public:
+    Test()
+    {
+        m_pointer = NULL;
+    }
+
+    Test(int i)
+    {
+        m_pointer = new int(i);
+    }
+
+    /*拷贝构造函数实现深拷贝*/
+    Test(const Test &amp;obj)
+    {
+        m_pointer = new int(*obj.m_pointer);
+    }
+
+    /*重载赋值操作符实现深拷贝*/
+    Test &amp;operator = (const Test &amp;obj)
+    {
+        if (this != &amp;obj)
+        {
+            delete m_pointer;
+            m_pointer = new int(*obj.m_pointer);
+        }
+
+        return *this;
+    }
+
+    void print()
+    {
+        cout &lt;&lt; &quot;m_pointer = &quot; &lt;&lt; hex &lt;&lt; m_pointer &lt;&lt; endl;
+    }
+
+    ~Test()
+    {
+        delete m_pointer;
+    }
+};
+
+int main()
+{
+    Test t1 = 1;
+    Test t2;
+
+    t2 = t1;
+
+    t1.print();
+    t2.print();
+
+    return 0;
+}</code></pre>
+<p><img src="./images/操作符重载（一）2.png" /></p>
+<h2 id="数组类intarray改进">数组类IntArray改进</h2>
+<p><strong>IntArray.h</strong></p>
+<pre><code>#ifndef _INTARRAY_H_
+#define _INTARRAY_H_
+
+class IntArray
+{
+public:
+    IntArray &amp;operator = (const IntArray &amp;obj); //Add
+};
+
+#endif</code></pre>
+<p><strong>IntArray.cpp</strong></p>
+<pre><code>IntArray &amp;IntArray::operator = (const IntArray &amp;obj)
+{
+    if (this != &amp;obj)
+    {
+        int *pointer = new int[obj.m_length];
+
+        if (pointer != NULL)
+        {
+            for (int i = 0; i &lt; obj.m_length; i++)
+            {
+                pointer[i] = obj.m_pointer[i];
+            }
+
+            m_length = obj.m_length;
+            delete m_pointer;
+            m_pointer = pointer;
+        }
+    }
+
+    return *this;
+}</code></pre>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

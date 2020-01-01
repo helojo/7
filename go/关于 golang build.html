@@ -1,0 +1,89 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修关于 golang build' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>关于 golang build</center></div><div class='banquan'>原文出处:本文由博客园博主MoonLightWatch提供。<br/>
+原文连接:https://www.cnblogs.com/chr-wonder/p/11962476.html</div><br>
+    <h2 id="如何编译">如何编译</h2>
+<p>golang 的编译还是比较容易的，用法如下：</p>
+<pre><code><code>go build [-o output] [-i] [build flags] [packages]</code></pre>
+<p>上面方括号标记的参数，都可以没有……</p>
+<p>最简的操作就是直接 <code>go build</code> ，这样操作会直接找到当前文件夹下的 <code>main</code> 包，并编译之。</p>
+<p>比较常用的就是 <code>-o</code> 了，指定输出文件，比如：</p>
+<pre><code><code>go build -o 666 main.go</code></pre>
+<p>此时会将 <code>main.go</code> 编译为二进制文件666（windows下会输出成 <code>666.exe</code>）</p>
+<p>go 是支持交叉编译的，请参见 <a href="/%E5%BC%80%E5%8F%91%E9%9A%8F%E7%AC%94/25.html">golang开发环境配置备忘</a></p>
+<h2 id="更多设置">更多设置</h2>
+<p>具体操作可以参考命令说明，在你的命令行输入 <code>go help build</code> 查看细节。</p>
+<p>我在这列举若干</p>
+<h3 id="缩小输出文件体积">缩小输出文件体积</h3>
+<p>go 编译出的文件，实话说体积挺大的。一个重要原因是其中包含了调试信息，我们可以通过编译参数使其不包含调试信息，这样输出的体积会小一些。</p>
+<pre><code><code># 移除 调试信息（-w） 和 符号表（-s）
+go build -o main -ldflags &quot;-w -s&quot; main.go</code></pre>
+<p>上述操作使用 <code>-ldflags</code> 参数指定 <code>-w</code> 和 <code>-s</code>， 分别表示在编译时不包含调试信息和符号表，此举可以较好地缩减二进制文件体积。</p>
+<h3 id="编译时写入全局变量">编译时写入全局变量</h3>
+<p>go 可以通过编译参数，在编译时对变量进行赋值。一般情况下，这种操作可以让程序保留编译信息等数据。<br />
+通过 <code>-ldflags</code> 参数，设定 <code>-X</code> 操作，可以为全局变量赋值。<br />
+试举一例：<br />
+源码如下</p>
+<pre><code><code>package main
+import &quot;fmt&quot;
+var BuildTime = &quot;now&quot;
+func main() {
+    fmt.Printf(&quot;BuildTime: %s\n&quot;, BuildTime)
+}</code></pre>
+<p>定义全局变量<code>BuildTime</code>并在主程序中输出。</p>
+<pre><code><code>$ go run main.go 
+BuildTime: now
+
+$ go build -ldflags &quot;-X &#39;main.BuildTime=time006&#39;&quot; main.go
+$ ./main 
+BuildTime: time006
+
+$ go build -ldflags &quot;-X &#39;main.BuildTime=`date`&#39;&quot; main.go
+$ ./main 
+BuildTime: Sun 29 Sep 2019 10:14:47 PM CST</code></pre>
+<p>上面分别演示了，直接运行源码，编译加参数运行的效果。第三个示例表示，使用 <code>-X</code> 对全局变量进行编译时赋值，甚至可以将命令结果赋予全局变量。</p>
+<p>所以通常我们会这么做：</p>
+<pre class="golang"><code>package main
+
+import &quot;fmt&quot;
+
+var BuildTime = &quot;&quot;
+var GitHash = &quot;&quot;
+
+func main() {
+    fmt.Printf(&quot;BuildTime: %s\n&quot;, BuildTime)
+    fmt.Printf(&quot;Git Hash: %s\n&quot;, GitHash)
+}</code></pre>
+<p>分别定义 <code>BuildTime</code> 编译时间和 <code>GitHash</code> git的commit hash。在合适的时候输出，以方便地区分版本。并使用如下编译命令：</p>
+<pre><code><code>go build -ldflags &quot;-X &#39;main.BuildTime=`date`&#39; -X &#39;main.GitHash=`git rev-parse HEAD`&#39;&quot; main.go</code></pre>
+<p>最后，编译后的程序会有类似如下输出：</p>
+<pre><code><code>$ ./main 
+BuildTime: Sun 29 Sep 2019 10:29:36 PM CST
+Git Hash: 9a80ee05b16e0aa90e6e0b690c7da8686fd102a0</code></pre>
+<p>这样就能知道编译后的二进制文件版本是什么了。</p>
+<h2 id="其它">其它</h2>
+<p>其它内容，想到再补充。</p>
+<hr />
+<p>原文发布于：<a href="https://moonlightwatch.me/%E5%BC%80%E5%8F%91%E9%9A%8F%E7%AC%94/27.html">https://moonlightwatch.me/%E5%BC%80%E5%8F%91%E9%9A%8F%E7%AC%94/27.html</a></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,76 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++用new与不用new创建对象的区别' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++用new与不用new创建对象的区别</center></div><div class='banquan'>原文出处:本文由博客园博主MarkKobs提供。<br/>
+原文连接:https://www.cnblogs.com/MarkKobs-blog/p/11642431.html</div><br>
+    <h1 id="c创建对象">C++创建对象</h1>
+<h2 id="一alignment问题">一、Alignment问题</h2>
+<p>重新发现这个问题是因为在体系结构课上提到的一个概念，alignment对齐的概念。</p>
+<pre><code>class MyClass {
+public :
+    char c; // 1 byte
+    int i;  // 4 byte
+};</code></pre>
+<p>像上面这个C++的类，它有两个变量。</p>
+<pre><code>MyClass myclass;
+cout &lt;&lt; sizeof(myclass) &lt;&lt; endl;</code></pre>
+<p>或者直接算它的大小</p>
+<pre class="c++"><code>cout &lt;&lt; sizeof(MyClass) &lt;&lt; endl;</code></pre>
+<p>然后按照道理，myclass的大小，应该是5 byte才对，可是最后输出的结果是8，显然这就说明系统在创建对象的时候，将对象的变量进行了对齐操作，不足4 byte的按照4 byte补足。</p>
+<h3 id="虚函数引起的空间占用虚函数管理">2.1 虚函数引起的空间占用：虚函数管理</h3>
+<p>此外，<strong>普通成员函数</strong>不会占用对象空间的大小，也不会影响sizeof的结果。</p>
+<p>而如果是<strong>虚函数</strong>就会占用空间了。</p>
+<pre><code>class MyClass {
+public :
+    char c; // 1 byte
+    int i;  // 4 byte
+    void func();
+    virtual void func2() //4 byte
+    {}
+};</code></pre>
+<p>结果是占用12 byte的大小。</p>
+<p>这种的差别是由于c++的类所有的虚函数都是由一个<strong>虚函数指针</strong>所管理，它的虚函数被放在别的内存空间中管理。而普通函数是由<strong>this指针</strong>所管理，this指针并不是对象本身的一部分，所以不会影响到sizeof的结果。</p>
+<h3 id="一些有趣的现象">2.2 一些有趣的现象</h3>
+<ol>
+<li>空类的sizeof为1</li>
+<li>只有一个char的类的大小为1</li>
+<li>当有一个为char，另一个是虚函数或者int类型成员变量，会出现<strong>对齐</strong>现象，大小为8。对齐现象很有意思，它的规则是：<strong>以最长的变量长度为对齐长度</strong>。</li>
+</ol>
+<pre><code>class MyClass {
+public :
+    char c; // 1 byte
+    long long t;
+};</code></pre>
+<p>long long为8 byte，所以总共占用16 byte。</p>
+<p>在分析完各种情况之后，只有第一个的结果显得特别诡异，为什么空类的大小不是0，而是1？</p>
+<blockquote>
+<p>每个类的实例，在内存中都有一个独一无二的地址，为了达到这个目的，编译器往往会给一个空类隐含的加一个字节，这样空类在实例化后在内存得到了独一无二的地址。------《深度探索c++对象模型》</p>
+</blockquote>
+<h2 id="二用new与不用new创建对象的区别">二、用new与不用new创建对象的区别</h2>
+<p>内存分配有三种方式：</p>
+<ol>
+<li>从静态存储区域分配，内存在编译期间就已经分配好，这块内存在整个运行期间都存在，例如static变量。</li>
+<li><strong>从栈上创建</strong>：函数内局部变量，<strong>自动分配与回收</strong>，效率高，但是分配的内存量有限。</li>
+<li><strong>从堆上创建</strong>：由程序员控制，malloc、new，free、delete。</li>
+</ol>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

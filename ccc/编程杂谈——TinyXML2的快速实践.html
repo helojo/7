@@ -1,0 +1,136 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修编程杂谈——TinyXML2的快速实践' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>编程杂谈——TinyXML2的快速实践</center></div><div class='banquan'>原文出处:本文由博客园博主Ken.W提供。<br/>
+原文连接:https://www.cnblogs.com/kenwoo/p/11663627.html</div><br>
+    <p>最近遇到个需要在C++中处理XML文件的需求，虽然对此方面并不是很熟，但好在有GitHub上的<a href="https://github.com/fffaraz/awesome-cpp#xml">awesome-cpp</a>项目的帮助，还是收获了足够的相关知识。</p>
+<h1 id="类库">类库</h1>
+<p>常用的或被推荐的XML类库有以下数个选项，不过相较于纯C完成的类库个人还是更倾向于C++的类库：</p>
+<ul>
+<li>Boost.PropertyTree - A property tree parser/generator that can be used to parse XML/JSON/INI/Info files. [Boost]</li>
+<li>Expat - An XML parser library written in C. [MIT]</li>
+<li>Libxml2 - The XML C parser and toolkit of Gnome. [MIT]</li>
+<li>libxml++ - An XML Parser for C++. [LGPL2]</li>
+<li>Mini-XML - A small XML parsing library written in ANSI C. [LGPL2 with exceptions]</li>
+<li>PugiXML - A light-weight, simple and fast XML parser for C++ with XPath support. [MIT]</li>
+<li>RapidXml - An attempt to create the fastest XML parser possible, while retaining useability, portability and reasonable W3C compatibility. [Boost]</li>
+<li>TinyXML - A simple, small, minimal, C++ XML parser that can be easily integrating into other programs. [zlib]</li>
+<li>TinyXML2 - A simple, small, efficient, C++ XML parser that can be easily integrating into other programs. [zlib]</li>
+<li>TinyXML++ - A completely new interface to TinyXML that uses MANY of the C++ strengths. Templates, exceptions, and much better error handling. [MIT]</li>
+<li>Xerces-C++ - A validating XML parser written in a portable subset of C++. [Apache2]</li>
+</ul>
+<h1 id="tinyxml-vs-tinyxml2">TinyXML VS TinyXML2</h1>
+<p>TinyXML是在寻找更多信息时被多次提及的，因为并不想花费过多时间在做选择题上，于是其似乎成了最终的赢家。</p>
+<p>但未曾想它自身还有两个版本。</p>
+<p>TinyXML与TinyXML2的相同点：</p>
+<ul>
+<li>简单的API</li>
+<li>基于DOM的解析器</li>
+<li>支持UTF-8 Unicode</li>
+</ul>
+<p>TinyXML2的优点：</p>
+<ul>
+<li>着眼于未来的开发</li>
+<li>更少的内存分配(1/10到1/100)，使用更少的内存(TinyXML的40%)，更快(读取上约5倍)</li>
+<li>不再需要STL</li>
+<li>更现代的C++，包括一个合适的命名空间</li>
+<li>适当且有用地处理空白</li>
+</ul>
+<p>TinyXML的优点：</p>
+<ul>
+<li>能够报告解析错误的位置</li>
+<li>支持一些C++ STL约定：流与字符串</li>
+<li>非常成熟并且调试良好的代码库</li>
+</ul>
+<p>TinyXML2的第2及第4项优点是我更中意的，所以还是选它吧。</p>
+<h1 id="使用方法">使用方法</h1>
+<p>在其GitHub的仓库中下载相关文件，<a href="https://github.com/leethomason/tinyxml2/releases">tinyxml2</a><br />
+<img src="./images/编程杂谈——TinyXML2的快速实践0.png" /></p>
+<p>找到tinyxml2.h与tinyxml2.cpp两个文件，将它们添加至你的工程项目中，这便是所有需要的。</p>
+<h1 id="示例">示例</h1>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;random&gt;
+
+#include &quot;tinyxml2.h&quot;
+using namespace tinyxml2;
+
+void writeXMLFile()
+{
+    XMLDocument doc;
+    auto delaration = doc.NewDeclaration();
+    doc.InsertFirstChild(delaration);
+
+    auto root = doc.NewElement(&quot;root&quot;);
+    doc.InsertEndChild(root);
+
+    auto id = doc.NewElement(&quot;id&quot;);
+    id-&gt;SetText(666);
+    root-&gt;InsertEndChild(id);
+
+    auto name = doc.NewElement(&quot;name&quot;);
+    name-&gt;SetText(&quot;Ken&quot;);
+    name-&gt;SetAttribute(&quot;blogger&quot;, true);
+    root-&gt;InsertEndChild(name);
+
+    doc.SaveFile(&quot;sample.xml&quot;);
+}
+
+XMLDocument* readXMLFile()
+{
+    auto doc = new XMLDocument;
+    doc-&gt;LoadFile(&quot;sample.xml&quot;);
+
+    auto root = doc-&gt;RootElement();
+    auto id = root-&gt;FirstChildElement(&quot;id&quot;);
+    
+    std::cout &lt;&lt; id-&gt;GetText() &lt;&lt; std::endl;
+
+    auto name = root-&gt;FirstChildElement(&quot;name&quot;);
+    std::cout &lt;&lt; name-&gt;GetText() &lt;&lt; std::endl;
+    std::cout &lt;&lt; name-&gt;Attribute(&quot;blogger&quot;) &lt;&lt; std::endl;
+
+    return doc;
+}
+
+int main()
+{
+    writeXMLFile();
+    auto doc = readXMLFile();
+    auto root = doc-&gt;RootElement();
+    auto id = root-&gt;FirstChildElement(&quot;id&quot;);
+    doc-&gt;DeleteNode(id);
+
+    auto randomid = doc-&gt;NewElement(&quot;randomid&quot;);
+    
+    std::default_random_engine e;
+    std::uniform_int_distribution&lt;int&gt; u;
+    auto r = u(e, decltype(u)::param_type(1000000, 9000000));
+
+    randomid-&gt;SetText(r);
+    root-&gt;InsertFirstChild(randomid);
+
+    doc-&gt;Print();
+
+    delete doc;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,324 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang微服务框架go-micro 入门笔记2.4  go-micro service解读' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang微服务框架go-micro 入门笔记2.4  go-micro service解读</center></div><div class='banquan'>原文出处:本文由博客园博主winlion提供。<br/>
+原文连接:https://www.cnblogs.com/techidea8/p/11442284.html</div><br>
+    <p>本章节阐述go-micro 服务发现原理</p>
+<h1 id="go-micro架构">go-micro架构</h1>
+<p>下图来自go-micro官方<br />
+<embed src="https://img2018.cnblogs.com/blog/943610/201909/943610-20190901144439074-1540170758.svg+xml" /></p>
+<h1 id="阅读本文前你可能需要进行如下知识储备">阅读本文前你可能需要进行如下知识储备</h1>
+<ul>
+<li><a href="https://www.techidea8.com/archives/49">golang分布式微服务框架go-micro 入门笔记1:搭建go-micro环境,</a></li>
+<li><a href="https://www.techidea8.com/archives/53">golang微服务框架go-micro 入门笔记2.1 micro工具之micro api</a></li>
+<li><a href="https://www.techidea8.com/archives/58">golang微服务框架go-micro 入门笔记2.2 micro工具之micro web</a></li>
+<li><a href="https://www.techidea8.com/archives/60">golang微服务框架go-micro 入门笔记2.3 micro工具之消息订阅和发布</a></li>
+</ul>
+<h1 id="service">Service</h1>
+<p>实现如下接口的,都是Service</p>
+<pre><code><code>type Service interface {
+    Init(...Option)
+    Options() Options
+    Client() client.Client
+    Server() server.Server
+    Run() error
+    String() string
+}</code></pre>
+<p>我们根据常见的service初始化流程来理解这个接口</p>
+<pre class="go"><code>
+func main() {
+    // New Service
+    service := micro.NewService(
+        micro.Name(&quot;go.micro.srv.broker&quot;),
+        micro.Version(&quot;latest&quot;),
+    )
+
+    // Initialise service
+    service.Init()
+
+    // Register Struct as Subscriber
+    micro.RegisterSubscriber(&quot;go.micro.srv.broker&quot;, service.Server(), new(subscriber.Broker))
+
+    // Register Function as Subscriber
+    micro.RegisterSubscriber(&quot;go.micro.srv.broker&quot;, service.Server(), subscriber.Handler)
+
+    // Run service
+    if err := service.Run(); err != nil {
+        log.Fatal(err)
+    }
+}</code></pre>
+<h2 id="micro.newservice">micro.NewService</h2>
+<p>micro.NewService的函数调用关系如下<br />
+<img src="./images/golang微服务框架go-micro 入门笔记2.4  go-micro service解读0.png" alt="micro.NewService的函数调用关系如下" /><br />
+该函数主要是初始化一个service并设置service的常用属性属性,代码如下:</p>
+<pre class="go"><code>opt := micro.Options{
+    Broker: broker.DefaultBroker,
+    Cmd: cmd.DefaultCmd,
+    Client: client.DefaultClient,
+    Server: server.DefaultServer,
+    Registry: registry.DefaultRegistry
+    }</code></pre>
+<p>micro.Options全部属性包含如下几个方面</p>
+<pre class="go"><code>type micro.Options struct {
+    Broker    broker.Broker  //订阅事件用的
+    Cmd       cmd.Cmd       //命令行用的
+    Client    client.Client  //作为服务消费者,用来发送请求
+    Server    server.Server  //作为服务提供者用来监听请求
+    Registry  registry.Registry //这个是服务发现支持
+    Transport transport.Transport //这是网络传递用的
+
+    // Before and After funcs     
+    BeforeStart []func() error //服务start钱的回调函数
+    BeforeStop  []func() error //服务stop后的回调函数
+    AfterStart  []func() error //服务start后的回调函数
+    AfterStop   []func() error //服务stop后的回调函数
+    // Other options for implementations of the interface
+    // can be stored in a context
+    Context context.Context   //有时候服务需要携带一些参数,需要规定时间内返回，可以用这个来承载
+}</code></pre>
+<p>我们可以通过micro.Options.Server.Options获得server的属性,实际上server还有其他的属性,server的全部参数属性如下</p>
+<pre class="go"><code>type server.Options struct {
+    Codecs       map[string]codec.NewCodec //订阅事件用的
+    Broker       broker.Broker             //订阅事件用的
+    Registry     registry.Registry        //这个是服务发现支持
+    Transport    transport.Transport     //节点之间网络传递用的
+    Metadata     map[string]string       //传递一些k,v数据用
+    Name         string                  //名称
+    Address      string                 //服务地址
+    Advertise    string                  //广播地址
+    Id           string                //服务ID
+    Version      string                 //处理程序wrapper
+    HdlrWrappers []HandlerWrapper            //网络处理程序封装
+    SubWrappers  []SubscriberWrapper        //订阅程序封装
+
+    // RegisterCheck runs a check function before registering the service
+    RegisterCheck func(context.Context) error   //注册服务前的校验函数
+    // The register expiry time
+    RegisterTTL time.Duration                      //注册服务生命周期,过了这么长事件需要重新注册
+    // The interval on which to register
+    RegisterInterval time.Duration                     //多长时间注册一次
+
+    // The router for requests
+    Router Router     //请求的路由表
+
+    // Other options for implementations of the interface
+    // can be stored in a context
+    Context context.Context   //有时候服务需要携带一些参数,需要规定时间内返回，可以用这个来承载
+}</code></pre>
+<p>如果server需要配置额外的属性,则调用属性配置函数来刷新配置。如<code>Name()</code>运行结果是返回一个函数,因此最后通过<code>server.Name(name)</code>来刷新这个函数,</p>
+<pre class="go"><code>micro.Name(&quot;go.micro.srv.broker&quot;),
+// Name of the service
+func Name(n string) Option {
+    return func(o *Options) {
+        o.Server.Init(server.Name(n))
+    }
+}</code></pre>
+<p>函数关系如下<br />
+<img src="./images/golang微服务框架go-micro 入门笔记2.4  go-micro service解读0.png" alt="micro.NewService的函数调用关系如下" /></p>
+<p>注意最后的o.Name即设置service.Options.Name = name<br />
+<code>micro.Version(&quot;latest&quot;)</code>也是一样的</p>
+<h2 id="service.init">service.Init</h2>
+<p>init 函数原型如下</p>
+<pre class="go"><code>func (s *service) Init(opts ...Option) {
+    // process options
+    for _, o := range opts {
+        o(&amp;s.opts)
+    }
+
+    s.once.Do(func() {
+        // Initialise the command flags, overriding new service
+        _ = s.opts.Cmd.Init(
+            cmd.Broker(&amp;s.opts.Broker),
+            cmd.Registry(&amp;s.opts.Registry),
+            cmd.Transport(&amp;s.opts.Transport),
+            cmd.Client(&amp;s.opts.Client),
+            cmd.Server(&amp;s.opts.Server),
+        )
+    })
+}</code></pre>
+<p><code>for _, o := range opts</code>代码片段的作用是设置service的属性,底层也是通过 类似<code>o.Server.Init(server.NaME(n)</code>来实现的。</p>
+<p><code>s.once.Do(func)</code> 这里利用了sync.Once特性,这里预示着func只会运行1次。</p>
+<p><img src="./images/golang微服务框架go-micro 入门笔记2.4  go-micro service解读2.png" alt="micro.NewService的函数调用关系如下" /></p>
+<p>两行传入的参数通过c := a.Command(name)来获得需要运行的命令行</p>
+<h2 id="service.run">service.Run</h2>
+<p>源代码如下</p>
+<pre class="go"><code>func (s *service) Run() error {
+    // 这一段代码的作用其实只开启调试支持
+    s.opts.Server.Handle(
+        s.opts.Server.NewHandler(
+            handler.DefaultHandler,//默认处理脚本handler就是调试
+            server.InternalHandler(true),//把这个标记为成内置的handler
+        ),
+    )
+
+    if err := s.Start(); err != nil {
+        return err
+    }
+
+    ch := make(chan os.Signal, 1)
+    signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+    select {
+    // wait on kill signal
+    case &lt;-ch:
+    // wait on context cancel
+    case &lt;-s.opts.Context.Done():
+    }
+
+    return s.Stop()
+}</code></pre>
+<p>s.Start()作用是启动服务,目前micro支持的rpcservce/httpservice/apiservice/websercice等,他们都实现了这个Start()方法。以RPCService为例,函数流程如下</p>
+<p><img src="./images/golang微服务框架go-micro 入门笔记2.4  go-micro service解读3.png" alt="micro.NewService的函数调用关系如下" /></p>
+<p>具体代码解读如下</p>
+<pre class="go"><code>func (s *rpcServer) Start() error {
+    config := s.Options()
+
+    //启动监听
+    ts, err := config.Transport.Listen(config.Address)
+    if err != nil {
+        return err
+    }
+
+
+    // 连接消息代理
+    if err := config.Broker.Connect(); err != nil {
+        return err
+    }
+
+
+    // 注册发现,严格校验注册服务,
+    if err = s.opts.RegisterCheck(s.opts.Context); err != nil {
+        log.Logf(&quot;Server %s-%s register check error: %s&quot;, config.Name, config.Id, err)
+    } else {
+        // 注册发现,匿名注册
+        if err = s.Register(); err != nil {
+            log.Logf(&quot;Server %s-%s register error: %s&quot;, config.Name, config.Id, err)
+        }
+    }
+
+    exit := make(chan bool)
+
+    //启动监听服务
+    go func() {
+        for {
+            // 监听
+            err := ts.Accept(s.ServeConn)
+
+            // TODO: listen for messages
+            // msg := broker.Exchange(service).Consume()
+
+            select {
+            // check if we&#39;re supposed to exit
+            case &lt;-exit:
+                return
+            // check the error and backoff
+            default:
+                if err != nil {
+                    log.Logf(&quot;Accept error: %v&quot;, err)
+                    time.Sleep(time.Second)
+                    continue
+                }
+            }
+
+            // no error just exit
+            return
+        }
+    }()
+
+    //开启定时注册携程
+    go func() {
+        t := new(time.Ticker)
+
+        // only process if it exists
+        if s.opts.RegisterInterval &gt; time.Duration(0) {
+            // new ticker
+            t = time.NewTicker(s.opts.RegisterInterval)
+        }
+
+        // return error chan
+        var ch chan error
+
+    Loop:
+        for {
+            select {
+            // register self on interval
+            case &lt;-t.C:
+                s.RLock()
+                registered := s.registered
+                s.RUnlock()
+                //校验注册
+                if err = s.opts.RegisterCheck(s.opts.Context); err != nil &amp;&amp; registered {
+                    log.Logf(&quot;Server %s-%s register check error: %s, deregister it&quot;, config.Name, config.Id, err)
+                    // deregister self in case of error
+                    if err := s.Deregister(); err != nil {
+                        log.Logf(&quot;Server %s-%s deregister error: %s&quot;, config.Name, config.Id, err)
+                    }
+                } else {
+                    //匿名注册
+                    if err := s.Register(); err != nil {
+                        log.Logf(&quot;Server %s-%s register error: %s&quot;, config.Name, config.Id, err)
+                    }
+                }
+            // wait for exit
+            case ch = &lt;-s.exit:
+                t.Stop()
+                close(exit)
+                break Loop
+            }
+        }
+
+        // 如果退出来了,那么注销服务
+        if err := s.Deregister(); err != nil {
+            log.Logf(&quot;Server %s-%s deregister error: %s&quot;, config.Name, config.Id, err)
+        }
+
+        // 等到请求完成
+        if s.wg != nil {
+            s.wg.Wait()
+        }
+
+        // 关闭
+        ch &lt;- ts.Close()
+
+        // 关闭消息代理连接
+        config.Broker.Disconnect()
+
+        // swap back address
+        s.Lock()
+        s.opts.Address = addr
+        s.Unlock()
+    }()
+
+    return nil
+}</code></pre>
+<h1 id="相关代码获得">相关代码获得</h1>
+<p>关注公众号回复<code>micro-broker</code>即可获得</p>
+<p><img src="./images/golang微服务框架go-micro 入门笔记2.4  go-micro service解读4.png" alt="公众号betaidea" /></p>
+<h2 id="推荐阅读">推荐阅读</h2>
+<ul>
+<li><a href="https://www.techidea8.com/archives/46">扫微信二维码实现网站登陆提供体验地址和源代码</a></li>
+<li><a href="https://www.techidea8.com/archives/34">开源项目golang go语言后台管理框架restgo-admin</a></li>
+<li><a href="https://www.techidea8.com/archives/22">支持手势触摸,可左右滑动的日历插件</a></li>
+<li><a href="https://www.techidea8.com/archives/31">你必须知道的18个互联网业务模型</a></li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

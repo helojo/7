@@ -1,0 +1,124 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Golang检测Linux服务器端口占用' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Golang检测Linux服务器端口占用</center></div><div class='banquan'>原文出处:本文由博客园博主GaiheiluKamei提供。<br/>
+原文连接:https://www.cnblogs.com/GaiHeiluKamei/p/11453623.html</div><br>
+    <ul>
+<li><strong>代码实现</strong></li>
+</ul>
+<pre><code><code>func CheckPort(port int) error {
+    checkStatement := fmt.Sprintf(`netstat -anp | grep -q %d ; echo $?`, port)
+    output, err := exec.Command(&quot;sh&quot;, &quot;-c&quot;, checkStatement).CombinedOutput()
+    if err != nil {
+        return err
+    }
+    // log.Println(output, string(output)) ==&gt; [48 10] 0 或 [49 10] 1
+    result, err := strconv.Atoi(strings.TrimSuffix(string(output), &quot;\n&quot;))
+    if err != nil {
+        return err
+    }
+    if result == 0 {
+        return fmt.Errorf(&quot;端口%d已被占用&quot;, port)
+    }
+
+    return nil
+}</code></pre>
+<p><br></p>
+<ul>
+<li><p><strong>纠错思路</strong></p>
+<ul>
+<li>第8行原代码为：<code>result, err := strconv.Atoi(string(output))</code>,<br />
+报错为: <code>strconv.Atoi: parsing &quot;0\n&quot;: invalid syntax</code></li>
+<li>经排查，<code>CombinedOutput()</code>函数的执行结果<code>0\n(1\n)</code>包含换行符<code>\n</code>,<br />
+利用<code>strings.TrimSuffix()</code>函数删除换行符<code>\n</code><br />
+<br/></br></li>
+</ul></li>
+<li><strong>延伸知识</strong>
+<ul>
+<li><code>strings.TrimSuffix()</code>和<code>strings.TrimRight()</code>的区别</li>
+</ul></li>
+</ul>
+<pre><code><code>func main() {
+    str1 := &quot;abcdabceeebdc&quot;
+    str2 := &quot;abcd&quot;
+    str3 := &quot;abced&quot;
+    str4 := &quot;ebdc&quot;
+    // `TrimRight(s, cutset string) string`指从`s`右端开始，删除所有`cutset`中出现的字符
+    // 若从右到左的过程中遇到其他字符，则停止删除。  
+    fmt.Println(strings.TrimRight(str1, str2))    
+    fmt.Println(&quot;空行：&quot;, strings.TrimRight(str1, str3))   
+
+    // `TrimSuffix(s, suffix string)`删除后缀`suffix` ，若不匹配，返回s
+    fmt.Println(strings.TrimSuffix(str1, str4))    
+    fmt.Println(strings.TrimSuffix(str1, str2))    
+}
+
+// 输出结果：
+// abcdabceee
+// 空行：
+// abcdabcee
+// abcdabceeebdc</code></pre>
+<h3 id="改">2019-09-24改</h3>
+<pre><code><code>func CheckPort(port int) error {
+    checkStatement := fmt.Sprintf(&quot;netstat -anp | grep -q %d &quot;, port)
+    output, err := exec.Command(&quot;sh&quot;, &quot;-c&quot;, checkStatement).CombinedOutput()
+    if err != nil {
+        return nil   // err != nil 说明端口没被占用
+    }
+
+    if len(output) &gt; 0 {
+        return fmt.Errorf(&quot;端口%d已被占用&quot;, port)
+    }
+
+    return nil
+}</code></pre>
+<blockquote>
+<p><strong>注：以上方法的缺陷是目标操作系统上有可能没有netstat命令</strong></p>
+</blockquote>
+<h3 id="改-1">2019-09-29改</h3>
+<pre><code><code>
+func CheckPort(port string) error {
+    var err error
+    
+    tcpAddress, err := net.ResolveTCPAddr(&quot;tcp4&quot;, &quot;:&quot; + port)
+    if err != nil {
+        return err
+    }
+    
+    for i := 0; i &lt; 3; i++ {
+        listener, err := net.ListenTCP(&quot;tcp&quot;, tcpAddress)
+        if err != nil {
+            time.Sleep(time.Duration(100) * time.Millisecond)
+            if i == 3 {
+                return err
+            }
+            continue
+        } else {
+            listener.Close()
+            break
+        }
+    }
+
+    return nil
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

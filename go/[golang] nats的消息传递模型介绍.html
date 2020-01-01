@@ -1,0 +1,126 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[golang] nats的消息传递模型介绍' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[golang] nats的消息传递模型介绍</center></div><div class='banquan'>原文出处:本文由博客园博主艾露米婭娜提供。<br/>
+原文连接:https://www.cnblogs.com/ailumiyana/p/12046578.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#nats的消息传递模型">nats的消息传递模型</a></li>
+        <li><a href="#what-is-nats">What is NATS</a></li>
+        <li><a href="#主题式消息subject-based-messaging">主题式消息(Subject-Based Messaging)</a></li>
+        <li><a href="#发布订阅publish-subscribe">发布订阅(Publish-Subscribe)</a></li>
+        <li><a href="#请求应答request-reply">请求应答(Request-Reply)</a></li>
+        <li><a href="#队列组">队列组</a></li>
+        <li><a href="#acknowledgements">Acknowledgements</a></li>
+        </ul>
+    </div>
+</div>
+<h3 id="nats的消息传递模型">nats的消息传递模型</h3>
+<p>@</p>
+<hr />
+<h3 id="what-is-nats">What is NATS</h3>
+<p>nats是一个go语言开发的开源的、轻量、高性能的原生消息系统。nats消息由主题处理，不依赖于网络位置。它提供了应用程序或服务与底层物理网络之间的抽象层。数据被编码并作为消息，由发布者发送。消息由一个或多个订阅者接收、解码和处理。<br />
+NATS使程序可以很容易地跨不同的环境、语言、云提供商和内部系统进行通信。客户机通常通过单个URL连接到NATS系统，然后向主题订阅或发布消息。通过这种简单的设计，NATS允许程序共享通用的消息处理代码，隔离资源和相互依赖。</p>
+<p>本文主要介绍介绍nats有哪些消息传递模型</p>
+<h3 id="主题式消息subject-based-messaging">主题式消息(Subject-Based Messaging)</h3>
+<p>从根本上说，NATS是关于发布和监听消息的。这两者在很大程度上都依赖于消息的主题。简单地说，subject就是一串字符，它们是发布者和订阅者可以用来查找彼此的名称。</p>
+<p><img src="./images/[golang] nats的消息传递模型介绍0.png" alt="[外链图片转存失败,源站可能有防盗链机制,建议将图片保存下来直接上传(img-yt2mjzAJ-1575368779752)(./1574918652719.png)]" /></p>
+<h4 id="主题的层次结构">主题的层次结构</h4>
+<p><code>.</code>字符用于创建主题层次结构。例如，一个世界时钟应用程序可能定义以下内容来逻辑地分组相关的主题:</p>
+<pre><code><code>time.us
+time.us.east
+time.us.east.atlanta
+time.eu.east
+time.eu.warsaw</code></pre>
+<h4 id="通配符">通配符</h4>
+<p>NATS提供了两个通配符，可以代替点分隔的主题中的一个或多个元素。订阅者可以使用这些通配符侦听多个主题，但发布者将始终使用完全指定的主题，而不使用通配符。</p>
+<p><code>匹配单个token</code> <code>*</code><br />
+例如，如果一个应用程序想要监听东部时区，他们可以订阅time.*.east来匹配time.us.east和time.eu.east。<br />
+[外链图片转存失败,源站可能有防盗链机制,建议将图片保存下来直接上传(img-WSM6vGXO-1575368779753)(./1574919076868.png)]</p>
+<p><code>匹配多个tokens</code> <code>&gt;</code><br />
+<code>&gt;</code>将匹配一个或多个tokens，并且只能出现在主题的末尾。例如,<code>time.us.&gt;</code>将匹配<code>time.us.east</code>和<code>time.us.east.atlanta</code>。而<code>time.us.*</code>只会匹配<code>time.us.east</code>,因为它不能匹配一个以上的token。<br />
+<img src="./images/[golang] nats的消息传递模型介绍1.png" alt="[外链图片转存失败,源站可能有防盗链机制,建议将图片保存下来直接上传(img-t8CBTghh-1575368779754)(./1574919625783.png)]" /></p>
+<h3 id="发布订阅publish-subscribe">发布订阅(Publish-Subscribe)</h3>
+<p>NATS实现了一对多通信的发布-订阅消息分发模型。发布者发送关于主题的消息，而监听该主题的任何活动订阅者将接收该消息。订阅者还可以注册对通配符主题感兴趣的内容，通配符的工作原理有点像正则表达式(但只有一点点)。这种一对多的模式有时被称为扇出(fan-out)。<br />
+<img src="./images/[golang] nats的消息传递模型介绍2.png" alt="在这里插入图片描述" /></p>
+<h4 id="example">example</h4>
+<p><code>pub</code></p>
+<pre><code><code>nc, _ := nats.Connect(nats.DefaultURL)
+defer nc.Close()
+
+nc.Publish(&quot;foo&quot;, []byte(&quot;Hello World!&quot;))</code></pre>
+<p><code>sub</code></p>
+<pre><code><code>nc, _ := nats.Connect(nats.DefaultURL)
+defer nc.Close()
+
+nc.Subscribe(&quot;foo&quot;, func(m *nats.Msg) {
+    fmt.Printf(&quot;Received a message: %s\n&quot;, string(m.Data))
+})</code></pre>
+<h3 id="请求应答request-reply">请求应答(Request-Reply)</h3>
+<p>请求-应答是现代分布式系统中的一种常见模式。发送请求时，应用程序要么使用特定超时等待响应，要么异步接收响应。现代系统日益增加的复杂性需求，许多技术需要额外的组件来完成完整的特性集。<br />
+NATS通过其核心通信机制(发布和订阅)支持这种模式。请求在给定的主题上与应答主题一起发布，应答者侦听该主题并将响应发送到应答主题。应答主题通常是一个称为_INBOX的主题，它将被动态地定向回请求者，而不考虑任何一方的位置。<br />
+NATS的能力甚至允许多个响应，其中第一个响应被利用，而系统有效地丢弃了附加的响应。这允许一个复杂的模式有多个响应器减少响应延迟和抖动。<br />
+<img src="./images/[golang] nats的消息传递模型介绍3.png" alt="在这里插入图片描述" /></p>
+<h4 id="example-1">example</h4>
+<pre><code><code>nc, _ := nats.Connect(nats.DefaultURL)
+defer nc.Close()
+
+nc.Subscribe(&quot;foo&quot;, func(m *nats.Msg) {
+    nc.Publish(m.Reply, []byte(&quot;I will help you&quot;))
+})
+
+reply, _ := nc.Request(&quot;foo&quot;, []byte(&quot;help&quot;), 50*time.Millisecond)
+
+fmt.Println(string(reply.Data))</code></pre>
+<h3 id="队列组">队列组</h3>
+<p>NATS提供了一个称为分布式队列的内置负载平衡特性。使用队列订阅者将在一组订阅者之间平衡消息传递，这些订阅者可用于提供应用程序容错和大规模工作负载处理。<br />
+要创建队列订阅，只需要订阅者注册队列名称。具有相同队列名称的所有订阅者组成队列组。不需要任何配置。当注册主题上的消息发布时，将随机选择组中的一个成员来接收消息。尽管队列组有多个订阅者，但每个消息仅被一个订阅者使用。<br />
+NATS的一个重要特性是队列组是由应用程序及其队列订阅者定义的，而不是在服务器配置上定义的。<br />
+队列订阅者是扩展服务的理想对象。向上扩展与运行另一个应用程序一样简单，向下扩展是使用一个信号终止应用程序，该信号将耗尽正在运行的请求。这种灵活性和缺少任何配置更改使NATS成为一种优秀的服务通信技术，可以与所有平台技术一起工作。<br />
+<img src="./images/[golang] nats的消息传递模型介绍4.png" alt="在这里插入图片描述" /></p>
+<h4 id="example-2">example</h4>
+<pre><code><code>nc, _ := nats.Connect(nats.DefaultURL)
+defer nc.Close()
+
+received := 0
+
+nc.QueueSubscribe(&quot;foo&quot;, &quot;worker_group&quot;, func(_ *nats.Msg) {
+    received++
+})</code></pre>
+<h3 id="acknowledgements">Acknowledgements</h3>
+<p>在具有最多一次语义的系统中，有时会丢失消息。如果您的应用程序正在执行请求-应答，那么它应该使用超时来处理任何网络或应用程序故障。在请求上设置超时并使用处理超时的代码总是一个好主意。在发布事件或数据流时，确保消息传递的一种方法是将其转换为带有确认消息(ACKs)概念的请求-应答。在NATS中，ACK可以是一个空消息，一个没有有效负载的消息。<br />
+<img src="./images/[golang] nats的消息传递模型介绍5.png" alt="[外链图片转存失败,源站可能有防盗链机制,建议将图片保存下来直接上传(img-FUPbpdQq-1575368779756)(./1575005488679.png)]" /></p>
+<h4 id="example-3">example</h4>
+<pre><code><code>nc, _ := nats.Connect(nats.DefaultURL)
+defer nc.Close()
+    
+nc.Subscribe(&quot;foo&quot;, func(m *nats.Msg) {
+    //nc.Publish(m.Reply, []byte(&quot;I will help you&quot;))
+    m.Respond([]byte(&quot;&quot;))
+})
+    
+reply, _ := nc.Request(&quot;foo&quot;, []byte(&quot;help&quot;), 50*time.Millisecond)
+    
+fmt.Println(&quot;ack:&quot;, string(reply.Data))</code></pre>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

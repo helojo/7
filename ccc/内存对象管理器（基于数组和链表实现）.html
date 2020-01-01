@@ -1,0 +1,884 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修内存对象管理器（基于数组和链表实现）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>内存对象管理器（基于数组和链表实现）</center></div><div class='banquan'>原文出处:本文由博客园博主VIP丶可乐提供。<br/>
+原文连接:https://www.cnblogs.com/yzdai/p/11442172.html</div><br>
+    <p>1.1 数组的特点</p>
+<ul>
+<li>连续的内存空间分配并且顺序存储数据，使用之前需要先分配数组个数；</li>
+<li>可以通过下标进行访问修改数据，时间复杂度为O(1);</li>
+<li>空间效率不是很好，不能随意修改数组大小；</li>
+<li>增删数据需要内存拷贝</li>
+</ul>
+<p>&nbsp;</p>
+<p>1.2 链表的特点</p>
+<p><a href="https://img2018.cnblogs.com/blog/1294543/201909/1294543-20190901140703872-1191215354.png"><img style="display: inline; background-image: none;" title="image" src="./images/内存对象管理器（基于数组和链表实现）0.png" alt="image" width="713" height="178" border="0" /></a></p>
+<ul>
+<li>内存空间分配是分散的，非连续的存储数据；</li>
+<li>不能通过下标直接访问，查找的时间复杂度为O(n);</li>
+<li>增删元素，只需要改变前后指针；</li>
+</ul>
+<p>1.3 基于数组和指针实现的对象管理器</p>
+<p><a href="https://img2018.cnblogs.com/blog/1294543/201909/1294543-20190901140715377-220321343.png"><img style="display: inline; background-image: none;" title="image" src="./images/内存对象管理器（基于数组和链表实现）1.png" alt="image" width="724" height="181" border="0" /></a></p>
+<p>结合了数组和链表的优点，可以O(1)查找元素，O(1)增删元素；</p>
+<p>需要预分配内存；</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>2.代码实现（C++）</p>
+<div class="cnblogs_code" style="padding: 5px; border: 1px solid #cccccc; border-image: none; background-color: #f5f5f5;">
+<pre><code><span style="color: #008000;">/*</span><span style="color: #008000;">*
+*@file ObjAllocator
+*@author jasonxiong
+*@date 2009-12-09
+*@version 1.0
+*@brief CObj对象分配类，即新版本的idxobj
+*
+*    （1）一般用于大型对象的内存分配
+</span><span style="color: #008000;">*/</span><span style="color: #000000;">
+
+#ifndef __OBJ_ALLOCATOR_HPP__
+</span><span style="color: #0000ff;">#define</span> __OBJ_ALLOCATOR_HPP__<span style="color: #000000;">
+
+#include </span>&lt;stdio.h&gt;
+
+<span style="color: #0000ff;">namespace</span><span style="color: #000000;"> ServerLib
+{
+
+typedef </span><span style="color: #0000ff;">enum</span><span style="color: #000000;"> enmObjAllocType
+{
+    EOAT_ALLOC_BY_SELF </span>= <span style="color: #800080;">0</span>,          <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;对象内存由ObjAllocator自已动态分配</span>
+    EOAT_ALLOC_BY_SHARED_MEMORY = <span style="color: #800080;">1</span>, <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;对象内存由共享内存分配</span>
+<span style="color: #000000;">} ENMOBJALLOCTYPE;
+
+</span><span style="color: #0000ff;">class</span><span style="color: #000000;"> CObj;
+
+typedef </span><span style="color: #0000ff;">enum</span><span style="color: #000000;"> enmIdxUseFlag
+{
+    EIUF_FREE </span>= <span style="color: #800080;">0</span>, <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;该对象未被使用</span>
+    EIUF_USED = <span style="color: #800080;">1</span>, <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;该对象已被使用</span>
+<span style="color: #000000;">} ENMIDXUSEFLAG;
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">!索引类，仅在CObjAllocator中使用，外层一般不用</span>
+<span style="color: #0000ff;">class</span><span style="color: #000000;"> CIdx
+{
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    CIdx();
+    </span>~<span style="color: #000000;">CIdx();
+
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!初始化函数</span>
+    <span style="color: #0000ff;">int</span><span style="color: #000000;"> Initialize();
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!将对象设置为未使用</span>
+    inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> SetFree()
+    {
+        m_iUseFlag </span>=<span style="color: #000000;"> EIUF_FREE;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!将对象设置为已使用</span>
+    inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> SetUsed()
+    {
+        m_iUseFlag </span>=<span style="color: #000000;"> EIUF_USED;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!判断对象是否已被使用</span>
+    inline <span style="color: #0000ff;">int</span> IsUsed() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span> m_iUseFlag ==<span style="color: #000000;"> EIUF_USED;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!获取所在链表下一个索引</span>
+    inline <span style="color: #0000ff;">int</span> GetNextIdx() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> m_iNextIdx;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!设置所在链表下一个索引</span>
+    inline <span style="color: #0000ff;">void</span> SetNextIdx(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iIdx)
+    {
+        m_iNextIdx </span>=<span style="color: #000000;"> iIdx;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!获取所在链表上一个索引</span>
+    inline <span style="color: #0000ff;">int</span> GetPrevIdx() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> m_iPrevIdx;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!设置所在链表上一个索引</span>
+    inline <span style="color: #0000ff;">void</span> SetPrevIdx(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iIdx)
+    {
+        m_iPrevIdx </span>=<span style="color: #000000;"> iIdx;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!获取指向的对象</span>
+    inline CObj *GetAttachedObj() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> m_pAttachedObj;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!设置指向的对象</span>
+    inline <span style="color: #0000ff;">void</span> SetAttachedObj(CObj *<span style="color: #000000;">pObj)
+    {
+        m_pAttachedObj </span>=<span style="color: #000000;"> pObj;
+    }
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">int</span> m_iNextIdx;       <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;对象索引块链表指针，指向后一个闲/忙索引</span>
+    <span style="color: #0000ff;">int</span> m_iPrevIdx;       <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;对象索引块链表指针，指向前一个闲/忙索引</span>
+    <span style="color: #0000ff;">int</span> m_iUseFlag;       <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;该对象是否已经被使用标志</span>
+    CObj *m_pAttachedObj; <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;所指向的对象指针</span>
+<span style="color: #000000;">};
+
+typedef CObj </span>*(*Function_CreateObj)(<span style="color: #0000ff;">void</span> *<span style="color: #000000;">);
+
+</span><span style="color: #0000ff;">class</span><span style="color: #000000;"> CObjAllocator
+{
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">默认构造函数，不允许上层自行调用</span>
+<span style="color: #000000;">    CObjAllocator();
+
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    CObjAllocator(size_t uiObjSize, </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjCount, Function_CreateObj pfCreateObj);
+    </span>~<span style="color: #000000;">CObjAllocator();
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;">*
+    *使用共享内存创建ObjAllocator
+    *@param[in] pszKeyFileName 共享内存Attach的文件名
+    *@param[in] ucKeyPrjID 共享内存的工程ID
+    *@param[in] uiObjSize 对象大小
+    *@param[in] iObjCount 对象个数
+    *@param[in]
+    *@return 0 success
+    </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">static</span> CObjAllocator *CreateBySharedMemory(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;">pszKeyFileName,
+                                               </span><span style="color: #0000ff;">const</span> unsigned <span style="color: #0000ff;">char</span><span style="color: #000000;"> ucKeyPrjID,
+                                               size_t uiObjSize, </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjCount, Function_CreateObj pfCreateObj);
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;">*
+    *指定内存指针来创建CObjAllocator
+    *@param[in] pszMemoryAddress 指定的内存
+    *@param[in] uiMemorySize 内存大小
+    *@param[in] uiObjSize 对象大小
+    *@param[in] iObjCount 对象个数
+    *@param[in] pfCreateObj 创建CObj对象的函数，默认可以用DECLARE_DYN中的CreateObject
+    *@return 0 success
+    </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">static</span> CObjAllocator *CreateByGivenMemory(<span style="color: #0000ff;">char</span> *<span style="color: #000000;">pszMemoryAddress, size_t uiMemorySize,
+                                              size_t uiObjSize, </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjCount, Function_CreateObj pfCreateObj);
+
+    </span><span style="color: #0000ff;">static</span> size_t CountSize(size_t uiObjSize, <span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjCount);
+
+    </span><span style="color: #0000ff;">static</span> CObjAllocator *ResumeByGivenMemory(<span style="color: #0000ff;">char</span> *<span style="color: #000000;">pszMemoryAddress,
+                                              size_t uiMemorySize, size_t uiObjSize, </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjCount, Function_CreateObj pfCreateObj);
+
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!初始化函数，将数据清空</span>
+    <span style="color: #0000ff;">int</span><span style="color: #000000;"> Initialize();
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!创建一个对象，成功返回对象ID，失败返回小于0的值</span>
+    <span style="color: #0000ff;">int</span><span style="color: #000000;"> CreateObject();
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!创建一个对象, 并指定其ID，成功返回对象ID，失败返回小于0的值</span>
+    <span style="color: #0000ff;">int</span> CreateObjectByID(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iID);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!根据对象ID销毁一个对象，成功返回0</span>
+    <span style="color: #0000ff;">int</span> DestroyObject(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjectID);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!根据ObjectID返回对象，必须保证该对象已被使用</span>
+    CObj *GetObj(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjectID);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!根据ObjectID返回索引</span>
+    CIdx *GetIdx(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjectID);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!获取已用对象链表头索引</span>
+    inline <span style="color: #0000ff;">int</span> GetUsedHead() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> m_iUsedHeadIdx;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!获取空闲对象链表头索引</span>
+    inline <span style="color: #0000ff;">int</span> GetFreeHead() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> m_iFreeHeadIdx;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">获取已用对象个数</span>
+    inline <span style="color: #0000ff;">int</span> GetUsedCount() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> m_iUsedCount;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">获取空闲对象个数</span>
+    inline <span style="color: #0000ff;">int</span> GetFreeCount() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span> m_iObjCount -<span style="color: #000000;"> m_iUsedCount;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!在接口返回错误时，调用这个函数获取错误号</span>
+    inline <span style="color: #0000ff;">int</span> GetErrorNO() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> m_iErrorNO;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">获取对象分配类型</span>
+    inline <span style="color: #0000ff;">int</span> GetObjAllocType() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> m_shObjAllocType;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!获取下一个对象</span>
+    CObj *GetNextObj(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjectID);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!设置对象初始化指针</span>
+    inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> SetCreateObjFunc(Function_CreateObj pfCreateObjFunc)
+    {
+        m_pfCreateObjFunc </span>=<span style="color: #000000;"> pfCreateObjFunc;
+    }
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!设置错误号</span>
+    inline <span style="color: #0000ff;">void</span> SetErrorNO(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iErrorNO)
+    {
+        m_iErrorNO </span>=<span style="color: #000000;"> iErrorNO;
+    }
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">这几个对象只有在构造函数时确定，后面不会更改</span>
+    <span style="color: #0000ff;">short</span> m_shObjAllocType;               <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;对象分配类型</span>
+    size_t m_uiObjSize;                   <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;单个对象</span>
+    <span style="color: #0000ff;">int</span> m_iObjCount;                      <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;最多分配的对象个数</span>
+    CIdx *m_astIdxs;                      <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;索引数组，用于管理对象链表</span>
+    CObj *m_pstObjBuffer;                 <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;分配的对象内存</span>
+    Function_CreateObj m_pfCreateObjFunc; <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;在内存上创建CObj对象的函数，每个子类需要自己实现
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">以下的对象会更改，调用Initialize初始化</span>
+    <span style="color: #0000ff;">int</span> m_iErrorNO;     <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;错误码</span>
+    <span style="color: #0000ff;">int</span> m_iFreeHeadIdx; <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;空闲对象链表头索引</span>
+    <span style="color: #0000ff;">int</span> m_iFreeTailIdx; <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;空闲对象链表尾索引</span>
+    <span style="color: #0000ff;">int</span> m_iUsedHeadIdx; <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;已用对象链表头索引</span>
+    <span style="color: #0000ff;">int</span> m_iUsedCount;   <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;已用对象个数</span>
+<span style="color: #000000;">};
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">!基本对象类</span>
+<span style="color: #0000ff;">class</span><span style="color: #000000;"> CObj
+{
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    CObj() {}
+    </span><span style="color: #0000ff;">virtual</span> ~<span style="color: #000000;">CObj() {}
+
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!对象的初始化函数，在CObjAllocator创建对象时会调用，所以子类一定要实现</span>
+    <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">int</span> Initialize() = <span style="color: #800080;">0</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!显示对象函数，可重载</span>
+    <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">int</span> Show() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!获取对象ID</span>
+    inline <span style="color: #0000ff;">int</span> GetObjectID() <span style="color: #0000ff;">const</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> m_iObjectID;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">!设置对象ID</span>
+    inline <span style="color: #0000ff;">void</span> SetObjectID(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjectID)
+    {
+        m_iObjectID </span>=<span style="color: #000000;"> iObjectID;
+    }
+
+    </span><span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> Resume()
+    {
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+    }
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">int</span> m_iObjectID; <span style="color: #008000;">//</span><span style="color: #008000;">!对象ID，即在CObjAllocator中的数组下标</span>
+<span style="color: #000000;">
+    friend </span><span style="color: #0000ff;">int</span> CObjAllocator::Initialize(); <span style="color: #008000;">//</span><span style="color: #008000;">!&lt;在这个函数中需要直接赋值m_iObjectID，所以设为友元</span>
+<span style="color: #000000;">};
+
+</span><span style="color: #0000ff;">#define</span> DECLARE_DYN                                               \
+<span style="color: #0000ff;">public</span><span style="color: #000000;">:                                                           \
+    </span><span style="color: #0000ff;">void</span> *<span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">new</span>(size_t uiSize, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">void</span> *pThis) <span style="color: #0000ff;">throw</span><span style="color: #000000;">(); \
+    </span><span style="color: #0000ff;">static</span> CObj *CreateObject(<span style="color: #0000ff;">void</span> *<span style="color: #000000;">pMem);
+
+</span><span style="color: #0000ff;">#define</span> IMPLEMENT_DYN(class_name)                                            \
+    <span style="color: #0000ff;">void</span> *class_name::<span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">new</span>(size_t uiSize, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">void</span> *pThis) <span style="color: #0000ff;">throw</span><span style="color: #000000;">() \
+    {                                                                        \
+        </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">pThis)                                                          \
+        {                                                                    \
+            </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;                                                     \
+        }                                                                    \
+                                                                             \
+        </span><span style="color: #0000ff;">return</span> (<span style="color: #0000ff;">void</span> *<span style="color: #000000;">)pThis;                                                \
+    }                                                                        \
+                                                                             \
+    CObj </span>*class_name::CreateObject(<span style="color: #0000ff;">void</span> *<span style="color: #000000;">pMem)                               \
+    {                                                                        \
+        </span><span style="color: #0000ff;">return</span> (CObj *)<span style="color: #0000ff;">new</span><span style="color: #000000;"> (pMem) class_name;                                \
+    }
+
+} </span><span style="color: #008000;">//</span><span style="color: #008000;"> namespace ServerLib</span>
+
+<span style="color: #0000ff;">#endif</span> <span style="color: #008000;">//</span><span style="color: #008000;">__OBJ_ALLOCATOR_HPP__</span>
+<span style="color: #808080;">///</span><span style="color: #008000;">:~</span>
+
+
+<span style="color: #008000;">/*</span><span style="color: #008000;">*
+*@file ObjAllocator.cpp
+*@author jasonxiong
+*@date 2009-12-14
+*@version 1.0
+*@brief 对象分配类的实现文件
+*
+*
+</span><span style="color: #008000;">*/</span><span style="color: #000000;">
+
+#include </span>&lt;assert.h&gt;<span style="color: #000000;">
+
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">ErrorDef.hpp</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">ObjAllocator.hpp</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">SharedMemory.hpp</span><span style="color: #800000;">"</span>
+
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> ServerLib;
+
+CIdx::CIdx()
+{
+    Initialize();
+}
+
+CIdx::</span>~<span style="color: #000000;">CIdx()
+{
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> CIdx::Initialize()
+{
+    m_iNextIdx </span>= -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    m_iPrevIdx </span>= -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    m_iUseFlag </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+    m_pAttachedObj </span>=<span style="color: #000000;"> NULL;
+
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}
+
+CObjAllocator::CObjAllocator()
+{
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">void* CObjAllocator::operator new(unsigned int uiSize, const void* pThis) throw()
+</span><span style="color: #008000;">//</span><span style="color: #008000;">{
+</span><span style="color: #008000;">//</span><span style="color: #008000;">    if(!pThis)
+</span><span style="color: #008000;">//</span><span style="color: #008000;">    {
+</span><span style="color: #008000;">//</span><span style="color: #008000;">        return NULL;
+</span><span style="color: #008000;">//</span><span style="color: #008000;">    }
+</span><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;">    return (void*)pThis;
+</span><span style="color: #008000;">//</span><span style="color: #008000;">}</span>
+<span style="color: #000000;">
+CObjAllocator::CObjAllocator(size_t uiObjSize, </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjCount, Function_CreateObj pfCreateObj)
+{
+    __ASSERT_AND_LOG(uiObjSize </span>&gt; <span style="color: #800080;">0</span> &amp;&amp; iObjCount &gt; <span style="color: #800080;">0</span> &amp;&amp;<span style="color: #000000;"> pfCreateObj);
+
+    m_shObjAllocType </span>=<span style="color: #000000;"> EOAT_ALLOC_BY_SELF;
+    m_iObjCount </span>=<span style="color: #000000;"> iObjCount;
+    m_uiObjSize </span>=<span style="color: #000000;"> uiObjSize;
+    m_pfCreateObjFunc </span>=<span style="color: #000000;"> pfCreateObj;
+
+    m_astIdxs </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> CIdx[m_iObjCount];
+    size_t uiObjMemorySize </span>= uiObjSize *<span style="color: #000000;"> iObjCount;
+    </span><span style="color: #0000ff;">char</span> *pstObjMem = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span><span style="color: #000000;">[uiObjMemorySize];
+    m_pstObjBuffer </span>= (CObj *<span style="color: #000000;">)pstObjMem;
+
+    __ASSERT_AND_LOG(m_astIdxs </span>&amp;&amp;<span style="color: #000000;"> m_pstObjBuffer);
+
+    Initialize();
+}
+
+size_t CObjAllocator::CountSize(size_t uiObjSize, </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjCount)
+{
+    </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">sizeof</span>(CObjAllocator) + uiObjSize * iObjCount + iObjCount * <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(CIdx);
+}
+
+CObjAllocator </span>*CObjAllocator::CreateByGivenMemory(<span style="color: #0000ff;">char</span> *<span style="color: #000000;">pszMemoryAddress, size_t uiMemorySize, size_t uiObjSize,
+                                                  </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjCount, Function_CreateObj pfCreateObj)
+{
+    </span><span style="color: #0000ff;">if</span> (pszMemoryAddress == NULL || uiObjSize &lt;= <span style="color: #800080;">0</span> || iObjCount &lt;= <span style="color: #800080;">0</span> || pfCreateObj ==<span style="color: #000000;"> NULL)
+    {
+        TRACESVR(</span><span style="color: #800000;">"</span><span style="color: #800000;">%p, %d, %d, %p.\n</span><span style="color: #800000;">"</span>, pszMemoryAddress, (<span style="color: #0000ff;">int</span><span style="color: #000000;">)uiObjSize, iObjCount, pfCreateObj);
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    size_t uiSharedMemorySize </span>= <span style="color: #0000ff;">sizeof</span>(CObjAllocator) + uiObjSize * iObjCount +<span style="color: #000000;">
+                                iObjCount </span>* <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(CIdx);
+
+    </span><span style="color: #0000ff;">if</span> (uiSharedMemorySize &gt;<span style="color: #000000;"> uiMemorySize)
+    {
+        TRACESVR(</span><span style="color: #800000;">"</span><span style="color: #800000;">ObjAllocator: alloc size %lu &gt; sh size %lu.\n</span><span style="color: #800000;">"</span>, (unsigned <span style="color: #0000ff;">long</span>)uiSharedMemorySize, (unsigned <span style="color: #0000ff;">long</span><span style="color: #000000;">)uiMemorySize);
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">在指定的内存地址上分配CObjAllocator</span>
+    CObjAllocator *pstObjAllocator = (CObjAllocator *<span style="color: #000000;">)pszMemoryAddress;
+
+    </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">pstObjAllocator)
+    {
+        TRACESVR(</span><span style="color: #800000;">"</span><span style="color: #800000;">ObjAllocator: pstObjAllocator is NULL.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    pstObjAllocator</span>-&gt;m_uiObjSize =<span style="color: #000000;"> uiObjSize;
+    pstObjAllocator</span>-&gt;m_iObjCount =<span style="color: #000000;"> iObjCount;
+    pstObjAllocator</span>-&gt;m_pfCreateObjFunc =<span style="color: #000000;"> pfCreateObj;
+    pstObjAllocator</span>-&gt;m_shObjAllocType =<span style="color: #000000;"> EOAT_ALLOC_BY_SHARED_MEMORY;
+    pstObjAllocator</span>-&gt;m_astIdxs = (CIdx *)((unsigned <span style="color: #0000ff;">char</span> *)pszMemoryAddress + <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(CObjAllocator));
+    pstObjAllocator</span>-&gt;m_pstObjBuffer = (CObj *)((unsigned <span style="color: #0000ff;">char</span> *)pszMemoryAddress + <span style="color: #0000ff;">sizeof</span>(CObjAllocator) + iObjCount * <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(CIdx));
+
+    pstObjAllocator</span>-&gt;<span style="color: #000000;">Initialize();
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> pstObjAllocator;
+}
+
+CObjAllocator </span>*CObjAllocator::ResumeByGivenMemory(<span style="color: #0000ff;">char</span> *<span style="color: #000000;">pszMemoryAddress,
+                                                  size_t uiMemorySize, size_t uiObjSize, </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjCount, Function_CreateObj pfCreateObj)
+{
+    </span><span style="color: #0000ff;">if</span> ((NULL == pszMemoryAddress) || (uiObjSize &lt;= <span style="color: #800080;">0</span>) || (iObjCount &lt;= <span style="color: #800080;">0</span><span style="color: #000000;">))
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    size_t uiSharedMemorySize </span>= <span style="color: #0000ff;">sizeof</span>(CObjAllocator) + uiObjSize * iObjCount + <span style="color: #0000ff;">sizeof</span>(CIdx) *<span style="color: #000000;"> iObjCount;
+
+    </span><span style="color: #0000ff;">if</span> (uiSharedMemorySize &gt;<span style="color: #000000;"> uiMemorySize)
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    CObjAllocator </span>*pstObjAllocator = (CObjAllocator *<span style="color: #000000;">)pszMemoryAddress;
+
+    </span><span style="color: #0000ff;">if</span> ((pstObjAllocator-&gt;m_uiObjSize != uiObjSize) || (pstObjAllocator-&gt;m_iObjCount !=<span style="color: #000000;"> iObjCount))
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    pstObjAllocator</span>-&gt;m_shObjAllocType =<span style="color: #000000;"> EOAT_ALLOC_BY_SHARED_MEMORY;
+    pstObjAllocator</span>-&gt;m_astIdxs = (CIdx *)((unsigned <span style="color: #0000ff;">char</span> *)pszMemoryAddress + <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(CObjAllocator));
+    pstObjAllocator</span>-&gt;m_pstObjBuffer = (CObj *)((unsigned <span style="color: #0000ff;">char</span> *)pszMemoryAddress + <span style="color: #0000ff;">sizeof</span>(CObjAllocator) + iObjCount * <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(CIdx));
+
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> i;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 重新绑定obj和idx</span>
+    <span style="color: #0000ff;">for</span> (i = <span style="color: #800080;">0</span>; i &lt; iObjCount; ++<span style="color: #000000;">i)
+    {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 调用placement-new, 恢复类的虚函数表.</span>
+        CObj *pstObj = (*pfCreateObj)((unsigned <span style="color: #0000ff;">char</span> *)pstObjAllocator-&gt;m_pstObjBuffer + uiObjSize *<span style="color: #000000;"> i);
+
+        __ASSERT_AND_LOG(pstObj</span>-&gt;GetObjectID() ==<span style="color: #000000;"> i);
+
+        pstObjAllocator</span>-&gt;<span style="color: #000000;">m_astIdxs[i].SetAttachedObj(pstObj);
+    }
+
+    pstObjAllocator</span>-&gt;<span style="color: #000000;">SetCreateObjFunc(pfCreateObj);
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> pstObjAllocator;
+}
+
+CObjAllocator </span>*CObjAllocator::CreateBySharedMemory(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *pszKeyFileName, <span style="color: #0000ff;">const</span> unsigned <span style="color: #0000ff;">char</span><span style="color: #000000;"> ucKeyPrjID,
+                                                   size_t uiObjSize, </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjCount, Function_CreateObj pfCreateObj)
+{
+    </span><span style="color: #0000ff;">if</span> (pszKeyFileName == NULL || uiObjSize &lt;= <span style="color: #800080;">0</span> || iObjCount &lt;= <span style="color: #800080;">0</span> || pfCreateObj ==<span style="color: #000000;"> NULL)
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    CSharedMemory stSharedMemory;
+    size_t uiSharedMemorySize </span>= <span style="color: #0000ff;">sizeof</span>(CObjAllocator) + uiObjSize * iObjCount +<span style="color: #000000;">
+                                iObjCount </span>* <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(CIdx);
+
+    </span><span style="color: #0000ff;">int</span> iRet =<span style="color: #000000;"> stSharedMemory.CreateShmSegment(pszKeyFileName, ucKeyPrjID,
+                                               (</span><span style="color: #0000ff;">int</span><span style="color: #000000;">)uiSharedMemorySize);
+
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (iRet)
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">在共享内存的地址上分配CObjAllocator</span>
+    CObjAllocator *pstObjAllocator = (CObjAllocator *<span style="color: #000000;">)stSharedMemory.GetFreeMemoryAddress();
+
+    </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">pstObjAllocator)
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    pstObjAllocator</span>-&gt;m_uiObjSize =<span style="color: #000000;"> uiObjSize;
+    pstObjAllocator</span>-&gt;m_iObjCount =<span style="color: #000000;"> iObjCount;
+    pstObjAllocator</span>-&gt;m_pfCreateObjFunc =<span style="color: #000000;"> pfCreateObj;
+    pstObjAllocator</span>-&gt;m_shObjAllocType =<span style="color: #000000;"> EOAT_ALLOC_BY_SHARED_MEMORY;
+    pstObjAllocator</span>-&gt;m_astIdxs = (CIdx *)((unsigned <span style="color: #0000ff;">char</span> *)stSharedMemory.GetFreeMemoryAddress() + <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(CObjAllocator));
+    pstObjAllocator</span>-&gt;m_pstObjBuffer = (CObj *)((unsigned <span style="color: #0000ff;">char</span> *)stSharedMemory.GetFreeMemoryAddress() +
+                                               <span style="color: #0000ff;">sizeof</span>(CObjAllocator) + iObjCount * <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(CIdx));
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> pstObjAllocator;
+}
+
+CObjAllocator::</span>~<span style="color: #000000;">CObjAllocator()
+{
+    </span><span style="color: #0000ff;">if</span> (m_shObjAllocType ==<span style="color: #000000;"> EOAT_ALLOC_BY_SELF)
+    {
+        </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (m_astIdxs)
+        {
+            </span><span style="color: #0000ff;">delete</span><span style="color: #000000;">[] m_astIdxs;
+            m_astIdxs </span>=<span style="color: #000000;"> NULL;
+        }
+
+        </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (m_pstObjBuffer)
+        {
+            </span><span style="color: #0000ff;">char</span> *pstObjMem = (<span style="color: #0000ff;">char</span> *<span style="color: #000000;">)m_pstObjBuffer;
+            </span><span style="color: #0000ff;">delete</span><span style="color: #000000;">[] pstObjMem;
+            m_pstObjBuffer </span>=<span style="color: #000000;"> NULL;
+        }
+    }
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> CObjAllocator::Initialize()
+{
+    </span><span style="color: #0000ff;">if</span> (m_pstObjBuffer == NULL || m_astIdxs ==<span style="color: #000000;"> NULL)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__NULL_POINTER);
+
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (m_iObjCount &lt;= <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__INVALID_OBJ_COUNT);
+
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">初始化索引数组</span>
+    <span style="color: #0000ff;">int</span><span style="color: #000000;"> i;
+    </span><span style="color: #0000ff;">for</span> (i = <span style="color: #800080;">0</span>; i &lt; m_iObjCount; ++<span style="color: #000000;">i)
+    {
+        m_astIdxs[i].Initialize();
+        m_astIdxs[i].SetPrevIdx(i </span>- <span style="color: #800080;">1</span><span style="color: #000000;">);
+        m_astIdxs[i].SetNextIdx(i </span>+ <span style="color: #800080;">1</span><span style="color: #000000;">);
+    }
+
+    m_astIdxs[m_iObjCount </span>- <span style="color: #800080;">1</span>].SetNextIdx(-<span style="color: #800080;">1</span><span style="color: #000000;">);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">初始化对象数组</span>
+    <span style="color: #0000ff;">for</span> (i = <span style="color: #800080;">0</span>; i &lt; m_iObjCount; ++<span style="color: #000000;">i)
+    {
+        CObj </span>*pstObj = (*m_pfCreateObjFunc)((unsigned <span style="color: #0000ff;">char</span> *)m_pstObjBuffer + m_uiObjSize *<span style="color: #000000;"> i);
+        pstObj</span>-&gt;m_iObjectID =<span style="color: #000000;"> i;
+        m_astIdxs[i].SetAttachedObj(pstObj);
+    }
+
+    m_iErrorNO </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+    m_iFreeHeadIdx </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+    m_iFreeTailIdx </span>= m_iObjCount - <span style="color: #800080;">1</span><span style="color: #000000;">;
+    m_iUsedHeadIdx </span>= -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    m_iUsedCount </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> CObjAllocator::CreateObject()
+{
+    </span><span style="color: #0000ff;">if</span> (m_pstObjBuffer == NULL || m_astIdxs ==<span style="color: #000000;"> NULL)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__NULL_POINTER);
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (m_iUsedCount &gt;=<span style="color: #000000;"> m_iObjCount)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__OBJ_IS_FULL);
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (m_iFreeHeadIdx &lt; <span style="color: #800080;">0</span> || m_iFreeHeadIdx &gt;=<span style="color: #000000;"> m_iObjCount)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__INVALID_OBJ_INDEX);
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">修改空闲链表</span>
+    <span style="color: #0000ff;">int</span> iCurIdx =<span style="color: #000000;"> m_iFreeHeadIdx;
+    m_iFreeHeadIdx </span>=<span style="color: #000000;"> m_astIdxs[m_iFreeHeadIdx].GetNextIdx();
+
+    </span><span style="color: #0000ff;">if</span> (m_iFreeHeadIdx &gt;= <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        m_astIdxs[m_iFreeHeadIdx].SetPrevIdx(</span>-<span style="color: #800080;">1</span><span style="color: #000000;">);
+    }
+
+    </span><span style="color: #0000ff;">if</span> (iCurIdx ==<span style="color: #000000;"> m_iFreeTailIdx)
+    {
+        m_iFreeTailIdx </span>= -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">挂到使用链表</span>
+<span style="color: #000000;">    m_astIdxs[iCurIdx].SetUsed();
+    m_astIdxs[iCurIdx].SetNextIdx(m_iUsedHeadIdx);
+    m_astIdxs[iCurIdx].SetPrevIdx(</span>-<span style="color: #800080;">1</span><span style="color: #000000;">);
+
+    </span><span style="color: #0000ff;">if</span> (m_iUsedHeadIdx &gt;= <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        m_astIdxs[m_iUsedHeadIdx].SetPrevIdx(iCurIdx);
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">初始化对象</span>
+    m_iUsedHeadIdx =<span style="color: #000000;"> iCurIdx;
+
+    CObj </span>*pstObj =<span style="color: #000000;"> m_astIdxs[iCurIdx].GetAttachedObj();
+    </span><span style="color: #0000ff;">if</span> (NULL ==<span style="color: #000000;"> pstObj)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__NULL_POINTER);
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">4</span><span style="color: #000000;">;
+    }
+
+#ifdef OBJ_MEMSET_ON_CREATE
+    memset(pstObj, </span><span style="color: #800080;">0</span><span style="color: #000000;">, m_uiObjSize);
+    (</span>*m_pfCreateObjFunc)((unsigned <span style="color: #0000ff;">char</span> *<span style="color: #000000;">)pstObj);
+    pstObj</span>-&gt;<span style="color: #000000;">SetObjectID(iCurIdx);
+</span><span style="color: #0000ff;">#endif</span><span style="color: #000000;">
+
+    pstObj</span>-&gt;<span style="color: #000000;">Initialize();
+    </span>++<span style="color: #000000;">m_iUsedCount;
+
+    __ASSERT_AND_LOG(pstObj</span>-&gt;GetObjectID() ==<span style="color: #000000;"> iCurIdx);
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> iCurIdx;
+}
+
+</span><span style="color: #0000ff;">int</span> CObjAllocator::CreateObjectByID(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iID)
+{
+    </span><span style="color: #0000ff;">if</span> (m_pstObjBuffer == NULL || m_astIdxs ==<span style="color: #000000;"> NULL)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__NULL_POINTER);
+
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (iID &lt; <span style="color: #800080;">0</span> || iID &gt;=<span style="color: #000000;"> m_iObjCount)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__INVALID_OBJ_INDEX);
+
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (m_astIdxs[iID].IsUsed())
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__INVALID_OBJ_INDEX);
+
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">修改空闲链表</span>
+    <span style="color: #0000ff;">int</span> iCurIdx =<span style="color: #000000;"> iID;
+    </span><span style="color: #0000ff;">int</span> iPrevIdx =<span style="color: #000000;"> m_astIdxs[iCurIdx].GetPrevIdx();
+    </span><span style="color: #0000ff;">int</span> iNextIdx =<span style="color: #000000;"> m_astIdxs[iCurIdx].GetNextIdx();
+
+    </span><span style="color: #0000ff;">if</span> (iPrevIdx &gt;= <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        m_astIdxs[iPrevIdx].SetNextIdx(iNextIdx);
+    }
+
+    </span><span style="color: #0000ff;">if</span> (iNextIdx &gt;= <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        m_astIdxs[iNextIdx].SetPrevIdx(iPrevIdx);
+    }
+
+    </span><span style="color: #0000ff;">if</span> (iCurIdx ==<span style="color: #000000;"> m_iFreeHeadIdx)
+    {
+        m_iFreeHeadIdx </span>=<span style="color: #000000;"> iNextIdx;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (iCurIdx ==<span style="color: #000000;"> m_iFreeTailIdx)
+    {
+        m_iFreeTailIdx </span>= -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">挂到使用链表</span>
+<span style="color: #000000;">    m_astIdxs[iCurIdx].SetUsed();
+    m_astIdxs[iCurIdx].SetNextIdx(m_iUsedHeadIdx);
+    m_astIdxs[iCurIdx].SetPrevIdx(</span>-<span style="color: #800080;">1</span><span style="color: #000000;">);
+
+    </span><span style="color: #0000ff;">if</span> (m_iUsedHeadIdx &gt;= <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        m_astIdxs[m_iUsedHeadIdx].SetPrevIdx(iCurIdx);
+    }
+
+    m_iUsedHeadIdx </span>= iCurIdx; <span style="color: #008000;">//</span><span style="color: #008000;"> add by cary</span>
+<span style="color: #000000;">
+    CObj </span>*pstObj =<span style="color: #000000;"> m_astIdxs[iCurIdx].GetAttachedObj();
+
+#ifdef OBJ_MEMSET_ON_CREATE
+    memset(pstObj, </span><span style="color: #800080;">0</span><span style="color: #000000;">, m_uiObjSize);
+    (</span>*m_pfCreateObjFunc)((unsigned <span style="color: #0000ff;">char</span> *<span style="color: #000000;">)pstObj);
+    pstObj</span>-&gt;<span style="color: #000000;">SetObjectID(iCurIdx);
+</span><span style="color: #0000ff;">#endif</span><span style="color: #000000;">
+
+    pstObj</span>-&gt;<span style="color: #000000;">Initialize();
+    </span>++<span style="color: #000000;">m_iUsedCount;
+
+    __ASSERT_AND_LOG(pstObj</span>-&gt;GetObjectID() ==<span style="color: #000000;"> iCurIdx);
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> iCurIdx;
+}
+
+</span><span style="color: #0000ff;">int</span> CObjAllocator::DestroyObject(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjectID)
+{
+    </span><span style="color: #0000ff;">if</span> (m_pstObjBuffer == NULL || m_astIdxs ==<span style="color: #000000;"> NULL)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__NULL_POINTER);
+
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (iObjectID &gt;= m_iObjCount || iObjectID &lt; <span style="color: #800080;">0</span> || m_iObjCount &lt;= <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__INVALID_OBJ_INDEX);
+
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">m_astIdxs[iObjectID].IsUsed())
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__DESTROY_FREE_OBJ);
+
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">从已用链表中删除</span>
+    <span style="color: #0000ff;">int</span> iCurIdx =<span style="color: #000000;"> iObjectID;
+    </span><span style="color: #0000ff;">int</span> iPrevIdx =<span style="color: #000000;"> m_astIdxs[iCurIdx].GetPrevIdx();
+    </span><span style="color: #0000ff;">int</span> iNextIdx =<span style="color: #000000;"> m_astIdxs[iCurIdx].GetNextIdx();
+
+    </span><span style="color: #0000ff;">if</span> (iPrevIdx &gt;= <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        m_astIdxs[iPrevIdx].SetNextIdx(iNextIdx);
+    }
+
+    </span><span style="color: #0000ff;">if</span> (iNextIdx &gt;= <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        m_astIdxs[iNextIdx].SetPrevIdx(iPrevIdx);
+    }
+
+    </span><span style="color: #0000ff;">if</span> (iCurIdx ==<span style="color: #000000;"> m_iUsedHeadIdx)
+    {
+        m_iUsedHeadIdx </span>=<span style="color: #000000;"> iNextIdx;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">挂入空闲链表尾部</span>
+<span style="color: #000000;">    m_astIdxs[iObjectID].SetFree();
+    m_astIdxs[iObjectID].SetPrevIdx(m_iFreeTailIdx);
+    m_astIdxs[iObjectID].SetNextIdx(</span>-<span style="color: #800080;">1</span><span style="color: #000000;">);
+
+    </span><span style="color: #0000ff;">if</span> (m_iFreeHeadIdx == -<span style="color: #800080;">1</span><span style="color: #000000;">)
+    {
+        m_iFreeHeadIdx </span>=<span style="color: #000000;"> iCurIdx;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (m_iFreeTailIdx &gt;= <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        m_astIdxs[m_iFreeTailIdx].SetNextIdx(iCurIdx);
+    }
+
+    m_iFreeTailIdx </span>=<span style="color: #000000;"> iCurIdx;
+    </span>--<span style="color: #000000;">m_iUsedCount;
+
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}
+
+CObj </span>*CObjAllocator::GetObj(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjectID)
+{
+    </span><span style="color: #0000ff;">if</span> (m_pstObjBuffer == NULL || m_astIdxs ==<span style="color: #000000;"> NULL)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__NULL_POINTER);
+
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (iObjectID &lt; <span style="color: #800080;">0</span> || iObjectID &gt;=<span style="color: #000000;"> m_iObjCount)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__INVALID_OBJ_INDEX);
+
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">m_astIdxs[iObjectID].IsUsed())
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__GET_FREE_OBJ);
+
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> m_astIdxs[iObjectID].GetAttachedObj();
+}
+
+CIdx </span>*CObjAllocator::GetIdx(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjectID)
+{
+    </span><span style="color: #0000ff;">if</span> (m_pstObjBuffer == NULL || m_astIdxs ==<span style="color: #000000;"> NULL)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__NULL_POINTER);
+
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (iObjectID &lt; <span style="color: #800080;">0</span> || iObjectID &gt;=<span style="color: #000000;"> m_iObjCount)
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__INVALID_OBJ_INDEX);
+
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">m_astIdxs[iObjectID].IsUsed())
+    {
+        SetErrorNO(EEN_OBJ_ALLOCATOR__GET_FREE_OBJ);
+
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    </span><span style="color: #0000ff;">return</span> &amp;<span style="color: #000000;">m_astIdxs[iObjectID];
+}
+
+CObj </span>*CObjAllocator::GetNextObj(<span style="color: #0000ff;">int</span><span style="color: #000000;"> iObjectID)
+{
+    CIdx </span>*pIdx =<span style="color: #000000;"> GetIdx(iObjectID);
+
+    </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">pIdx)
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    </span><span style="color: #0000ff;">int</span> iNextObjIdx = pIdx-&gt;<span style="color: #000000;">GetNextIdx();
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> GetObj(iNextObjIdx);
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>源码地址：<a href="https://github.com/dai543103/ServerFramework-1/blob/master/001_ServerLib/BaseLibs/ObjAllocator.hpp">https://github.com/dai543103/ServerFramework-1/blob/master/001_ServerLib/BaseLibs/ObjAllocator.hpp</a></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

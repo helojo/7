@@ -1,0 +1,190 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修opencv学习之读取图像-imread函数' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>opencv学习之读取图像-imread函数</center></div><div class='banquan'>原文出处:本文由博客园博主芒果浩明提供。<br/>
+原文连接:https://www.cnblogs.com/mangoroom/p/10999151.html</div><br>
+    <h2 id="序">序</h2>
+<p>想要完整全面地学习opencv,仅凭阅读samples的示例源码是不够的。毕竟opencv是一个拥有非常多函数的程序库，所以在每学习一个函数时，芒果觉得有必要记录下来，分享给有需要的同学。于是，就有了这一篇的开始，以后的这个就归为opencv函数学习的系列了，篇幅应该都会比较短。</p>
+<h2 id="imread函数">imread函数</h2>
+<h3 id="imread函数作用">imread函数作用</h3>
+<p>imread函数的作用非常简单，从函数的名称也可以看出来，imread为image read的缩写，即图像读取的意思，。那么imread函数的作用就很明显了，负责读取图像。其实学过matlab的同学就会知道，matlab中也有一个读取图像的函数也命名为imread，这是opencv借鉴了matlab而命名的，因为在opencv1.x时代，加载图像的函数并不叫imread,二是由cvLoadImage函数负责。</p>
+<h3 id="imread函数原型">imread函数原型</h3>
+<p>话不多说，先了解imread函数的原型，从opencv的最新document可以查阅到imread原型为</p>
+<h4 id="imread-c原型">imread c++原型</h4>
+<pre><code>#include &lt;opencv2/imgcodecs.hpp&gt;
+Mat cv::imread  (   const String &amp;  filename,
+int     flags = IMREAD_COLOR 
+)       
+</code></pre>
+<h4 id="imread-python原型">imread python原型</h4>
+<pre class="python"><code>Python:
+retval  =   cv.imread(  filename[, flags]   )</code></pre>
+<p>可以看到，imread函数原型非常简单，可以总结为三点</p>
+<ul>
+<li>返回值,Mat 类型， 即返回读取的图像，读取图像失败时返回一个空的矩阵对象（Mat::data == NULL)</li>
+<li>参数1 filename, 读取的图片文件名，可以使用相对路径或者绝对路径，但必须带完整的文件扩展名（图片格式后缀）</li>
+<li>参数2 flags, 一个读取标记，用于选择读取图片的方式，默认值为IMREAD_COLOR，flag值的设定与用什么颜色格式读取图片有关</li>
+</ul>
+<p><strong>参数1 补充：</strong></p>
+<p>imread函数支持读取的图像格式有</p>
+<ul>
+<li>Windows bitmaps - <em>.bmp, </em>.dib (always supported)</li>
+<li>JPEG files - <em>.jpeg, </em>.jpg, *.jpe (see the Note section)</li>
+<li>JPEG 2000 files - *.jp2 (see the Note section)</li>
+<li>Portable Network Graphics - *.png (see the Note section)</li>
+<li>WebP - *.webp (see the Note section)</li>
+<li>Portable image format - <em>.pbm, </em>.pgm, <em>.ppm </em>.pxm, *.pnm (always supported)</li>
+<li>PFM files - *.pfm (see the Note section)</li>
+<li>Sun rasters - <em>.sr, </em>.ras (always supported)</li>
+<li>TIFF files - <em>.tiff, </em>.tif (see the Note section)</li>
+<li>OpenEXR Image files - *.exr (see the Note section)</li>
+<li>Radiance HDR - <em>.hdr, </em>.pic (always supported)</li>
+<li>Raster and Vector geospatial data supported by GDAL (see the Note section)<br />
+Note</li>
+</ul>
+<p><strong>参数2 补充：</strong></p>
+<p>这些flags值被定义在enum cv::ImreadModes枚举类里面</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: center;">c++定义</th>
+<th style="text-align: center;">python定义</th>
+<th style="text-align: center;">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">IMREAD_UNCHANGED</td>
+<td style="text-align: center;">Python: cv.IMREAD_UNCHANGED</td>
+<td style="text-align: center;">如果设置，则按原样返回加载的图像（使用Alpha通道，否则会被裁剪）</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">IMREAD_GRAYSCALE</td>
+<td style="text-align: center;">Python: cv.IMREAD_GRAYSCALE</td>
+<td style="text-align: center;">如果设置，则始终将图像转换为单通道灰度图像（编解码器内部转换）。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">IMREAD_COLOR</td>
+<td style="text-align: center;">Python: cv.IMREAD_COLOR</td>
+<td style="text-align: center;">如果设置，请始终将图像转换为3通道BGR彩色图像。</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">IMREAD_ANYDEPTH</td>
+<td style="text-align: center;">Python: cv.IMREAD_ANYDEPTH</td>
+<td style="text-align: center;">如果设置，则在输入具有相应深度时返回16位/ 32位图像，否则将其转换为8位。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">IMREAD_ANYCOLOR</td>
+<td style="text-align: center;">Python: cv.IMREAD_ANYCOLOR</td>
+<td style="text-align: center;">如果设置，则以任何可能的颜色格式读取图像。</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">IMREAD_LOAD_GDAL</td>
+<td style="text-align: center;">Python: cv.IMREAD_LOAD_GDAL</td>
+<td style="text-align: center;">如果设置，使用gdal驱动程序加载图像</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">IMREAD_REDUCED_GRAYSCALE_2</td>
+<td style="text-align: center;">Python: cv.IMREAD_REDUCED_GRAYSCALE_2</td>
+<td style="text-align: center;">如果设置，则始终将图像转换为单通道灰度图像，图像尺寸减小1/2。</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">IMREAD_REDUCED_COLOR_2</td>
+<td style="text-align: center;">Python: cv.IMREAD_REDUCED_COLOR_2</td>
+<td style="text-align: center;">如果设置，则始终将图像转换为3通道BGR彩色图像，图像尺寸减小1/2。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">IMREAD_REDUCED_GRAYSCALE_4</td>
+<td style="text-align: center;">Python: cv.IMREAD_REDUCED_GRAYSCALE_4</td>
+<td style="text-align: center;">如果设置，则始终将图像转换为单通道灰度图像，图像尺寸减小1/4</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">IMREAD_REDUCED_COLOR_4</td>
+<td style="text-align: center;">Python: cv.IMREAD_REDUCED_COLOR_4</td>
+<td style="text-align: center;">如果设置，则始终将图像转换为3通道BGR彩色图像，图像尺寸减小1/4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">IMREAD_REDUCED_GRAYSCALE_8</td>
+<td style="text-align: center;">Python: cv.IMREAD_REDUCED_GRAYSCALE_8</td>
+<td style="text-align: center;">如果设置，则始终将图像转换为单通道灰度图像，图像尺寸减小1/8。</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">IMREAD_REDUCED_COLOR_8</td>
+<td style="text-align: center;">Python: cv.IMREAD_REDUCED_COLOR_8</td>
+<td style="text-align: center;">如果设置，则始终将图像转换为3通道BGR彩色图像，图像尺寸减小1/8。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">IMREAD_IGNORE_ORIENTATION</td>
+<td style="text-align: center;">Python: cv.IMREAD_IGNORE_ORIENTATION</td>
+<td style="text-align: center;">如果设置，请不要根据EXIF的方向标志旋转图像。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="imread函数使用示例">imread函数使用示例</h3>
+<pre><code>#include&lt;iostream&gt;
+
+#include&lt;opencv2/opencv.hpp&gt;
+
+using namespace cv;
+
+using namespace std;
+
+int main()
+
+{
+
+    //read the image
+
+    Mat image = imread(&quot;./clock.jpg&quot;);
+
+    if (image.data != NULL)
+
+    {
+
+        //show the image
+
+        imshow(&quot;clock&quot;, image);
+
+        waitKey(0);
+
+    }
+
+    else
+
+    {
+
+        cout &lt;&lt; &quot;can&amp;apos;t openc the file!&quot; &lt;&lt; endl;
+
+        getchar();
+
+    }
+
+    return 0;
+
+}</code></pre>
+<h2 id="尾巴">尾巴</h2>
+<p>opencv的官方文档document其实是一份非常好的资料，关于opencv的几乎都可以在上面查阅得到，不过缺点就是文档为全英文的，这个需要自己克服一下。</p>
+<hr />
+<p>本文由芒果浩明发布，转载需注明来源。<br />
+本文链接：<a href="https://mangoroom.cn/opencv/opencv-learning-imread.html" class="uri">https://mangoroom.cn/opencv/opencv-learning-imread.html</a></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

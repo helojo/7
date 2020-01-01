@@ -1,0 +1,450 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修QCustomplot使用分享(八) 绘制图表-加载cvs文件' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>QCustomplot使用分享(八) 绘制图表-加载cvs文件</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/10962588.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一概述">一、概述</a></li>
+        <li><a href="#二效果图">二、效果图</a></li>
+        <li><a href="#三源码讲解">三、源码讲解</a><ul>
+        <li><a href="#源码结构">1、源码结构</a></li>
+        <li><a href="#头文件">2、头文件</a></li>
+        <li><a href="#移动游标">3、移动游标</a></li>
+        <li><a href="#设置坐标轴矩形个数">4、设置坐标轴矩形个数</a></li>
+        <li><a href="#添加图表数据">5、添加图表数据</a></li>
+        <li><a href="#设置折线图类型">6、设置折线图类型</a></li>
+        <li><a href="#其他函数">6、其他函数</a></li>
+        </ul></li>
+        <li><a href="#四测试方式">四、测试方式</a><ul>
+        <li><a href="#测试工程">1、测试工程</a></li>
+        <li><a href="#测试文件">2、测试文件</a></li>
+        <li><a href="#测试代码">3、测试代码</a></li>
+        </ul></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        <li><a href="#六总结">六、总结</a></li>
+        <li><a href="#七关于美化">七、关于美化</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="一概述">一、概述</h2>
+<p>之前做过一款金融产品，名字叫做财联社，感兴趣的可以瞅一眼<a href="https://www.cnblogs.com/swarmbees/p/6707798.html">财联社-产品展示</a>，由于需要画复杂的k线图和一些辅助的图表，我个人调研了几个绘图库，包括：QWt、QCustomPlot、QtChart和directUI。最后各方考虑，决定使用QCustomPlot来做我们的基础绘图库，这里有几个方面的考虑</p>
+<ol>
+<li>首先QCP他是开源的</li>
+<li>代码只有2个文件，比较方便的可以引入我们的现有的代码</li>
+<li>代码可读性比较强，定制方便</li>
+</ol>
+<p>当我们的绘图库选定后，理所当然的就是去研究我们这个库了，因此我也花了几天的时间去研究了我们这个绘图库，并做了一个简单的demo，感兴趣的可以去看之前写的文章，demo都在CSDN上放着，如果没有分需要我发的可以留言。</p>
+<p>之前讲解的文章我在后边<strong>相关文章</strong>小节已经给出，有想法的同学也可以直接先去看之前的文章，这样更容易理解</p>
+<h2 id="二效果图">二、效果图</h2>
+<p>如下图所示，是我做的一个测试效果图，途中包括一个简单的折线图和游标，折线图的显示模式有十几种效果，具体可以看<a href="http://www.cnblogs.com/swarmbees/p/6056225.html">QCustomplot使用分享(一) 能做什么事</a>这篇文章里的截图，这里我就不在贴出。</p>
+<p>这个效果图只是展示了一部分简单的功能，我封装的绘图控件实际上主要是用于用于加载cvs文件，然后显示相应的图表，当然了，如果你想自己获取数据添加给图表也是支持的。</p>
+<p>最后该绘图控件还提供了很多接口，可以获取当前绘图数据，比如：</p>
+<ol>
+<li>游标对于的x值、y值，最多提供了2个游标</li>
+<li>获取两个游标之间的x值数据段</li>
+<li>获取两个游标之间的y值数据段，并且可以指定折线图</li>
+<li>设置折线图颜色</li>
+<li>设置折线图类型设置4个轴的标题栏名称</li>
+<li>设置游标颜色</li>
+</ol>
+<p>下面的文章中我会分析下主要的接口和核心功能实现</p>
+<html>
+<center>
+<div>
+    <img src="./images/QCustomplot使用分享(八) 绘制图表-加载cvs文件0.png" />
+</div>
+</center>
+</html>
+<p>图中的展示效果测试代码如下，代码中的关键节点就2个</p>
+<ol>
+<li>构造ESCvsDBOperater类，并加载cvs文件</li>
+<li>通过Set接口设置数据，并设置折线图类型</li>
+</ol>
+<pre><code>ESCsvDBOperater * csvDBOperater = new ESCsvDBOperater(nullptr);
+csvDBOperater-&gt;loadCSVFile(qApp-&gt;applicationDirPath() + &quot;\\temp\\test31.csv&quot;);
+QStringList names = csvDBOperater-&gt;getCSVNames();
+auto callback = [this, names](const QString &amp; name, const QVector&lt;double&gt; &amp; data){
+    int index = names.indexOf(name);
+    if (index != -1)
+    {
+        if (index == 0)
+        {
+            ui-&gt;widget-&gt;SetGraphKey(data);
+        }
+        else
+        {
+            int l = name.indexOf(&quot;(&quot;);
+            int r = name.indexOf(&quot;)&quot;);
+            if (l != -1 &amp;&amp; r != -1)
+            {
+                ui-&gt;widget-&gt;SetGraphValue(index - 1, name.left(l), /*name.mid(l + 1, r - l - 1)*/&quot;&quot;, data);
+                ui-&gt;widget-&gt;SetGraphScatterStyle(index - 1, 4);
+            }
+            else
+            {
+                ui-&gt;widget-&gt;SetGraphValue(index - 1, name, &quot;&quot;, data);
+            }
+        }
+    }</code></pre>
+<blockquote>
+<p><strong>当然QCP不仅仅能显示折线图，他还可以显示各种各样的效果图，感兴趣的到<a href="http://www.cnblogs.com/swarmbees/p/6056225.html">QCustomplot使用分享(一) 能做什么事</a>文章中观看</strong></p>
+</blockquote>
+<h2 id="三源码讲解">三、源码讲解</h2>
+<h3 id="源码结构">1、源码结构</h3>
+<p>如图所示，是工程的头文件截图，图中的文件数量比较多，但是对外我们使用的可能只是一个ESMPMultiPlot类，这个类中提供了很多接口，足够我们使用，当然了如果有特殊需求的话，我们还可以进行提供定制<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/QCustomplot使用分享(八) 绘制图表-加载cvs文件1.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<h3 id="头文件">2、头文件</h3>
+<p>如下是头文件中的接口，我只是把相关的Public接口列出来了，而这些接口也正好是我们平时使用比较多的接口，看接口名称应该都知道接口库是干什么的，因此这里不再细说</p>
+<pre><code>void SetGraphCount(int);
+void SetGraphKey(const QVector&lt;double&gt; &amp;);
+double GetGraphKey(double);
+void SetGraphValue(int, const QString &amp;, const QString &amp;, const QVector&lt;double&gt; &amp;);
+void SetGraphScatterStyle(int, int);
+double GetGraphValue(int, bool);//获取折线图所在游标出y值 参数1：折线下标   参数2：左右游标标识
+double GetGraphValue(int, double);//获取折线图所在游标出y值 参数1：折线下标   参数2：x
+void SetGraphColor(int, const QColor &amp;);
+void SetGraphColor(const QString &amp;, const QColor &amp;);
+void SetGraphUnit(int, const QString &amp;);
+void SetGraphTitle(int, const QString &amp;);
+void RefrushGraphID(int, const QString &amp;);
+
+int GetGraphIndex(const QString &amp;) const;
+
+void SetCursorColor(bool, const QColor &amp;);
+void ShowCursor(bool visible = true);
+double GetCursorKey(bool);
+bool CursorVisible();
+double GetCursorValue(bool);
+
+void ResizeKeyRange(bool);
+void SetKeyRange(double, double);
+void SetVauleRange(double, double);
+
+void ConfigureGraph();//设置
+std::shared_ptr&lt;AxisRectConfigurations&gt; GetAxisCache();</code></pre>
+<h3 id="移动游标">3、移动游标</h3>
+<p>如下代码所示，是移动游标的核心代码</p>
+<pre><code>void ESMPPlot::mouseMoveEvent(QMouseEvent * event)
+{
+    if (m_bDragCursor &amp;&amp; m_pDragCursor)
+    {
+        double pixelx = event-&gt;pos().x();
+        QCPRange keyRange = axisRect()-&gt;axis(QCPAxis::atBottom)-&gt;range();
+        double min = axisRect()-&gt;axis(QCPAxis::atBottom)-&gt;coordToPixel(keyRange.lower);
+        double max = axisRect()-&gt;axis(QCPAxis::atBottom)-&gt;coordToPixel(keyRange.upper);
+        double lcursor = m_mapLeftCursor.begin().key()-&gt;point1-&gt;key();
+        double lcursorx = axisRect()-&gt;axis(QCPAxis::atBottom)-&gt;coordToPixel(lcursor);
+        double rcursor = m_mapRightCursor.begin().key()-&gt;point1-&gt;key();
+        double rcursorx = axisRect()-&gt;axis(QCPAxis::atBottom)-&gt;coordToPixel(rcursor);
+        if (min &gt; pixelx)
+        {
+            pixelx = min;
+        }
+        else if (max &lt; pixelx)
+        {
+            pixelx = max;
+        }
+        if (m_bLeftCursor)
+        {
+            if (pixelx &gt;= rcursorx - 4 &amp;&amp; layer(r_cursorLayer)-&gt;visible())
+            {
+                pixelx = rcursorx - 4;
+            }
+            double key = axisRect()-&gt;axis(QCPAxis::atBottom)-&gt;pixelToCoord(pixelx);
+            double value1 = m_pDragCursor-&gt;point1-&gt;value();
+            double value2 = m_pDragCursor-&gt;point2-&gt;value();
+            for each (QCPItemStraightLine * line in m_mapLeftCursor.keys())
+            {
+                line-&gt;point1-&gt;setCoords(key, value1);
+                line-&gt;point2-&gt;setCoords(key, value2);
+            }
+            m_pLeftText-&gt;setText(QString::number(GetGraphKey(pixelx)));
+            m_pLeftText-&gt;position-&gt;setPixelPosition(QPoint(pixelx, axisRect()-&gt;rect().bottom() + 25));
+        }
+        else
+        {
+            if (pixelx &lt;= lcursorx + 4 &amp;&amp; layer(l_cursorLayer)-&gt;visible())
+            {
+                pixelx = lcursorx + 4;
+            }
+            double key = axisRect()-&gt;axis(QCPAxis::atBottom)-&gt;pixelToCoord(pixelx);
+            double value1 = m_pDragCursor-&gt;point1-&gt;value();
+            double value2 = m_pDragCursor-&gt;point2-&gt;value();
+            for each (QCPItemStraightLine * line in m_mapRightCursor.keys())
+            {
+                line-&gt;point1-&gt;setCoords(key, value1);
+                line-&gt;point2-&gt;setCoords(key, value2);
+            }
+            m_pRightText-&gt;setText(QString::number(GetGraphKey(pixelx)));
+            m_pRightText-&gt;position-&gt;setPixelPosition(QPoint(pixelx, axisRect()-&gt;rect().bottom() + 25));
+        }
+        event-&gt;accept();
+        replot();
+        emit CursorChanged(m_bLeftCursor);
+        return;
+    }
+
+    __super::mouseMoveEvent(event);
+}</code></pre>
+<blockquote>
+<p>在ESMPPlot类中，m_mapLeftCursor和m_mapRightCursor分别是左右游标，为什么这里取了一个map呢？答案是：当时设计的时候是支持多个垂直摆放的游标可以进行游标同步，如果炒股的同学可能就会知道，k线和指标之间可能会有一个数值方便的线，不管在哪个绘图区进行移动，另一个图表里的线也会跟着移动</p>
+</blockquote>
+<blockquote>
+<p>不了解这个的同学也不要紧，我们这个控件默认的就是一个表，因此这个map里也就只存了一个指，因此可以不关心这个问题</p>
+</blockquote>
+<p>在ESMPMultiPlot类中，我们模拟了ESMPPlot的功能，这个时候呢？我们的坐标轴矩形只有一个了，x轴都是一样的，表示时间，对于不同曲线的y轴我们进行了平移，以达到不同的显示位置</p>
+<p>这里边有一个很重的技巧，那就是我们对y轴数据进行了一次单位换算，让他显示的时候可以更好显示在我们制定的区域内，可能像下面这样</p>
+<pre><code>/*
+    y1p=(y1-Yzero1)/Ygrid1+Xaxis1;%核心转换公式，将原始坐标值y1转换为新坐标值y1p
+    y1;%原始数值
+    Yzero1;%零点幅值，决定曲线1零点位置的变量
+    Ygrid1;%单格幅值，决定曲线1每个单元格大小的量
+    Xaxis1;%显示位置，决定曲线1在画图板中显示位置的变量
+*/</code></pre>
+<p>当然了，我们转换后的坐标只是为了显示方便而已，如果我们根据UI获取原始值，我们还需要使用一个逆向公式进行转换回去。</p>
+<h3 id="设置坐标轴矩形个数">4、设置坐标轴矩形个数</h3>
+<p>QCP他自己的逻辑是这样的，每一个QCustomPlot类都包括多个坐标轴矩形，而一个坐标轴矩形里又可以包含多个图表，因此我们这个控件是这样的：</p>
+<ol>
+<li>一个坐标轴矩形</li>
+<li>多个QCPGraph</li>
+</ol>
+<p>当我们设置的图表数量大于已有图表时，需要使用takeAt接口移除多余的图表；当我们设置的图表数据小于已有图表时，就需要添加新图表对象，添加时机是设置图表数据时</p>
+<blockquote>
+<p>由于这个函数的代码量比较大，因此这里我删除了一些异常处理代码和设置属性代码</p>
+</blockquote>
+<p>添加图表数据的流程可能像这面这样</p>
+<ol>
+<li>首先处理数据异常</li>
+<li>添加坐标轴</li>
+<li>根据当前的折线图个数，计算当前折线图的位置和一些转换可能用的系数比率</li>
+<li>添加图表所有两侧的标题栏名称，如name和unit</li>
+<li>刷新图表</li>
+</ol>
+<pre><code>void ESMPMultiPlot::SetGraphCount(int count)
+{
+    QCPAxisTickerText * leftTick = new QCPAxisTickerText;
+    axisRect()-&gt;axis(QCPAxis::atLeft)-&gt;setTicker(QSharedPointer&lt;QCPAxisTickerText&gt;(leftTick));
+
+    QCPAxisTickerText * rightTick = new QCPAxisTickerText;
+    axisRect()-&gt;axis(QCPAxis::atRight)-&gt;setTicker(QSharedPointer&lt;QCPAxisTickerText&gt;(rightTick));
+    
+    int tickCount = m_iCount * 4;//每个折线4个大刻度
+    double tickDistance = (720 + 100)/ tickCount;
+    QMap&lt;double, QString&gt; ticks;
+    for (int i = 0; i &lt;= tickCount; ++i)
+    {
+        ticks[tickDistance * i] = &quot;&quot;;
+    }
+    leftTick-&gt;setTicks(ticks);
+    leftTick-&gt;setSubTickCount(4);//每个大刻度包含4个小刻度
+
+    double labelDistance = 720 / m_iCount;
+    m_vecVerticalTick.resize(m_iCount);
+    m_vecNames.resize(m_iCount);
+    m_vecUnits.resize(m_iCount);
+    double step = 1.0 / m_iCount;
+    for (int i = 0; i &lt; m_vecVerticalTick.size(); ++i)
+    {
+        m_vecVerticalTick[i] = labelDistance * i + labelDistance / 2;
+
+        QCPItemText * name = new QCPItemText(this);
+        name-&gt;position-&gt;setCoords(QPointF(0.01, 1 - (step * i + step / 2)));
+        m_vecNames[m_vecVerticalTick.size() - i - 1] = name;
+
+        QCPItemText * unit = new QCPItemText(this);
+        unit-&gt;position-&gt;setCoords(QPointF(0.9, 1 - (step * i + step / 2)));
+        m_vecUnits[m_vecVerticalTick.size() - i - 1] = unit;
+    }
+
+    RefrushItemPosition();
+
+    m_graphConfigure-&gt;resize(count);
+}</code></pre>
+<h3 id="添加图表数据">5、添加图表数据</h3>
+<p>毫无疑问，添加图表数据是我们这个控件的非常重要的一个借口<br />
+如下代码所示，看我们是怎么添加数据的</p>
+<ol>
+<li>首先排除数据异常情况</li>
+<li>更新图表的各个轴的名称</li>
+<li>然后给图表添加数据</li>
+<li>如果图表不存在则添加一个新的</li>
+<li>设置图表数据</li>
+<li>设置坐标轴信息</li>
+<li>设置折线图对应的标题栏名称</li>
+</ol>
+<pre><code>void ESMPPlot::SetGraphValue(int index
+    , const QString &amp; xname, const QString &amp; yname, const QVector&lt;double&gt; &amp; values)
+{
+    if (index &gt;= m_iCount
+        || values.size() == 0)
+    {
+        return;
+    }
+
+    m_vecIndex[index] = xname;
+    m_vecUnit[index] = yname;
+    m_oldDatas[index] = values;
+
+    QList&lt;QCPGraph *&gt; graphs = axisRect(index)-&gt;graphs();
+    QCPGraph * graph = nullptr;
+    if (graphs.size() == 0)
+    {
+        graph = addGraph(axisRect(index)-&gt;axis(QCPAxis::atBottom)
+            , axisRect(index)-&gt;axis(QCPAxis::atLeft));
+        graph-&gt;setLineStyle(QCPGraph::lsLine);
+        graph-&gt;setPen(QColor(255, 0, 0, 200));
+    }
+    else
+    {
+        graph = graphs.at(0);
+    }
+    
+    graph-&gt;setData(m_vecKeys, values, true);
+    auto miniter = std::min_element(values.begin(), values.end());
+    auto maxiter = std::max_element(values.begin(), values.end());
+    double padding = (*maxiter - *miniter) * 0.2;
+    axisRect(index)-&gt;axis(QCPAxis::atLeft)-&gt;ticker()-&gt;setTickOrigin(*miniter - padding);
+    axisRect(index)-&gt;axis(QCPAxis::atLeft)-&gt;ticker()-&gt;setTickStepStrategy(
+        QCPAxisTicker::tssReadability);
+    axisRect(index)-&gt;axis(QCPAxis::atLeft)-&gt;ticker()-&gt;setTickCount(8);
+    axisRect(index)-&gt;axis(QCPAxis::atLeft)-&gt;setRange(*miniter - padding, *maxiter + padding);
+
+    axisRect(index)-&gt;axis(QCPAxis::atRight)-&gt;ticker()-&gt;setTickOrigin(*miniter - padding);
+    axisRect(index)-&gt;axis(QCPAxis::atRight)-&gt;ticker()-&gt;setTickStepStrategy(
+        QCPAxisTicker::tssReadability);
+    axisRect(index)-&gt;axis(QCPAxis::atRight)-&gt;ticker()-&gt;setTickCount(8);
+    axisRect(index)-&gt;axis(QCPAxis::atRight)-&gt;setRange(*miniter - padding, *maxiter + padding);
+    
+    int leftPadding = QFontMetrics(axisRect(index)-&gt;axis(QCPAxis::atLeft)-&gt;labelFont()).width(xname);
+    axisRect(index)-&gt;axis(QCPAxis::atLeft)-&gt;setLabel(xname);
+    
+    int rightPadding = QFontMetrics(axisRect(index)-&gt;axis(QCPAxis::atBottom)-&gt;labelFont()).width(yname);
+    axisRect(index)-&gt;axis(QCPAxis::atBottom)-&gt;setLabel(yname);
+}
+</code></pre>
+<h3 id="设置折线图类型">6、设置折线图类型</h3>
+<p>QCP自带的折线图类型很多，具体我们可以参看QCPScatterStyle::ScatterShape这个枚举类型有多少</p>
+<pre><code>void ESMPMultiPlot::SetGraphScatterStyle(int index, int style)
+{
+    QList&lt;QCPGraph *&gt; graphs = axisRect()-&gt;graphs();
+    if (graphs.size() != 0 &amp;&amp; index &lt; graphs.size())
+    {
+        QCPGraph * graph = graphs.at(0);
+        graph-&gt;setScatterStyle(QCPScatterStyle::ScatterShape(style));
+    }
+}</code></pre>
+<h3 id="其他函数">6、其他函数</h3>
+<p>还有一些其他的方法，比如保存图表、获取图表坐标、设置图表颜色等这里就不细讲了，<strong>文章篇幅所限，不能一一的都贴出来，有需要的伙伴可以联系我，提供功能定制</strong>。</p>
+<h2 id="四测试方式">四、测试方式</h2>
+<h3 id="测试工程">1、测试工程</h3>
+<p>控件我们将的差不多了，这里把测试的代码放出来，大家参考下，首先测试工程截图如下所示，我们的测试代码，大多数都是写在了main函数中。<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/QCustomplot使用分享(八) 绘制图表-加载cvs文件2.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<h3 id="测试文件">2、测试文件</h3>
+<p>这里简单说名下，我们的这个文件用途，第一列Time是代表了x轴的时间，而第二列开始的数据都是我们的折线图，一列数据代表一条折线图，并且列的名称就是我们折线图左侧的名称；列名称括号里的单位就是折线图右侧的单位。<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/QCustomplot使用分享(八) 绘制图表-加载cvs文件3.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<h3 id="测试代码">3、测试代码</h3>
+<p>限于篇幅，这里我还是把无关的代码删减了很多，需要完整的源码的可以联系我。</p>
+<pre><code>void ESMultiPlot::LoadData()
+{
+    ESCsvDBOperater * csvDBOperater = new ESCsvDBOperater(nullptr);
+    csvDBOperater-&gt;loadCSVFile(qApp-&gt;applicationDirPath() + &quot;\\temp\\test31.csv&quot;);
+    QStringList names = csvDBOperater-&gt;getCSVNames();
+
+    auto callback = [this, names](const QString &amp; name, const QVector&lt;double&gt; &amp; data){
+        添加图表数据
+    };
+
+    ui-&gt;widget-&gt;SetGraphCount(names.size() - 1);
+    for (int i = 0; i &lt; names.size(); ++i)
+    {
+        csvDBOperater-&gt;receiveData(names[i], callback);
+    }
+
+    double start = csvDBOperater-&gt;getStartTime();
+    double end = csvDBOperater-&gt;getEndTime();
+
+    csvDBOperater-&gt;receiveData(names[2], 10.201, 10.412, callback);
+    QVector&lt;double&gt; tiems = csvDBOperater-&gt;getRangeTimeDatas(10.201, 10.412);
+
+    ui-&gt;widget-&gt;SetGraphKeyRange(start, end);
+}</code></pre>
+<h2 id="五相关文章">五、相关文章</h2>
+<ol>
+<li><a href="http://www.cnblogs.com/swarmbees/p/6056225.html">QCustomplot使用分享(一) 能做什么事</a></li>
+<li><a href="http://www.cnblogs.com/swarmbees/p/6057567.html">QCustomplot使用分享(二) 源码解读</a></li>
+<li><a href="http://www.cnblogs.com/swarmbees/p/6057798.html">QCustomplot使用分享(三) 图</a></li>
+<li><a href="http://www.cnblogs.com/swarmbees/p/6058263.html">QCustomplot使用分享(四) QCPAbstractItem</a></li>
+<li><a href="http://www.cnblogs.com/swarmbees/p/6058942.html">QCustomplot使用分享(五) 布局</a></li>
+<li><a href="http://www.cnblogs.com/swarmbees/p/6059812.html">QCustomplot使用分享(六) 坐标轴和网格线</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/6060473.html">QCustomplot使用分享(七) 层(完结)</a></li>
+</ol>
+<h2 id="六总结">六、总结</h2>
+<p>QCustomPlot是一个非常强大的绘图类，并且效率很高，对效率要求较高的程序都可以使用。</p>
+<p>本篇文章是继前7篇讲解QCP后的第一篇使用案例，后续还会陆续提供更多复杂的功能。</p>
+<p>这个控件已经被我封装成一个dll，如果有需要的小伙伴可以加我咨询</p>
+<h2 id="七关于美化">七、关于美化</h2>
+<p>因为我这里的程序都是测试程序，因此都是使用的原生效果，如果有需要美化的同学，或者客户，我也可以提供定制美化功能，欢迎咨询。</p>
+<html>
+    <div style='font-weight:600;'>
+    如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！
+    </div>
+<center>
+    <div>
+        <table>
+        <tr>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td>
+        </tr>
+        </table>
+    </div>
+</center>
+</html>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

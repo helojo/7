@@ -1,0 +1,171 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go包管理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go包管理</center></div><div class='banquan'>原文出处:本文由博客园博主j_x_x提供。<br/>
+原文连接:https://www.cnblogs.com/jiangxiangxiang/p/11102642.html</div><br>
+    <p>摘自：</p>
+<p>http://blueskykong.com/2019/02/18/go-dep-1/</p>
+<p>https://www.cnblogs.com/apocelipes/p/10295096.html#vcs-semver</p>
+<h3 id="gopath和goroot">GOPATH和GOROOT</h3>
+<p>GOROOT的目的就是告知go当前的安装位置,默认go会安装在/usr/local/go下，但也允许自定义安装位置(通过 <code>export GOROOT=$HOME/go1.9.3</code>指定)。编译的时候从GOROOT去找SDK的system libariry</p>
+<p>GOPATH必须要设置，GOPATH告知go，需要代码(包括本项目即内部依赖和引用外部项目的代码即外部依赖)的时候去哪里查找。GOPATH可以随着项目的不同而重新设置。</p>
+<p>GOPATH下会有3个目录：src、bin、pkg。</p>
+<ul>
+<li>src目录：go编译时查找代码的地方；按照golang默认约定，go run，go install等命令的当前工作路径（即在此路径下执行上述命令）。</li>
+<li>bin目录：go get这种bin工具的时候，二进制文件下载的目的地； golang编译可执行文件存放路径</li>
+<li>pkg目录：golang编译包时，生成的.a文件存放路径。.a文件是编译过程中生成的，每个package都会生成对应的.a文件，Go在编译的时候先判断package的源码是否有改动，如果没有的话，就不再重新编译.a文件。</li>
+</ul>
+<p><strong>内部依赖管理</strong></p>
+<ul>
+<li>编译时会去<code>$GOPATH/src/</code>目录去查找需要的代码</li>
+</ul>
+<p><strong>GOPATH来管理外部依赖</strong></p>
+<ul>
+<li><p>go允许import不同代码库的代码，例如github.com, k8s.io, golang.org等等；对于需要import的代码，可以使用 go get 命令取下来放到GOPATH对应的目录中去。例如<code>go get github.com/globalsign/mgo</code>（下载和创建项目要保持目录一致，这样才能保证能够正确的引用外部导入和内部导入），会下载到<code>$GOPATH/src/github.com/globalsign/mgo</code>中去，当其他项目在<code>import github.com/globalsign/mgo</code>的时候也就能找到对应的代码了。</p></li>
+<li>对于go来说，其实并不在意你的代码是内部还是外部的，总之都在GOPATH里，任何import包的路径都是从GOPATH开始的。Go 语言原生包管理的缺陷：
+<ul>
+<li>依赖 列表/关系 无法持久化到本地，需要找出所有依赖包然后一个个 go get</li>
+<li>只能依赖本地全局仓库（GOPATH/GOROOT），无法将库放置于局部仓库（$PROJECT_HOME/vendor）</li>
+</ul></li>
+</ul>
+<h1 id="vendor">vendor</h1>
+<ul>
+<li>vendor就是让go编译时，优先从项目源码树根目录下的vendor目录查找代码，如果vendor中有，则不再去GOPATH中去查找。</li>
+<li>以kube-keepalived-vip为例。该项目会调用k8s.io/kubernetes的库(Client)，但如果你用1.5版本的kubernetes代码来编译keepalived，会编译不过。1.5版本中代码有变化，已经没有这个Client了。这就是前面说的依赖GOPATH来解决go import所带来的问题，代码不对上了。</li>
+<li>使用vendor目录可以把所有依赖的包都拷贝到了vendor目录下，对于需要编译该项目的人来说，只要把代码从github上clone到<code>$GOPATH/src</code>以后，就可以进去go build了(注意，必须将kube-keepalived-vip项目拷贝到<code>$GOPATH/src</code>目录中，否则go会无视vendor目录，仍然去<code>$GOPATH/src</code>中去找依赖包)。</li>
+<li><p>无法精确的引用外部包进行版本控制，不能指定引用某个特定版本的外部包；一旦外部包升级,vendor下的代码不会跟着升级</p>
+<h1 id="govendor">govendor</h1></li>
+<li>该工具将项目依赖的外部包拷贝到项目下的 vendor 目录下，并通过 vendor.json 文件来记录依赖包的版本，方便用户使用相对稳定的依赖。</li>
+<li><p>使用步骤</p>
+<pre><code><code>#安装
+go get -u github.com/kardianos/govendor
+
+# 进入项目的根目录
+# 创建 vendor 文件夹和 vendor.json 文件，此时文件中只有本项目的信息
+govendor init
+
+# 拷贝GOPATH下的代码到vendor目录中，更新vendor.json
+govendor add +包名
+
+# 列出已经存在的依赖包
+govendor list
+
+# 找出使用的对应包
+govendor list -v fmt
+
+# 拉取指定版本的包
+govendor fetch golang.org/x/net/context@a4bbce9fcae005b22ae5443f6af064d80a6f5a55
+govendor fetch golang.org/x/net/context@v1   # Get latest v1.*.* tag or branch.
+govendor fetch golang.org/x/net/context@=v1  # Get the tag or branch named &quot;v1&quot;.</code></pre></li>
+<li><p>govendor还可以直接指定依赖包版本来获取包</p></li>
+</ul>
+<p><img src="./images/go包管理0.png" alt="img" /></p>
+<h1 id="modules">Modules</h1>
+<p>go module 是go包的集合，是源代码交换和版本化控制的基本单元</p>
+<ul>
+<li>「模块根目录」 ( Module root ) : 包含了名为 <code>go.mod</code> 文件的目录，可以存放于文件系统上的任何位置，而不用管 <code>GOPATH</code> 路径到底是什么</li>
+<li>「模块路径」 ( Module path ) : 与模块根目录对应的导入路径的前缀</li>
+<li>「主模块」( Main module ) : 包行了运行 go 命令的所在目录的模块</li>
+</ul>
+<h3 id="go111module">GO111MODULE</h3>
+<p>要使用<code>go module</code>,首先要设置<code>GO111MODULE=on</code>。</p>
+<ul>
+<li>如果设置为 <code>on</code> ，那么无论模块在于何种路径，都会启用模块支持，始终使用 module-aware mode。首先会在$GOPATH/pkg/mod中查找有没有所需要的依赖，没有的直接会进行下载，完全忽略 GOPATH 以及 vendor 目录</li>
+<li>如果设置为 <code>off</code>，禁用 go module 功能，go compiler 会始终使用 GOPATH mode，即无论要构建的源码目录是否在 GOPATH 路径下，go compiler 都会在传统的 GOPATH 和 vendor 目录 (仅支持在 GOPATH 目录下的 package) 下搜索目标程序依赖的 go package；如果一个包在vendor和$GOPATH下都存在，查找依赖的顺序：</li>
+</ul>
+<ol>
+<li>优先使用vendor目录下面的包</li>
+<li>如果vendor下面没有搜索到，再搜索$GOPATH/src下面的包，</li>
+<li>如果<code>$GOPATH</code>下面没有搜索到，那么搜索<code>$GOROOT/src</code>下面的包</li>
+</ol>
+<ul>
+<li>如果没有设置，或设置为 <code>auto</code>，满足以下任一条件时才使用 module-aware mode:
+<ul>
+<li>当前目录位于 GOPATH/src 之外并且包含 go.mod 文件</li>
+<li>当前目录位于包含 go.mod 文件的目录下</li>
+</ul></li>
+</ul>
+<h3 id="既有项目">既有项目</h3>
+<ul>
+<li><p>假设你已经有了一个go 项目， 比如在<code>$GOPATH/github.com/smallnest/rpcx</code>下， 你可以使用<code>go mod init github.com/smallnest/rpcx</code>在这个文件夹下（即模块根目录）创建一个空的<code>go.mod</code> (只有第一行 <code>module github.com/smallnest/rpcx</code>即模块导入名称)。</p></li>
+<li><p>下面是一个简化的go.mod的内容</p>
+<pre><code><code>module my/thing //模块名称
+
+require (//要求的依赖项列表以及版本
+        one/thing v1.3.2
+        other/thing v2.5.0 // indirect
+        ...
+)
+
+exclude (//排除的依赖项，仅在当前模块为主模块时生效
+        bad/thing v0.7.3
+)
+
+replace (//替换的依赖项，仅在当前模块为主模块时生效
+        src/thing 1.0.2 =&gt; dst/thing v1.1.0
+)</code></pre></li>
+<li><p><code>go get ./...</code>查找依赖，并记录在<code>go.mod</code>文件中(你还可以指定 <code>-tags</code>,这样可以把tags的依赖都查找到)。</p></li>
+<li><p>执行上面的命令会把<code>go.mod</code>的<code>latest</code>版本换成实际的最新的版本，并且会生成一个<code>go.sum</code>记录每个依赖库的版本和哈希值，用于验证缓存的依赖项是否满足模块要求</p></li>
+</ul>
+<h3 id="新的项目">新的项目</h3>
+<p>你可以在<code>GOPATH</code>之外创建新的项目。</p>
+<p><code>go mod init packagename</code>可以创建一个空的<code>go.mod</code>,然后你可以在其中增加<code>require github.com/smallnest/rpcx latest</code>依赖，或者像上面一样让go自动发现和维护。</p>
+<p><code>go mod download</code>可以下载所需要的依赖，但是依赖并不是下载到<code>$GOPATH</code>中，而是<code>$GOPATH/pkg/mod</code>中，用来当做缓存，多个项目可以共享缓存的module。</p>
+<h3 id="go-mod命令">go mod命令</h3>
+<pre><code><code>//download    下载依赖的module到本地cache
+//edit        edit go.mod from tools or scripts (编辑go.mod文件)
+例如 go mod edit -require=&quot;github.com/chromedp/chromedp@v0.1.0&quot;,修改依赖关系使用chromedp 的v0.1.0版本
+//tidy 增加丢失的module，去掉未用的module，如在项目的开发过程中, 依赖有变更, 可使用 go mod tidy 来应用这些变更到 go.mod 文件.
+//graph       print module requirement graph (打印模块依赖图))
+//init        在当前文件夹下初始化一个新的module, 创建go.mod文件
+//vendor  在项目发布时会要将依赖复制到项目中，会复制modules下载到vendor中, 貌似只会下载你代码中引用的库，而不是go.mod中定义全部的module。
+//verify      verify dependencies have expected content (校验依赖)
+//why         explain why packages or modules are needed (解释为什么需要依赖)
+//go list -m -json all //依赖详情</code></pre>
+<h2 id="集成">集成</h2>
+<p>go module 功能被集成到 <code>go</code> 命令行工具中，例如，在调用诸如 <code>go build</code>，<code>go install</code>，<code>go run</code>，<code>go test</code> 之类的命令时，将启动相应的操作，如缓存，创建或更新 <code>go.mod</code> 和 <code>go.sum</code> 等</p>
+<h3 id="go-get-升级">go get 升级</h3>
+<ul>
+<li>运行 <code>go get -u</code> 将会升级到最新的次要版本或者修订版本</li>
+<li>运行 <code>go get -u=patch</code> 将会升级到最新的修订版本</li>
+<li>运行 <code>go get package@version</code> 将会升级到指定的版本号<code>version</code></li>
+</ul>
+<h3 id="语义化版本">语义化版本</h3>
+<p>golang官方推荐的最佳实践叫做<code>semver</code>，写全了就是<code>Semantic Versioning</code>(语义化版本)。形如<code>vX.Y.Z</code>的形式显然比一串hash更直观，x.y.z, z是修订版本号， y是次要版本号，如此一来包的导入路径发生了变化，不同的导入路径意味着不同的包，更具体的规范在<a href="https://semver.org/lang/zh-CN/">这里</a>。</p>
+<ul>
+<li><p>标记版本号的软件发行后，禁止（MUST NOT）改变该版本软件的内容。任何修改都必须（MUST）以新版本发行。</p></li>
+<li><p>标准的版本号必须（MUST）采用 X.Y.Z 的格式，其中 X、Y 和 Z 为非负的整数，且禁止（MUST NOT）在数字前方补零。X 是主版本号、Y 是次版本号、而 Z 为修订号。每个元素必须（MUST）以数值来递增。例如：1.9.1 -&gt; 1.10.0 -&gt; 1.11.0。</p></li>
+<li>版本格式：主版本号.次版本号.修订号，版本号递增规则如下：
+<ol>
+<li>主版本号：当你做了不兼容的 API 修改。每当主版本号递增时，次版本号和修订号必须（MUST）归零。</li>
+<li>次版本号：当你做了向下兼容的功能性新增，每当次版本号递增时，修订号必须（MUST）归零。
+<ul>
+<li>如果同时依赖是 v1.5.0 和 v1.10.0，最小的兼容版本是 v1.10.0。</li>
+</ul></li>
+<li>修订号：当你做了向下兼容的问题修正。这里的修正指的是针对不正确结果而进行的内部修改
+<ul>
+<li>如果依赖写成 v1.0.5 和 v1.0.10，这两版本是兼容的，则选择最小版本依赖 v1.0.5</li>
+</ul></li>
+</ol></li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

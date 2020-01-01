@@ -1,0 +1,133 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修洛谷P5108 仰望半月的夜空(后缀数组)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>洛谷P5108 仰望半月的夜空(后缀数组)</center></div><div class='banquan'>原文出处:本文由博客园博主自为风月马前卒提供。<br/>
+原文连接:https://www.cnblogs.com/zwfymqz/p/10612560.html</div><br>
+    <h2 id="题意">题意</h2>
+<p><a href="https://www.luogu.org/problemnew/show/P5108">题目链接</a></p>
+<h2 id="sol">Sol</h2>
+<p>warning：下面这个做法只有95分，本地拍了1w+组都没找到错误我表示十分无能为力</p>
+<p>我们考虑每个串的排名去更新答案，显然排名为<span class="math inline">\(1\)</span>的后缀的前缀一定是当前长度的字典序最小的答案，但不一定是左端点最小的答案，因此还需要用一个数据结构去维护一下所有可行的左端点。然后枚举所有后缀更新答案就行了。</p>
+<pre><code>#include&lt;bits/stdc++.h&gt; 
+using namespace std;
+const int MAXN = 2e6 + 10, SS = 6e5 + 10, INF = 1e9 + 10;
+template &lt;typename A, typename B&gt; inline bool chmin(A &amp;a, B b){if(a &gt; b) {a = b; return 1;} return 0;}
+template &lt;typename A, typename B&gt; inline bool chmax(A &amp;a, B b){if(a &lt; b) {a = b; return 1;} return 0;}
+inline int read() {
+    char c = getchar(); int x = 0, f = 1;
+    while(c &lt; &#39;0&#39; || c &gt; &#39;9&#39;) {if(c == &#39;-&#39;) f = -1; c = getchar();}
+    while(c &gt;= &#39;0&#39; &amp;&amp; c &lt;= &#39;9&#39;) x = x * 10 + c - &#39;0&#39;, c = getchar();
+    return x * f;
+}
+int CharSet, N, M, ans[SS];
+int s[SS]; char stmp[SS];
+int rak[SS], tp[SS], tax[MAXN * 10], sa[SS], height[SS];
+void Sort() {
+    for(int i = 0; i &lt;= M; i++) tax[i] = 0;
+    for(int i = 1; i &lt;= N; i++) tax[rak[i]]++;
+    for(int i = 1; i &lt;= M; i++) tax[i] += tax[i - 1];
+    //for(int i = N; i &gt;= 1; i--) sa[i] = tp[tax[rak[i]]--];
+    for(int i = N; i &gt;= 1; i--) sa[tax[rak[tp[i]]]--] = tp[i];
+}
+void SuffixArraryBuild() {
+    M = CharSet;
+    for(int i = 1; i &lt;= N; i++) rak[i] = s[i], tp[i] = i;
+    Sort();
+    for(int w = 1, p; w &lt; N; w &lt;&lt;= 1, M = p) {
+        p = 0;
+        for(int i = N - w + 1; i &lt;= N; i++) tp[++p] = i;
+        for(int i = 1; i &lt;= N; i++) if(sa[i] &gt; w) tp[++p] = sa[i] - w;
+        Sort(); swap(rak, tp);
+        rak[sa[1]] = p = 1; 
+        for(int i = 2; i &lt;= N; i++) 
+            rak[sa[i]] = (tp[sa[i]] == tp[sa[i - 1]] &amp;&amp; tp[sa[i] + w] == tp[sa[i - 1] + w] ? p : ++p);
+    }
+    for(int i = 1, k = 0; i &lt;= N; i++) {
+    
+        int j = sa[rak[i] - 1];
+        if(k) k--;
+        while(j &amp;&amp; s[i + k] == s[j + k]) k++;//mmp一开始没写j.. 
+            height[rak[i]] = k;//tag
+    }
+}
+#define ls k &lt;&lt; 1
+#define rs k &lt;&lt; 1 | 1
+int mn[MAXN];
+void update(int k) {
+    mn[k] = min(mn[ls], mn[rs]);
+}
+void Build(int k, int l, int r) {
+    if(l == r) {mn[k] = sa[l]; return ;}
+    int mid = l + r &gt;&gt; 1;
+    Build(ls, l, mid); Build(rs, mid + 1, r);
+    update(k);
+}
+int IntQuery(int k, int l, int r, int ql, int qr) {
+    if(ql &lt;= l &amp;&amp; r &lt;= qr) return mn[k];
+    int mid = l + r &gt;&gt; 1;
+    if(ql &gt; mid) return IntQuery(rs, mid + 1, r, ql, qr);
+    else if(qr &lt;= mid) return IntQuery(ls, l, mid, ql, qr);
+    else return min(IntQuery(ls, l, mid, ql, qr), IntQuery(rs, mid + 1, r, ql, qr));
+}
+int f[MAXN][20];
+int Find(int pos, int cur) {//从pos开始的height，第一个 &lt; cur的位置 
+    if(height[pos] &lt; cur) return pos - 1;
+    for(int i = 19; i &gt;= 1; i--) {
+        while(f[pos][i] &gt;= cur &amp;&amp; f[pos][i] &lt;= INF &amp;&amp; pos + (1 &lt;&lt; i) - 1 &lt;= N) 
+            pos = pos + (1 &lt;&lt; i) - 1;
+    }
+    return pos;
+}
+
+void solve() {
+    Build(1, 1, N);
+    memset(f, 0x3f, sizeof(f));
+    for(int i = 1; i &lt;= N; i++) f[i][0] = height[i];
+    for(int j = 1; j &lt;= 19; j++) 
+        for(int i = 1; i + (1 &lt;&lt; j) - 1&lt;= N; i++) 
+            chmin(f[i][j], min(f[i][j - 1], f[i + (1 &lt;&lt; j - 1)][j - 1]));
+    
+    
+    int cur = 1;//马上要找的答案 
+    for(int rk = 1; rk &lt;= N; rk++) {
+        if((N - sa[rk] + 1) &lt; cur) continue;
+        int pos = sa[rk];
+        for(int i = pos + cur - 1; i &lt;= N; i++) {
+            int j = Find(rk + 1, cur);
+            ans[cur++] = IntQuery(1, 1, N, rk, j);
+        }
+    }
+}
+signed main() {
+    CharSet = read(); N = read();
+    if(CharSet == 26) {
+        scanf(&quot;%s&quot;, stmp + 1);
+        for(int i = 1; i &lt;= N; i++) s[i] = stmp[i] - &#39;a&#39;;
+    }
+    else for(int i = 1; i &lt;= N; i++) s[i] = read();
+    SuffixArraryBuild();
+    solve();
+    for(int i = 1; i &lt;= N; i++) cout &lt;&lt; ans[i] &lt;&lt; &#39; &#39;;
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

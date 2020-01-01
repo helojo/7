@@ -1,0 +1,270 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++-多态和vptr指针' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++-多态和vptr指针</center></div><div class='banquan'>原文出处:本文由博客园博主跌倒的小黄瓜提供。<br/>
+原文连接:https://www.cnblogs.com/ygjzs/p/12079563.html</div><br>
+    <h2 id="多态的原理">多态的原理</h2>
+<pre><code><code>#define _CRT_SECURE_NO_WARNINGS
+#include &lt;iostream&gt;
+
+
+using namespace std;
+
+class Parent
+{
+public:
+    Parent(int a) {
+        this-&gt;a = a;
+    }
+
+    virtual void func(int a)
+    {
+        cout &lt;&lt; &quot;Parent::func(int)...&quot; &lt;&lt; endl;
+    }
+
+    virtual void func(int a, int b, int c)
+    {
+        cout &lt;&lt; &quot;Parent::func(int ,int ,int )....&quot; &lt;&lt; endl;
+    }
+private:
+    int a;
+};
+
+class Child :public Parent
+{
+public:
+    Child(int a, int b) :Parent(a)
+    {
+        this-&gt;b = b;
+    }
+    virtual void func(int a) 
+    {
+        cout &lt;&lt; &quot;Child: func(int)...&quot; &lt;&lt; endl;
+    }
+
+    void func(int a, int b) {
+        cout &lt;&lt; &quot;Child :func(int ,int )...&quot; &lt;&lt; endl;
+    }
+
+    virtual void func(int a, int b, int c)
+    {
+        cout &lt;&lt; &quot;Child ::func(int ,int ,int )...&quot; &lt;&lt; endl;
+    }
+private:
+    int b;
+};
+
+void myFunc(Parent *pp)
+{
+    pp-&gt;func(10);
+}
+
+int main(void)
+{
+    //Parent *pp = new Parent(10);
+    //Parent *cp = new Child(100, 200);
+
+
+    Parent *pp = new Child(100, 200);
+
+    pp-&gt;func(10);//Parent ？ Child
+                    //如果调用一个普通函数，编译器根本就不会查找虚函数表。
+                    //只有你调用的函数，是虚函数的时候，才会去查找虚函数表
+    // myFunc(pp);
+    pp-&gt;func(10, 20, 30);
+
+    return 0;
+}</code></pre>
+<h2 id="验证vptr指针的存在">验证vptr指针的存在</h2>
+<pre><code><code>#define _CRT_SECURE_NO_WARNINGS
+#include &lt;iostream&gt;
+
+
+using namespace std;
+
+class Parent
+{
+public:
+    virtual void func()
+    {
+        cout &lt;&lt; &quot;Parent::func()..&quot; &lt;&lt; endl;
+    }
+    virtual void func(int a)
+    {
+        cout &lt;&lt; &quot;Parent::func()..&quot; &lt;&lt; endl;
+    }
+private:
+    int a;
+};
+
+
+class Parent2
+{
+public:
+    void func()
+    {
+        cout &lt;&lt; &quot;Parent2::func()..&quot; &lt;&lt; endl;
+    }
+private:
+    int a;
+};
+int main(void)
+{
+    Parent p1;
+    Parent2 p2;
+
+
+    cout &lt;&lt; &quot;sizeof(p1) &quot; &lt;&lt; sizeof(p1) &lt;&lt; endl;//多出来的4个字节就是vptr指针所占用的空间。
+    cout &lt;&lt; &quot;sizeof(p2) &quot; &lt;&lt; sizeof(p2) &lt;&lt; endl;
+
+    
+    return 0;
+}</code></pre>
+<h2 id="vptr指针分布初始化">vptr指针分布初始化</h2>
+<pre><code><code>#define _CRT_SECURE_NO_WARNINGS
+#include &lt;iostream&gt;
+
+
+using namespace std;
+
+class Parent
+{
+public:
+    Parent(int a)
+    {
+        cout &lt;&lt; &quot;Parent(int ..)&quot; &lt;&lt; endl;
+        this-&gt;a = a;
+
+        //print();//是调用父类的print（） 还是 子类的print（）？
+                //通过结果 此时调用的父类的print 并不是子类的print
+    }
+
+    virtual void print()
+    {
+        cout &lt;&lt; &quot;Parent::print()...a = &quot;&lt;&lt;a &lt;&lt; endl;
+    }
+private:
+    int a;
+};
+
+class Child :public Parent
+{
+public:
+    Child(int a, int b) :Parent(a) //在调用父类的构造器的时候，会将vptr指针当做父类来处理。
+                                    //此时会临时指向父类的虚函数表
+
+
+    {
+        //将子类对象的空间有编程子类对象处理，vptr指针就从指向父类的表 变成 指向子类的表
+
+        cout &lt;&lt; &quot;Child (int ,int )&quot; &lt;&lt; endl;
+        this-&gt;b = b;
+        print();//此时vptr指针已经回到了 子类的表， 调用的是子类的print函数。
+
+    }
+
+    virtual void print() {
+        cout &lt;&lt; &quot;Child ::Print()..b = &quot; &lt;&lt; b &lt;&lt; endl;
+    }
+private:
+    int b;
+};
+
+int main(void)
+{
+    Parent *pp = new Child(10, 20);
+    // pp-&gt;print();//发生多态
+
+    delete pp;
+    
+    return 0;
+}</code></pre>
+<h2 id="父类指针和子类指针的步长">父类指针和子类指针的步长</h2>
+<pre><code><code>#define _CRT_SECURE_NO_WARNINGS
+#include &lt;iostream&gt;
+
+using namespace std;
+
+
+class Parent
+{
+public:
+    Parent(int a)
+    {
+        this-&gt;a = a;
+    }
+    virtual void print()
+    {
+        cout &lt;&lt; &quot;Parent::print a=  &quot; &lt;&lt; a &lt;&lt; endl;
+    }
+
+    int a;
+};
+
+class Child :public Parent
+{
+public:
+    Child(int a) :Parent(a)
+    {
+
+    }
+
+    virtual void print()
+    {
+        cout &lt;&lt; &quot;Child::print a=  &quot; &lt;&lt; a &lt;&lt; endl;
+    }
+
+    int b;
+};
+
+
+int main(void)
+{
+
+    Child array[] = { Child(0), Child(1), Child(2) };
+    
+    Parent *pp = &amp;array[0];
+    Child *cp = &amp;array[0];
+
+    pp++;
+
+    pp-&gt;print();
+    cp-&gt;print();
+
+#if 0
+    pp++;//pp +sizeof(Parent)
+    cp++;//cp +sizeof(Child)
+
+    pp-&gt;print();
+    cp-&gt;print();
+#endif
+    cout &lt;&lt; &quot;-----&quot; &lt;&lt; endl;
+
+    int i = 0;
+    for (cp= &amp;array[0], i = 0; i &lt; 3; i++, cp++) {
+        cp-&gt;print();
+    }
+
+    return 0;
+}</code></pre>
+
+</div>
+</div></div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

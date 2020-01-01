@@ -1,0 +1,284 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修关于 exynos 4412 按键中断 异步通知' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>关于 exynos 4412 按键中断 异步通知</center></div><div class='banquan'>原文出处:本文由博客园博主我是范哥哥啦提供。<br/>
+原文连接:https://www.cnblogs.com/fanjuntao/p/11169525.html</div><br>
+    <p>以下是驱动测试代码：</p>
+<p>//内核的驱动代码 <br />
+<br />#include &lt;linux/init.h&gt;
+<br />#include &lt;linux/module.h&gt; //for module_init moudule_exit
+<br />#include &lt;linux/fs.h&gt;	  //for MKDEV register_chrdev_region
+<br />#include &lt;linux/cdev.h&gt;  //字符设备头文件
+<br />#include &lt;linux/device.h&gt;
+<br />#include &lt;asm/io.h&gt;  //for ioremap
+<br />#include &lt;linux/platform_device.h&gt;   //for  平台设备
+<br />#include &lt;linux/of.h&gt; 
+<br />#include &lt;linux/signal.h&gt;
+<br />#include &lt;linux/interrupt.h&gt;
+<br />
+<br />#define  LED_MA   500    //主设备号(那一类设备)
+<br />                                    //某些主设备号已经静态地分配给了大部分公用设备。见Documentation/devices.txt 。 这里我们常使用250
+<br />#define  LED_MI   2       //次设备号(这类设备当中的具体哪个设备)
+<br />
+<br />//目标:把字符设备改造为平台设备
+<br />//1. 把硬件信息，分离出去，放到设备树
+<br />//#define LED3CON  0X11000C20
+<br />//#define LED3DAT  0x11000c24
+<br />struct resource *led_res_con;
+<br />struct resource *led_res_dat;
+<br />
+<br />struct resource *key1_res;  //devices source pointer
+<br />
+<br />struct fasync_struct *async_queue;  /* 异步结构体指针，用于读 */
+<br />
+<br />struct cdev   led;  //定义一个字符设备
+<br />#define LED_MAGIC   'L'  //幻数，类似加密，避免误操作
+<br />#define LED_ON  _IOW(LED_MAGIC, 1, int)
+<br />#define LED_OFF _IOW(LED_MAGIC,2,int)
+<br />
+<br />
+<br />unsigned int *led3_con;
+<br />unsigned int *led3_dat;
+<br />
+<br />
+<br />int led_open (struct inode *inode, struct file *file)
+<br />{
+<br />  led3_con  =  ioremap((phys_addr_t)led_res_con,1); //把硬件的物理地址转换为内核的虚拟地址
+<br />  if(led3_con == NULL){
+<br />     printk("led3_con ioremap fail\n");
+<br />     return -1;
+<br />  }
+<br />  led3_dat  =  ioremap((phys_addr_t)led_res_dat,1); 
+<br />  if(led3_dat == NULL){
+<br />     printk("led3_dat ioremap fail\n");
+<br />     return -1;
+<br />  }
+<br />
+<br />    writel((readl(led3_con) &amp; (~0xf)) | 1,led3_con);//led3 and key2 had use same register;
+<br />    writel(1,led3_dat);  
+<br />
+<br />   printk("led_open ok\n");   
+<br />   return 0;
+<br />}
+<br />
+<br />int led_release(struct inode *inode, struct file *file)
+<br />{
+<br /> 	free_irq(key1_res-&gt;start, NULL);
+<br />	printk("remove OK\n");
+<br />
+<br />
+<br />   printk("led_release ok\n"); 
+<br />
+<br />   return 0;
+<br />}
+<br />
+<br />//实现自定义的个性化操作
+<br />long led_ioctl(struct file *file, unsigned int cmd, unsigned long args)
+<br />{
+<br />  
+<br />   switch(cmd)  //解析ioctl 命令
+<br />   {
+<br />   case  LED_ON:  //点亮灯
+<br />   	 printk("led on cmd=%d\n",cmd); 
+<br />	 writel(1,led3_dat);  
+<br />   	break;
+<br />   case  LED_OFF: //灭灯
+<br />   	 printk("led off cmd=%d\n",cmd); 
+<br />	 writel(0,led3_dat);  	 
+<br />   	break;
+<br />   default:
+<br />   	printk("ioctl cmd no found\n"); 
+<br />   	break;   	
+<br />   }
+<br />
+<br />   printk("led_ioctl end\n"); 
+<br />   return 0;
+<br />}
+<br />
+<br />
+<br />	
+<br />irqreturn_t key_interrupt(int irqno, void *devid)
+<br />{
+<br />
+<br />    kill_fasync(&amp;async_queue, SIGIO, POLL_IN);  //发送SIGIO 异步通知信号
+<br />	printk("irqno = %d\n", irqno);
+<br />	return IRQ_HANDLED; 
+<br />}
+<br />
+<br />int key_fasync (int fd,struct file *filp,int mode)
+<br />{
+<br />    return fasync_helper(fd,filp,mode,&amp;async_queue);//处理标志的变更
+<br />}
+<br />
+<br />
+<br />//3.实现设备的文件操作
+<br />struct file_operations  fops={  //设备的文件操作 
+<br />  .owner = THIS_MODULE,
+<br />  .open = led_open,
+<br />  .release = led_release,
+<br />  .unlocked_ioctl = led_ioctl,
+<br />  .fasync = key_fasync,
+<br />};
+<br />
+<br />int led_init(struct platform_device *pdev)   //把找到的平台设备的信息传进来
+<br />{
+<br />    int ret;
+<br />    dev_t dev_id= MKDEV(LED_MA, LED_MI); //把主次设备号合并生成设备ID
+<br />
+<br />
+<br />   //1.注册设备号
+<br />    ret =register_chrdev_region(dev_id,1,"test_led"); 
+<br />    if(ret&lt;0){
+<br />         printk("regiser led fail\n ");
+<br />	  return -1;
+<br />    }		
+<br />
+<br />   //2.初始化字符设备
+<br />    cdev_init(&amp;led,&amp;fops);  //字符设备初始化
+<br />    ret =cdev_add(&amp;led,dev_id,1);  //添加字符设备到系统中
+<br />     if(ret&lt;0){
+<br />         printk("cdev add led fail\n ");
+<br />	  return -1;
+<br />    }	
+<br />
+<br />    led_res_con = pdev-&gt;resource[0].start;
+<br />    led_res_dat = 	 pdev-&gt;resource[1].start;
+<br />    printk("led init go  1\n"); 
+<br />
+<br />/*****************************************************/
+<br />	key1_res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+<br />	if (key1_res == NULL) {
+<br />		printk("No resource !\n");
+<br />		return -ENODEV;
+<br />	}
+<br />	
+<br />	ret = request_irq(key1_res-&gt;start,  //硬件中断号  对应exynos4412-test4412.dts中test4412-key  interrupts = &lt;1 2&gt;中的1  
+<br />	                  key_interrupt,  //中断处理函数
+<br />	                  key1_res-&gt;flags,  //中断标志   IRQF_DISABLED 在表示中断处理时屏蔽掉其它所有中断 
+<br />	                  "key2",  //中断名称  在cat /proc/interrupts  克看到
+<br />	                  NULL);
+<br />	if (ret &lt; 0) {
+<br />		printk("failed request irq: irqno = irq_res-&gt;start");
+<br />		return ret; 
+<br />	}
+<br />	printk("key irq init ok\n");
+<br />/*********************************************************/
+<br />
+<br />    return 0;  //返回值为零表示运行成功 ，负值表示失败
+<br />}
+<br />
+<br />
+<br />void led_exit(void)
+<br />{
+<br />
+<br />    dev_t dev_id= MKDEV(LED_MA, LED_MI);
+<br />    cdev_del(&amp;led);  //删除设备
+<br />    unregister_chrdev_region(dev_id, 1);  //取消注册
+<br />    printk("led exit go\n");
+<br />}
+<br />
+<br />
+<br />
+<br />//2.把内核模块的入口，改为platform_driver的入口
+<br />//module_init(led_init);
+<br />//module_exit(led_exit);
+<br />
+<br />static const struct of_device_id machled[] = {	
+<br /> { .compatible = "test,led3"},	  //必须和设备树里的设备名字一样
+<br /> {},
+<br />};
+<br />
+<br />MODULE_DEVICE_TABLE(of, machled);
+<br />
+<br />struct platform_driver led_platform_driver = {	
+<br />  .driver = {			
+<br />  	 .name = "test_led",		
+<br />	 .owner = THIS_MODULE,	  	
+<br />	 .of_match_table = of_match_ptr(machled),	
+<br />  },	
+<br />  .probe = led_init,	
+<br />  .remove = led_exit,
+<br />};
+<br />
+<br />module_platform_driver(led_platform_driver);  //声明led_platform_driver为平台设备驱动的加载入口
+<br />
+<br /> MODULE_LICENSE("Dual BSD/GPL");</p>
+<p>&nbsp;</p>
+<p>接下来是测试代码：</p>
+<p>#include &lt;stdio.h&gt; <br />#include &lt;fcntl.h&gt;
+<br />#include &lt;unistd.h&gt;
+<br />#include &lt;stdlib.h&gt;
+<br />#include &lt;sys/ioctl.h&gt;
+<br />#include &lt;signal.h&gt;
+<br />#include &lt;sys/types.h&gt;
+<br />#include &lt;sys/stat.h&gt;
+<br />
+<br />#define LED_MAGIC 'L'
+<br />
+<br />//#define LED_ON  1
+<br />//#define LED_OFF 2
+<br />
+<br />#define LED_ON  _IOW(LED_MAGIC, 1, int)
+<br />#define LED_OFF _IOW(LED_MAGIC,2,int)
+<br />
+<br />int flag = 0;
+<br />void input_handler (int signum)
+<br />{	
+<br />   
+<br />    printf("receive a signal from globalfifo, signalnum : %d\n",signum);
+<br />    flag = 1;
+<br />    
+<br />
+<br />}
+<br />
+<br />
+<br />
+<br />int main(int argc, char **argv)
+<br />{ 
+<br />        int fd = open("/dev/led", O_RDWR);
+<br /> 
+<br />    	if (fd &lt; 0) {
+<br />         printf("open /dev/led fail\n");
+<br />         return -1;
+<br />	    }
+<br /><br />    int oflags;
+<br />    signal(SIGIO, input_handler); //让input_handler()处理SIGIO信号
+<br />    fcntl(fd, F_SETOWN, getpid());  //设置设备文件的所有者为本进程
+<br />    oflags = fcntl(fd, F_GETFL);    // 会调用 驱动中的 .fasync
+<br />    fcntl(fd, F_SETFL, oflags | FASYNC);  //FASYNC  设置支持异步通知模式
+<br /><br />    while(1)
+<br />    {
+<br />        sleep(100);    
+<br />        if (flag)
+<br />        {
+<br />	        ioctl(fd, LED_OFF);  //ioctl 实现设备的个性化操作（可自定义命令）
+<br />            printf("LED_OFF\n");  //注意要加\n 否则打印信息可能没有
+<br />
+<br />            flag = 0;
+<br />
+<br />        }
+<br />    }
+<br />}</p>
+<p>&nbsp;</p>
+<p>最后测试下来还是有一些小问题，后续再看；</p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

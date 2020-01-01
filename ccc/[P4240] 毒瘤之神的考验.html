@@ -1,0 +1,128 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[P4240] 毒瘤之神的考验' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[P4240] 毒瘤之神的考验</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/11038516.html</div><br>
+    <p><a href="https://www.luogu.org/problemnew/show/P4240">题目链接</a></p>
+<p>不妨设<span class="math inline">\(n\le m\)</span><br />
+<span class="math display">\[
+\begin{aligned}
+ans&amp;=\sum_{i=1}^n\sum_{j=1}^m\varphi(ij)\\
+&amp;=\sum_{i=1}^n\sum_{j=1}^m\frac{\varphi(i)\varphi(j)\gcd(i,j)}{\varphi(\gcd(i,j))}\\
+&amp;=\sum_{d=1}^{n}\frac{d}{\varphi(d)}\sum_{i=1}^n\sum_{j=1}^m\varphi(i)\varphi(j)[d=\gcd(i,j)]
+\\
+f(d)&amp;=\sum_{i=1}^n\sum_{j=1}^m\varphi(i)\varphi(j)[d=\gcd(i,j)]
+\\
+g(d)&amp;=\sum_{d|x}f(x)\\
+&amp;=\sum_{i=1}^n\sum_{j=1}^m\varphi(i)\varphi(j)[d|\gcd(i,j)]\\
+&amp;=\sum_{i=1}^{n/d}\varphi(id)\sum_{j=1}^{m/d}\varphi(jd)
+\\
+f(d)&amp;=\sum_{d|x}\mu(\frac{x}d)g(x)
+\\
+ans&amp;=\sum_{d=1}^{n}\frac{d}{\varphi(d)}f(d)\\
+&amp;=\sum_{d=1}^{n}\frac{d}{\varphi(d)}\sum_{d|x}\mu(\frac{x}d)g(x)\\
+\\
+\end{aligned}
+\]</span><br />
+预处理<span class="math inline">\(g(d)\)</span>，然后暴力做<span class="math inline">\(ans\)</span>，复杂度都是<span class="math inline">\(n\log n\)</span>的。</p>
+<hr />
+<p>是的这并不能过……<br />
+<span class="math display">\[
+\begin{aligned}
+ans&amp;=\sum_{d=1}^n\frac{d}{\varphi(d)}\sum_{d|x}\mu(\frac{x}d)\sum_{i=1}^{n/x}\varphi(ix)\sum_{j=1}^{m/x}\varphi(jx)\\
+&amp;=\sum_{x=1}^n\sum_{i=1}^{n/x}\varphi(ix)\sum_{j=1}^{m/x}\varphi(jx)\sum_{d|x}\frac{d}{\varphi(d)}\mu(\frac{x}d)\\
+G(x,t)&amp;=\sum_{i=1}^t\varphi(ix)\\
+&amp;=G(x,t-1)+\varphi(tx)\\
+F(x)&amp;=\sum_{d|x}\frac{d}{\varphi(d)}\mu(\frac{x}d)\\
+S(n,m,t)&amp;=\sum_{x=1}^tG(x,n/x)G(x,m/x)F(x)\\
+&amp;=S(n,m,t-1)+G(t,n/t)G(t,m/t)F(t)
+\end{aligned}
+\]</span><br />
+埃氏筛求出<span class="math inline">\(G,F\)</span>以及一部分的<span class="math inline">\(S\)</span>，剩下的暴力算。如果设块大小为<span class="math inline">\(B\)</span>，则预处理、计算的<span class="math inline">\(S\)</span>复杂度为<span class="math inline">\(nB^2+T(\sqrt n-\sqrt{n/B} +n/B)\)</span>，然后<del>实践出真知地求出较优的<span class="math inline">\(B\)</span></del>。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N=1e5;
+const int B=40;
+const int P=998244353;
+
+bool vis[N+1];
+int pri[N+1],phi[N+1],mu[N+1],tot;
+int inv[N+1];
+
+int F[N+1],*G[N+1],*S[B+1][B+1];
+
+void initial() {
+    phi[1]=mu[1]=1;
+    for(int i=2; i&lt;=N; ++i) {
+        if(!vis[i]) pri[++tot]=i,phi[i]=i-1,mu[i]=-1;
+        for(int j=1; j&lt;=tot&amp;&amp;i*pri[j]&lt;=N; ++j) {
+            vis[i*pri[j]]=1;
+            if(i%pri[j]==0) {phi[i*pri[j]]=phi[i]*pri[j]; break;}
+            phi[i*pri[j]]=phi[i]*(pri[j]-1);
+            mu[i*pri[j]]=-mu[i];
+        }
+    }
+    inv[1]=1;
+    for(int i=2; i&lt;=N; ++i) inv[i]=1LL*inv[P%i]*(P-P/i)%P;
+    for(int i=1; i&lt;=N; ++i) 
+    for(int j=1; j&lt;=N/i; ++j) 
+        F[i*j]=(F[i*j]+1LL*i*inv[phi[i]]%P*mu[j]%P+P)%P;
+    for(int i=1; i&lt;=N; ++i) {
+        G[i]=new int[N/i+1];
+        G[i][0]=0;
+        for(int j=1; j&lt;=N/i; ++j) 
+            G[i][j]=(G[i][j-1]+phi[i*j])%P;
+    }
+    for(int x=1; x&lt;=B; ++x) 
+    for(int y=1; y&lt;=B; ++y) {
+        int T=N/max(x,y);
+        S[x][y]=new int[T+1];
+        S[x][y][0]=0;
+        for(int t=1; t&lt;=T; ++t) 
+            S[x][y][t]=(S[x][y][t-1]+1LL*F[t]*G[t][x]%P*G[t][y]%P)%P;
+    }
+}
+
+int solve(int n,int m) {
+    if(m&lt;n) swap(n,m);
+    int ans=0;
+    for(int i=1; i&lt;=m/B; ++i) 
+        ans=(ans+1LL*F[i]*G[i][n/i]%P*G[i][m/i]%P)%P;
+    for(int l=m/B+1,r; l&lt;=n; l=r+1) {
+        r=min(n/(n/l),m/(m/l));
+        ans=(ans+(S[n/l][m/l][r]-S[n/l][m/l][l-1]+P)%P)%P;
+    }
+    return ans;
+}
+
+int main() {
+    initial();
+    int T,n,m;
+    scanf(&quot;%d&quot;,&amp;T);
+    while(T--) {
+        scanf(&quot;%d%d&quot;,&amp;n,&amp;m);
+        printf(&quot;%d\n&quot;,solve(n,m));
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

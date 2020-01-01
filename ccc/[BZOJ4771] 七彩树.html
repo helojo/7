@@ -1,0 +1,128 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[BZOJ4771] 七彩树' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[BZOJ4771] 七彩树</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/10692249.html</div><br>
+    <h2 id="题意">题意</h2>
+<p>给定一棵n个点，每个点带颜色的有根树。点的编号和颜色编号都在1到n，根的编号为1。m次询问，求x子树中与x距离边数不超过k的点中，颜色的种类数目。每个测试点有多组数据。</p>
+<h2 id="分析">分析</h2>
+<p>不妨设1的父亲为0，0包含了所有颜色。不考虑深度限制，对于单独一种颜色c，易知颜色c对于任意两个色c的点之间的路径上的所有询问有且仅有一个贡献，利用树链的并（DFS序+树上差分）即可解决。</p>
+<p>考虑深度约束，可以发现按深度对差分序列进行可持久化，使用线段树就可以了。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N=500010;
+ 
+struct Node {
+    int ls,rs,val;
+} t[N*20];
+int tot,root[N];
+ 
+void insert(int&amp;x,int y,int l,int r,int p,int w) {
+    t[x=++tot]=t[y];
+    t[x].val+=w; if(l==r) return; 
+    int mid=(l+r)&gt;&gt;1;
+    if(p&lt;=mid) insert(t[x].ls,t[y].ls,l,mid,p,w);
+    else insert(t[x].rs,t[y].rs,mid+1,r,p,w);
+}
+int query(int x,int l,int r,int L,int R) {
+    if(!x) return 0;
+    if(L&lt;=l&amp;&amp;r&lt;=R) return t[x].val;
+    int mid=(l+r)&gt;&gt;1, val=0;
+    if(L&lt;=mid) val+=query(t[x].ls,l,mid,L,R);
+    if(mid&lt;R) val+=query(t[x].rs,mid+1,r,L,R);
+    return val;
+}
+ 
+int n,m,ndp,cnt;
+int val[N],siz[N],dfn[N],dep[N],fa[N][20];
+vector&lt;int&gt; wuer[N];
+queue&lt;int&gt; que;
+ 
+struct Mogic {
+    int x; 
+    Mogic(int x=0):x(x){}
+    bool operator&lt;(const Mogic&amp;d) const {return dfn[x]&lt;dfn[d.x];}
+};
+set&lt;Mogic&gt; d[N];
+ 
+int lca(int x,int y) {
+    if(dep[x]&lt;dep[y]) swap(x,y);
+    int dif=dep[x]-dep[y];
+    for(int i=19; ~i; --i) if((dif&gt;&gt;i)&amp;1) x=fa[x][i];
+    if(x==y) return x;
+    for(int i=19; ~i; --i) if(fa[x][i]!=fa[y][i]) 
+        x=fa[x][i],y=fa[y][i];
+    return fa[x][0];
+}
+void dfs(int x,int d) {
+    dfn[x]=++cnt;
+    dep[x]=dep[fa[x][0]=d]+(siz[x]=1);
+    for(int i=1; (1&lt;&lt;i)&lt;=dep[x]; ++i) fa[x][i]=fa[fa[x][i-1]][i-1];
+    for(int i=wuer[x].size()-1; ~i; --i) dfs(wuer[x][i],x),siz[x]+=siz[wuer[x][i]];
+}
+void bfs() {
+    que.push(1);
+    while(que.size()) {
+        int x=que.front(); que.pop();
+        if(ndp!=dep[x]) {
+            root[ndp+1]=root[ndp];
+            ndp++;
+        }
+        insert(root[ndp],root[ndp],1,n,dfn[x],1);
+        set&lt;Mogic&gt;::iterator k=d[val[x]].insert(Mogic(x)).first;
+        set&lt;Mogic&gt;::iterator k1=k,k2=k; k1--; k2++;
+        if(k!=d[val[x]].begin()&amp;&amp;k2!=d[val[x]].end()) insert(root[ndp],root[ndp],1,n,dfn[lca(k1-&gt;x,k2-&gt;x)],1);
+        if(k!=d[val[x]].begin()) insert(root[ndp],root[ndp],1,n,dfn[lca(k1-&gt;x,x)],-1);
+        if(k2!=d[val[x]].end()) insert(root[ndp],root[ndp],1,n,dfn[lca(x,k2-&gt;x)],-1);
+        for(int i=wuer[x].size()-1; ~i; --i) que.push(wuer[x][i]);
+    }
+}
+ 
+int main() {
+//  freopen(&quot;a.in&quot;,&quot;r&quot;,stdin);
+    int T,last;
+    scanf(&quot;%d&quot;,&amp;T);
+    while(T--) {
+        scanf(&quot;%d%d&quot;,&amp;n,&amp;m);
+        tot=cnt=last=ndp=0;
+        for(int i=1; i&lt;=n; ++i) {
+            memset(fa[i],0,sizeof fa[i]);
+            scanf(&quot;%d&quot;,&amp;val[i]);
+            wuer[i].clear();
+            d[i].clear();
+            root[i]=0;
+        }
+        for(int i=2,x; i&lt;=n; ++i) {
+            scanf(&quot;%d&quot;,&amp;x);
+            wuer[x].push_back(i);
+        }
+        dfs(1,0); 
+        bfs();
+        for(int x,k; m--; ) {
+            scanf(&quot;%d%d&quot;,&amp;x,&amp;k); x^=last,k^=last;
+            printf(&quot;%d\n&quot;,last=query(root[min(dep[x]+k,ndp)],1,n,dfn[x],dfn[x]+siz[x]-1));
+        }
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

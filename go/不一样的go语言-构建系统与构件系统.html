@@ -1,0 +1,240 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修不一样的go语言-构建系统与构件系统' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>不一样的go语言-构建系统与构件系统</center></div><div class='banquan'>原文出处:本文由博客园博主eventer提供。<br/>
+原文连接:https://www.cnblogs.com/laud/p/build.html</div><br>
+    <h4 id="前言">前言</h4>
+<p>  代码的最后一步是构建成计算机可识别的二进制数据，然后才得以在计算机上运行。如果你曾经写过有点规模（至少数十个以上独立的源文件，且需要依赖第三方包）C语言项目，必定对C语言项目的构建过程印象深刻。或者当你曾经在linux系统中使用rpm命令安装程序 时，系统一遍又一遍不厌其烦地提醒你缺少依赖时，不知那时的心情如何？前一个问题可归属于构建系统(Build Systems, Build Automation)，后一个问题则属于构件系统(artifact repository manager or binary repository manager)的范畴。而平常我们所说的“构建系统”往往代指构建系统与构件系统。也可以简略地认为，构建系统是由程序与配置组成的，而构件系统是由软件包与软件元数据组成。</p>
+<h4 id="构建系统">构建系统</h4>
+<p>  go语言的程序构建，基于go build命令，内置于官方发行版中。其天生正统，而不像java有ant、maven、gradle，python有pip。它的构建体系经历过几个阶段，最早是依赖于GOPATH，其次是vendor(dep)，再到后来就是go module(早期也叫vgo)。在具体介绍构建系统之前，按惯例先上示例代码。</p>
+<p>  示例代码是一个mini的java项目结构(非maven、gradle结构)，主要演示如果完全依赖于javac，如何做java项目构建。</p>
+<pre><code><code>
+├── com
+|   └── eventer
+|       ├── a
+|           └── Person.java
+|       └── Test.java
+└── build
+|       ├── com
+|           └── eventer
+|               ├── a
+|                   └── Person.class
+|               └── Test.class</code></pre>
+<pre class="java"><code>package com.eventer;
+
+import com.eventer.a.Person;
+
+public class Test {
+    public static void main(String[] args) {
+        System.out.println(new Person());
+    }
+}</code></pre>
+<pre class="java"><code>package com.eventer.a;
+
+public clss Person() {
+    
+}</code></pre>
+<p>  以下是构建过程。</p>
+<pre><code><code>[eventer@localhost]# ls -a
+total 0
+drwxr-xr-x   4 eventer  eventer   128 Mar 26 22:34 .
+drwxr-xr-x  38 eventer  eventer  1216 Mar 26 22:22 ..
+drwxr-xr-x   3 eventer  eventer    96 Mar 26 22:34 build
+drwxr-xr-x   3 eventer  eventer    96 Mar 26 22:23 com
+[eventer@localhost]# javac -d build com/rfchina/test/*.java com/rfchina/test/a/*.java
+[eventer@localhost]# cd build
+[eventer@localhost]# java com/rfchina/test/Test
+</code></pre>
+<p>  从上述代码可以看出，这仅仅是构建一个只有两个类，且没有第三方依赖的微型项目，javac命令的参数已经挺长。可想而知，当项目中有成千上百个类，几十个依赖，再加上编译选项、注解处理等等，javac的参数长度会有多长。而构建是随时发生的，这样的任务毫无疑问应该有一个工具来完成。我相信最早的时候这样的工具非批处理脚本莫属。在后来的日子里，随着越来越多的需求加入到构建的各个阶段，如编译前、编译时、构建前、构建后、测试阶段、打包、发布等，甚至在开发阶段也有很多需求产生，如代码生成。所有这些后来都被构建系统所实现，从最早的ant，到后来一统天下的maven，到现在的gradle，越来越强大。</p>
+<p>  再比如GNU构建系统经典的configure, make, make install三部曲，已经成为linux系统构建软件的标准与习惯（即使不是GNU构建系统，很多软件的构建也使用这三个过程）。</p>
+<p>  现代的编程语言大多给出了自己专用的构建系统与构件系统，它们两者已成为软件开发团队必不可少的工具。go语言自然也不能例外。</p>
+<p><b>wikipedia对构建的定义</b></p>
+<pre class="text"><code>Build automation is the process of automating the creation
+
+of a software build and the associated processes
+
+including: compiling computer source code into binary code,
+
+packaging binary code, and running automated tests.</code></pre>
+<p>  在《不一样的go语言-gopher》一文中，“依赖管理”与“构建方式”两节中已经讲述过go语言关于构建的种种，在此不再赘述。也曾提到了当前go的构建系统在国内的种种不便及对策。正所谓合久必分，分久必合，在官方的支持下，go的构建系统日趋成熟，但目前独独一个好的构件系统，一个可以在本地搭建的构件系统。关于这一点，将在下一节中详述。</p>
+<p>  一个好的构建系统，应该具有以下特征。</p>
+<ol>
+<li>自动解决依赖关系：包括直接依赖与间接依赖，如A依赖B，B依赖D，C依赖D，构建系统应自动引入A、B、C、D依赖，并去重。</li>
+<li>增量&amp;并行构建：增量构建是只对变更构建而跳过没有变更的文件或任务；并行构建指各自独立的任务可以并行执行。</li>
+<li>测试：如单元测试、并行测试、性能测试、测试报告等。</li>
+<li>错误提示：友好详细的构建错误提示，丰富的调试或错误输出参数控制。</li>
+<li>自定义构建目标：比如自定义打包格式, exe, zip, etc。</li>
+<li>基于配置&amp;约定：约定优于配置，构建输入输出易配置。</li>
+<li>可扩展：可自定义扩展，如maven与gradle的plugin机制</li>
+<li>跨平台：构建系统本身需要具备跨平台的特性，或者能在交叉构建（在某个目标系统构建另一个目标系统的程序）</li>
+<li>发布：支持发布程序包至私库及各类不同协议的第三方仓库。</li>
+<li>IDE集成：支持与各大主流IDE集成。</li>
+</ol>
+<p>  显然go的构建系统还不够强大，开发人员还无法定制构建过程与结果。只有go build命令而没有辅助go build命令的工具，在这一方面go依然任得道远。</p>
+<p><b>常见构建系统列表</b></p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">语言</th>
+<th style="text-align: left;">构建系统</th>
+<th style="text-align: left;">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">c/c++</td>
+<td style="text-align: left;">gnu make, automake, nmake, cmake, qmake</td>
+<td style="text-align: left;">各个make对应于不同时期，不同架构体系下的构建工具</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">java</td>
+<td style="text-align: left;">ant, maven, gradle</td>
+<td style="text-align: left;">目前maven与gradle是主流, ant已经退出历史舞台</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">python</td>
+<td style="text-align: left;">distribute, setuptools, easy_install, eggs, pip</td>
+<td style="text-align: left;">python的构建系统百家齐放，世界大战般。不过pip最终赢得王座</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">nodejs</td>
+<td style="text-align: left;">npm</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">javasript</td>
+<td style="text-align: left;">grunt, gulp, webpack</td>
+<td style="text-align: left;">谁是王者？</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">go</td>
+<td style="text-align: left;">go build</td>
+<td style="text-align: left;">嫡系</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">rust</td>
+<td style="text-align: left;">cargo</td>
+<td style="text-align: left;">号称最强大的构建系统, 超级大杀器。</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ruby</td>
+<td style="text-align: left;">rubygem</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">.net</td>
+<td style="text-align: left;">visual studio之nuget</td>
+<td style="text-align: left;">最牛逼的IDE, 包罗万有</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">swift&amp;object-c</td>
+<td style="text-align: left;">xcode</td>
+<td style="text-align: left;">最霸道的IDE</td>
+</tr>
+</tbody>
+</table>
+<p>  除了上述列表的构建系统，现在已经有不少云构建系统存在。比如google的Bazel，滴滴的建木。</p>
+<p>  上面提到的大杀器cargo，它与其他语言的构建系统不同，其既是构建系统又是构件系统。cargo口号叫得那么响，除了其是官方出品之外，恐怕也只是为了与go一较高下。rust可能为程序 员考虑得更多，极力地想讨好程序员。而在构建系统方面，对比一下go module与cargo，只怕go也是借鉴了不少cargo的东西。但与当代成熟的构建系统，比如gradle，并没有高下立判之感。不同之处在于cargo在配置中使用rust语言本身来做扩展，而gradle则是使用自身的DSL语言来实现。相比这下，go在这一方面还需要快马加鞭，总比在屁颠屁颠地跟在别人后面追好。</p>
+<h4 id="构件系统">构件系统</h4>
+<p>  go语言的构件系统，官方默认是github。此外也可以是支持vgo下载协议的仓库(如athens, goproxy.io)，然后通过设置GOPROXY环境变量来设置构件系统代理，此举可以完美解决国内下载依赖不畅的问题。而对于私库，目前免费开源的只有athens，但是仍不够完善。除此之外，jfrog的artifactory也支持go私库，只不过要收费。</p>
+<p>  私库对于一个成熟、专业的开发团队来说，是极其重要的一个工具。团队内部会产生大量的公共程序包，对于go语言来说，如果没有一个类似于maven的nexus仓库，那么项目如何构建？如何持续集成？虽然必然会有各种巧妙地方案来解决或避开这些问题，但无疑是不得已而为之。现代编程体系发展至今天，没有理由让历史倒退，走回批处理或者基础设施（网络）的老路来解决问题。有时候我真觉得王垠大侠对go的批判有道理，不吸取前人在编程语言设计上的经验教训，而一意孤行到底。尽管我不否认，写go确实会比java舒服很多，java严谨地啰嗦，所以它只适合用来做大项目。</p>
+<p>  鉴于此，go的官方团队应该鼓励社区去达成构件系统这事。而不应该像go module那样，将社区招之即来，挥之即去，利用完了，就没社区什么事了。</p>
+<p>  那么构件系统，应该具有以下特征。</p>
+<ol>
+<li>构件存储：包括二进制包、源码包、文档</li>
+<li>版本：支持release、snapshot，</li>
+<li>元数据：设计良好的元数据的存储机制</li>
+<li>缓存：支持本地缓存</li>
+<li>安全&amp;权限：支持用户、角色、权限模型；支持常用的用户体系集成，如LDAP</li>
+<li>仓库管理：多语言，多仓库，支持代理仓库，远程仓库。</li>
+</ol>
+<p><b>常见构件系统列表</b></p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">构件系统</th>
+<th style="text-align: left;">支持语言/系统</th>
+<th style="text-align: left;">支持构建系统</th>
+<th style="text-align: left;">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">nexus</td>
+<td style="text-align: left;">java</td>
+<td style="text-align: left;">maven, gradle, npm</td>
+<td style="text-align: left;">历史悠久，流行的构件系统</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">jfrog</td>
+<td style="text-align: left;">java, go</td>
+<td style="text-align: left;">maven, gradle, go</td>
+<td style="text-align: left;">后起之秀，有选择的收费</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">proget</td>
+<td style="text-align: left;">.net</td>
+<td style="text-align: left;">vistual studio</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">cargo</td>
+<td style="text-align: left;">rust</td>
+<td style="text-align: left;">cargo</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Cocoapods</td>
+<td style="text-align: left;">swift&amp;object-c</td>
+<td style="text-align: left;">xcode</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Carthage</td>
+<td style="text-align: left;">swift&amp;object-c</td>
+<td style="text-align: left;">xcode</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dpkg&amp;apt</td>
+<td style="text-align: left;">Debian, Ubuntu</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">yum</td>
+<td style="text-align: left;">CentOS</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">homebrew</td>
+<td style="text-align: left;">Mac OS</td>
+<td style="text-align: left;">-</td>
+<td style="text-align: left;">-</td>
+</tr>
+</tbody>
+</table>
+<h4 id="请关注公众号">请关注公众号</h4>
+<p><img src="./images/不一样的go语言-构建系统与构件系统0.png" alt="不一样的go语言" /></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

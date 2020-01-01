@@ -1,0 +1,142 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修vijos2051 SDOI2019 快速查询' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>vijos2051 SDOI2019 快速查询</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/vijos2051.html</div><br>
+    <p><a href="https://vijos.org/p/2051"><font size=5>题目链接</font></a></p>
+<h2 id="吐槽">吐槽</h2>
+<p>竟然让<span class="math inline">\(nlog\)</span>的做法卡过去了。。</p>
+<h2 id="思路">思路</h2>
+<p>因为<span class="math inline">\(1 \le q \le 10^5\)</span>，所以可以先对每个<strong>标准操作</strong>，所操作的位置进行重标号。这样所有的下标都是在<span class="math inline">\(10^5\)</span>以内的。</p>
+<p>乘和加操作都可以写成<span class="math inline">\(kx+b\)</span>的形式。然后对于这些操作维护一个<strong>前缀</strong>。然后就可以得到一个区间内的操作了。</p>
+<p>区间查询我们只要找个<span class="math inline">\(TOT\)</span>来维护一下当前的所有元素和，就行了。</p>
+<p>单点查询，观察其上次赋值的时间。如果早于集体赋值，那么就输出当前大多数的值。</p>
+<p>否则就将其上次赋的值乘上从上次赋值到当前时间点这个时间段内的操作。</p>
+<h2 id="代码">代码</h2>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-05-07 20:58:04
+* @Last Modified time: 2019-05-11 10:33:03
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+#include&lt;map&gt;
+using namespace std;
+typedef long long ll;
+const int N = 100010,mod = 1e7 + 19;
+map&lt;int,int&gt;ma;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+struct node {
+    int opt,pos,val;
+}que[N];
+int TOT,s[N],a[N],b[N],now,inv[mod + 1],n,T,Q,mul[N * 100],add[N * 100];
+int lst[N],LAST;
+int query(int x,int num) {
+    if(lst[x] &lt;= LAST) return now;
+    int cheng = 1ll * mul[num] * inv[mul[lst[x]]] % mod;
+    int jia = (add[num] - 1ll * add[lst[x] - 1] * cheng % mod + mod) % mod;
+    return (1ll * s[x] * cheng % mod + jia) % mod;
+}
+int ans;
+void solve(int x,int num) {
+    int opt = que[x].opt,pos = que[x].pos,val = que[x].val % mod;
+    mul[num] = mul[num - 1],add[num] = add[num - 1];
+    if(opt == 1) {
+        TOT -= query(pos,num);
+        TOT += val;
+        TOT = (TOT % mod + mod) % mod;
+        lst[pos] = num;
+        s[pos] = val;
+    }
+    else if(opt == 2) {
+        TOT += (1ll * n * val % mod + mod) % mod;
+        TOT = (TOT % mod + mod) % mod;
+        add[num] += val;
+        add[num] = (add[num] %mod + mod) % mod;
+        now += val;
+        now = (now % mod + mod) % mod;
+    }
+    else if(opt == 3) {
+        TOT = (1ll * TOT * val % mod + mod) % mod;
+        now = (1ll * now * val % mod + mod) % mod;
+        add[num] = (1ll * add[num] * val % mod + mod) % mod;
+        mul[num] = (1ll * mul[num] * val % mod + mod) % mod;
+    }
+    else if(opt == 4) { 
+        TOT = (1ll * val * n % mod + mod) % mod;
+        mul[num] = 1;add[num] = 0;
+        now = val;
+        LAST = num;
+    }
+    else if(opt == 5) ans += query(pos,num),ans = (ans % mod + mod) % mod;
+    else ans = ((ans + TOT) % mod + mod) % mod;
+}
+int main() {
+    n = read(),Q = read();
+    for(int i = 1;i &lt;= Q;++i) {
+        int opt = que[i].opt = read();
+        if(opt == 1) {
+            que[i].pos = read();que[i].val = read();
+        }
+        else if(opt == 6) continue;
+        else if(opt == 5) que[i].pos = read();
+        else que[i].val = read();
+    }
+
+    inv[1] = 1;
+    for(int i =  2;i &lt; mod;++i) inv[i] = 1ll * (mod - mod / i) * inv[mod % i] % mod;
+
+    int js = 0;
+    for(int i = 1;i &lt;= Q;++i) {
+        if(!que[i].pos) continue;
+        if(!ma[que[i].pos])     ma[que[i].pos] = ++js;
+        que[i].pos = ma[que[i].pos];
+    }
+
+    int T = read(),num = 0;
+    for(int i = 1;i &lt;= T;++i) a[i] = read(),b[i] = read();
+    for(int i = 1;i &lt;= T;++i)
+        for(int j = 1;j &lt;= Q;++j)
+            solve((a[i] + 1ll * j * b[i] % Q) % Q + 1,++num);
+
+    cout&lt;&lt;(ans % mod + mod) % mod;
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

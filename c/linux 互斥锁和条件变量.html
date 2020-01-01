@@ -1,0 +1,364 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修linux 互斥锁和条件变量' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>linux 互斥锁和条件变量</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11041070.html</div><br>
+    <h3 id="为什么有条件变量">为什么有条件变量？</h3>
+<p>请参看<a href="https://www.cnblogs.com/xiaoshiwang/p/9977185.html">一个线程等待某种事件发生</a></p>
+<h4 id="注意本文是linux-c版本的条件变量和互斥锁mutex不是c的">注意：本文是linux c版本的条件变量和互斥锁(mutex)，不是C++的。</h4>
+<h2 id="mutex-mutual-exclusion相互排斥"><font color=red>mutex ： mutual exclusion(相互排斥)</font></h2>
+<p>1，互斥锁的初始化，有以下2种方式。</p>
+<ul>
+<li>调用方法的初始化：互斥锁是用malloc动态分配，或者分配在内存共享区的时候使用。</li>
+<li>不调用方法的初始化：静态分配的时候使用。</li>
+</ul>
+<pre><code><code>int pthread_mutex_init(pthread_mutex_t *restrict mutex,
+const pthread_mutexattr_t *restrict attr);
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;</code></code></pre>
+<ul>
+<li>返回值：成功0；失败errno</li>
+</ul>
+<p>2，互斥锁的销毁</p>
+<pre><code><code>int pthread_mutex_destroy(pthread_mutex_t *mutex);</code></code></pre>
+<ul>
+<li>返回值：成功0；失败errno</li>
+</ul>
+<pre><code><code>int pthread_mutex_lock(pthread_mutex_t *mutex);
+int pthread_mutex_trylock(pthread_mutex_t *mutex);
+int pthread_mutex_unlock(pthread_mutex_t *mutex);</code></code></pre>
+<p>3，加锁和解锁</p>
+<pre><code><code>int pthread_mutex_lock(pthread_mutex_t *mutex);
+int pthread_mutex_trylock(pthread_mutex_t *mutex);
+int pthread_mutex_unlock(pthread_mutex_t *mutex);</code></code></pre>
+<ul>
+<li>pthread_mutex_lock：加锁。如果是没有加锁的状态，则加锁并返回不阻塞。如果是已经被加锁的状态，这阻塞在这里，并一直等待，直到解锁。</li>
+<li>pthread_mutex_trylock：尝试去加锁。如果是没有加锁的状态，则加锁并返回不阻塞。果是已经被加锁的状态，则不阻塞，立即返回，返回值为EBUSY。</li>
+</ul>
+<p>4，条件变量的2个函数</p>
+<pre><code><code>int pthread_cond_wait(pthread_cond_t *restrict cond,
+           pthread_mutex_t *restrict mutex);
+int pthread_cond_signal(pthread_cond_t *cond);</code></code></pre>
+<ul>
+<li><p>pthread_cond_wait：</p>
+<ul>
+<li><p>调用此函数时点的处理：</p>
+<p>1，给互斥锁解锁。</p>
+<p>2，把调用此函数的线程投入睡眠，直到另外某个线程就本条件变量调用pthread_cond_signal。</p></li>
+<li><p>被唤醒后的处理：返回前重新给互斥锁加锁。</p></li>
+</ul></li>
+<li><p>pthread_cond_signal：唤醒调用pthread_cond_wait函数的线程</p></li>
+</ul>
+<p>条件变量通常用于生产者和消费者模式。</p>
+<p>什么是生成者和消费者模式？</p>
+<p><img src="./images/linux 互斥锁和条件变量0.png" /></p>
+<p>版本1：所有生产者线程是并行执行的，消费者线程是等待所有的生产者线性执行结束后，消费者线程才开始执行。</p>
+<pre><code><code>#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define MAXITEM  100000000
+#define MAXTHREAD  100
+#define min(x,y) ( x&gt;y?y:x )
+
+int nitem;
+
+struct {
+  pthread_mutex_t mutex;
+  int buf[MAXITEM];
+  int idx;
+  int val;
+}shared = {
+  PTHREAD_MUTEX_INITIALIZER
+};
+
+void* produce(void*);
+void* consume(void*);
+
+int main(int argc, char** argv){
+  int i;
+  int nthreads;
+  int count[MAXTHREAD];
+
+  pthread_t tid_produce[MAXTHREAD], tid_consume;
+
+  if(argc != 3){
+    printf(&quot;arg error\n&quot;);
+    return 1;
+  }
+
+  nitem = min(MAXITEM,atoi(argv[1]));
+  nthreads = min(MAXTHREAD, atoi(argv[2]));
+
+  for(i = 0; i &lt; nthreads; ++i){
+    count[i] = 0;
+    pthread_create(&amp;tid_produce[i], NULL, produce, &amp;count[i]);
+  }
+
+  for(i = 0; i &lt; nthreads; ++i){
+    pthread_join(tid_produce[i], NULL);
+    printf(&quot;cout[%d] = %d\n&quot;, i, count[i]);
+  }
+
+  pthread_create(&amp;tid_consume, NULL, consume, NULL);
+  pthread_join(tid_consume, NULL);
+
+  return 0;
+}
+
+void* produce(void* arg){
+  while(1){
+    pthread_mutex_lock(&amp;shared.mutex);
+    if(shared.idx &gt;= nitem){
+      pthread_mutex_unlock(&amp;shared.mutex);
+      return NULL;
+    }
+    shared.buf[shared.idx] = shared.val;
+    shared.idx++;
+    shared.val++;
+    pthread_mutex_unlock(&amp;shared.mutex);
+    *((int*)arg) +=1;
+  }
+}
+
+void* consume(void* arg){
+  int i;
+  for(i = 0; i &lt; nitem; ++i){
+    if(shared.buf[i] != i){
+      printf(&quot;buf[%d] = %d\n&quot;, i, shared.buf[i]);
+    }
+  }
+}
+</code></code></pre>
+<p>版本2：所有生产者线程和消费者线程都是并行执行的。<font color=red>这时会有个问题，就是消费者线程被先执行的情况下，生产者线程还没有生产数据，这时消费者线程就只能循环给互斥锁解锁又上锁。这成为轮转（spinning)或者轮询(polling)，是一种多CPU时间的浪费。我们也可以睡眠很短的一段时间，但是不知道睡多久。这时，条件变量就登场了。</font></p>
+<pre><code><code>#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define MAXITEM  100000000
+#define MAXTHREAD  100
+#define min(x,y) ( x&gt;y?y:x )
+
+int nitem;
+
+struct {
+  pthread_mutex_t mutex;
+  int buf[MAXITEM];
+  int idx;
+  int val;
+}shared = {
+  PTHREAD_MUTEX_INITIALIZER
+};
+
+void* produce(void*);
+void* consume(void*);
+
+int main(int argc, char** argv){
+  int i;
+  int nthreads;
+  int count[MAXTHREAD];
+
+  pthread_t tid_produce[MAXTHREAD], tid_consume;
+
+  if(argc != 3){
+    printf(&quot;arg error\n&quot;);
+    return 1;
+  }
+
+  nitem = min(MAXITEM,atoi(argv[1]));
+  nthreads = min(MAXTHREAD, atoi(argv[2]));
+
+  for(i = 0; i &lt; nthreads; ++i){
+    count[i] = 0;
+    pthread_create(&amp;tid_produce[i], NULL, produce, &amp;count[i]);
+  }
+  pthread_create(&amp;tid_consume, NULL, consume, NULL);
+  
+  for(i = 0; i &lt; nthreads; ++i){
+    pthread_join(tid_produce[i], NULL);
+    printf(&quot;cout[%d] = %d\n&quot;, i, count[i]);
+  }
+  pthread_join(tid_consume, NULL);
+
+  return 0;
+}
+
+void* produce(void* arg){
+  while(1){
+    pthread_mutex_lock(&amp;shared.mutex);
+    if(shared.idx &gt;= nitem){
+      pthread_mutex_unlock(&amp;shared.mutex);
+      return NULL;
+    }
+    shared.buf[shared.idx] = shared.val;
+    shared.idx++;
+    shared.val++;
+    pthread_mutex_unlock(&amp;shared.mutex);
+    *((int*)arg) +=1;
+  }
+}
+
+void consume_wait(int i){
+  while(1){
+    pthread_mutex_lock(&amp;shared.mutex);
+    if(i &lt; shared.idx){
+      pthread_mutex_unlock(&amp;shared.mutex);
+      return;
+    }
+    pthread_mutex_unlock(&amp;shared.mutex);
+  }
+}
+
+void* consume(void* arg){
+  int i;
+  for(i = 0; i &lt; nitem; ++i){
+    consume_wait(i);
+    if(shared.buf[i] != i){
+      printf(&quot;buf[%d] = %d\n&quot;, i, shared.buf[i]);
+    }
+  }
+  return NULL;
+}
+</code></code></pre>
+<p>版本3：所有生产者线程和消费者线程都是并行执行的。解决版本2的轮询问题。使用条件变量。</p>
+<pre><code><code>#include &lt;pthread.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define MAXITEM  100000000
+#define MAXTHREAD  100
+#define min(x,y) ( x&gt;y?y:x )
+
+int nitem;
+int buf[MAXITEM];
+
+struct {
+  pthread_mutex_t mutex;
+  int idx;
+  int val;
+} shared = {
+  PTHREAD_MUTEX_INITIALIZER
+};
+
+struct {
+  pthread_mutex_t mutex;
+  pthread_cond_t  cond;
+  int nready;
+} nready = {
+  PTHREAD_MUTEX_INITIALIZER,
+  PTHREAD_COND_INITIALIZER
+};
+
+void* produce(void*);
+void* consume(void*);
+
+int main(int argc, char** argv){
+  int i;
+  int nthreads;
+  int count[MAXTHREAD];
+
+  pthread_t tid_produce[MAXTHREAD], tid_consume;
+
+  if(argc != 3){
+    printf(&quot;arg error\n&quot;);
+    return 1;
+  }
+
+  nitem = min(MAXITEM,atoi(argv[1]));
+  nthreads = min(MAXTHREAD, atoi(argv[2]));
+
+  for(i = 0; i &lt; nthreads; ++i){
+    count[i] = 0;
+    pthread_create(&amp;tid_produce[i], NULL, produce, &amp;count[i]);
+  }
+  pthread_create(&amp;tid_consume, NULL, consume, NULL);
+  
+  for(i = 0; i &lt; nthreads; ++i){
+    pthread_join(tid_produce[i], NULL);
+    printf(&quot;cout[%d] = %d\n&quot;, i, count[i]);
+  }
+  pthread_join(tid_consume, NULL);
+
+  return 0;
+}
+
+void* produce(void* arg){
+  while(1){
+    pthread_mutex_lock(&amp;shared.mutex);
+    if(shared.idx &gt;= nitem){
+      pthread_mutex_unlock(&amp;shared.mutex);
+      return NULL;
+    }
+    buf[shared.idx] = shared.val;
+    shared.idx++;
+    shared.val++;
+    pthread_mutex_unlock(&amp;shared.mutex);
+
+    pthread_mutex_lock(&amp;nready.mutex);
+    if(nready.nready == 0){
+      pthread_cond_signal(&amp;nready.cond);//--------------②
+    }
+    nready.nready++;
+    pthread_mutex_unlock(&amp;nready.mutex);//--------------③
+
+    *((int*) arg) += 1;
+  }
+}
+
+void* consume(void* arg){
+  int i;
+  for(i = 0; i &lt; nitem; ++i){
+    pthread_mutex_lock(&amp;nready.mutex);
+    while(nready.nready == 0){//--------------①
+      pthread_cond_wait(&amp;nready.cond, &amp;nready.mutex);
+    }
+    nready.nready--;
+    pthread_mutex_unlock(&amp;nready.mutex);
+
+    if(buf[i] != i){
+      printf(&quot;buf[%d] = %d\n&quot;, i, buf[i]);
+    }
+  }
+  printf(&quot;buf[%d] = %d\n&quot;, nitem-1, buf[nitem-1]);
+}
+</code></code></pre>
+<p>关于互斥锁和条件变量的最佳实践：</p>
+<p>1，把要多个线程共享的数据定义和互斥锁定义在一个结构体里。</p>
+<p>2，把条件变量，互斥锁，和临界条件定义在一个结构体里。</p>
+<p>3，在①的地方，最后不要用if，理由是，pthread_cond_wait返回后，有可能另一个消费者线程把它消费掉了，所以要再次测试相应的条件成立与否，防止发生虚假的(spurious)唤醒。各种线程都应该试图最大限度减少这些虚假唤醒，但是仍有可能发生。</p>
+<p>4，注意②处的代码pthread_cond_signal，设想一下最坏的情况，调用该函数后，另外一个等待的线程立即被唤醒，所以被唤醒的pthread_cond_wait函数要立即加锁，但是调用pthread_cond_signal函数的线程还没有执行到③处的pthread_mutex_unlock，所以被唤醒的线程又立即终止了。所以为了避免这种情况发生，把②处的代码pthread_cond_signal放在③处的下一行。</p>
+<p>参考下面的伪代码：</p>
+<pre><code><code>int flag;    
+pthread_mutex_lock(&amp;nready.mutex);
+int = nready.nready == 0);
+nready.nready++;
+pthread_mutex_unlock(&amp;nready.mutex);
+
+if(flag){
+  pthread_cond_signal(&amp;nready.cond);
+}</code></code></pre>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/linux 互斥锁和条件变量1.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

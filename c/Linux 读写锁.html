@@ -1,0 +1,535 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Linux 读写锁' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Linux 读写锁</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11057552.html</div><br>
+    <h3 id="线程的读写锁函数">线程的读写锁函数：</h3>
+<p>1，读写锁的初始化与销毁，静态初始化的话，可以直接使用PTHREAD_RWLOCK_INITIALIZER。</p>
+<pre><code><code>#include &lt;pthread.h&gt;
+int pthread_rwlock_destroy(pthread_rwlock_t *rwlock);
+int pthread_rwlock_init(pthread_rwlock_t *restrict rwlock,
+           const pthread_rwlockattr_t *restrict attr);
+pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;</code></code></pre>
+<p>2，用读的方式加锁和尝试（没锁上就立即返回）加锁。</p>
+<pre><code><code>#include &lt;pthread.h&gt;
+int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock);
+int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock);</code></code></pre>
+<p>3，用写的方式加锁和尝试（没锁上就立即返回）加锁。</p>
+<pre><code><code>#include &lt;pthread.h&gt;
+int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock);
+int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock);</code></code></pre>
+<p>4，解锁</p>
+<pre><code><code>#include &lt;pthread.h&gt;
+int pthread_rwlock_unlock(pthread_rwlock_t *rwlock);</code></code></pre>
+<h3 id="多个进程在同时读写同一个文件会发生什么">多个进程在同时读写同一个文件，会发生什么？</h3>
+<p>例子1：用下面的例子的执行结果，观察多个进程在同时读写同一个文件，会发生什么。</p>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+#define MAXLINE 100
+#define FN &quot;num1&quot;
+
+void my_lock(int fd){
+  return;
+}
+
+void my_unlock(int fd){
+  return;
+}
+
+int main(int args, char** argv){
+
+  int fd;
+  long i,seqno;
+  pid_t pid;
+  ssize_t n;
+  char line[MAXLINE + 1];
+
+  pid = getpid();
+  fd = open(FN, O_RDWR, 0664);
+
+  for(i = 0; i &lt; 20; ++i){
+    my_lock(fd);
+
+    lseek(fd, 0L, SEEK_SET);
+    n = read(fd, line, MAXLINE);
+    line[n] = &#39;\0&#39;;
+
+    seqno = atol(line);
+    printf(&quot;%s:pid = %ld, seq = %ld\n&quot;, argv[0], (long)pid, seqno);
+
+    seqno++;
+
+    snprintf(line, sizeof(line), &quot;%ld\n&quot;, seqno);
+
+    lseek(fd, 0L, SEEK_SET);
+    write(fd, line, strlen(line));
+
+    my_unlock(fd);
+  }
+
+  return 0;
+}</code></code></pre>
+<p>执行方法：同时执行上面例子的程序2次，也就是2个进程同时读写同一个文件。</p>
+<pre class="shell"><code>ubuntu$ ./flockmain1 &amp; ./flockmain1 &amp;</code></code></pre>
+<p>执行结果如下，发现2个进程同时读写，在①处开始，内核切换进程时，数字乱套了。</p>
+<pre class="shell"><code>ubuntu$ ./flockmain1 &amp; ./flockmain1 &amp;
+[1] 4760
+[2] 4761
+ubuntu$ ./flockmain1:pid = 4761, seq = 1
+./flockmain1:pid = 4761, seq = 2
+./flockmain1:pid = 4761, seq = 3
+./flockmain1:pid = 4761, seq = 4
+./flockmain1:pid = 4761, seq = 5
+./flockmain1:pid = 4761, seq = 6
+./flockmain1:pid = 4761, seq = 7
+./flockmain1:pid = 4761, seq = 8
+./flockmain1:pid = 4761, seq = 9
+./flockmain1:pid = 4761, seq = 10   ------------①
+./flockmain1:pid = 4760, seq = 10
+./flockmain1:pid = 4761, seq = 11
+./flockmain1:pid = 4761, seq = 12
+./flockmain1:pid = 4761, seq = 13
+./flockmain1:pid = 4761, seq = 14
+./flockmain1:pid = 4761, seq = 15
+./flockmain1:pid = 4761, seq = 16
+./flockmain1:pid = 4761, seq = 17
+./flockmain1:pid = 4761, seq = 18
+./flockmain1:pid = 4761, seq = 19
+./flockmain1:pid = 4761, seq = 20
+./flockmain1:pid = 4760, seq = 11
+./flockmain1:pid = 4760, seq = 12
+./flockmain1:pid = 4760, seq = 13
+./flockmain1:pid = 4760, seq = 14
+./flockmain1:pid = 4760, seq = 15
+./flockmain1:pid = 4760, seq = 16
+./flockmain1:pid = 4760, seq = 17
+./flockmain1:pid = 4760, seq = 18
+./flockmain1:pid = 4760, seq = 19
+./flockmain1:pid = 4760, seq = 20
+./flockmain1:pid = 4760, seq = 21
+./flockmain1:pid = 4760, seq = 22
+./flockmain1:pid = 4760, seq = 23
+./flockmain1:pid = 4760, seq = 24
+./flockmain1:pid = 4760, seq = 25
+./flockmain1:pid = 4760, seq = 26
+./flockmain1:pid = 4760, seq = 27
+./flockmain1:pid = 4760, seq = 28
+./flockmain1:pid = 4760, seq = 29</code></code></pre>
+<p>为了解决上面的问题，必须对文件的内容进行加锁。</p>
+<p>如何对文件内容加锁？</p>
+<h3 id="使用fcntl函数它既可以锁整文件也可以锁文件里的某段内容通过结构体flock来指定要锁的范围如果-whence-seek_setl_start-0l_len-0就是锁定整个文件">使用fcntl函数，它既可以锁整文件，也可以锁文件里的某段内容。通过结构体flock来指定要锁的范围。如果 whence = SEEK_SET;l_start = 0;l_len = 0;就是锁定整个文件。</h3>
+<pre><code><code>struct flock {
+               ...
+               short l_type;    /* Type of lock: F_RDLCK,
+                                   F_WRLCK, F_UNLCK */
+               short l_whence;  /* How to interpret l_start:
+                                   SEEK_SET, SEEK_CUR, SEEK_END */
+               off_t l_start;   /* Starting offset for lock */
+               off_t l_len;     /* Number of bytes to lock */
+               pid_t l_pid;     /* PID of process blocking our lock
+                                   (set by F_GETLK and F_OFD_GETLK) */
+               ...
+           };
+</code></code></pre>
+<ul>
+<li>F_SETLK：上锁。如果发现已经被别的进程上锁了，就直接返回-1，errno被设置成EACCES或者EAGAIN，不阻塞。</li>
+<li>F_SETLKW：上锁。阻塞等待。</li>
+<li>F_GETLK：得到锁的状态。</li>
+</ul>
+<p>修改上面的函数my_lock，my_unlock。main函数不变。</p>
+<p>例子2：</p>
+<pre><code><code>void my_lock(int fd){
+  struct flock lock;
+  lock.l_type = F_WRLCK;
+  wlock.l_whence = SEEK_SET;
+  lock.l_start = 0;
+  lock.l_len = 0;
+  
+  fcntl(fd, F_SETLKW, lock);
+}
+
+void my_unlock(int fd){
+  struct flock lock;
+  lock.l_type = F_UNLCK;
+  lock.l_whence = SEEK_SET;
+  lock.l_start = 0;
+  lock.l_len = 0;
+
+  fcntl(fd, F_SETLK, lock);
+}</code></code></pre>
+<p>执行结果如下，发现数字不乱套了。</p>
+<pre class="shell"><code>ubuntu$ ./flockmain &amp; ./flockmain &amp;
+[1] 4882
+[2] 4883
+ubuntu$ ./flockmain:pid = 4883, seq = 1
+./flockmain:pid = 4883, seq = 2
+./flockmain:pid = 4883, seq = 3
+./flockmain:pid = 4883, seq = 4
+./flockmain:pid = 4883, seq = 5
+./flockmain:pid = 4883, seq = 6
+./flockmain:pid = 4883, seq = 7
+./flockmain:pid = 4883, seq = 8
+./flockmain:pid = 4883, seq = 9
+./flockmain:pid = 4883, seq = 10
+./flockmain:pid = 4883, seq = 11
+./flockmain:pid = 4883, seq = 12
+./flockmain:pid = 4883, seq = 13
+./flockmain:pid = 4883, seq = 14
+./flockmain:pid = 4883, seq = 15
+./flockmain:pid = 4883, seq = 16
+./flockmain:pid = 4883, seq = 17
+./flockmain:pid = 4883, seq = 18
+./flockmain:pid = 4883, seq = 19
+./flockmain:pid = 4883, seq = 20
+./flockmain:pid = 4882, seq = 21
+./flockmain:pid = 4882, seq = 22
+./flockmain:pid = 4882, seq = 23
+./flockmain:pid = 4882, seq = 24
+./flockmain:pid = 4882, seq = 25
+./flockmain:pid = 4882, seq = 26
+./flockmain:pid = 4882, seq = 27
+./flockmain:pid = 4882, seq = 28
+./flockmain:pid = 4882, seq = 29
+./flockmain:pid = 4882, seq = 30
+./flockmain:pid = 4882, seq = 31
+./flockmain:pid = 4882, seq = 32
+./flockmain:pid = 4882, seq = 33
+./flockmain:pid = 4882, seq = 34
+./flockmain:pid = 4882, seq = 35
+./flockmain:pid = 4882, seq = 36
+./flockmain:pid = 4882, seq = 37
+./flockmain:pid = 4882, seq = 38
+./flockmain:pid = 4882, seq = 39
+./flockmain:pid = 4882, seq = 40</code></code></pre>
+<p>到此为止，貌似解决了问题，但是如果同时执行例子1和例子2，结果如下，发现还是乱的。</p>
+<h3 id="也就是说在协作线程cooperating-processes间文件锁也叫劝告性上锁也起作用的但是不完全不相关的进程中文件锁也不起作用的如何解决呢使用强制性上锁">也就是说在协作线程（cooperating processes）间，文件锁（也叫劝告性上锁）也起作用的。但是不完全不相关的进程中，文件锁也不起作用的。如何解决呢？使用强制性上锁。</h3>
+<pre class="shell"><code>ys@ys-VirtualBox:~/IPC$ ./flockmain1 &amp; ./flockmain &amp;
+[1] 3602
+[2] 3603
+ys@ys-VirtualBox:~/IPC$ ./flockmain1:pid = 3602, seq = 1
+./flockmain:pid = 3603, seq = 1
+./flockmain:pid = 3603, seq = 2
+./flockmain:pid = 3603, seq = 3
+./flockmain:pid = 3603, seq = 4
+./flockmain:pid = 3603, seq = 5
+./flockmain:pid = 3603, seq = 6
+./flockmain:pid = 3603, seq = 7
+./flockmain:pid = 3603, seq = 8
+./flockmain:pid = 3603, seq = 9
+./flockmain:pid = 3603, seq = 10
+./flockmain1:pid = 3602, seq = 2
+./flockmain1:pid = 3602, seq = 3
+./flockmain1:pid = 3602, seq = 4
+./flockmain:pid = 3603, seq = 11
+./flockmain:pid = 3603, seq = 12
+./flockmain1:pid = 3602, seq = 5
+./flockmain:pid = 3603, seq = 13
+./flockmain1:pid = 3602, seq = 6
+./flockmain1:pid = 3602, seq = 7
+./flockmain1:pid = 3602, seq = 8
+./flockmain:pid = 3603, seq = 14
+./flockmain:pid = 3603, seq = 15
+./flockmain1:pid = 3602, seq = 9
+./flockmain1:pid = 3602, seq = 10
+./flockmain:pid = 3603, seq = 16
+./flockmain:pid = 3603, seq = 17
+./flockmain1:pid = 3602, seq = 11
+./flockmain:pid = 3603, seq = 18
+./flockmain1:pid = 3602, seq = 12
+./flockmain1:pid = 3602, seq = 13
+./flockmain1:pid = 3602, seq = 14
+./flockmain:pid = 3603, seq = 19
+./flockmain:pid = 3603, seq = 20
+./flockmain1:pid = 3602, seq = 15
+./flockmain1:pid = 3602, seq = 16
+./flockmain1:pid = 3602, seq = 17
+./flockmain1:pid = 3602, seq = 18
+./flockmain1:pid = 3602, seq = 19
+./flockmain1:pid = 3602, seq = 20</code></code></pre>
+<h3 id="第一个问题假如一个文件被一个进程以读的方式锁定并有另一个进程在等待读锁定解锁后用写入的方式锁定这时是否允许另一个进程的还以读的方式取得锁定">第一个问题：假如一个文件被一个进程以读的方式锁定，并有另一个进程在等待读锁定解锁后，用写入的方式锁定，这时是否允许另一个进程的还以读的方式取得锁定？</h3>
+<p>用例子3来观察：</p>
+<pre><code><code>#include &lt;time.h&gt;
+#include &lt;sys/time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/wait.h&gt;
+
+void gftime(char* buf){
+  struct timeval tv;
+  gettimeofday(&amp;tv, NULL);
+  long usec = tv.tv_usec;
+  struct tm* tm = localtime(&amp;tv.tv_sec);
+  sprintf(buf, &quot;%d:%d:%d.%ld&quot;,tm-&gt;tm_hour, tm-&gt;tm_min, tm-&gt;tm_sec,usec);
+
+}
+
+int main(){
+  char buff[100] = {0};
+ 
+  int fd = open(&quot;test.dat&quot;, O_RDWR | O_CREAT, 0664);
+
+  struct flock lock;
+  
+  lock.l_type = F_RDLCK;
+  lock.l_whence = SEEK_SET;
+  lock.l_start = 0;
+  lock.l_len = 0;
+  fcntl(fd, F_SETLK, &amp;lock);
+
+  gftime(buff);
+  printf(&quot;%s: parent has read lock\n&quot;, buff);
+
+  //first child
+  if(fork() == 0){
+
+    char buf2[100] = {0};
+    sleep(1);
+    gftime(buf2);
+    printf(&quot;%s: first child tries to obtain write lock\n&quot;, buf2);
+
+    struct flock lock2;
+    lock2.l_type = F_WRLCK;
+    lock2.l_whence = SEEK_SET;
+    lock2.l_start = 0;
+    lock2.l_len = 0;
+    fcntl(fd, F_SETLKW, &amp;lock2);
+
+    gftime(buf2);
+    printf(&quot;%s: first child obtains write lock\n&quot;, buf2);
+
+    sleep(2);
+
+    lock2.l_type = F_UNLCK;
+    lock2.l_whence = SEEK_SET;
+    lock2.l_start = 0;
+    lock2.l_len = 0;
+    fcntl(fd, F_SETLK, &amp;lock2);
+
+    gftime(buf2);
+    printf(&quot;%s: first child releases write lock\n&quot;, buf2);
+    
+    exit(0);
+  }
+  //secodn child
+  if(fork() == 0){
+    char buf1[100] = {0};
+    sleep(3);
+    gftime(buf1);
+    printf(&quot;%s: second child tries to obtain read lock\n&quot;, buf1);
+
+    struct flock lock1;
+    lock1.l_type = F_RDLCK;
+    lock1.l_whence = SEEK_SET;
+    lock1.l_start = 0;
+    lock1.l_len = 0;
+    fcntl(fd, F_SETLKW, &amp;lock1);
+
+    gftime(buf1);
+    printf(&quot;%s: second child obtains read lock\n&quot;, buf1);
+
+    sleep(4);
+
+    lock1.l_type = F_UNLCK;
+    lock1.l_whence = SEEK_SET;
+    lock1.l_start = 0;
+    lock1.l_len = 0;
+    fcntl(fd, F_SETLK, &amp;lock1);
+
+    gftime(buf1);
+    printf(&quot;%s: second child release read lock\n&quot;, buf1);
+    
+    exit(0);
+  }
+
+  //parent process
+  sleep(5);
+
+  lock.l_type = F_UNLCK;
+  lock.l_whence = SEEK_SET;
+  lock.l_start = 0;
+  lock.l_len = 0;
+  fcntl(fd, F_SETLK, &amp;lock);
+
+  gftime(buff);
+  printf(&quot;%s: parent releases read lock\n&quot;, buff);
+  
+  wait(NULL);
+  wait(NULL);
+
+  exit(0);
+}
+</code></code></pre>
+<p>在ubuntu上执行结果：</p>
+<pre class="shell"><code>17:49:44.348946: parent has read lock
+17:49:45.350191: first child tries to obtain write lock
+17:49:47.350155: second child tries to obtain read lock
+17:49:47.350409: second child obtains read lock
+17:49:49.349442: parent releases read lock
+17:49:51.351197: second child release read lock
+17:49:51.351582: first child obtains write lock
+17:49:53.351689: first child releases write lock</code></code></pre>
+<h3 id="第一个问题的答案允许另一个进程的还以读的方式取得锁定"><font color=red>第一个问题的答案：允许另一个进程的还以读的方式取得锁定</font></h3>
+<h3 id="第二个问题假如一个文件被一个进程以写的方式锁定这时又有2个进程在等待这个锁的释放其中一个进程是以写锁的方式等待其中另一个进程是以读锁的方式等待哪一个会优先取得锁">第二个问题：假如一个文件被一个进程以写的方式锁定，这时又有2个进程在等待这个锁的释放，其中一个进程是以写锁的方式等待，其中另一个进程是以读锁的方式等待，哪一个会优先取得锁？</h3>
+<p>用例子4来观察：</p>
+<pre><code><code>#include &lt;time.h&gt;
+#include &lt;sys/time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/wait.h&gt;
+
+void gftime(char* buf){
+  struct timeval tv;
+  gettimeofday(&amp;tv, NULL);
+  long usec = tv.tv_usec;
+  struct tm* tm = localtime(&amp;tv.tv_sec);
+  sprintf(buf, &quot;%d:%d:%d.%ld&quot;,tm-&gt;tm_hour, tm-&gt;tm_min, tm-&gt;tm_sec,usec);
+
+}
+
+int main(){
+  char buff[100] = {0};
+ 
+  int fd = open(&quot;test.dat&quot;, O_RDWR | O_CREAT, 0664);
+
+  struct flock lock;
+  
+  lock.l_type = F_WRLCK;
+  lock.l_whence = SEEK_SET;
+  lock.l_start = 0;
+  lock.l_len = 0;
+  fcntl(fd, F_SETLK, &amp;lock);
+
+  gftime(buff);
+  printf(&quot;%s: parent has write lock\n&quot;, buff);
+
+  //first child
+  if(fork() == 0){
+
+    char buf2[100] = {0};
+    sleep(1);
+    gftime(buf2);
+    printf(&quot;%s: first child tries to obtain write lock\n&quot;, buf2);
+
+    struct flock lock2;
+    lock2.l_type = F_WRLCK;
+    lock2.l_whence = SEEK_SET;
+    lock2.l_start = 0;
+    lock2.l_len = 0;
+    fcntl(fd, F_SETLKW, &amp;lock2);
+
+    gftime(buf2);
+    printf(&quot;%s: first child obtains write lock\n&quot;, buf2);
+
+    sleep(2);
+
+    lock2.l_type = F_UNLCK;
+    lock2.l_whence = SEEK_SET;
+    lock2.l_start = 0;
+    lock2.l_len = 0;
+    fcntl(fd, F_SETLK, &amp;lock2);
+
+    gftime(buf2);
+    printf(&quot;%s: first child releases write lock\n&quot;, buf2);
+    
+    exit(0);
+  }
+  //secodn child
+  if(fork() == 0){
+    char buf1[100] = {0};
+    sleep(3);
+    gftime(buf1);
+    printf(&quot;%s: second child tries to obtain read lock\n&quot;, buf1);
+
+    struct flock lock1;
+    lock1.l_type = F_RDLCK;
+    lock1.l_whence = SEEK_SET;
+    lock1.l_start = 0;
+    lock1.l_len = 0;
+    fcntl(fd, F_SETLKW, &amp;lock1);
+
+    gftime(buf1);
+    printf(&quot;%s: second child obtains read lock\n&quot;, buf1);
+
+    sleep(4);
+
+    lock1.l_type = F_UNLCK;
+    lock1.l_whence = SEEK_SET;
+    lock1.l_start = 0;
+    lock1.l_len = 0;
+    fcntl(fd, F_SETLK, &amp;lock1);
+
+    gftime(buf1);
+    printf(&quot;%s: second child release read lock\n&quot;, buf1);
+    
+    exit(0);
+  }
+
+  //parent process
+  sleep(5);
+
+  lock.l_type = F_UNLCK;
+  lock.l_whence = SEEK_SET;
+  lock.l_start = 0;
+  lock.l_len = 0;
+  fcntl(fd, F_SETLK, &amp;lock);
+
+  gftime(buff);
+  printf(&quot;%s: parent releases write lock\n&quot;, buff);
+  
+  wait(NULL);
+  wait(NULL);
+
+  exit(0);
+}</code></code></pre>
+<p>在ubuntu上执行结果：</p>
+<pre class="shell"><code>17:49:29.796599: parent has write lock
+17:49:30.797099: first child tries to obtain write lock
+17:49:32.796885: second child tries to obtain read lock
+17:49:34.796868: parent releases write lock
+17:49:34.796987: second child obtains read lock
+17:49:38.797148: second child release read lock
+17:49:38.797297: first child obtains write lock
+17:49:40.797727: first child releases write lock</code></code></pre>
+<h3 id="第二个问题的答案没有准确答案在ubuntu上的执行结果上看读锁优先了但是可能在别的环境上又是写锁优先按道理来说应该写锁优先吧"><font color=red>第二个问题的答案：没有准确答案。在Ubuntu上的执行结果上看，读锁优先了，但是，可能在别的环境上又是写锁优先。按道理来说应该写锁优先吧？</font></h3>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/Linux 读写锁0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

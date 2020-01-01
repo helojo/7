@@ -1,0 +1,129 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang包管理的古往今来' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang包管理的古往今来</center></div><div class='banquan'>原文出处:本文由博客园博主蒹葭白鹿提供。<br/>
+原文连接:https://www.cnblogs.com/vert/p/golangPackageManage.html</div><br>
+    <p class="md-end-block md-p"><span class="md-image md-img-loaded md-expand" data-src="./images/golang包管理的古往今来0.png"><img src="./images/golang包管理的古往今来0.png" alt="undefined" /></span></p>
+<p class="md-end-block md-p"><span class="md-plain"> <span class="md-link"><a href="https://golang.org/">https://golang.org/</a></span></span></p>
+<h1 class="md-end-block md-heading"><span class="md-plain">before GO1.5-GOPATH</span></h1>
+<p class="md-end-block md-p"><span class="md-plain">在GO1.5之前用GOPATH以及GOROOT这两个环境变量来决定包的位置。</span></p>
+<p class="md-end-block md-p"><span class="md-plain">GOROOT就是告知当前go的安装位置，编译的时候从GOROOT去找sdk的system library。</span></p>
+<p class="md-end-block md-p"><span class="md-plain">GOPATH的目的是为了告知go，需要代码的时候，去哪里查找。注意这里的代码，包括本项目和引用外部项目的代码。GOPATH可以随着项目的不同而重新设置。 从go 1.8开始，如果GOPATH没有被设置，会有一个默认值，在Unix上为$HOME/go，在Windows上为%USERPROFILE%/go </span></p>
+<p class="md-end-block md-p"><span class="md-plain">GOPATH下会有3个目录：src, bin, pkg。</span></p>
+<ul class="ul-list" data-mark="-">
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">src目录：go编译时查找代码的地方</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">bin目录：go get、godep这种bin工具的时候，二进制文件下载的目的地</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">pkg目录：编译生成的lib文件存储的地方。</span></p>
+</li>
+</ul>
+<p class="md-end-block md-p"><span class="md-plain">go允许import不同代码库的代码，例如github.com, k8s.io, golang.org等等；对于需要import的代码，可以使用 go get 命令取下来放到GOPATH对应的目录中去。例如<span><code>go get github.com/silenceshell/hcache</code><span class="md-plain">，会下载到<span><code>$GOPATH/src/github.com/silenceshell/hcache</code><span class="md-plain">中去，当其他项目在<span><code>import github.com/silenceshell/hcache</code><span class="md-plain">的时候也就能找到对应的代码了。</span></span></span></span></span></span></span></p>
+<p class="md-end-block md-p"><span class="md-plain">看到这里也就明白了，对于go来说，其实并不care你的代码是内部还是外部的，总之都在GOPATH里，任何import包的路径都是从GOPATH开始的；唯一的区别，就是内部依赖的包是开发者自己写的，外部依赖的包是go get下来的。</span></p>
+<p class="md-end-block md-p"><span class="md-plain">存在问题：</span></p>
+<ul class="ul-list" data-mark="-">
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">不能区分版本，以至于令开发者以最后一项包名作为版本划分</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">依赖 列表/关系 无法持久化到本地，需要找出所有依赖包然后一个个 go get</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">只能依赖本地全局仓库($GOPATH/GOROOT），无法将库放置于局部仓库（$PROJECT_HOME/vendor）</span></p>
+</li>
+</ul>
+<h1 class="md-end-block md-heading"><span class="md-plain">GO1.5-vendor</span></h1>
+<p class="md-end-block md-p"><span class="md-plain">GO1.5使用vendor需要手动设置环境变量 <span><code>GO15VENDOREXPERIMENT=1</code><span class="md-plain"> ，GO1.6该环境变量默认设为1，在1.7版本时，已去掉该环境变量，默认开启vendor特性。</span></span></span></p>
+<p class="md-end-block md-p"><span class="md-plain">项目必须在<span><code>$GOPATH/src</code><span class="md-plain">目录下</span></span></span></p>
+<p class="md-end-block md-p"><span class="md-plain">在项目的目录下增加一个 vendor 目录来存放外部的包 ， 在这种模式下，会将第三方依赖的源码下载到本地，不同项目下可以有自己不同的vendor。但是这样做又引入了新的问题，因为随着项目的依赖增多，代码库会越来越大，尤其很多带前端资源的项目，几十M到几百M都是很常见的，你的项目可以就依赖它某一点内容，但是却集成了全部资源。</span></p>
+<p class="md-end-block md-p"><span class="md-plain">go vendor的管理工具</span></p>
+<ul class="ul-list" data-mark="+">
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">godep</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">govendor</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">glide</span></p>
+</li>
+</ul>
+<p class="md-end-block md-p"><span class="md-plain">go官方wiki给了一个<span class=" md-link"><a href="https://github.com/golang/go/wiki/PackageManagementTools"><span class="md-plain">比较全面的对比</span></a><span class="md-plain">。</span></span></span></p>
+<p class="md-end-block md-p"><span class="md-plain">godep更直观，使用者也多一些，一些个人的小项目可以用；glide功能更丰富，更接近maven(例如glide.lock跟maven的pom.xml比较类似，可以指定获取某一个版本)，新的项目可以考虑使用glide。</span></p>
+<h1 class="md-end-block md-heading"><span class="md-plain">GO1.11-go modules</span></h1>
+<p class="md-end-block md-p"><span class="md-plain">基于vgo演变而来，是Golang官方的包管理工具。</span></p>
+<h2 class="md-end-block md-heading"><span class="md-plain">configure</span></h2>
+<p class="md-end-block md-p"><span class="md-plain">目前Modules并不是默认启用的，可以通过环境变量GO111MODULE开启或者关闭，它有三个可选值：off、on、auto，默认值是 auto。</span></p>
+<ol class="ol-list" start="">
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">off。关闭支持，go 会从GOPATH和vendor文件夹寻找包。</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">on。开启支持，go 会忽略 GOPATH 和 vendor 文件夹，只根据go.mod下载依赖。</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">auto。当项目在<span><strong><span><code>$GOPATH/src</code><span class="md-plain">外</span></span></strong><span class="md-plain">，且项目根目录有go.mod文件时，开启模块支持，否则依旧使用GOPATH以及vendor。</span></span></span></p>
+</li>
+</ol>
+<h2 class="md-end-block md-heading"><span class="md-plain">go modules使用：</span></h2>
+<h3 class="md-end-block md-heading"><span class="md-plain">add dependencies</span></h3>
+<div class="cnblogs_code">
+<pre><code>go mod init example.com/hello</pre>
+</div>
+<p class="md-end-block md-p"><span class="md-plain">go mod命令生成一个<span><code>go.mod</code><span class="md-plain">文件，<span><code>go.mod</code><span class="md-plain">文件<span><strong>仅</strong><span class="md-plain">出现在模块的<span><strong>根目录</strong><span class="md-plain">中。 子目录中的程序包具有由模块路径以及子目录路径组成的导入路径。 例如，如果我们创建了一个子目录world，则无需（也不希望）在那里运行go mod init。 该软件包将自动被识别为<span><code>example.com/hello</code><span class="md-plain">模块的一部分，导入路径为<span><code>example.com/hello/world</code><span class="md-plain">。</span></span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p class="md-end-block md-p"><span class="md-plain">go命令使用<span><code>go.mod</code><span class="md-plain">中列出的特定依赖项模块版本来解析导入。 当遇到未由<span><code>go.mod</code><span class="md-plain">中的任何模块提供的包的导入时，go命令将自动使用最新版本查找包含该软件包的模块，并将其添加到<span><code>go.mod</code><span class="md-plain">中。 （&ldquo;最新&rdquo;定义为最新的标记稳定（非预发行）版本，或者最新的标记预发行版本，或者最新的未标记版本。）在我们的示例中，go test将新的导入<span><code>rsc.io/quote</code><span class="md-plain">解析为 <span><code>rsc.io/quote v1.5.2</code><span class="md-plain">模块 它还下载了<span><code>rsc.io/quote</code><span class="md-plain">使用的两个依赖项，即<span><code>rsc.io/sampler</code><span class="md-plain">和<span><code>golang.org/x/text</code><span class="md-plain">。 <span><strong>仅直接依赖项</strong><span class="md-plain">记录在<span><code>go.mod</code><span class="md-plain">文件中。</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p class="md-end-block md-p"><span class="md-plain">go modules 下载的包在 <span><code>GOPATH/pkg/mod</code><span class="md-plain">，这就是前面所说的 &lsquo;maven way&rsquo;；安装的命令仍在 <span><code>$GOPATH/bin</code><span class="md-plain">。 </span></span></span></span></span></p>
+<p class="md-end-block md-p"><span class="md-plain">除了go.mod之外，go命令还会维护一个名为go.sum的文件，其中包含特定模块版本内容的预期 <span class=" md-link"><a href="https://golang.org/cmd/go/#hdr-Module_downloading_and_verification"><span class="md-plain">cryptographic hashes</span></a></span></span></p>
+<p class="md-end-block md-p"><span class="md-plain">go命令使用go.sum文件来确保这些模块的将来下载与第一次下载时检索的位相同，以确保您的项目所依赖的模块不会由于恶意，意外或其他原因而意外更改。 应该将go.mod和go.sum都检查到版本控制中。</span></p>
+<div class="cnblogs_code">
+<pre><code>go list -m all  # 列出当前的所有模块以及依赖</pre>
+</div>
+<h3 class="md-end-block md-heading"><span class="md-plain">update dependencies</span></h3>
+<p class="md-end-block md-p md-focus"><span class="md-plain md-expand">版本的表示使用语义版本标签，包括三部分：major；minor；patch。例如v0.2.1，major就是0，minor就是2，patch就是1.</span></p>
+<p class="md-end-block md-p"><span><strong>　　对于minor级别上的升级：</strong></span>　</p>
+<div class="cnblogs_code">
+<pre><code>go get golang.org/x/text  # 自动下载最新版本</pre>
+</div>
+<p class="md-end-block md-p"><span class="md-plain">　　可能会通过，可能出现版本不兼容，</span></p>
+<div class="cnblogs_code">
+<pre><code>go list -m -versions rsc.io/<span style="color: #000000;">sampler # 列出此模块可获得的标签版本
+go get rsc.io</span>/sampler@v1.<span style="color: #800080;">3.1</span> # 下载相应的版本，注意用@再加版本信息，不加版本信息默认@latest</pre>
+</div>
+<p class="md-end-block md-p"><span><strong>　　对于major级别上的升级：</strong></span></p>
+<p class="md-end-block md-p"><span class="md-plain">　　Go模块的每个不同的主要版本（v1，v2等）都使用不同的模块路径：从v2开始，该路径必须以主要版本结尾。在示例中，rsc.io/quote的v3不再是rsc.io/quote：而是由模块路径rsc.io/quote/v3标识。此约定称为语义导入版本控制，它为不兼容的程序包（具有不同主要版本的程序包）提供了不同的名称。相反，rsc.io/quote的v1.6.0应该与v1.5.2向后兼容，因此它重用了名称rsc.io/quote。 （在上一节中，rsc.io/sampler v1.99.99应该已经与rsc.io/sampler v1.3.0向后兼容，但是关于模块行为的错误或错误的客户端假设都可能发生。）</span></p>
+<p class="md-end-block md-p"><span class="md-plain">　　go命令允许构建最多包含任何特定模块路径的一个版本，即每个major版本至多：一个rsc.io/quote，一个rsc.io/quote/v2，一个rsc.io/quote/ v3，依此类推。这为模块作者提供了关于可能重复单个模块路径的明确规则：程序无法同时使用rsc.io/quote v1.5.2和rsc.io/quote v1.6.0来构建。同时，允许模块的不同major版本（因为它们具有不同的路径）使模块使用者可以逐步升级到新的主要版本。在此示例中，我们想使用rsc / quote / v3 v3.1.0中的quote.Concurrency，但尚未准备好迁移rsc.io/quote v1.5.2的使用。在大型程序或代码库中，增量迁移的能力尤其重要。</span></p>
+<h3 class="md-end-block md-heading"><span class="md-plain">remove unused dependencies</span></h3>
+<p class="md-end-block md-p"><span class="md-plain">尽管有的模块我们可能不使用了，但是go list -m all还是会显示，以及在<span><code>go.mod</code><span class="md-plain">中也会有，不会自动删除。仅在检查模块中的所有软件包以及这些包的所有可能的构建标记组合之后，才能删除依赖项。 普通的build命令不会加载此信息，因此它不能安全地删除依赖项。</span></span></span></p>
+<div class="cnblogs_code">
+<pre><code>go mod tidy # 清除未使用的模块</pre>
+</div>
+<p class="md-end-block md-p">&nbsp;</p>
+<p class="md-end-block md-p"><span class="md-plain">参考内容：</span></p>
+<p class="md-end-block md-p"><span class="md-link"><a href="https://ieevee.com/tech/2017/07/10/go-import.html">https://ieevee.com/tech/2017/07/10/go-import.html</a></span></p>
+<p class="md-end-block md-p"><span class="md-link"><a href="http://www.sohu.com/a/330500438_470018">http://www.sohu.com/a/330500438_470018</a></span></p>
+<p class="md-end-block md-p"><span class="md-link"><a href="https://blog.golang.org/using-go-modules">https://blog.golang.org/using-go-modules</a></span></p>
+<p class="md-end-block md-p"><span class="md-plain"> <span class="md-link"><a href="https://juejin.im/post/5c6ac37cf265da2de7134242">https://juejin.im/post/5c6ac37cf265da2de7134242</a></span></span></p>
+<div id="gtx-trans" style="position: absolute; left: 3px; top: 2681.06px;">&nbsp;</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

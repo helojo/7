@@ -1,0 +1,98 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Golang读取并修改非主流配置文件' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Golang读取并修改非主流配置文件</center></div><div class='banquan'>原文出处:本文由博客园博主GaiheiluKamei提供。<br/>
+原文连接:https://www.cnblogs.com/GaiHeiluKamei/p/11514490.html</div><br>
+    <p>今天工作中碰到的问题，要求修改此配置文件，没看出来是什么格式，用了下面的思路：</p>
+<pre><code><code>  mysql {
+                # If any of the files below are set, TLS encryption is enabled
+                tls {
+                        ca_file = &quot;/etc/ssl/certs/my_ca.crt&quot;
+                        ca_path = &quot;/etc/ssl/certs/&quot;
+                        certificate_file = &quot;/etc/ssl/certs/private/client.crt&quot;
+                        private_key_file = &quot;/etc/ssl/certs/private/client.key&quot;
+                        cipher = &quot;DHE-RSA-AES256-SHA:AES128-SHA&quot;
+
+                        tls_required = yes
+                        tls_check_cert = no
+                        tls_check_cert_cn = no
+                }
+
+                # If yes, (or auto and libmysqlclient reports warnings are
+                # available), will retrieve and log additional warnings from
+                # the server if an error has occured. Defaults to &#39;auto&#39;
+                warnings = auto
+        }
+
+        postgresql {
+
+                # unlike MySQL, which has a tls{} connection configuration, postgresql
+                # uses its connection parameters - see the radius_db option below in
+                # this file
+
+                # Send application_name to the postgres server
+                # Only supported in PG 9.0 and greater. Defaults to no.
+                send_application_name = yes
+        }
+# Connection info:
+        #
+        server = &quot;127.0.0.1&quot;
+        port = 5432
+        login = &quot;testuser13&quot;
+        password = &quot;Tpass123&quot;
+
+        # Database table configuration for everything except Oracle
+        radius_db = &quot;test13&quot;
+
+        # If you are using Oracle then use this instead
+#       radius_db = &quot;(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1521))(CONNECT_DATA=(SID=your_sid)))&quot;</code></pre>
+<p>用Go代码修改如上所示的配置文件，如<code>radius_db</code>字段的值，步骤如下：</p>
+<ul>
+<li><code>github.com/go-ini/ini</code>获取键<code>radius_db</code>的值；</li>
+<li><code>fmt.Sprintf()</code>将<code>radius_db = &quot;test13&quot;</code>整体包装成字符串；</li>
+<li><code>fmt.Sprintf()</code>包装新字符串；</li>
+<li><code>strings.Replace()</code>整体替换。</li>
+</ul>
+<p>主要实现代码：</p>
+<pre class="go"><code>// 根据路径获取文件
+configFile := &quot;./sql.conf&quot;
+
+configContent, err := ioutil.ReadFile(configFile)
+
+// 加载配置文件，跳过无法解析的行；设置key/value分隔符为&quot;=&quot;
+cfg, err := ini.LoadSources(ini.LoadOptions
+{SkipUnrecognizableLines:true, KeyValueDelimiters:&quot;=&quot;}, configFile)
+
+// 获取&quot;radius_db&quot;的值
+sqlDBName := cfg.Section(&quot;&quot;).Key(&quot;radius_db&quot;).String()
+
+// newName指要修改的新值
+sqlDBNameOld := fmt.Sprintf(`radius_db = &quot;%s&quot;`, sqlDBName)
+sqlDBNameNew := fmt.Sprintf(`radius_db = &quot;%s&quot;`, newName)
+
+// 替换并写入
+newConfig := strings.Replace(string(configContent), sqlDBNameOld, sqlDBNameNew, 1)
+
+// 写入文件
+err = ioutil.WriteFile(configFile, []byte(newConfig), 0644)</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

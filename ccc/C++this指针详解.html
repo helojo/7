@@ -1,0 +1,103 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++this指针详解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++this指针详解</center></div><div class='banquan'>原文出处:本文由博客园博主KeepHopes提供。<br/>
+原文连接:https://www.cnblogs.com/yuwanxian/p/10988736.html</div><br>
+    <p>　　以前对this指针误解挺多的，在这里单独写一篇进行总结，有不对之处，欢迎指正批评！</p>
+<h2>一、问题</h2>
+<p>1.一个类中的不同对象在调用自己的成员函数时，其实它们调用的是同一段函数代码，那么成员函数如何知道要访问哪个对象的数据成员呢？</p>
+<p>　　没错，就是通过this指针。每个对象都拥有一个this指针，this指针记录对象的内存地址，当我们调用成员函数时，成员函数默认第一个参数为T* const register this，大多数编译器通过ecx寄存器传递this指针，通过&nbsp;this 这个隐式参数可以访问该对象的数据成员。</p>
+<p>2.类的成员函数为什么不能用static和const同时修饰？</p>
+<p>　　类中用const修饰的函数通常用来防止修改对象的数据成员，函数末尾的const是用来修饰this指针，防止在函数内对数据成员进行修改，而静态函数中是没有this指针的，无法访问到对象的数据成员，与C++ static语义冲突，所以不能。</p>
+<h2>二、this指针注意点</h2>
+<p>1.C++中<strong>this关键字</strong>是一个指向对象自己的一个常量指针，不能给this赋值；</p>
+<p>2.只有成员函数才有this指针，友元函数不是类的成员函数，没有this指针；</p>
+<p>3.同样静态函数也是没有this指针的，静态函数如同静态变量一样，不属于具体的哪一个对象；</p>
+<p>4.this指针作用域在类成员函数内部，在类外也无法获取；</p>
+<p>5.this指针并不是对象的一部分，this指针所占的内存大小是不会反应在sizeof操作符上的。</p>
+<h2>三、this指针的使用</h2>
+<p>1.在类的非静态成员函数中返回类对象本身的时候，直接使用 return *this，比如类的默认取址运算符重载函数，另外，也可以返回*this的引用，这样可以像输入输出流那样进行&ldquo;级联&rdquo;操作；</p>
+<p>2.修改类成员变量或参数与成员变量名相同时，如this-&gt;a = a （写成a = a编译不过)；</p>
+<p>3.在class定义时要用到类型变量自身时，因为这时候还不知道变量名，就用this这样的指针来使用变量自身。</p>
+<h2>四、this指针探讨</h2>
+<p>1.this指针是什么时候创建的？&nbsp;</p>
+<p>　　对象new的过程中创建的，具体哪个阶段有待进一步深入了解。</p>
+<p>2. this指针存放在何处？</p>
+<p>　　this指针会因编译器不同而有不同的放置位置。可能是栈，也可能是寄存器，甚至全局变量。在汇编级别里面，一个值只会以3种形式出现：立即数、寄存器值和内存变量值。不是存放在寄存器就是存放在内存中，它们并不是和高级语言变量对应的。</p>
+<p>3.为什么C++ NULL对象指针可以调用非虚成员函数，而Java中却不行？</p>
+<p>　　Ｃ++语言是静态绑定的，这也是Ｃ++语言和Java语言的一个显著区别。类的成员函数并不与特定对象绑定，所有成员函数共用一份成员函数体，当程序编译后，成员函数的地址即已经确定。另外，C++只关心你的指针类型，不关心指针指向的对象是否有效，C++要求程序员自己保证指针的有效性。况且在有些系统上，地址0也是有效的，理论上完全可以构造一个在地址0上的对象，所以C++中nullptr对象调用成员函数并无不可 。</p>
+<p>　　nullptr对象调用成员函数时，只要不访问此对象独有的内存部分，则程序正常运行，因为不会使用this，一旦访问此对象的成员变量，则程序崩溃。当然nullptr调用虚方法是不能正常运行的（虚函数有虚表，会占用内存空间），虚方法调用是依赖于this指针的。可以这样理解，你给函数传递了错误的参数，但在该函数内部并没有使用该参数，所以其不影响函数的运行。可以参考下面代码：</p>
+<div class="cnblogs_code">
+<pre> <span style="color: #800080;">1</span> #include &lt;iostream&gt;
+ <span style="color: #800080;">2</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+ </span><span style="color: #800080;">3</span> 
+ <span style="color: #800080;">4</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> CPeople
+ </span><span style="color: #800080;">5</span><span style="color: #000000;"> {
+ </span><span style="color: #800080;">6</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+ </span><span style="color: #800080;">7</span>     CPeople(<span style="color: #0000ff;">const</span> std::<span style="color: #0000ff;">string</span>&amp; name, <span style="color: #0000ff;">int</span><span style="color: #000000;"> age)
+ </span><span style="color: #800080;">8</span><span style="color: #000000;">       : mName(name), mAge(age){}
+ </span><span style="color: #800080;">9</span>      ~<span style="color: #000000;">CPeople();
+</span><span style="color: #800080;">10</span>  
+<span style="color: #800080;">11</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> Print()
+</span><span style="color: #800080;">12</span><span style="color: #000000;">     {
+</span><span style="color: #800080;">13</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">show people info:</span><span style="color: #800000;">"</span><span style="color: #000000;"> &lt;&lt; std::endl;
+</span><span style="color: #800080;">14</span><span style="color: #000000;">     }
+</span><span style="color: #800080;">15</span> 
+<span style="color: #800080;">16</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> PrintInfo()
+</span><span style="color: #800080;">17</span><span style="color: #000000;">     {
+</span><span style="color: #800080;">18</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">name:</span><span style="color: #800000;">"</span> &lt;&lt; mName &lt;&lt;<span style="color: #000000;"> std::endl;
+</span><span style="color: #800080;">19</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">age:</span><span style="color: #800000;">"</span> &lt;&lt; mAge &lt;&lt;<span style="color: #000000;"> std::endl;
+</span><span style="color: #800080;">20</span><span style="color: #000000;">     }
+</span><span style="color: #800080;">21</span>  
+<span style="color: #800080;">22</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #800080;">23</span>  
+<span style="color: #800080;">24</span>     std::<span style="color: #0000ff;">string</span><span style="color: #000000;"> mName;
+</span><span style="color: #800080;">25</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> mAge;
+</span><span style="color: #800080;">26</span>  
+<span style="color: #800080;">27</span><span style="color: #000000;"> };
+</span><span style="color: #800080;">28</span>  
+<span style="color: #800080;">29</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #800080;">30</span><span style="color: #000000;"> {
+</span><span style="color: #800080;">31</span>     CPeople* jon =<span style="color: #000000;"> NULL;
+</span><span style="color: #800080;">32</span>     jon-&gt;Print();  <span style="color: #008000;">//</span><span style="color: #008000;"> 程序正常运行</span>
+<span style="color: #800080;">33</span>     jon-&gt;PrintInfo();  <span style="color: #008000;">//</span><span style="color: #008000;"> 程序崩溃，访问非法地址，此时mName和mAge并没有分配空间</span>
+<span style="color: #800080;">34</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #800080;">35</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<h2>五、总结</h2>
+<p>　　引用网上关于this指针的一个经典回答：</p>
+<div>　　当你进入一个房子后，</div>
+<div>　　你可以看见桌子、椅子、地板等，</div>
+<div>　　但是房子你是看不到全貌了。</div>
+<div>　　对于一个类的实例来说，</div>
+<div>　　你可以看到它的成员函数、成员变量，</div>
+<div>　　但是实例本身呢？</div>
+<div>　　this是一个指针，它时时刻刻指向你这个实例本身。</div>
+<p>　　对this指针有了一个全面了解后，是否对C++ class理解也更深刻一步？</p>
+<p>　　写作，能让人更深入的了解事情的本质，慢慢积累，厚积薄发，加油！</p>
+<p>&nbsp;</p>
+<pre><code><span style="background-color: #ccffff; font-family: 'Microsoft YaHei'; font-size: 15px;">作者：KeepHopes
+出处：<a href="https://www.cnblogs.com/yuwanxian/p/10988736.html"><span style="background-color: #ccffff;">https://www.cnblogs.com/yuwanxian/p/10988736.html</span></a>
+关于作者：专注C++，对大数据、人工智能领域颇感兴趣，请多多赐教！
+本文为作者原创，版权归作者和博客园共有，转载或引用请注明出处，谢谢！</span></pre>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

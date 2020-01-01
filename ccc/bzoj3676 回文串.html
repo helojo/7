@@ -1,0 +1,141 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修bzoj3676 回文串' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>bzoj3676 回文串</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/bzoj3676.html</div><br>
+    <p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=3676"><font size  = 5>题目链接</font></a></p>
+<h1 id="思路">思路</h1>
+<p>看到回文串，自然就会想到<img src="./images/bzoj3676 回文串0.png" alt="1562984836935_gaitubao_" />。</p>
+<p>还要求子串长度。那就用<span class="math inline">\(SAM\)</span>。</p>
+<p>所以每次用manacher找到一个回文串，都在<span class="math inline">\(SAM\)</span>上查询其出现次数。</p>
+<p>在<span class="math inline">\(SAM\)</span>上查询的时候，肯定不能暴力找。先找到当前回文串的结束位置。然后用倍增法往上跳。一直跳到长度和当前回文串长度相同。</p>
+<p>这个题有点卡空间。卡了很久才卡过去。</p>
+<h1 id="代码">代码</h1>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-07-12 17:23:51
+* @Last Modified time: 2019-07-13 10:11:46
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int lgN = 20,N = 600000 + 100;
+// #define int ll
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+char S[N],s[N];
+struct node {
+    int fa,ch[26],len;
+}SAM[N];
+int siz[N],lst = 1,tot = 1,pos[N];
+void add(int c,int id) {
+    int p = lst,cur = ++tot;
+    SAM[cur].len = SAM[lst].len + 1;
+    pos[id] = cur;siz[cur] = 1;
+    while(p &amp;&amp; !SAM[p].ch[c]) {
+        SAM[p].ch[c] = cur;
+        p = SAM[p].fa;
+    }
+    if(!p) SAM[cur].fa = 1;
+    else {
+        int q = SAM[p].ch[c];
+        if(SAM[q].len == SAM[p].len + 1) SAM[cur].fa = q;
+        else {
+            int clone = ++tot;
+            SAM[clone] = SAM[q];
+            SAM[clone].len = SAM[p].len + 1;
+            while(p &amp;&amp; SAM[p].ch[c] == q) {
+                SAM[p].ch[c] = clone;
+                p = SAM[p].fa;
+            }
+            SAM[cur].fa = SAM[q].fa = clone;
+        }
+    }
+    lst = cur;
+}
+int p[N];
+int n,tong[N],A[N],st[N][lgN + 1];
+ll ans;
+void check(int l,int r) {
+    int p = pos[r];
+    for(int i = lgN;i &gt;= 0;--i) {
+        if(SAM[st[p][i]].len &gt;= r - l + 1) 
+            p = st[p][i];
+    }
+    ans = max(ans,1ll * (r - l + 1) * siz[p]);
+}
+void manacher() {
+    int id = 0,mx = 0;
+    for(int i = 1;i &lt;= n;++i) {
+        if(id + mx &gt; i) p[i] = min(id + mx - i,p[id * 2 - i]);
+         check((i - p[i] + 1) / 2,(i + p[i]) / 2);
+        while(i + p[i] + 1 &lt;= n &amp;&amp; i - p[i] - 1 &gt;= 1 &amp;&amp; s[i + p[i] + 1] == s[i - p[i] - 1]) {
+            p[i]++;
+             check((i - p[i] + 1) / 2,(i + p[i]) / 2);
+        }
+        if(i + p[i] &gt; id + mx) id = i,mx = p[i];
+    }
+}
+int main() {
+    scanf(&quot;%s&quot;,S + 1);
+    int nn = strlen(S + 1);
+    s[++n] = &#39;#&#39;;
+    for(int i = 1;i &lt;= nn;++i) {
+        add(S[i] - &#39;a&#39;,i);
+        s[++n] = S[i];
+        s[++n] = &#39;#&#39;;
+    }
+
+    for(int i = 1;i &lt;= tot;++i) tong[SAM[i].len]++;
+    for(int i = 1;i &lt;= nn;++i) tong[i] += tong[i - 1];
+    for(int i = 1;i &lt;= tot;++i) A[tong[SAM[i].len]--] = i;
+    for(int i = tot;i &gt;= 1;--i) siz[SAM[A[i]].fa] += siz[A[i]];
+    siz[1] = 0;
+
+    for(int i = 1;i &lt;= tot;++i) {
+        st[A[i]][0] = SAM[A[i]].fa;
+        for(int j = 1;j &lt;= lgN;++j) st[A[i]][j] = st[st[A[i]][j - 1]][j - 1];
+    }
+
+    manacher();
+    cout&lt;&lt;ans;
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

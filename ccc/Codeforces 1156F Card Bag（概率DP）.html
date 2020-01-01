@@ -1,0 +1,111 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Codeforces 1156F Card Bag（概率DP）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Codeforces 1156F Card Bag（概率DP）</center></div><div class='banquan'>原文出处:本文由博客园博主DD_BOND提供。<br/>
+原文连接:https://www.cnblogs.com/dd-bond/p/10813912.html</div><br>
+    <p><strong><strong>设dp[i][j]表示选到了第i张牌，牌号在j之前包括j的概率，cnt[i]表示有i张牌,inv[i]表示i在mod下的逆元，那我们可以考虑转移，dp[i][j]=dp[i-1][j-1]*cnt[j]*inv[n-i+1],这个只是表示当前成功转移到i j的状态，如果要考虑胜利的条件，显然是选在选一次j即可赢取胜率，那么对于答案ans只需要加上dp[i-1][j-1]*cnt[j]*inv[n-i+1]*(cnt[j]-1)*inv[n-i]即可，因为我们这个dp[i][j]是记录j之前所有的概率和，需要开一个sum记录之前的和再去更新当前的dp[i][j]即可，记得初始化，所有dp[0][j]都是1，没有选那么概率显然为1,复杂度O(n^2)，可以不需要开二维数组。</strong></strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;">      &mdash;&mdash;By DD_BOND
+</span><span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #008000;">//</span><span style="color: #008000;">#include&lt;bits/stdc++.h&gt;</span>
+<span style="color: #008080;"> 4</span> #include&lt;functional&gt;
+<span style="color: #008080;"> 5</span> #include&lt;algorithm&gt;
+<span style="color: #008080;"> 6</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 7</span> #include&lt;sstream&gt;
+<span style="color: #008080;"> 8</span> #include&lt;iomanip&gt;
+<span style="color: #008080;"> 9</span> #include&lt;climits&gt;
+<span style="color: #008080;">10</span> #include&lt;cstring&gt;
+<span style="color: #008080;">11</span> #include&lt;cstdlib&gt;
+<span style="color: #008080;">12</span> #include&lt;cstddef&gt;
+<span style="color: #008080;">13</span> #include&lt;cstdio&gt;
+<span style="color: #008080;">14</span> #include&lt;memory&gt;
+<span style="color: #008080;">15</span> #include&lt;vector&gt;
+<span style="color: #008080;">16</span> #include&lt;cctype&gt;
+<span style="color: #008080;">17</span> #include&lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;">18</span> #include&lt;cmath&gt;
+<span style="color: #008080;">19</span> #include&lt;queue&gt;
+<span style="color: #008080;">20</span> #include&lt;deque&gt;
+<span style="color: #008080;">21</span> #include&lt;ctime&gt;
+<span style="color: #008080;">22</span> #include&lt;stack&gt;
+<span style="color: #008080;">23</span> #include&lt;map&gt;
+<span style="color: #008080;">24</span> #include&lt;<span style="color: #0000ff;">set</span>&gt;
+<span style="color: #008080;">25</span> 
+<span style="color: #008080;">26</span> <span style="color: #0000ff;">#define</span> fi first
+<span style="color: #008080;">27</span> <span style="color: #0000ff;">#define</span> se second
+<span style="color: #008080;">28</span> <span style="color: #0000ff;">#define</span> MP make_pair
+<span style="color: #008080;">29</span> <span style="color: #0000ff;">#define</span> pb push_back
+<span style="color: #008080;">30</span> <span style="color: #0000ff;">#define</span> INF 0x3f3f3f3f
+<span style="color: #008080;">31</span> <span style="color: #0000ff;">#define</span> pi 3.1415926535898
+<span style="color: #008080;">32</span> <span style="color: #0000ff;">#define</span> lowbit(a)  (a&amp;(-a))
+<span style="color: #008080;">33</span> <span style="color: #0000ff;">#define</span> lson l,(l+r)/2,rt&lt;&lt;1
+<span style="color: #008080;">34</span> <span style="color: #0000ff;">#define</span> rson (l+r)/2+1,r,rt&lt;&lt;1|1
+<span style="color: #008080;">35</span> <span style="color: #0000ff;">#define</span> Min(a,b,c)  min(a,min(b,c))
+<span style="color: #008080;">36</span> <span style="color: #0000ff;">#define</span> Max(a,b,c)  max(a,max(b,c))
+<span style="color: #008080;">37</span> <span style="color: #0000ff;">#define</span> debug(x)  cerr&lt;&lt;#x&lt;&lt;"="&lt;&lt;x&lt;&lt;"\n";
+<span style="color: #008080;">38</span> 
+<span style="color: #008080;">39</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;">40</span> 
+<span style="color: #008080;">41</span> typedef <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> ll;
+</span><span style="color: #008080;">42</span> typedef pair&lt;<span style="color: #0000ff;">int</span>,<span style="color: #0000ff;">int</span>&gt;<span style="color: #000000;"> P;
+</span><span style="color: #008080;">43</span> typedef pair&lt;ll,ll&gt;<span style="color: #000000;"> Pll;
+</span><span style="color: #008080;">44</span> typedef unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> ull;
+</span><span style="color: #008080;">45</span> 
+<span style="color: #008080;">46</span> <span style="color: #0000ff;">const</span> ll LLMAX=<span style="color: #000000;">2e18;
+</span><span style="color: #008080;">47</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> MOD=<span style="color: #800080;">998244353</span><span style="color: #000000;">;
+</span><span style="color: #008080;">48</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">double</span> eps=1e-<span style="color: #800080;">8</span><span style="color: #000000;">;
+</span><span style="color: #008080;">49</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> MAXN=1e6+<span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;">50</span> 
+<span style="color: #008080;">51</span> inline ll sqr(ll x){ <span style="color: #0000ff;">return</span> x*<span style="color: #000000;">x; }
+</span><span style="color: #008080;">52</span> inline <span style="color: #0000ff;">int</span> sqr(<span style="color: #0000ff;">int</span> x){ <span style="color: #0000ff;">return</span> x*<span style="color: #000000;">x; }
+</span><span style="color: #008080;">53</span> inline <span style="color: #0000ff;">double</span> sqr(<span style="color: #0000ff;">double</span> x){ <span style="color: #0000ff;">return</span> x*<span style="color: #000000;">x; }
+</span><span style="color: #008080;">54</span> ll __gcd(ll a,ll b){ <span style="color: #0000ff;">return</span> b==<span style="color: #800080;">0</span>? a: __gcd(b,a%<span style="color: #000000;">b); }
+</span><span style="color: #008080;">55</span> ll qpow(ll a,ll n){ll sum=<span style="color: #800080;">1</span>;<span style="color: #0000ff;">while</span>(n){<span style="color: #0000ff;">if</span>(n&amp;<span style="color: #800080;">1</span>)sum=sum*a%MOD;a=a*a%MOD;n&gt;&gt;=<span style="color: #800080;">1</span>;}<span style="color: #0000ff;">return</span><span style="color: #000000;"> sum;}
+</span><span style="color: #008080;">56</span> inline <span style="color: #0000ff;">int</span> dcmp(<span style="color: #0000ff;">double</span> x){    <span style="color: #0000ff;">if</span>(fabs(x)&lt;eps) <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span>;    <span style="color: #0000ff;">return</span> (x&gt;<span style="color: #800080;">0</span>? <span style="color: #800080;">1</span>: -<span style="color: #800080;">1</span><span style="color: #000000;">); }
+</span><span style="color: #008080;">57</span> 
+<span style="color: #008080;">58</span> ll dp[<span style="color: #800080;">5010</span>][<span style="color: #800080;">5010</span>],inv[<span style="color: #800080;">5010</span>],cnt[<span style="color: #800080;">5010</span><span style="color: #000000;">];
+</span><span style="color: #008080;">59</span> 
+<span style="color: #008080;">60</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;">61</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">62</span>     ios::sync_with_stdio(<span style="color: #0000ff;">false</span>);    cin.tie(<span style="color: #800080;">0</span>);   cout.tie(<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">63</span>     inv[<span style="color: #800080;">1</span>]=dp[<span style="color: #800080;">0</span>][<span style="color: #800080;">0</span>]=<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">64</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">2</span>;i&lt;=<span style="color: #800080;">5000</span>;i++)    inv[i]=(MOD-MOD/i)*inv[MOD%i]%<span style="color: #000000;">MOD;
+</span><span style="color: #008080;">65</span>     ll n,ans=<span style="color: #800080;">0</span>;  cin&gt;&gt;<span style="color: #000000;">n;
+</span><span style="color: #008080;">66</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">){
+</span><span style="color: #008080;">67</span>         <span style="color: #0000ff;">int</span> x;  cin&gt;&gt;<span style="color: #000000;">x;
+</span><span style="color: #008080;">68</span>         cnt[x]++<span style="color: #000000;">;
+</span><span style="color: #008080;">69</span>         dp[<span style="color: #800080;">0</span>][i]=<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">70</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">71</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">){
+</span><span style="color: #008080;">72</span>         ll sum=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">73</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>;j&lt;=n;j++<span style="color: #000000;">){
+</span><span style="color: #008080;">74</span>             ll p=dp[i-<span style="color: #800080;">1</span>][j-<span style="color: #800080;">1</span>]*cnt[j]%MOD*inv[n-i+<span style="color: #800080;">1</span>]%<span style="color: #000000;">MOD;
+</span><span style="color: #008080;">75</span>             sum=(sum+p)%<span style="color: #000000;">MOD;
+</span><span style="color: #008080;">76</span>             dp[i][j]=<span style="color: #000000;">sum;
+</span><span style="color: #008080;">77</span>             <span style="color: #0000ff;">if</span>(cnt[j]&gt;=<span style="color: #800080;">2</span>)   ans=(ans+p*(cnt[j]-<span style="color: #800080;">1</span>)%MOD*inv[n-i]%MOD)%<span style="color: #000000;">MOD;
+</span><span style="color: #008080;">78</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">79</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">80</span>     cout&lt;&lt;ans&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;">81</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">82</span> }</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

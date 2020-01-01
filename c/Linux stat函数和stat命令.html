@@ -1,0 +1,521 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Linux stat函数和stat命令' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Linux stat函数和stat命令</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/10764243.html</div><br>
+    <h3 id="stat函数和stat命令">stat函数和stat命令</h3>
+<p>linux文件里的【inode = index node】解释：要理解inode必须了解磁盘和【目录项】，inode实际是连接【目录项】和磁盘的中间物质。</p>
+<ul>
+<li>图里的大圈代表硬件的磁盘，里面的小圈代表某个文件存储在磁盘上了。</li>
+<li>【inode = index node】的node（承载node信息的结构体是：stat，stat的定义在后面 ）里面有：
+<ul>
+<li>文件大小</li>
+<li>文件的最后修改时间</li>
+<li>文件的所属用户</li>
+<li>文件的权限</li>
+<li>硬链接计数(ls -l 显示出来的数字)</li>
+<li>块位置：指定文件存储在磁盘的具体位置。</li>
+</ul></li>
+<li>下图中的hello是个普通文件，hello.hard是hello的硬链接</li>
+<li>文件夹里放的就是每个文件的【目录项】如下图，【目录项】里有：
+<ul>
+<li>文件名</li>
+<li>该目录项的大小</li>
+<li>文件的类型</li>
+<li>inode</li>
+</ul></li>
+</ul>
+<p><img src="./images/Linux stat函数和stat命令0.png" /></p>
+<ul>
+<li><p>如何查看文件的【inode】呢？使用【-i】选项</p>
+<pre><code><code>ls -li 文件名</code></code></pre>
+<p>执行结果：</p>
+<pre><code><code>ys@ys-VirtualBox:~/lianxi1$ ls -li hello hello.hard 
+3801352 -rw-rw-r-- 2 ys ys 0 4月  24 11:01 hello
+3801352 -rw-rw-r-- 2 ys ys 0 4月  24 11:01 hello.hard</code></code></pre>
+<p>发现hello和hello.hard的inode<font color="color">（3801352）</font>是相同的，也就说明了，只在磁盘上存了一份。</p></li>
+<li><p>如何查看目录项呢？用emacs或者vim打开目录（lianxi1），截图如下。但是看不到文件的【inode】。</p></li>
+</ul>
+<p><img src="./images/Linux stat函数和stat命令1.png" /></p>
+<p>1，stat函数：取得指定文件的文件属性，文件属性存储在结构体stat里。</p>
+<pre class="c"><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;unistd.h&gt;
+
+int stat(const char *pathname, struct stat *statbuf);
+int fstat(int fd, struct stat *statbuf);
+int lstat(const char *pathname, struct stat *statbuf);
+</code></code></pre>
+<p>struct stat 结构体：</p>
+<pre class="c"><code>struct stat {
+               dev_t     st_dev;         /* ID of device containing file */
+               ino_t     st_ino;         /* Inode number */
+               mode_t    st_mode;        /* File type and mode */
+               nlink_t   st_nlink;       /* Number of hard links */
+               uid_t     st_uid;         /* User ID of owner */
+               gid_t     st_gid;         /* Group ID of owner */
+               dev_t     st_rdev;        /* Device ID (if special file) */
+               off_t     st_size;        /* Total size, in bytes */
+               blksize_t st_blksize;     /* Block size for filesystem I/O */
+               blkcnt_t  st_blocks;      /* Number of 512B blocks allocated */
+
+               /* Since Linux 2.6, the kernel supports nanosecond
+                  precision for the following timestamp fields.
+                  For the details before Linux 2.6, see NOTES. */
+
+               struct timespec st_atim;  /* Time of last access */
+               struct timespec st_mtim;  /* Time of last modification */
+               struct timespec st_ctim;  /* Time of last status change */
+
+           #define st_atime st_atim.tv_sec      /* Backward compatibility */
+           #define st_mtime st_mtim.tv_sec
+           #define st_ctime st_ctim.tv_sec
+           };
+</code></code></pre>
+<ul>
+<li><p>st_dev：设备ID，不太常用</p></li>
+<li><p>st_ino：【inode】，【inode】是啥？不知道就看上面关于【inode】的解释</p></li>
+<li><p>st_mode：文件的类型和权限，共16位，如下图。</p>
+<ul>
+<li><p>0-11位控制文件的权限</p></li>
+<li><p>12-15位控制文件的类型</p></li>
+</ul>
+<p>0-2比特位：其他用户权限</p>
+<p>3-5比特位：组用户权限</p>
+<p>6-8比特位：本用户权限</p>
+<p>9-11比特位：特殊权限</p>
+<p>12-15比特位：文件类型（因为文件类型只有7中，所以用12-14位就够了</p></li>
+</ul>
+<p><img src="./images/Linux stat函数和stat命令2.png" /></p>
+<p>文件类型的宏如下（下面的数字是8进制）：</p>
+<ul>
+<li>S_IFSOCK 0140000 socket</li>
+<li>S_IFLNK 0120000 symbolic link（软连接）</li>
+<li>S_IFREG 0100000 regular file（普通文件）</li>
+<li>S_IFBLK 0060000 block device（块设备文件）</li>
+<li>S_IFDIR 0040000 directory（目录）</li>
+<li>S_IFCHR 0020000 character device（字符设备文件）</li>
+<li>S_IFIFO 0010000 FIFO（管道）</li>
+</ul>
+<pre class="c"><code>判断文件类型的函数，返回true，false       
+   S_ISREG(stat.st_mode)  is it a regular file?
+   S_ISDIR(stat.st_mode)  directory?
+   S_ISCHR(stat.st_mode)  character device?
+   S_ISBLK(stat.st_mode)  block device?
+   S_ISFIFO(m) FIFO (named pipe)?
+   S_ISLNK(stat.st_mode)  symbolic link?  (Not in POSIX.1-1996.)
+   S_ISSOCK(stat.st_mode) socket?  (Not in POSIX.1-1996.)</code></code></pre>
+<p>文件权限的宏如下：</p>
+<pre><code><code>       S_ISUID     04000   set-user-ID bit
+       S_ISGID     02000   set-group-ID bit (see below)
+       S_ISVTX     01000   sticky bit (see below)
+
+       S_IRWXU     00700   owner has read, write, and execute permission
+       S_IRUSR     00400   owner has read permission
+       S_IWUSR     00200   owner has write permission
+       S_IXUSR     00100   owner has execute permission
+
+       S_IRWXG     00070   group has read, write, and execute permission
+       S_IRGRP     00040   group has read permission
+       S_IWGRP     00020   group has write permission
+       S_IXGRP     00010   group has execute permission
+
+       S_IRWXO     00007   others (not in group) have read,  write,  and
+                           execute permission
+       S_IROTH     00004   others have read permission
+       S_IWOTH     00002   others have write permission
+       S_IXOTH     00001   others have execute permission</code></code></pre>
+<ul>
+<li><p>st_nlink：硬连接计数</p></li>
+<li><p>st_uid：这个文件所属用户的ID</p></li>
+<li><p>st_gid：这个文件所属用户的组ID</p></li>
+<li><p>st_rdev：特殊设备的ID，不太常用</p></li>
+<li><p>st_size：文件的大小</p></li>
+<li><p>st_blksize：不明是干啥的</p></li>
+<li><p>st_blocks：不明是干啥的</p></li>
+<li><p>struct timespec st_atim：最后访问的时间</p></li>
+<li><p>struct timespec st_mtim：最后修改的时间</p></li>
+<li><p>struct timespec st_ctim：最后状态改变的时间</p>
+<pre class="c"><code>struct timespec {
+  __kernel_time_t tv_sec;  /* seconds */当前时间到1970.1.1 00:00:00的秒数
+  long        tv_nsec;    /* nanoseconds *//纳秒数（不知道从哪到哪的）
+};
+1s  秒   = 1000ms 毫秒
+1ms 毫秒 = 1000us 微秒
+1us 微秒 = 1000ns 纳秒</code></code></pre></li>
+</ul>
+<p>pathname：文件名</p>
+<p>返回值：0代表成功；-1代表失败，并设置error</p>
+<p>例子：statbuf是结构体stat，可以看出来st_mode是个10进制的数字。</p>
+<p><img src="./images/Linux stat函数和stat命令3.png" /></p>
+<ul>
+<li><p>st_mode</p>
+<p>用gdb显示st_mode，发现返回的st_mode是个10进制的数字，用gdb的【p/o】(o代表用8进制表示)命令把10进制的33204转换成了8进制的【0100664】，第一个0代笔是8进制，后三位的【100】代表文件类型，从上面的说明可以看出来【100】代表普通文件，最后三位的【664】代表这个文件的权限（本用户：rw-，组用户：rw-，其他用户：r--）。所以从st_mode里就可以得知文件的类型和权限设置（只使用了16个比特位，真的好节省空间，牛逼！）</p></li>
+<li><p>st_uid</p></li>
+<li><p>st_gid</p>
+<p>发现st_uid和st_gid是1000，但这个1000怎么和用户对应上呢，查看/etc/passwd文件，发现用于ys的uid和gid都是1000，所以就对应上了。</p></li>
+</ul>
+<p><img src="./images/Linux stat函数和stat命令4.png" /></p>
+<p>stat命令，是stat函数对应，执行结果如下：</p>
+<pre><code><code>ys@ys-VirtualBox:~/lianxi1$ stat hello
+  File: hello
+  Size: 11          Blocks: 8          IO Block: 4096   regular file
+Device: 801h/2049d  Inode: 3801352     Links: 2
+Access: (0764/-rwxrw-r--)  Uid: ( 1000/      ys)   Gid: ( 1000/      ys)
+Access: 2019-04-24 17:02:39.199461489 +0800
+Modify: 2019-04-24 16:54:16.407461489 +0800
+Change: 2019-04-24 17:03:44.927461489 +0800</code></code></pre>
+<p>2，getpwuid函数：返回/etc/passwd文件里指定uid的行，把这一行的信息放入结构体passwd中。虽然返回值是指针，但不需要调用free函数。</p>
+<pre class="c"><code>#include &lt;sys/types.h&gt;
+#include &lt;pwd.h&gt;
+struct passwd *getpwnam(const char *name);
+struct passwd *getpwuid(uid_t uid);
+
+struct passwd {
+  char   *pw_name;       /* username */
+  char   *pw_passwd;     /* user password */
+  uid_t   pw_uid;        /* user ID */
+  gid_t   pw_gid;        /* group ID */
+  char   *pw_gecos;      /* user information */
+  char   *pw_dir;        /* home directory */
+  char   *pw_shell;      /* shell program */
+};
+</code></code></pre>
+<p>3，getgrgid函数：返回/etc/group文件里指定gid的行，把这一行的信息放入结构体group中。虽然返回值是指针，但不需要调用free函数。</p>
+<pre class="c"><code>#include &lt;sys/types.h&gt;
+#include &lt;grp.h&gt;
+struct group *getgrnam(const char *name);
+struct group *getgrgid(gid_t gid);
+
+struct group {
+  char   *gr_name;        /* group name */
+  char   *gr_passwd;      /* group password */
+  gid_t   gr_gid;         /* group ID */
+  char  **gr_mem;         /* NULL-terminated array of pointers
+                             to names of group members */
+};</code></code></pre>
+<p>4，localtime函数：传入从stat函数里得到的st_mtim.tv_sec(当前时间到1970.1.1 00:00:00的秒数)，得到结构体tm。虽然返回值是指针，但不需要调用free函数。</p>
+<pre class="c"><code>#include &lt;time.h&gt;
+struct tm *localtime(const time_t *timep);
+struct tm {
+  int tm_sec;    /* Seconds (0-60) */
+  int tm_min;    /* Minutes (0-59) */
+  int tm_hour;   /* Hours (0-23) */
+  int tm_mday;   /* Day of the month (1-31) */
+  int tm_mon;    /* Month (0-11) */
+  int tm_year;   /* Year - 1900 */
+  int tm_wday;   /* Day of the week (0-6, Sunday = 0) */
+  int tm_yday;   /* Day in the year (0-365, 1 Jan = 0) */
+  int tm_isdst;  /* Daylight saving time */
+};</code></code></pre>
+<p>5，lstat函数：stat碰到软链接，会追述到源文件，穿透；lstat并不会穿透。</p>
+<p>例子：模仿ls -l 文件</p>
+<pre class="c"><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;pwd.h&gt;//getpwuid
+#include &lt;stdlib.h&gt;
+#include &lt;time.h&gt;//localtime
+#include &lt;grp.h&gt;//getgrgid
+
+int main(int argc, char* argv[]){
+
+  struct stat sbuf;
+  //stat(argv[1], &amp;sbuf);
+  lstat(argv[1], &amp;sbuf);
+
+  char str[11] = {0};
+  memset(str, &#39;-&#39;, (sizeof str - 1));
+    
+  //文件类型
+  if(S_ISREG(sbuf.st_mode))  str[0] = &#39;-&#39;;
+  if(S_ISDIR(sbuf.st_mode))  str[0] = &#39;d&#39;;
+  if(S_ISCHR(sbuf.st_mode))  str[0] = &#39;c&#39;;
+  if(S_ISBLK(sbuf.st_mode))  str[0] = &#39;b&#39;;
+  if(S_ISFIFO(sbuf.st_mode)) str[0] = &#39;p&#39;;
+  if(S_ISLNK(sbuf.st_mode))  str[0] = &#39;l&#39;;
+  if(S_ISSOCK(sbuf.st_mode)) str[0] = &#39;s&#39;;
+
+  //本用户的文件权限
+  if(sbuf.st_mode &amp; S_IRUSR) str[1] = &#39;r&#39;;
+  if(sbuf.st_mode &amp; S_IWUSR) str[2] = &#39;w&#39;;
+  if(sbuf.st_mode &amp; S_IXUSR) str[3] = &#39;x&#39;;
+  
+  //本用户的组的文件权限
+  if(sbuf.st_mode &amp; S_IRGRP) str[4] = &#39;r&#39;;
+  if(sbuf.st_mode &amp; S_IWGRP) str[5] = &#39;w&#39;;
+  if(sbuf.st_mode &amp; S_IXGRP) str[6] = &#39;x&#39;;
+  
+  //其他用户的文件权限
+  if(sbuf.st_mode &amp; S_IROTH) str[7] = &#39;r&#39;;
+  if(sbuf.st_mode &amp; S_IWOTH) str[8] = &#39;w&#39;;
+  if(sbuf.st_mode &amp; S_IXOTH) str[9] = &#39;x&#39;;
+
+  char ymd[20] = {0};
+  //取得日期和时间
+  struct tm* tm = localtime(&amp;sbuf.st_atim.tv_sec);
+  sprintf(ymd, &quot;%2d月  %2d %02d:%02d&quot;, tm-&gt;tm_mon + 1, tm-&gt;tm_mday,
+      tm-&gt;tm_hour + 1,tm-&gt;tm_sec);
+    
+  //-rw-r--r-- 1 ys ys 134 4月  25 09:21 st2.c
+  printf(&quot;%s %ld %s %s %ld %s %s\n&quot;, str, sbuf.st_nlink,
+     getpwuid(sbuf.st_uid)-&gt;pw_name, getgrgid(sbuf.st_gid)-&gt;gr_name,
+     sbuf.st_size, ymd, argv[1]);
+  return 0;
+}</code></code></pre>
+<p>6，access函数：判断调用程序的用户对于指定文件的权限（可读？可写？可执行？）</p>
+<pre class="c"><code>#include &lt;unistd.h&gt;
+int access(const char *pathname, int mode);</code></code></pre>
+<ul>
+<li>pathname：文件</li>
+<li>mode
+<ul>
+<li>R_OK：可读？</li>
+<li>W_OK：可写？</li>
+<li>X_OK：可执行？</li>
+<li>F_OK：文件存在？</li>
+</ul></li>
+<li>返回值
+<ul>
+<li>查询的权限存在或者文件存在：返回0。</li>
+<li>查询的权限不存在或者文件不存在：返回-1。</li>
+</ul></li>
+</ul>
+<p>例子：</p>
+<pre class="c"><code>#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;//access
+
+int main(int argc, char* argv[]){
+  if(access(argv[1], R_OK) == 0)
+    printf(&quot;read ok\n&quot;);
+  if(access(argv[1], W_OK) == 0)
+    printf(&quot;write ok\n&quot;);
+  if(access(argv[1], X_OK) == 0)
+    printf(&quot;exe ok\n&quot;);
+  if(access(argv[1], F_OK) == 0)
+    printf(&quot;exists\n&quot;);
+}</code></code></pre>
+<ul>
+<li><p>先用ls -l 查看/usr/include/time.h文件的权限，结果如下</p>
+<pre><code><code>ys@ys-VirtualBox:~/lianxi$ ls -l /usr/include/time.h
+-rw-r--r-- 1 root root 10360 4月  17  2018 /usr/include/time.h</code></code></pre></li>
+<li><p>用ys用户执行例子程序，查看/usr/include/time.h文件,结果如下。因为time.h是属于root用户的，对于其他用户来说是[r--]，所以得出下面的结果。</p>
+<pre><code><code>ys@ys-VirtualBox:~/lianxi$ ./ac /usr/include/time.h
+read ok
+exists</code></code></pre></li>
+<li><p>还是用ys用户执行，但是加上sudo，结果如下。发现结果和root用户相同。因为加了sudo，就编程了root用户。</p>
+<pre><code><code>ys@ys-VirtualBox:~/lianxi$ sudo ./ac /usr/include/time.h
+[sudo] password for ys: 
+read ok
+write ok
+exists</code></code></pre></li>
+</ul>
+<p>7，truncate函数：截断文件和扩展文件的大小</p>
+<pre class="c"><code>#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+int truncate(const char *path, off_t length);</code></code></pre>
+<ul>
+<li>path：文件</li>
+<li>length：
+<ul>
+<li>length大于原来文件的大小，则扩展文件的大小至length</li>
+<li>length小于原来文件的大小，则截断文件的大小至length</li>
+</ul></li>
+</ul>
+<p>8，link函数：创建硬链接</p>
+<pre class="c"><code>#include &lt;unistd.h&gt;
+int link(const char *oldpath, const char *newpath);</code></code></pre>
+<p>返回值：成功返回0，失败返回-1，并设置errno。</p>
+<p>9，symlink函数：创建软链接</p>
+<pre class="c"><code>#include &lt;unistd.h&gt;
+int symlink(const char *target, const char *linkpath);</code></code></pre>
+<p>返回值：成功返回0，失败返回-1，并设置errno。</p>
+<p>10，readlink函数：找到软链接对应的实际文件，把文件的名字放入buf里。注意：硬链接不行。</p>
+<pre class="c"><code>#include &lt;unistd.h&gt;
+ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);</code></code></pre>
+<p>返回值：成功返回写入buf的字节数，失败返回-1，并设置errno。</p>
+<p>11，unlink函数：删除软硬链接，也可以删除文件。</p>
+<pre class="c"><code>#include &lt;unistd.h&gt;
+int unlink(const char *pathname);</code></code></pre>
+<p>返回值：成功返回0，失败返回-1，并设置errno。</p>
+<p><font color="red">有个特殊用法：下面的open代码想要创建hello文件，然后直接用unlink删除，但是能写入成功，ret是大于0的，程序执行完，发现没有做成hello文件。</p>
+<p>结论：当执行unlink后，计数为0后，但，发现别的进程还引用这个文件，这个时间点，unlink不会删除这个文件，等这个进程结束后，再删除，所以下面的write代码能够写入成功。<br />
+利用这个特点可以实现：在线观看视频时，实际是把视频文件下载到了本地（然后代码里，使用unlink），看完后视频文件的计数为0，就自动删除了，不怕视频被泄露出去。</font></p>
+<pre class="c"><code>#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+
+int main(){
+  int fd = open(&quot;hello&quot;, O_WRONLY | O_CREAT, 0666);
+  unlink(&quot;hello&quot;);
+  int ret = write(fd, &quot;aaa&quot;, 4);
+  if(ret &gt; 0){
+    printf(&quot;write OK\n&quot;);
+  }
+  
+}</code></code></pre>
+<p>12，chown函数：改变文件的所属用户和组</p>
+<pre><code><code>#include &lt;unistd.h&gt;
+int chown(const char *pathname, uid_t owner, gid_t group);</code></code></pre>
+<ul>
+<li>pathname：文件</li>
+<li>owner：用户ID（数字的）/etc/passwd</li>
+<li>group：组ID（数字的）/etc/group</li>
+<li>返回值：0成功，-1失败。</li>
+</ul>
+<p>13，rename函数：重命名</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+int rename(const char *oldpath, const char *newpath);</code></code></pre>
+<ul>
+<li>oldpath ：原来的文件名后者目录</li>
+<li>newpath：新的文件名后者目录</li>
+<li>返回值：0成功，-1失败。</li>
+</ul>
+<p>14，getcwd函数：获得当前工作的目录</p>
+<pre><code><code>#include &lt;unistd.h&gt;
+char *getcwd(char *buf, size_t size);</code></code></pre>
+<ul>
+<li>buf：当前工作的目录</li>
+<li>size：缓冲区大小</li>
+<li>返回值：
+<ul>
+<li>成功返回当前工作的目录</li>
+<li>失败返回NULL</li>
+</ul></li>
+</ul>
+<p>15，chdir函数：改变进程的工作目录</p>
+<pre><code><code>#include &lt;unistd.h&gt;
+int chdir(const char *path);</code></code></pre>
+<ul>
+<li>path：目标工作目录</li>
+<li>返回值：0成功，-1失败</li>
+</ul>
+<p>16，mkdir函数：创建目录</p>
+<pre><code><code>#include &lt;sys/stat.h&gt;
+#include &lt;sys/types.h&gt;
+int mkdir(const char *pathname, mode_t mode);</code></code></pre>
+<ul>
+<li>pathname：目标工作目录</li>
+<li>mode：mode &amp; ~umask &amp; 0777 。注意,如果没有x权限，则无法cd进入这个目录。</li>
+<li>返回值：0成功，-1失败</li>
+</ul>
+<p>17，rmdir函数：删除目录，目录必须是空目录，也就是里面没有任何文件。</p>
+<pre><code><code>#include &lt;unistd.h&gt;
+int rmdir(const char *pathname);</code></code></pre>
+<p>18，opendir函数：打开目录</p>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;dirent.h&gt;
+DIR *opendir(const char *name);</code></code></pre>
+<ul>
+<li>name：目录名</li>
+<li>返回值：a pointer to the directory stream</li>
+</ul>
+<p>19，readdir函数：读目录</p>
+<pre><code><code>#include &lt;dirent.h&gt;
+struct dirent *readdir(DIR *dirp);
+
+struct dirent {
+  ino_t          d_ino;       /* Inode number */
+  off_t          d_off;       /* Not an offset; see below */
+  unsigned short d_reclen;    /* Length of this record */
+  unsigned char  d_type;      /* Type of file; not supported
+                                 by all filesystem types */
+  char           d_name[256]; /* Null-terminated filename */
+};</code></code></pre>
+<ul>
+<li>dirp：opendir函数的返回值</li>
+<li>返回值：结构体dirent，可以理解成最上面说的【目录项】
+<ul>
+<li>NULL代表读到末尾或者有错误</li>
+<li>NULL以外代表目录项的内容</li>
+</ul></li>
+</ul>
+<p>20，closedir函数：关闭目录</p>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;dirent.h&gt;
+int closedir(DIR *dirp);</code></code></pre>
+<ul>
+<li>dirp：opendir函数的返回值</li>
+</ul>
+<p>21，strerron函数：打印出errno对应的文字信息。</p>
+<pre class="c"><code>#include &lt;string.h&gt;
+char *strerror(int errnum);</code></code></pre>
+<ul>
+<li>errnum的宏放在文件：/usr/include/asm-generic/errno.h</li>
+</ul>
+<p>例子：</p>
+<pre class="c"><code>#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;asm-generic/errno.h&gt;//EDEADLK
+int main(){
+  char* buf = strerror(EDEADLK);
+  printf(&quot;%s\n&quot;, buf);//Resource deadlock avoided
+}</code></code></pre>
+<p>22，dup和dup2函数：文件描述符的重定向</p>
+<pre class="c"><code>#include &lt;unistd.h&gt;
+int dup(int oldfd);
+int dup2(int oldfd, int newfd);</code></code></pre>
+<ul>
+<li>dup：和open类似，先打开一个新的文件描述符，让新的文件描述符也指向：oldfd指向的地方。
+<ul>
+<li>成功返回新打开的文件描述符；失败返回-1.</li>
+</ul></li>
+<li>dup2：
+<ul>
+<li>先消除newfd的指向</li>
+<li>再让newfd指向oldfd指向的地方</li>
+<li>成功返回newfd；失败返回-1.</li>
+</ul></li>
+</ul>
+<p><img src="./images/Linux stat函数和stat命令5.png" /></p>
+<p>例子：调用printf2次，第一次printf把内容写到文件；第二次printf把内容打印到屏幕。</p>
+<pre class="c"><code>#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+
+int main(){
+
+  int oldfd = dup(STDOUT_FILENO);
+  int fd = open(&quot;www&quot;, O_WRONLY | O_CREAT, 0666);
+  dup2(fd, STDOUT_FILENO);
+  printf(&quot;aaaa\n&quot;);
+  fflush(stdout);
+  int ret = dup2(oldfd, STDOUT_FILENO);
+  //int ret = dup2(oldfd, 6);
+  //perror(&quot;dup2:&quot;);
+  printf(&quot;reg:%d\n&quot;, ret);
+  printf(&quot;aaaa\n&quot;);
+  close(fd);
+}</code></code></pre>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/Linux stat函数和stat命令6.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

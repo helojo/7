@@ -1,0 +1,113 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++ vector 使用注意事项' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++ vector 使用注意事项</center></div><div class='banquan'>原文出处:本文由博客园博主Leehm提供。<br/>
+原文连接:https://www.cnblogs.com/leehm/p/10929756.html</div><br>
+    <h3>1. 初始化</h3>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;c++ 11以后新增了大括号{}的初始化方式，需要注意与()的区别,如：</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<strong>std::vector&lt;int&gt; vecTest1(5);&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;//初始化5个元素，每个都是0</strong></p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; <strong>&nbsp;std::vector&lt;int&gt; vecTest2{ 5 };&nbsp; &nbsp; &nbsp; &nbsp;//初始化1个元素，值是5</strong></p>
+<p>&nbsp; &nbsp;&nbsp;<img src="./images/c++ vector 使用注意事项0.png" alt="" width="414" height="104" /></p>
+<p>&nbsp;</p>
+<h3>2.&nbsp; 添加元素：push_back</h3>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;通过push_back添加新的元素进入vector后，vector的内存<span style="background-color: #ffff00;"><strong>有时候</strong></span>会发生变化，<strong>这取决于size和capacity大小，</strong>当然这些都是系统来处理的，详细可以参考stl源码</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 当size&lt;capacity的时候，直接加到末尾，不会变化</p>
+<p><strong>&nbsp; &nbsp; &nbsp; &nbsp; </strong>当size==capacity的时候，会重新申请另外一块内存，然后copy过去加到尾部，这个时候就会有变化了。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 对于stl的容器，都有成员：</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;begin()&nbsp; //起始位置&nbsp;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;end() //结束位置&nbsp;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;size() //当前大小&nbsp;</p>
+<p><em id="__mceDel">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</em>capacity() //当前容量，即已申请的内存大小</p>
+<p>&nbsp; &nbsp; &nbsp;vector是一段连续的内存空间，有三个标识内存的位置，start，end，finish， size=end-start， capacity=finish-start</p>
+<p>&nbsp; &nbsp; &nbsp;很多时候在使用vector的时候，会看到size=capacity，这个时候直接添加元素到尾部，内存明显是不够的，此时会重新在别处分配一块大小足够</p>
+<p>&nbsp; &nbsp; &nbsp;有时候也有size&lt;capacity, 这个时候就直接加在尾部了。</p>
+<div class="cnblogs_Highlighter">
+<pre>std::cout &lt;&lt; "vecNum push back init" &lt;&lt; std::endl;
+vector&lt;int&gt; vecNum(5);
+std::cout &lt;&lt; "vecNum addr: " &lt;&lt; &amp;vecNum &lt;&lt; std::endl;
+for(auto i = 5; i &lt; 10; i++)
+{
+	vecNum.push_back(i*10);
+	std::cout &lt;&lt; "vecNum push_back(" &lt;&lt; i &lt;&lt; ")=" &lt;&lt; i*10 &lt;&lt; std::endl;
+
+	std::cout &lt;&lt; "vecNum.size() = " &lt;&lt; vecNum.size() &lt;&lt; ",vecNum.capacity() = " &lt;&lt; vecNum.capacity() &lt;&lt; std::endl;
+	std::cout &lt;&lt; "vecNum.begin() addr: " &lt;&lt; &amp;(*vecNum.begin()) &lt;&lt; std::endl;
+}
+std::cout &lt;&lt; "vecNum addr: " &lt;&lt; &amp;vecNum &lt;&lt; std::endl;
+</pre>
+</div>
+<p>　　<img src="./images/c++ vector 使用注意事项1.png" alt="" width="458" height="237" /></p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;</p>
+<h3>3. 关于earse和remove</h3>
+<p>&nbsp; &nbsp; &nbsp;erase返回的是当前删除的元素的一下个位置的迭代器，所以需要注意的是遍历时候的++运算，这个与其它list，map差不多，</p>
+<p><strong>&nbsp; &nbsp; 需要注意的earse后内存并未真正的清空，仅仅是删除内容，真正的容量大小capacity并没有改变，需要通过swap来实现<strong>capacity的减小</strong><br /></strong></p>
+<p><strong><strong>&nbsp; &nbsp; &nbsp;全部清空可以考虑：vector&lt;int&gt;().swap(vecNum);</strong></strong></p>
+<div class="cnblogs_code">
+<pre>auto itor =<span style="color: #000000;"> vecNum.begin();
+</span><span style="color: #0000ff;">for</span>( ; itor !=<span style="color: #000000;"> vecNum.end(); )
+{
+    auto num </span>= *<span style="color: #000000;">itor;
+    </span><span style="color: #0000ff;">if</span>(num == <span style="color: #800080;">60</span><span style="color: #000000;">)
+    {
+        itor </span>=<span style="color: #000000;"> vecNum.erase(itor);
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+    {
+        itor</span>++<span style="color: #000000;">;
+    }
+}<br /></span></pre>
+<p>&nbsp; std::cout &lt;&lt; "after erase element 60:" &lt;&lt; std::endl;<br />&nbsp; printVector(vecNum);<br />&nbsp; <span style="background-color: #ffff00;"><strong>vector&lt;int&gt;(vecNum).swap(vecNum)</strong></span>; //将vecNum的内存空洞清除<br />&nbsp; printVector(vecNum);</p>
+
+
+</div>
+<p>&nbsp; &nbsp; &nbsp;<img src="./images/c++ vector 使用注意事项2.png" alt="" width="338" height="262" /></p>
+<p>&nbsp;</p>
+<p>&nbsp; &nbsp; &nbsp; //remove只是通过迭代器的指针向前移动来删除，将不需要删除的元素往前移，因此需要删除的就都在尾部了</p>
+<p><em id="__mceDel">&nbsp; &nbsp; &nbsp; //</em>返回新的指向尾部需要删除的元素的迭代器</p>
+<p>&nbsp; &nbsp; &nbsp; 因此还是得配合earse来使用，所以一般真要删除，建议直接遍历使用earse</p>
+<div class="cnblogs_code">
+<pre>auto itor = remove_if(vecNum.begin(), vecNum.end(),[](<span style="color: #0000ff;">int</span> x)-&gt;<span style="color: #0000ff;">bool</span>{ <span style="color: #0000ff;">return</span> x == <span style="color: #800080;">20</span><span style="color: #000000;">; });
+</span><span style="color: #008000;">//</span><span style="color: #008000;">or
+</span><span style="color: #008000;">//</span><span style="color: #008000;">auto itor = remove(vecNum.begin(), vecNum.end(),20);
+        
+</span><span style="color: #008000;">//</span><span style="color: #008000;">通过erase删除</span>
+vecNum.erase(itor, vecNum.end());</pre>
+</div>
+<h3><br />4. 关于vector&lt; bool&gt;&nbsp; -- 慎用</h3>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;出处：&nbsp;<a href="https://blog.csdn.net/DoronLee/article/details/78462208">https://blog.csdn.net/DoronLee/article/details/78462208</a></p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;vector&lt; bool&gt; 并不是一个STL容器，不是一个STL容器，不是一个STL容器！</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;<em id="__mceDel">首先vector&lt; bool&gt; 并不是一个通常意义上的vector容器，这个源自于历史遗留问题。&nbsp;</em></p>
+<p><em id="__mceDel">早在C++98的时候，就有vector&lt; bool&gt;这个类型了，但是因为当时为了考虑到节省空间的想法，所以vector&lt; bool&gt;里面不是一个Byte一个Byte储存的，它是一个bit一个bit储存的！</em></p>
+<p>因为C++没有直接去给一个bit来操作，</p>
+<p>&nbsp; &nbsp; <strong>所以用operator[]的时候，<em id="__mceDel">&nbsp;正常容器返回的应该是一个对应元素的引用，</em></strong></p>
+<p><strong><em id="__mceDel">&nbsp; &nbsp;但是对于vector&lt; bool&gt;实际上访问的是一个&rdquo;proxy reference&rdquo;而不是一个&rdquo;true reference&rdquo;，返回的是&rdquo;std::vector&lt; bool&gt;:reference&rdquo;类型的对象。</em></strong></p>
+<p>&nbsp; &nbsp;<strong>因此，使用auto自动类型推导时会出现问题</strong></p>
+<div class="cnblogs_code">
+<p>//vector&lt;bool&gt;慎用<br />	vector&lt;bool&gt; vecBool = { false, true, false };<br />	bool test1 = vecBool[0];&nbsp; &nbsp;<br />	auto test2 = vecBool[1];</p>
+<p>	test1 = true;&nbsp; &nbsp; //<strong>test1的初始化它其实暗含了一个隐式的类型转换（直接对vecBool[0]赋值会修改vecBool中的值，但是对test1不会）</strong><br />	test2 = false;&nbsp; &nbsp;//<strong>test2它的类型并不是bool，而是一个vector&lt; bool&gt;中的一个内部类,而此时如果修改test2的值，vecBool中的值也会跟着修改</strong><br />	auto index = 0;<br />	for (auto i : vecBool)<br />	{<br />&nbsp; &nbsp; cout &lt;&lt; "vecBool[" &lt;&lt; index &lt;&lt; "]" &lt;&lt; i &lt;&lt; std::endl;<br />&nbsp; &nbsp; index++;<br />	}</p>
+
+
+</div>
+<p><img src="./images/c++ vector 使用注意事项3.png" alt="" /></p>
+<p>&nbsp; &nbsp; &nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,263 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修QRowTable表格控件(四)-效率优化之-优化数据源' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>QRowTable表格控件(四)-效率优化之-优化数据源</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11490909.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一开心一刻">一、开心一刻</a></li>
+        <li><a href="#二问题分析">二、问题分析</a></li>
+        <li><a href="#三重写数据源">三、重写数据源</a><ul>
+        <li><a href="#自己存储数据">1、自己存储数据</a></li>
+        <li><a href="#重写data接口">2、重写data接口</a></li>
+        </ul></li>
+        <li><a href="#四比较">四、比较</a></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11490909.html">QRowTable表格控件(四)-效率优化之-优化数据源</a></p>
+<h2 id="一开心一刻">一、开心一刻</h2>
+<blockquote>
+<p>一程序员第一次上女朋友家她妈板着脸问 ：你想娶我女儿，有多少存款？</p>
+</blockquote>
+<blockquote>
+<p>程序员低了下头：五百！</p>
+</blockquote>
+<blockquote>
+<p>她妈更鄙视了：才五百块，买个厕所都不够！</p>
+</blockquote>
+<blockquote>
+<p>程序员忙说：不是人民币！</p>
+</blockquote>
+<blockquote>
+<p>她妈：就算是美元，还是不够买厕所！</p>
+</blockquote>
+<blockquote>
+<p>程序员：其实是比特币！</p>
+</blockquote>
+<blockquote>
+<p>她妈：哇，贤婿，我给你买只大龙虾去</p>
+</blockquote>
+<h2 id="二问题分析">二、问题分析</h2>
+<p>前边已经写了3篇关于表格控件的功能，分别是<a href="https://www.cnblogs.com/swarmbees/p/11185435.html">QRowTable表格控件-支持hover整行、checked整行、指定列排序等</a>、<a href="https://www.cnblogs.com/swarmbees/p/11204600.html">QRowTable表格控件(二)-红涨绿跌</a>和<a href="https://www.cnblogs.com/swarmbees/p/11220396.html">QRowTable表格控件(三)-效率优化之-合理使用QStandardItem</a>，这三篇文章主要是围绕实现核心功能来讲述的一般实现方式，当数据量多大时就会出现性能问题。</p>
+<p>既然出现问题，当然是需要解决的。本篇文章就来讲述怎么处理大量数据的情况。</p>
+<p>首先我们先来分析下上述几种实现方式为什么会比较消耗时间，首先代码量也不大，在代码里随机打几个断点，我们就会发现，代码在循环构造QStandardItem这个结构中耗费的时间比较久，并且当for循环出现上万次循环时尤为明显。</p>
+<p>找到问题后，就是想办法怎么可以更少的调用构造QStandardItem这个流程，当然了Qt也给我们提供了很好的解决方案，那就是重写数据源(Model)。</p>
+<h2 id="三重写数据源">三、重写数据源</h2>
+<p>Qt中包含有经典的MVC模式，比如我们经常使用的QStandardItemModel、QTableView和QStyledItemDelegate，当我们要实现一个高效的表格控件时，重写这3个类基本就可以完成我们所需要的功能。</p>
+<blockquote>
+<p>当然了Qt还提供了了一层数据缓存层QSortFilterProxyModel，这个类可以帮助我们更好的实现排序、模糊搜索功能</p>
+</blockquote>
+<p>本篇文章这里只讲解重写数据源，关于其他两个类的重写前面文章中应该有所讲述，这里不再过多解释。</p>
+<p>下面一起来看下数据源的重写方式，我们这里选择继承自QStandardItemModel这个类来实现我们的数据源，这里是一个偷懒的方式，正常情况下是需要重写QAbstractItemModel类，如果重写QAbstractItemModel类的话，那么就需要重写更多的接口。</p>
+<pre><code>class QRowModel : public QStandardItemModel
+{
+    Q_OBJECT
+
+public:
+    explicit QRowModel(QObject * parent = 0);
+    ~QRowModel();
+public:
+    //设置数据源
+    void SetSourceData(const TradeOrderInfoList &amp; data);
+    ...
+
+protected:
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
+    virtual QVariant data(const QModelIndex &amp;index, int role = Qt::DisplayRole) const override;
+    virtual void sort(int column, Qt::SortOrder order /* = Qt::AscendingOrder */) override;
+
+private:
+    ...
+    TradeOrderInfoList itemList;
+    QColor m_CheckedColor = QColor(&quot;#4F4F4F&quot;);
+    mutable std::map &lt;int, int&gt; m_AlignmentList;//列对其方式
+
+    friend class QRowTable;
+};</code></pre>
+<p>上次代码是重写Model类的头文件，其中有一些不相干的代码我选择了隐藏，重写Model最重要的就是需要我们自己去存储数据，并且在Qt的调用机制调用获取数据时给他返回即可。</p>
+<p><strong>关键点</strong></p>
+<ol>
+<li>重写Model，自己存储数据</li>
+<li>重写data接口，返回数据</li>
+</ol>
+<h3 id="自己存储数据">1、自己存储数据</h3>
+<p>自己存储数据有一个好处，那就是我们在给Model设置数据时，最大的性能损耗就是数据拷贝的过程，仔细想想这个是不是都不是问题。</p>
+<p>上述代码中的TradeOrderInfoList这个接口提就是我们自己定义的一个容器接口，方便存储我们的表格数据，当视图绘制时，会从这里拿数据。</p>
+<h3 id="重写data接口">2、重写data接口</h3>
+<p>数据已经准备完毕，接下里就是View如何优雅的拿到数据并绘制了，这里我们重点讲述怎么拿数据，如何绘制是QStyledItemDelegate这个类的事，感兴趣的可以自己研究研究。</p>
+<p>仔细查看Model的版主文档们就会发现有一个data接口函数，他的声明可能像下面这样</p>
+<pre><code>QVariant data(const QModelIndex &amp;index, int role = Qt::DisplayRole) const Q_DECL_OVERRIDE;</code></pre>
+<p><strong>们的任务就是重写这个接口，返回指定索引上的指定类型数据</strong></p>
+<ol>
+<li>index：表格cell的索引，包含有行和列序号</li>
+<li>role：表格数据类型，每一个cell上都包含有一系列键值对，方便存储单元格上的各种数据，比如说前景色、背景色、字体、位置、高亮色、背景画刷等等。</li>
+</ol>
+<pre><code>QVariant QRowModel::data(const QModelIndex &amp;index, int role) const
+{
+    if (Qt::DecorationRole == role)
+    {
+        int r = index.row();
+        int c = index.column();
+        if (r &gt;= itemList.size())
+        {
+            return &quot;&quot;;
+        }
+        const TradeOrderInfo &amp; info = itemList.at(r);
+        switch (c)
+        {
+        case 0:
+            return QPixmap(stock_helper::getCurrencyIcon(info.market, info.symbol).c_str());
+        default:
+            &quot;&quot;;
+            break;
+        }
+    }
+    else if (Qt::ForegroundRole == role)
+    {
+        int r = index.row();
+        int c = index.column();
+        if (r &gt;= itemList.size())
+        {
+            return &quot;&quot;;
+        }
+        const TradeOrderInfo &amp; info = itemList.at(r);
+        switch (c)
+        {
+        case 4://&quot;方向&quot;
+            if (info.action.compare(&quot;SELL&quot;) == 0)
+            {
+                return QColor(&quot;#218DF2&quot;);
+            }
+            else
+            {
+                return QColor(&quot;#FF4A4A&quot;);
+            }
+        default:
+            return QColor(&quot;#dddddd&quot;);
+        }
+    }
+    else if (Qt::DisplayRole == role)
+    {
+        //自己从model中拿数据给view
+        //&quot;名称&quot;
+        int r = index.row();
+        int c = index.column();
+        if (r &gt;= itemList.size())
+        {
+            return &quot;&quot;;
+        }
+        const TradeOrderInfo &amp; info = itemList.at(r);
+        switch (c)
+        {
+        case 0://&quot;名称&quot; 
+            return stock_helper::OrderDisplayName(&amp;info);
+        case 1://&quot;代码&quot; 
+            return stock_helper::OrderDisplaySymbol(&amp;info, m_strAccount);
+        case 2://&quot;成交量&quot; 数字居右
+            return QString::number(info.totalQuantity);
+        case 3://&quot;成交均价&quot; 数字居右
+            return stock_helper::PriceDisplayName(info.symbol, info.market, info.secType, info.avgFillPrice);
+        case 4://&quot;方向&quot;
+            if (info.action.compare(&quot;SELL&quot;) == 0)
+            {
+                return QUI_LOAD_STRING(TTS_ORDER_DIR_SELL);
+            }
+            else
+            {
+                return QUI_LOAD_STRING(TTS_ORDER_DIR_BUY);
+            }
+        default:
+            &quot;&quot;;
+            break;
+        }
+    }
+
+    return QStandardItemModel::data(index, role);
+}</code></pre>
+<blockquote>
+<p>别忘啦，当数据源发生变化的时候使用SetSourceData接口更新下。</p>
+</blockquote>
+<p>数据源重写好以后，再试试我们的性能是不是杠杠滴。</p>
+<h2 id="四比较">四、比较</h2>
+<p>本篇文章应该是实现表格功能的最后一篇文章了，可以满足大多数的产品需求。</p>
+<blockquote>
+<p>后续可能还会陆续出一些更友好的交互优化，敬请期待。</p>
+</blockquote>
+<p>下面是一个表格，包含了传统的表格数据源和重写后的表格数据源优劣比较。</p>
+<center>
+
+比较项目        | 传统方式          | 重写Model
+---             | ---               | ---
+难易程度        | 简单              | 复杂
+代码里          | 少                | 多
+性能            | 差                | 好
+推荐度          | 两颗星            | 五颗星
+
+</center>
+<h2 id="五相关文章">五、相关文章</h2>
+<ol>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11167664.html">Qt实现表格控件-支持多级列表头、多级行表头、单元格合并、字体设置等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11155074.html">Qt高仿Excel表格组件-支持冻结列、冻结行、内容自适应和合并单元格</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11129274.html">属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11117259.html">超级实用的属性浏览器控件--QtTreePropertyBrowser</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/9288902.html">Qt之表格控件蚂蚁线</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11185435.html">QRowTable表格控件-支持hover整行、checked整行、指定列排序等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11204600.html">QRowTable表格控件(二)-红涨绿跌</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11220396.html">QRowTable表格控件(三)-效率优化之-合理使用QStandardItem</a></p></li>
+</ol>
+<hr />
+<p><strong>值得一看的优秀文章：</strong></p>
+<ol>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/6707798.html">财联社-产品展示</a></strong></li>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/10836505.html">广联达-产品展示</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95527107">Qt定制控件列表</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95526527">牛逼哄哄的Qt库</a></strong></li>
+</ol>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

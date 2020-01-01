@@ -1,0 +1,161 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修智能指针' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>智能指针</center></div><div class='banquan'>原文出处:本文由博客园博主mahuifa提供。<br/>
+原文连接:https://www.cnblogs.com/IntelligencePointer/p/11426271.html</div><br>
+    <h2><span style="font-size: 18pt;"><strong>智能指针---shared_ptr</strong></span></h2>
+<h3><span style="font-size: 18pt;"><strong><span style="font-size: 15px;">1、什么是智能指针<br /></span></strong></span></h3>
+<p><span style="font-size: 18pt;"><strong><span style="font-size: 15px;">　　智能指针(smart pointer) 是个特殊的类模板，重载了&ldquo;-&gt;&rdquo;和&ldquo;*&rdquo;运算符，实现了C++的自动内存回收机制<br /></span></strong></span></p>
+<p><span style="font-size: 18pt;"><strong><span style="font-size: 15px;">&gt;</span></strong><span style="font-size: 15px;">智能指针通用实现技术是使用引用计数(reference count)。智能指针类将一个计数器与类指向的对象相关联，引用计数器跟踪有多少个对象的指针指向同一对象。</span></span></p>
+<p><strong><span style="font-size: 18pt;"><span style="font-size: 15px;">&gt;</span></span></strong><span style="font-size: 18pt;"><span style="font-size: 15px;">在C++11中有四种智能指针，auto_ptr，shared_ptr，unique_ptr和weak_ptr。其中auto_ptr有很多不足之处，在C++11中已经建议废弃使用。都是在memory头文件中声明的。<strong><span style="font-size: 18pt;"><span style="font-size: 15px;"><br /></span></span></strong></span></span></p>
+<h3><strong><span style="font-size: 18pt;"><span style="font-size: 15px;">2、对象指针</span></span></strong></h3>
+<p><strong><span style="font-size: 18pt;"><span style="font-size: 15px;">　　</span></span></strong><span style="font-size: 18pt;"><span style="font-size: 15px;">对象指针是函数内的局部变量，每次new出对象，但是函数返回时没有delete，造成的后果就是对象指针指向的堆区在函数运行完成后没有得到释放，对象也没有销毁，所以我们在使用动态内存时会出现两种问题，一是忘记释放内存，造成内存泄漏，二是指针还在使用就被释放，就会产生非法访问。</span></span></p>
+<h3><strong><span style="font-size: 18pt;"><span style="font-size: 15px;">3、为什么使用智能指针</span></span></strong></h3>
+<p><strong><span style="font-size: 18pt;"><span style="font-size: 15px;">　　</span></span></strong><span style="font-size: 18pt;"><span style="font-size: 15px;">为了更加安全的只用动态内存，引入了智能指针的概念。智能指针的行为类似普通指针，区别在于智能指针赋值自动释放所指向的对象，标准库提供的两种指针的区别在于管理底层指针的方法不同，shared_ptr允许多个指针指向同一个对象，unique_ptr则&ldquo;独占&rdquo;所指向的对象。标准库还定义了一种名为weak_ptr的伴随类，它是一种弱引用，指向shared_ptr所管理的对象。</span></span></p>
+<h3><strong><span style="font-size: 18pt;"><span style="font-size: 15px;">4、shared_ptr（共享智能指针）</span></span></strong></h3>
+<p><strong><span style="font-size: 18pt;"><span style="font-size: 15px;">　　</span></span></strong><span style="font-size: 18pt;"><span style="font-size: 15px;">shared_ptr（共享资源的智能指针）被用来表示共享的拥有权，也就是说，当两段代码都需要访问一些数据，而他们又都没有独占该数据的所有权（从某种意义上来说就是该段代码负责销毁该对象）。shared_ptr是一种计数指针。当引用计数变为0时，shared_ptr所指向的对象就会被删除。在给shared_ptr分配内存时建议使用make_shared函数，这样更安全。</span></span></p>
+<p><span style="font-size: 18pt;"><span style="font-size: 15px;">　　只要将new运算符返回的指针p交给shared_ptr对象&ldquo;托管&rdquo;，就不必担心在那里写delete p语句了，可以不用delete，shared_ptr对象在消亡时会自动delete p。<br /></span></span></p>
+<p><strong><span style="font-size: 18pt;"><span style="font-size: 15px;">&gt;</span></span></strong><span style="font-size: 18pt;"><span style="font-size: 15px;">创建智能指针时必须提供额外的信息，指针可以指向的类型：</span></span></p>
+<div class="cnblogs_code">
+<pre>shared_ptr&lt;T&gt; p(new T); //T可以是任意类型</pre>
+</div>
+<p>&nbsp;</p>
+<p>然后，就可以像使用普通指针一样使用了。</p>
+<div class="cnblogs_code">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include&lt;memory&gt;
+<span style="color: #0000ff;">using <span style="color: #0000ff;">namespace<span style="color: #000000;"> std;
+
+<span style="color: #0000ff;">int main(<span style="color: #0000ff;">void<span style="color: #000000;">)
+{
+    shared_ptr&lt;<span style="color: #0000ff;">int&gt; p1(<span style="color: #0000ff;">new <span style="color: #0000ff;">int<span style="color: #000000;">);  //new一个int型指针，交给p1托管
+    *p1 = <span style="color: #800080;">10<span style="color: #000000;">;　　　　　　　　　　　　//给p1指针赋值
+    cout &lt;&lt; *p1 &lt;&lt;<span style="color: #000000;"> endl;      
+
+    <span style="color: #0000ff;">return <span style="color: #800080;">0<span style="color: #000000;">;
+}</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></pre>
+</div>
+<div class="cnblogs_code">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include&lt;memory&gt;
+<span style="color: #0000ff;">using <span style="color: #0000ff;">namespace<span style="color: #000000;"> std;
+
+<span style="color: #0000ff;">int main(<span style="color: #0000ff;">void<span style="color: #000000;">)
+{
+    shared_ptr&lt;<span style="color: #0000ff;">int&gt; p1(<span style="color: #0000ff;">new <span style="color: #0000ff;">int<span style="color: #000000;">);    //new一个int型指针，p1托管
+     shared_ptr&lt;<span style="color: #0000ff;">int&gt;<span style="color: #000000;"> p2(p1);        //p1赋值给p2
+    shared_ptr&lt;<span style="color: #0000ff;">int&gt;<span style="color: #000000;"> p3;
+    p3 =<span style="color: #000000;"> p1;                       //  p1赋值给p3
+
+    *p1 = <span style="color: #800080;">10<span style="color: #000000;">;                     //p1内容为10
+    cout &lt;&lt; *p1 &lt;&lt;<span style="color: #000000;"> endl;
+    cout &lt;&lt; *p2 &lt;&lt;<span style="color: #000000;"> endl;
+    cout &lt;&lt; *p3 &lt;&lt;<span style="color: #000000;"> endl;          //计数为3，有3个shared_ptr托管同一个地址
+
+    cout &lt;&lt; <span style="color: #800000;">"<span style="color: #800000;">*****************<span style="color: #800000;">" &lt;&lt;<span style="color: #000000;"> endl;
+    <span style="color: #0000ff;">int *q = p1.<span style="color: #0000ff;">get<span style="color: #000000;">();            //可通过get() 将p1指向的地址赋给q   
+    cout &lt;&lt; *q &lt;&lt;<span style="color: #000000;"> endl;
+    cout &lt;&lt; *p1 &lt;&lt;<span style="color: #000000;"> endl;
+
+    cout &lt;&lt; <span style="color: #800000;">"<span style="color: #800000;">*****************<span style="color: #800000;">" &lt;&lt;<span style="color: #000000;"> endl;
+    <span style="color: #0000ff;">int *q1 = <span style="color: #0000ff;">new <span style="color: #0000ff;">int<span style="color: #000000;">;     
+    p1.reset(q1);            //通过reset() 将q1的地址交给p1托管，p1丢掉原来的，计数减1 <br />　　　　　　　　　　　　　　　　　 //p1 = q1 错，不能这样赋值 
+    *q1 = <span style="color: #800080;">20<span style="color: #000000;">;
+    cout &lt;&lt; *p1 &lt;&lt;<span style="color: #000000;"> endl;
+    cout &lt;&lt; *p2 &lt;&lt;<span style="color: #000000;"> endl;
+    cout &lt;&lt; *p3 &lt;&lt;<span style="color: #000000;"> endl;          //计数为2
+    
+    cout &lt;&lt; <span style="color: #800000;">"<span style="color: #800000;">*****************<span style="color: #800000;">" &lt;&lt;<span style="color: #000000;"> endl;
+    p2 =<span style="color: #000000;"> p1;　　　　　　　　　　　　　　// 将p1 指向的新地址赋给p2,p3，计数减2
+    p3 =<span style="color: #000000;"> p1;
+    cout &lt;&lt; *p1 &lt;&lt;<span style="color: #000000;"> endl;
+    cout &lt;&lt; *p2 &lt;&lt;<span style="color: #000000;"> endl;
+    cout &lt;&lt; *p3 &lt;&lt;<span style="color: #000000;"> endl;          // 计数为0，delete 掉最开始的地址
+
+    cout &lt;&lt; <span style="color: #800000;">"<span style="color: #800000;">*****************<span style="color: #800000;">" &lt;&lt;<span style="color: #000000;"> endl;
+    cout &lt;&lt; *q &lt;&lt;<span style="color: #000000;"> endl;         //由于最开始的地址被释放，所以q指向空
+
+    <span style="color: #0000ff;">return <span style="color: #800080;">0<span style="color: #000000;">;
+}</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></pre>
+</div>
+<div class="cnblogs_code">
+<pre>#include &lt;iostream&gt;<span style="color: #000000;">
+#include &lt;memory&gt;
+
+<span style="color: #0000ff;">using <span style="color: #0000ff;">namespace<span style="color: #000000;"> std;
+
+<span style="color: #0000ff;">class<span style="color: #000000;"> Demo{
+<span style="color: #0000ff;">public<span style="color: #000000;">:
+    Demo()
+    {
+        cout &lt;&lt; __func__ &lt;&lt; <span style="color: #800000;">"<span style="color: #800000;">:<span style="color: #800000;">" &lt;&lt; __LINE__ &lt;&lt;<span style="color: #000000;"> endl;
+    }
+    ~<span style="color: #000000;">Demo()
+    {
+        cout &lt;&lt; __func__ &lt;&lt; <span style="color: #800000;">"<span style="color: #800000;">:<span style="color: #800000;">" &lt;&lt; __LINE__ &lt;&lt;<span style="color: #000000;"> endl;
+    }
+<span style="color: #0000ff;">public<span style="color: #000000;">:
+    <span style="color: #0000ff;">void prnmsg() <span style="color: #0000ff;">const<span style="color: #000000;">
+    {
+        cout &lt;&lt; __func__ &lt;&lt; <span style="color: #800000;">"<span style="color: #800000;">:<span style="color: #800000;">" &lt;&lt; __LINE__ &lt;&lt;<span style="color: #000000;"> endl;
+    }
+};
+
+
+<span style="color: #0000ff;">int<span style="color: #000000;"> main()
+{
+    shared_ptr&lt;Demo&gt; p(<span style="color: #0000ff;">new Demo);<span style="color: #008000;">//<span style="color: #008000;">智能指针p指向Demo对象
+    shared_ptr&lt;Demo&gt; pp(p);<span style="color: #008000;">//<span style="color: #008000;">智能指针pp和p指针同时指向Demo对象
+<span style="color: #000000;">    
+    p-&gt;<span style="color: #000000;">prnmsg();
+    pp-&gt;<span style="color: #000000;">prnmsg();
+
+    (*<span style="color: #000000;">p).prnmsg();
+    (*<span style="color: #000000;">pp).prnmsg();
+    
+
+    <span style="color: #0000ff;">return <span style="color: #800080;">0<span style="color: #000000;">;
+}</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></pre>
+</div>
+<p><strong>&gt;shared_ptr和unique_ptr都支持的操作：</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">shared_ptr&lt;T&gt; sp     智能空指针<br />unique_ptr&lt;T&gt; up<br />p                    将p用作一个条件判断，若p指向一个对象,则为true
+*<span style="color: #000000;">p                   解引用，获得指向的对象
+p-&gt;prnmsg()          相对于(*<span style="color: #000000;">p).prnmsg()
+p.<span style="color: #0000ff;">get<span style="color: #000000;">()              返回p中保存的指针，如果p内的指针被释放，返回的指针将为空
+swap(p,q)            交换p和q中的指针p.swap(q)</span></span></span></span></span></pre>
+</div>
+<p><strong>&gt;shared_ptr支持的操作：</strong></p>
+<div class="cnblogs_code">
+<pre>make_shared&lt;T&gt; (args)    返回一个shared_ptr,指向一个动态分配的类型为T的对象，并用args初始化此对象<br />shared_ptr&lt;T&gt; p(q)       p是shared_ptr q的拷贝，此操作会递增q中的计数器，q中的指针必须能转换为T*<br />p = q                    p和q都是shared_ptr，所保存的指针必须能相互转换，此操作会递减p的<br />　　　　　　　　　　　　　　　引用计数，递增q的引用计数；若p的引用计数变为0，则将其管理的原内存释放<br />p.unique()               若p.use_count()为1,返回true,否则返回false<br />p.use_count()            返回与p共享对象的智能指针数量，可能会很慢，用于调试<br />shared_ptr&lt;T&gt; p(u)       p从unique_ptr u那里接管了对象的所有权；将u置为空<br />shared_ptr&lt;T&gt; p(q,d)     p接管内置指针q所指向对象的所有权，q必须能转换为T*类型。p将调用对象d<br />　　　　　　　　　　　　　　　来代替delete<br />p.reset()                若p是唯一指向其对象的shared_ptr，reset会释放此对象<br />p.reset(q)               若传递可选的参数内置指针q，会令p指向q，否则将p置为空<br />p.reset(q,d)             将p置为空，若还传递了参数d，将会调用d而不是delete来释放q</pre>
+</div>
+<p>&nbsp;</p>
+<p><strong>&gt;</strong>默认初始化的智能指针中保存着一个空指针。</p>
+<p><strong>&gt;</strong>智能指针的使用方式和普通指针类似，解引用一个智能指针返回它指向的对象。</p>
+<p><strong>&gt;编译时可能会报错，使用下面命令编译即可:</strong></p>
+<div class="cnblogs_code">
+<pre>g++ *.cpp -o main -std=c++<span style="color: #800080;">11</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size: 18pt;"><span style="font-size: 15px;">　　　　</span></span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

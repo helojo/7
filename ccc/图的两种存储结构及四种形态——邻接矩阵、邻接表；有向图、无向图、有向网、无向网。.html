@@ -1,0 +1,653 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修图的两种存储结构及四种形态——邻接矩阵、邻接表；有向图、无向图、有向网、无向网。' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>图的两种存储结构及四种形态——邻接矩阵、邻接表；有向图、无向图、有向网、无向网。</center></div><div class='banquan'>原文出处:本文由博客园博主水龙头提供。<br/>
+原文连接:https://www.cnblogs.com/ReturnOfTheKing/p/11298827.html</div><br>
+    <p>声明： 代码中有大量的注释，所以此处就不再作出大量的解释了。</p>
+<p>一 ：邻接矩阵存储结构</p>
+<p>1.首先是各种类型与宏的定义：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('5031807a-559d-4f47-8125-d2649cf0d881')"><img id="code_img_closed_5031807a-559d-4f47-8125-d2649cf0d881" class="code_img_closed" src="./images/图的两种存储结构及四种形态——邻接矩阵、邻接表；有向图、无向图、有向网、无向网。0.png" alt="" /><img id="code_img_opened_5031807a-559d-4f47-8125-d2649cf0d881" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('5031807a-559d-4f47-8125-d2649cf0d881',event)" src="./images/图的两种存储结构及四种形态——邻接矩阵、邻接表；有向图、无向图、有向网、无向网。1.png" alt="" />
+<div id="cnblogs_code_open_5031807a-559d-4f47-8125-d2649cf0d881" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 3</span> <span style="color: #008000;">//</span><span style="color: #008000;">无穷大</span>
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">#define</span> INFINITY INT_MAX
+<span style="color: #008080;"> 5</span> <span style="color: #008000;">//</span><span style="color: #008000;">最大顶点个数</span>
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">#define</span> MAX_VERTEX_NUM 20
+<span style="color: #008080;"> 7</span> <span style="color: #008000;">//</span><span style="color: #008000;">顶点类型</span>
+<span style="color: #008080;"> 8</span> typedef <span style="color: #0000ff;">char</span><span style="color: #000000;"> VertexType;
+</span><span style="color: #008080;"> 9</span> typedef <span style="color: #0000ff;">int</span><span style="color: #000000;"> VRType;
+</span><span style="color: #008080;">10</span> typedef <span style="color: #0000ff;">char</span><span style="color: #000000;"> infoType;
+</span><span style="color: #008080;">11</span>  <span style="color: #008000;">//</span><span style="color: #008000;">图的四种类型</span>
+<span style="color: #008080;">12</span> typedef <span style="color: #0000ff;">enum</span> {DG = <span style="color: #800080;">1</span><span style="color: #000000;">, DN, UDG, UDN} GraphKind;
+</span><span style="color: #008080;">13</span> 
+<span style="color: #008080;">14</span> <span style="color: #008000;">//</span><span style="color: #008000;">弧的结构体定义</span>
+<span style="color: #008080;">15</span> typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> ArcCell
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">17</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 对于网来说是权值；对于图来说就是0或1</span>
+<span style="color: #008080;">18</span> <span style="color: #000000;">    VRType adj;
+</span><span style="color: #008080;">19</span>     <span style="color: #008000;">//</span><span style="color: #008000;">该弧相关信息的指针（现在暂且可以理解为字符指针）</span>
+<span style="color: #008080;">20</span>     infoType*<span style="color: #000000;"> info;
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">}ArcCell, AdjMatrix[MAX_VERTEX_NUM][MAX_VERTEX_NUM];
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span> <span style="color: #008000;">//</span><span style="color: #008000;">图的结构体定义</span>
+<span style="color: #008080;">24</span> typedef <span style="color: #0000ff;">struct</span>
+<span style="color: #008080;">25</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">    VertexType vexs[MAX_VERTEX_NUM];
+</span><span style="color: #008080;">27</span>      <span style="color: #008000;">//</span><span style="color: #008000;">arcs可以先简单地理解为一个数组名</span>
+<span style="color: #008080;">28</span> <span style="color: #000000;">    AdjMatrix arcs;
+</span><span style="color: #008080;">29</span>     <span style="color: #008000;">//</span><span style="color: #008000;">当前图中的顶点数和弧数</span>
+<span style="color: #008080;">30</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> vexnum, arcnum;
+</span><span style="color: #008080;">31</span>     <span style="color: #008000;">//</span><span style="color: #008000;">图的种类标志</span>
+<span style="color: #008080;">32</span> <span style="color: #000000;">    GraphKind kind;
+</span><span style="color: #008080;">33</span> }MGraph;</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p><br />2.接下来是函数声明及main函数：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('5486a53f-4122-4d7d-be7a-9d4f33ccd844')"><img id="code_img_closed_5486a53f-4122-4d7d-be7a-9d4f33ccd844" class="code_img_closed" src="./images/图的两种存储结构及四种形态——邻接矩阵、邻接表；有向图、无向图、有向网、无向网。0.png" alt="" /><img id="code_img_opened_5486a53f-4122-4d7d-be7a-9d4f33ccd844" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('5486a53f-4122-4d7d-be7a-9d4f33ccd844',event)" src="./images/图的两种存储结构及四种形态——邻接矩阵、邻接表；有向图、无向图、有向网、无向网。1.png" alt="" />
+<div id="cnblogs_code_open_5486a53f-4122-4d7d-be7a-9d4f33ccd844" class="cnblogs_code_hide">
+<pre><code><span style="color: #0000ff;">void</span> CreateGraph(MGraph &amp;<span style="color: #000000;">G);
+</span><span style="color: #0000ff;">void</span> CreateUDN(MGraph &amp;<span style="color: #000000;">G);
+</span><span style="color: #0000ff;">int</span> LocateVex(MGraph G , <span style="color: #0000ff;">int</span><span style="color: #000000;"> v1);
+</span><span style="color: #0000ff;">void</span> CreateUDG(MGraph &amp;<span style="color: #000000;">G);
+</span><span style="color: #0000ff;">void</span> CreateDG(MGraph &amp;<span style="color: #000000;">G);
+</span><span style="color: #0000ff;">void</span> CreateDN(MGraph &amp;<span style="color: #000000;">G);
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Print(MGraph G);
+</span><span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+{
+    MGraph G;
+    CreateGraph(G);
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p><br />3.最后就是各种自定义函数的定义了：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('1679027f-8f6f-466f-a1b3-b45c75a7a8ab')"><img id="code_img_closed_1679027f-8f6f-466f-a1b3-b45c75a7a8ab" class="code_img_closed" src="./images/图的两种存储结构及四种形态——邻接矩阵、邻接表；有向图、无向图、有向网、无向网。0.png" alt="" /><img id="code_img_opened_1679027f-8f6f-466f-a1b3-b45c75a7a8ab" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('1679027f-8f6f-466f-a1b3-b45c75a7a8ab',event)" src="./images/图的两种存储结构及四种形态——邻接矩阵、邻接表；有向图、无向图、有向网、无向网。1.png" alt="" />
+<div id="cnblogs_code_open_1679027f-8f6f-466f-a1b3-b45c75a7a8ab" class="cnblogs_code_hide">
+<pre><code><span style="color: #0000ff;">void</span> CreateGraph(MGraph &amp;<span style="color: #000000;">G)
+{
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">1、有向图</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">2、有向网</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">3、无向图</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">4、无向网</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">你需要创建哪一种类型的图?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">此处运用了强转（不能直接从键盘上给枚举变量赋值）</span>
+    cin &gt;&gt; (<span style="color: #0000ff;">int</span>&amp;<span style="color: #000000;">)G.kind;
+    </span><span style="color: #0000ff;">switch</span><span style="color: #000000;"> (G.kind)
+    {
+        </span><span style="color: #0000ff;">case</span> <span style="color: #800080;">1</span><span style="color: #000000;">:
+            </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> CreateDG(G);
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">case</span> <span style="color: #800080;">2</span><span style="color: #000000;">:
+            </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> CreateDN(G);
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">case</span> <span style="color: #800080;">3</span><span style="color: #000000;">:
+            </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> CreateUDG(G);
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">case</span> <span style="color: #800080;">4</span><span style="color: #000000;">:
+            </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> CreateUDN(G);
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    }
+}
+</span><span style="color: #008000;">//</span><span style="color: #008000;">创建有向网</span>
+<span style="color: #0000ff;">void</span> CreateDN(MGraph &amp;<span style="color: #000000;">G)
+{
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">该图有多少顶点以及多少条弧?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    cin </span>&gt;&gt; G.vexnum  &gt;&gt;<span style="color: #000000;"> G.arcnum;
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入顶点:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">cin相当于c里面的scanf函数</span>
+        cin &gt;&gt;<span style="color: #000000;"> G.vexs[i];
+    }
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; G.vexnum; j++<span style="color: #000000;">)
+        {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">先假设每两个点之间都没有边</span>
+            G.arcs[i][j].adj =<span style="color: #000000;"> INFINITY;
+        }
+    }
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入各弧的两个端点及其权值</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    VertexType v1, v2;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">用于暂时存储每条弧的权值</span>
+<span style="color: #000000;">    VRType temp;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> i, j;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">有向网不具备对称性</span>
+    <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> k = <span style="color: #800080;">0</span>; k &lt; G.arcnum; k++<span style="color: #000000;">)
+    {
+        cin </span>&gt;&gt; v1 &gt;&gt; v2 &gt;&gt;<span style="color: #000000;"> temp;
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">利用存储顶点所用的一维数组中对应点的下标</span>
+        i = LocateVex(G, v1), j =<span style="color: #000000;"> LocateVex(G, v2),
+        G.arcs[i][j].adj </span>=<span style="color: #000000;"> temp;
+    }
+    Print(G);
+}
+</span><span style="color: #008000;">//</span><span style="color: #008000;">创建有向图</span>
+<span style="color: #0000ff;">void</span> CreateDG(MGraph &amp;<span style="color: #000000;">G)
+{
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">该图有多少顶点以及多少条边?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    cin </span>&gt;&gt; G.vexnum  &gt;&gt;<span style="color: #000000;"> G.arcnum;
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入顶点:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        cin </span>&gt;&gt;<span style="color: #000000;"> G.vexs[i];
+    }
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; G.vexnum; j++<span style="color: #000000;">)
+        {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">先假定图中没有弧</span>
+            G.arcs[i][j].adj = <span style="color: #800080;">0</span><span style="color: #000000;">;
+        }
+    }
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入各弧的两个端点</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    VertexType v1, v2;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">用于暂时存储每条弧的'权值'(存在即为1,否则为0)
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">因为temp的取值只能为1或0，所以不需要再输入</span>
+    VRType temp = <span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> i, j;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">有向图不具备对称性</span>
+    <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> k = <span style="color: #800080;">0</span>; k &lt; G.arcnum; k++<span style="color: #000000;">)
+    {
+        cin </span>&gt;&gt; v1 &gt;&gt;<span style="color: #000000;"> v2;
+        i </span>= LocateVex(G, v1), j =<span style="color: #000000;"> LocateVex(G, v2),
+        G.arcs[i][j].adj </span>=<span style="color: #000000;"> temp;
+    }
+    Print(G);
+}
+</span><span style="color: #008000;">//</span><span style="color: #008000;">创建无向图（对称）</span>
+<span style="color: #0000ff;">void</span> CreateUDG(MGraph &amp;<span style="color: #000000;">G)
+{
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">该图有多少顶点以及多少条边?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    cin </span>&gt;&gt; G.vexnum  &gt;&gt;<span style="color: #000000;"> G.arcnum;
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入顶点:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        cin </span>&gt;&gt;<span style="color: #000000;"> G.vexs[i];
+    }
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; G.vexnum; j++<span style="color: #000000;">)
+        {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">先假设每两个点之间都没有边</span>
+            G.arcs[i][j].adj = <span style="color: #800080;">0</span><span style="color: #000000;">;
+        }
+    }
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入各弧的两个端点(下三角)</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    VertexType v1, v2;
+    VRType temp </span>= <span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> i, j;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">考虑到无向图具有对称性（先只输入(邻接矩阵)下三角里存在的边）</span>
+    <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> k = <span style="color: #800080;">0</span>; k &lt; G.arcnum; k++<span style="color: #000000;">)
+    {
+        cin </span>&gt;&gt; v1 &gt;&gt;<span style="color: #000000;"> v2;
+        i </span>= LocateVex(G, v1), j =<span style="color: #000000;"> LocateVex(G, v2),
+        G.arcs[i][j].adj </span>=<span style="color: #000000;"> temp;
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">将上三角里的每条弧同样添加上权值</span>
+        G.arcs[j][i].adj =<span style="color: #000000;"> G.arcs[i][j].adj;
+    }
+    Print(G);
+}
+</span><span style="color: #008000;">//</span><span style="color: #008000;">创建无向网（对称）</span>
+<span style="color: #0000ff;">void</span> CreateUDN(MGraph &amp;<span style="color: #000000;">G)
+{
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">该图有多少顶点以及多少条边?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    cin </span>&gt;&gt; G.vexnum  &gt;&gt;<span style="color: #000000;"> G.arcnum;
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入顶点:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        cin </span>&gt;&gt;<span style="color: #000000;"> G.vexs[i];
+    }
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; G.vexnum; j++<span style="color: #000000;">)
+        {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">先假设每两个点之间都没有边(无穷远)</span>
+            G.arcs[i][j].adj =<span style="color: #000000;"> INFINITY;
+        }
+    }
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入各弧的两个端点及其权值(下三角)</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    VertexType v1, v2;
+    VRType temp;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> i, j;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">考虑到无向图具有对称性（先只输入(邻接矩阵)下三角里存在的边）</span>
+    <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> k = <span style="color: #800080;">0</span>; k &lt; G.arcnum; k++<span style="color: #000000;">)
+    {
+        cin </span>&gt;&gt; v1 &gt;&gt; v2 &gt;&gt;<span style="color: #000000;"> temp;
+        i </span>= LocateVex(G, v1), j =<span style="color: #000000;"> LocateVex(G, v2),
+        G.arcs[i][j].adj </span>=<span style="color: #000000;"> temp;
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">将上三角里的每条弧同样添加上权值</span>
+        G.arcs[j][i].adj =<span style="color: #000000;"> G.arcs[i][j].adj;
+    }
+    Print(G);
+}
+ </span><span style="color: #008000;">//</span><span style="color: #008000;">返回该顶点在一维数组中的下标（当然每一个人创建的一维数组可以是不同的）</span>
+<span style="color: #0000ff;">int</span> LocateVex(MGraph G , <span style="color: #0000ff;">int</span><span style="color: #000000;"> v1)
+{
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">if</span>(G.vexs[i] ==<span style="color: #000000;"> v1)
+            </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> i;
+    }
+}
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Print(MGraph G)
+{
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">存储的一维数组如下:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        cout </span>&lt;&lt; G.vexs[i] &lt;&lt; <span style="color: #800000;">'</span><span style="color: #800000;">\t</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    }
+    cout </span>&lt;&lt;<span style="color: #000000;"> endl;
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">邻接矩阵如下:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; G.vexnum; j++<span style="color: #000000;">)
+        {
+            cout </span>&lt;&lt; G.arcs[i][j].adj &lt;&lt; <span style="color: #800000;">'</span><span style="color: #800000;">\t</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+        }
+        cout </span>&lt;&lt;<span style="color: #000000;"> endl;
+    }
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p><br />二 ：邻接表存储结构</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('f922064e-d6d3-4655-938e-fe1d9621d600')"><img id="code_img_closed_f922064e-d6d3-4655-938e-fe1d9621d600" class="code_img_closed" src="./images/图的两种存储结构及四种形态——邻接矩阵、邻接表；有向图、无向图、有向网、无向网。0.png" alt="" /><img id="code_img_opened_f922064e-d6d3-4655-938e-fe1d9621d600" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('f922064e-d6d3-4655-938e-fe1d9621d600',event)" src="./images/图的两种存储结构及四种形态——邻接矩阵、邻接表；有向图、无向图、有向网、无向网。1.png" alt="" />
+<div id="cnblogs_code_open_f922064e-d6d3-4655-938e-fe1d9621d600" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;">  1</span> #include &lt;iostream&gt;
+<span style="color: #008080;">  2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;">  3</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;">  4</span> <span style="color: #0000ff;">using</span> std :: <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #008080;">  5</span> typedef <span style="color: #0000ff;">string</span><span style="color: #000000;"> InforType;
+</span><span style="color: #008080;">  6</span> <span style="color: #008000;">//</span><span style="color: #008000;">顶点类型</span>
+<span style="color: #008080;">  7</span> typedef <span style="color: #0000ff;">char</span><span style="color: #000000;"> VertexType;
+</span><span style="color: #008080;">  8</span> typedef <span style="color: #0000ff;">int</span><span style="color: #000000;"> Status;
+</span><span style="color: #008080;">  9</span> typedef <span style="color: #0000ff;">enum</span> {UDG = <span style="color: #800080;">1</span><span style="color: #000000;">, DG, UDN, DN} GraphKind;
+</span><span style="color: #008080;"> 10</span> <span style="color: #008000;">//</span><span style="color: #008000;">最大顶点个数</span>
+<span style="color: #008080;"> 11</span> <span style="color: #0000ff;">#define</span> MAX_VERTEX_NUM 20
+<span style="color: #008080;"> 12</span> <span style="color: #0000ff;">#define</span> ERROR -1
+<span style="color: #008080;"> 13</span> <span style="color: #0000ff;">#define</span> OK 1
+<span style="color: #008080;"> 14</span> <span style="color: #008000;">//</span><span style="color: #008000;">表节点的定义</span>
+<span style="color: #008080;"> 15</span> typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> ArcNode
+</span><span style="color: #008080;"> 16</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 17</span>     <span style="color: #008000;">//</span><span style="color: #008000;">该弧所指向的顶点的位置（相对地址）</span>
+<span style="color: #008080;"> 18</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> adjvex;
+</span><span style="color: #008080;"> 19</span>     <span style="color: #008000;">//</span><span style="color: #008000;">指向下一条弧的指针</span>
+<span style="color: #008080;"> 20</span>     <span style="color: #0000ff;">struct</span> ArcNode*<span style="color: #000000;"> nextarc;
+</span><span style="color: #008080;"> 21</span>     <span style="color: #008000;">//</span><span style="color: #008000;">该弧相关信息的指针（例如权值）</span>
+<span style="color: #008080;"> 22</span> <span style="color: #000000;">    InforType info;
+</span><span style="color: #008080;"> 23</span> <span style="color: #000000;">}ArcNode;
+</span><span style="color: #008080;"> 24</span> <span style="color: #008000;">//</span><span style="color: #008000;">头节点的定义</span>
+<span style="color: #008080;"> 25</span> typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> VNode
+</span><span style="color: #008080;"> 26</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 27</span>     <span style="color: #008000;">//</span><span style="color: #008000;">顶点信息</span>
+<span style="color: #008080;"> 28</span> <span style="color: #000000;">    VertexType data;
+</span><span style="color: #008080;"> 29</span>     <span style="color: #008000;">//</span><span style="color: #008000;">指向第一条依附该顶点的弧的指针</span>
+<span style="color: #008080;"> 30</span>     ArcNode*<span style="color: #000000;"> firstarc;
+</span><span style="color: #008080;"> 31</span> <span style="color: #000000;">}VNode, AdjList[MAX_VERTEX_NUM];
+</span><span style="color: #008080;"> 32</span> <span style="color: #008000;">//</span><span style="color: #008000;">图的定义</span>
+<span style="color: #008080;"> 33</span> typedef <span style="color: #0000ff;">struct</span>
+<span style="color: #008080;"> 34</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 35</span>     <span style="color: #008000;">//</span><span style="color: #008000;">存放头节点的一维数组</span>
+<span style="color: #008080;"> 36</span> <span style="color: #000000;">    AdjList vertices;
+</span><span style="color: #008080;"> 37</span>     <span style="color: #008000;">//</span><span style="color: #008000;">图的当前顶点数和弧数</span>
+<span style="color: #008080;"> 38</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> vexnum, arcnum;
+</span><span style="color: #008080;"> 39</span>     <span style="color: #008000;">//</span><span style="color: #008000;">图的种类标志</span>
+<span style="color: #008080;"> 40</span> <span style="color: #000000;">    GraphKind kind;
+</span><span style="color: #008080;"> 41</span> <span style="color: #000000;">}ALGraph;
+</span><span style="color: #008080;"> 42</span> <span style="color: #0000ff;">void</span> CreateGraph(ALGraph&amp;<span style="color: #000000;"> G);
+</span><span style="color: #008080;"> 43</span> Status CreateUDN(ALGraph&amp;<span style="color: #000000;"> G);
+</span><span style="color: #008080;"> 44</span> Status CreateUDG(ALGraph&amp;<span style="color: #000000;"> G);
+</span><span style="color: #008080;"> 45</span> Status CreateDG(ALGraph&amp;<span style="color: #000000;"> G);
+</span><span style="color: #008080;"> 46</span> Status CreateDN(ALGraph&amp;<span style="color: #000000;"> G);
+</span><span style="color: #008080;"> 47</span> <span style="color: #0000ff;">int</span> LocateVex(VNode vertices[], <span style="color: #0000ff;">int</span><span style="color: #000000;"> vexnum, VertexType e);
+</span><span style="color: #008080;"> 48</span> <span style="color: #0000ff;">void</span> Print(<span style="color: #0000ff;">const</span> ALGraph&amp;<span style="color: #000000;"> G);
+</span><span style="color: #008080;"> 49</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 50</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 51</span> <span style="color: #000000;">    ALGraph G;
+</span><span style="color: #008080;"> 52</span> <span style="color: #000000;">    CreateGraph(G);
+</span><span style="color: #008080;"> 53</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 54</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 55</span> <span style="color: #0000ff;">void</span> CreateGraph(ALGraph&amp;<span style="color: #000000;"> G)
+</span><span style="color: #008080;"> 56</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 57</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> reply;
+</span><span style="color: #008080;"> 58</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">1. 无向图</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 59</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">2. 有向图</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 60</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">3. 无向网</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 61</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">4. 有向网</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 62</span>     <span style="color: #008000;">//</span><span style="color: #008000;">其实逆与正是差不多的，根本上还是取决于用户的输入</span>
+<span style="color: #008080;"> 63</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">5. 逆有向网</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 64</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">6. 逆有向图</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 65</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">你想创建哪一种类型的图?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 66</span>     cin &gt;&gt;<span style="color: #000000;"> reply;
+</span><span style="color: #008080;"> 67</span>     <span style="color: #0000ff;">switch</span><span style="color: #000000;">(reply)
+</span><span style="color: #008080;"> 68</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 69</span>     <span style="color: #0000ff;">case</span> <span style="color: #800080;">1</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 70</span> <span style="color: #000000;">        CreateUDG(G);
+</span><span style="color: #008080;"> 71</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 72</span>     <span style="color: #0000ff;">case</span> <span style="color: #800080;">2</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 73</span> <span style="color: #000000;">        CreateDG(G);
+</span><span style="color: #008080;"> 74</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 75</span>     <span style="color: #0000ff;">case</span> <span style="color: #800080;">3</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 76</span> <span style="color: #000000;">        CreateUDN(G);
+</span><span style="color: #008080;"> 77</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 78</span>     <span style="color: #0000ff;">case</span> <span style="color: #800080;">4</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 79</span> <span style="color: #000000;">        CreateDN(G);
+</span><span style="color: #008080;"> 80</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 81</span>     <span style="color: #0000ff;">case</span> <span style="color: #800080;">5</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 82</span> <span style="color: #000000;">        CreateDN(G);
+</span><span style="color: #008080;"> 83</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 84</span>     <span style="color: #0000ff;">case</span> <span style="color: #800080;">6</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 85</span> <span style="color: #000000;">        CreateDG(G);
+</span><span style="color: #008080;"> 86</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 87</span>     <span style="color: #0000ff;">default</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 88</span>         exit(-<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 89</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 90</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 91</span> <span style="color: #008000;">//</span><span style="color: #008000;">构造无向网</span>
+<span style="color: #008080;"> 92</span> Status CreateUDN(ALGraph&amp;<span style="color: #000000;"> G)
+</span><span style="color: #008080;"> 93</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 94</span> <span style="color: #000000;">    VertexType e;
+</span><span style="color: #008080;"> 95</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> num;
+</span><span style="color: #008080;"> 96</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">该图共有多少个顶点、多少条弧?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 97</span>     cin &gt;&gt; G.vexnum &gt;&gt;<span style="color: #000000;"> G.arcnum;
+</span><span style="color: #008080;"> 98</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入各顶点:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 99</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">100</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">101</span>         <span style="color: #008000;">//</span><span style="color: #008000;">注意存储结构</span>
+<span style="color: #008080;">102</span>         cin &gt;&gt;<span style="color: #000000;"> G.vertices[i].data;
+</span><span style="color: #008080;">103</span>         <span style="color: #008000;">//</span><span style="color: #008000;">先将头节点的指针域设为空</span>
+<span style="color: #008080;">104</span>         G.vertices[i].firstarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">105</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">106</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">107</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">108</span>         <span style="color: #008000;">//</span><span style="color: #008000;">(强调引用)
+</span><span style="color: #008080;">109</span>         <span style="color: #008000;">//</span><span style="color: #008000;">注意ptr是节点的指针（是节点类型的一部分）而不是&lsquo;指向&rsquo;节点的指针
+</span><span style="color: #008080;">110</span>         <span style="color: #008000;">//</span><span style="color: #008000;">所以接连各节点不想以前那样简单了</span>
+<span style="color: #008080;">111</span>         ArcNode* &amp;ptr =<span style="color: #000000;"> G.vertices[i].firstarc;
+</span><span style="color: #008080;">112</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请问以顶点</span><span style="color: #800000;">"</span> &lt;&lt; G.vertices[i].data &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">为起点的弧一共有多少条?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">113</span>         cin &gt;&gt;<span style="color: #000000;"> num;
+</span><span style="color: #008080;">114</span>         <span style="color: #0000ff;">if</span>(num &gt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">115</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">116</span>             <span style="color: #0000ff;">int</span><span style="color: #000000;"> Index;
+</span><span style="color: #008080;">117</span>             ArcNode* p =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">118</span>             cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请将这些顶点及弧所带信息依次输入:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">119</span>             <span style="color: #008000;">//</span><span style="color: #008000;">先处理一个节点（为了方便后面的操作）</span>
+<span style="color: #008080;">120</span>             ptr = <span style="color: #0000ff;">new</span><span style="color: #000000;"> ArcNode;
+</span><span style="color: #008080;">121</span>             <span style="color: #0000ff;">if</span><span style="color: #000000;">(ptr)
+</span><span style="color: #008080;">122</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">123</span>                 cin &gt;&gt;<span style="color: #000000;"> e;
+</span><span style="color: #008080;">124</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">输入弧上的信息</span>
+<span style="color: #008080;">125</span>                 cin &gt;&gt; ptr-&gt;<span style="color: #000000;">info;
+</span><span style="color: #008080;">126</span>                 Index =<span style="color: #000000;"> LocateVex(G.vertices, G.vexnum, e);
+</span><span style="color: #008080;">127</span>                 p =<span style="color: #000000;"> ptr;
+</span><span style="color: #008080;">128</span>                 p-&gt;adjvex =<span style="color: #000000;"> Index;
+</span><span style="color: #008080;">129</span>                 p-&gt;nextarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">130</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">131</span>             <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">132</span>                 <span style="color: #0000ff;">return</span><span style="color: #000000;"> ERROR;
+</span><span style="color: #008080;">133</span>             <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">1</span>; j &lt; num; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">134</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">135</span>                 ArcNode* ptr2 = <span style="color: #0000ff;">new</span><span style="color: #000000;"> ArcNode;
+</span><span style="color: #008080;">136</span>                 <span style="color: #0000ff;">if</span><span style="color: #000000;">(ptr2)
+</span><span style="color: #008080;">137</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;">138</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">注意各变量的类型，不要搞混了</span>
+<span style="color: #008080;">139</span>                     cin &gt;&gt;<span style="color: #000000;"> e;
+</span><span style="color: #008080;">140</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">输入弧上的信息</span>
+<span style="color: #008080;">141</span>                     cin &gt;&gt; ptr2-&gt;<span style="color: #000000;">info;
+</span><span style="color: #008080;">142</span>                     Index =<span style="color: #000000;"> LocateVex(G.vertices, G.vexnum, e);
+</span><span style="color: #008080;">143</span>                     ptr2-&gt;adjvex =<span style="color: #000000;"> Index;
+</span><span style="color: #008080;">144</span>                     ptr2-&gt;nextarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">145</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">注意此处的连接节点与以前写的有点不同（ptr&lsquo;一直&rsquo;为空）</span>
+<span style="color: #008080;">146</span>                     p-&gt;nextarc =<span style="color: #000000;"> ptr2;
+</span><span style="color: #008080;">147</span>                     p = p-&gt;<span style="color: #000000;">nextarc;
+</span><span style="color: #008080;">148</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">149</span>                 <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">150</span>                     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ERROR;
+</span><span style="color: #008080;">151</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">152</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">153</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">154</span> <span style="color: #000000;">    Print(G);
+</span><span style="color: #008080;">155</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> OK;
+</span><span style="color: #008080;">156</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">157</span> <span style="color: #008000;">//</span><span style="color: #008000;">构造无向图</span>
+<span style="color: #008080;">158</span> Status CreateUDG(ALGraph&amp;<span style="color: #000000;"> G)
+</span><span style="color: #008080;">159</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">160</span> <span style="color: #000000;">    VertexType e;
+</span><span style="color: #008080;">161</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> num;
+</span><span style="color: #008080;">162</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">该图共有多少个顶点、多少条弧?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">163</span>     cin &gt;&gt; G.vexnum &gt;&gt;<span style="color: #000000;"> G.arcnum;
+</span><span style="color: #008080;">164</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入各顶点:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">165</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">166</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">167</span>         <span style="color: #008000;">//</span><span style="color: #008000;">注意存储结构</span>
+<span style="color: #008080;">168</span>         cin &gt;&gt;<span style="color: #000000;"> G.vertices[i].data;
+</span><span style="color: #008080;">169</span>         <span style="color: #008000;">//</span><span style="color: #008000;">先将头节点的指针域设为空</span>
+<span style="color: #008080;">170</span>         G.vertices[i].firstarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">171</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">172</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">173</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">174</span>         <span style="color: #008000;">//</span><span style="color: #008000;">(强调引用)
+</span><span style="color: #008080;">175</span>         <span style="color: #008000;">//</span><span style="color: #008000;">注意ptr是节点的指针（是节点类型的一部分）而不是&lsquo;指向&rsquo;节点的指针
+</span><span style="color: #008080;">176</span>         <span style="color: #008000;">//</span><span style="color: #008000;">所以接连各节点不想以前那样简单了</span>
+<span style="color: #008080;">177</span>         ArcNode* &amp;ptr =<span style="color: #000000;"> G.vertices[i].firstarc;
+</span><span style="color: #008080;">178</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请问以顶点</span><span style="color: #800000;">"</span> &lt;&lt; G.vertices[i].data &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">为起点的弧一共有多少条?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">179</span>         cin &gt;&gt;<span style="color: #000000;"> num;
+</span><span style="color: #008080;">180</span>         <span style="color: #0000ff;">if</span>(num &gt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">181</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">182</span>             <span style="color: #0000ff;">int</span><span style="color: #000000;"> Index;
+</span><span style="color: #008080;">183</span>             ArcNode* p =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">184</span>             cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请将这些顶点依次输入:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">185</span>             <span style="color: #008000;">//</span><span style="color: #008000;">先处理一个节点（为了方便后面的操作）</span>
+<span style="color: #008080;">186</span>             ptr = <span style="color: #0000ff;">new</span><span style="color: #000000;"> ArcNode;
+</span><span style="color: #008080;">187</span>             <span style="color: #0000ff;">if</span><span style="color: #000000;">(ptr)
+</span><span style="color: #008080;">188</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">189</span>                 cin &gt;&gt;<span style="color: #000000;"> e;
+</span><span style="color: #008080;">190</span>                 Index =<span style="color: #000000;"> LocateVex(G.vertices, G.vexnum, e);
+</span><span style="color: #008080;">191</span>                 p =<span style="color: #000000;"> ptr;
+</span><span style="color: #008080;">192</span>                 p-&gt;adjvex =<span style="color: #000000;"> Index;
+</span><span style="color: #008080;">193</span>                 p-&gt;nextarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">194</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">195</span>             <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">196</span>                 <span style="color: #0000ff;">return</span><span style="color: #000000;"> ERROR;
+</span><span style="color: #008080;">197</span>             <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">1</span>; j &lt; num; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">198</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">199</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">注意各变量的类型，不要搞混了</span>
+<span style="color: #008080;">200</span>                 cin &gt;&gt;<span style="color: #000000;"> e;
+</span><span style="color: #008080;">201</span>                 Index =<span style="color: #000000;"> LocateVex(G.vertices, G.vexnum, e);
+</span><span style="color: #008080;">202</span>                 ArcNode* ptr2 = <span style="color: #0000ff;">new</span><span style="color: #000000;"> ArcNode;
+</span><span style="color: #008080;">203</span>                 <span style="color: #0000ff;">if</span><span style="color: #000000;">(ptr2)
+</span><span style="color: #008080;">204</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;">205</span>                     ptr2-&gt;adjvex =<span style="color: #000000;"> Index;
+</span><span style="color: #008080;">206</span>                     ptr2-&gt;nextarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">207</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">注意此处的连接节点与以前写的有点不同（ptr&lsquo;一直&rsquo;为空）</span>
+<span style="color: #008080;">208</span>                     p-&gt;nextarc =<span style="color: #000000;"> ptr2;
+</span><span style="color: #008080;">209</span>                     p = p-&gt;<span style="color: #000000;">nextarc;
+</span><span style="color: #008080;">210</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">211</span>                 <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">212</span>                     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ERROR;
+</span><span style="color: #008080;">213</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">214</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">215</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">216</span> <span style="color: #000000;">    Print(G);
+</span><span style="color: #008080;">217</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> OK;
+</span><span style="color: #008080;">218</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">219</span> <span style="color: #008000;">//</span><span style="color: #008000;">构造有向图</span>
+<span style="color: #008080;">220</span> Status CreateDG(ALGraph&amp;<span style="color: #000000;"> G)
+</span><span style="color: #008080;">221</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">222</span> <span style="color: #000000;">    VertexType e;
+</span><span style="color: #008080;">223</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> num;
+</span><span style="color: #008080;">224</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">该图共有多少个顶点、多少条弧?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">225</span>     cin &gt;&gt; G.vexnum &gt;&gt;<span style="color: #000000;"> G.arcnum;
+</span><span style="color: #008080;">226</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入各顶点:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">227</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">228</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">229</span>         <span style="color: #008000;">//</span><span style="color: #008000;">注意存储结构</span>
+<span style="color: #008080;">230</span>         cin &gt;&gt;<span style="color: #000000;"> G.vertices[i].data;
+</span><span style="color: #008080;">231</span>         <span style="color: #008000;">//</span><span style="color: #008000;">先将头节点的指针域设为空</span>
+<span style="color: #008080;">232</span>         G.vertices[i].firstarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">233</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">234</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">235</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">236</span>         <span style="color: #008000;">//</span><span style="color: #008000;">(强调引用)
+</span><span style="color: #008080;">237</span>         <span style="color: #008000;">//</span><span style="color: #008000;">注意ptr是节点的指针（是节点类型的一部分）而不是&lsquo;指向&rsquo;节点的指针
+</span><span style="color: #008080;">238</span>         <span style="color: #008000;">//</span><span style="color: #008000;">所以接连各节点不想以前那样简单了</span>
+<span style="color: #008080;">239</span>         ArcNode* &amp;ptr =<span style="color: #000000;"> G.vertices[i].firstarc;
+</span><span style="color: #008080;">240</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请问以顶点</span><span style="color: #800000;">"</span> &lt;&lt; G.vertices[i].data &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">为起点的弧一共有多少条?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">241</span>         cin &gt;&gt;<span style="color: #000000;"> num;
+</span><span style="color: #008080;">242</span>         <span style="color: #0000ff;">if</span>(num &gt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">243</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">244</span>             <span style="color: #0000ff;">int</span><span style="color: #000000;"> Index;
+</span><span style="color: #008080;">245</span>             ArcNode* p =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">246</span>             cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请将这些顶点依次输入:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">247</span>             <span style="color: #008000;">//</span><span style="color: #008000;">先处理一个节点（为了方便后面的操作）</span>
+<span style="color: #008080;">248</span>             ptr = <span style="color: #0000ff;">new</span><span style="color: #000000;"> ArcNode;
+</span><span style="color: #008080;">249</span>             <span style="color: #0000ff;">if</span><span style="color: #000000;">(ptr)
+</span><span style="color: #008080;">250</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">251</span>                 cin &gt;&gt;<span style="color: #000000;"> e;
+</span><span style="color: #008080;">252</span>                 Index =<span style="color: #000000;"> LocateVex(G.vertices, G.vexnum, e);
+</span><span style="color: #008080;">253</span>                 p =<span style="color: #000000;"> ptr;
+</span><span style="color: #008080;">254</span>                 p-&gt;adjvex =<span style="color: #000000;"> Index;
+</span><span style="color: #008080;">255</span>                 p-&gt;nextarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">256</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">257</span>             <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">258</span>                 <span style="color: #0000ff;">return</span><span style="color: #000000;"> ERROR;
+</span><span style="color: #008080;">259</span>             <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">1</span>; j &lt; num; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">260</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">261</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">注意各变量的类型，不要搞混了</span>
+<span style="color: #008080;">262</span>                 cin &gt;&gt;<span style="color: #000000;"> e;
+</span><span style="color: #008080;">263</span>                 Index =<span style="color: #000000;"> LocateVex(G.vertices, G.vexnum, e);
+</span><span style="color: #008080;">264</span>                 ArcNode* ptr2 = <span style="color: #0000ff;">new</span><span style="color: #000000;"> ArcNode;
+</span><span style="color: #008080;">265</span>                 <span style="color: #0000ff;">if</span><span style="color: #000000;">(ptr2)
+</span><span style="color: #008080;">266</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;">267</span>                     ptr2-&gt;adjvex =<span style="color: #000000;"> Index;
+</span><span style="color: #008080;">268</span>                     ptr2-&gt;nextarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">269</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">注意此处的连接节点与以前写的有点不同（ptr&lsquo;一直&rsquo;为空）</span>
+<span style="color: #008080;">270</span>                     p-&gt;nextarc =<span style="color: #000000;"> ptr2;
+</span><span style="color: #008080;">271</span>                     p = p-&gt;<span style="color: #000000;">nextarc;
+</span><span style="color: #008080;">272</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">273</span>                 <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">274</span>                     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ERROR;
+</span><span style="color: #008080;">275</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">276</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">277</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">278</span> <span style="color: #000000;">    Print(G);
+</span><span style="color: #008080;">279</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> OK;
+</span><span style="color: #008080;">280</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">281</span> <span style="color: #008000;">//</span><span style="color: #008000;">构造有向网</span>
+<span style="color: #008080;">282</span> Status CreateDN(ALGraph&amp;<span style="color: #000000;"> G)
+</span><span style="color: #008080;">283</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">284</span> <span style="color: #000000;">    VertexType e;
+</span><span style="color: #008080;">285</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> num;
+</span><span style="color: #008080;">286</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">该图共有多少个顶点、多少条弧?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">287</span>     cin &gt;&gt; G.vexnum &gt;&gt;<span style="color: #000000;"> G.arcnum;
+</span><span style="color: #008080;">288</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入各顶点:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">289</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">290</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">291</span>         <span style="color: #008000;">//</span><span style="color: #008000;">注意存储结构</span>
+<span style="color: #008080;">292</span>         cin &gt;&gt;<span style="color: #000000;"> G.vertices[i].data;
+</span><span style="color: #008080;">293</span>         <span style="color: #008000;">//</span><span style="color: #008000;">先将头节点的指针域设为空</span>
+<span style="color: #008080;">294</span>         G.vertices[i].firstarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">295</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">296</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">297</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">298</span>         <span style="color: #008000;">//</span><span style="color: #008000;">(强调引用)
+</span><span style="color: #008080;">299</span>         <span style="color: #008000;">//</span><span style="color: #008000;">注意ptr是节点的指针（是节点类型的一部分）而不是&lsquo;指向&rsquo;节点的指针
+</span><span style="color: #008080;">300</span>         <span style="color: #008000;">//</span><span style="color: #008000;">所以接连各节点不想以前那样简单了</span>
+<span style="color: #008080;">301</span>         ArcNode* &amp;ptr =<span style="color: #000000;"> G.vertices[i].firstarc;
+</span><span style="color: #008080;">302</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请问以顶点</span><span style="color: #800000;">"</span> &lt;&lt; G.vertices[i].data &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">为起点的弧一共有多少条?</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">303</span>         cin &gt;&gt;<span style="color: #000000;"> num;
+</span><span style="color: #008080;">304</span>         <span style="color: #0000ff;">if</span>(num &gt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">305</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">306</span>             <span style="color: #0000ff;">int</span><span style="color: #000000;"> Index;
+</span><span style="color: #008080;">307</span>             ArcNode* p =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">308</span>             cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请将这些顶点及弧所带信息依次输入:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">309</span>             <span style="color: #008000;">//</span><span style="color: #008000;">先处理一个节点（为了方便后面的操作）</span>
+<span style="color: #008080;">310</span>             ptr = <span style="color: #0000ff;">new</span><span style="color: #000000;"> ArcNode;
+</span><span style="color: #008080;">311</span>             <span style="color: #0000ff;">if</span><span style="color: #000000;">(ptr)
+</span><span style="color: #008080;">312</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">313</span>                 cin &gt;&gt;<span style="color: #000000;"> e;
+</span><span style="color: #008080;">314</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">输入弧上的信息</span>
+<span style="color: #008080;">315</span>                 cin &gt;&gt; ptr-&gt;<span style="color: #000000;">info;
+</span><span style="color: #008080;">316</span>                 Index =<span style="color: #000000;"> LocateVex(G.vertices, G.vexnum, e);
+</span><span style="color: #008080;">317</span>                 p =<span style="color: #000000;"> ptr;
+</span><span style="color: #008080;">318</span>                 p-&gt;adjvex =<span style="color: #000000;"> Index;
+</span><span style="color: #008080;">319</span>                 p-&gt;nextarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">320</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">321</span>             <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">322</span>                 <span style="color: #0000ff;">return</span><span style="color: #000000;"> ERROR;
+</span><span style="color: #008080;">323</span>             <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">1</span>; j &lt; num; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">324</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">325</span>                 ArcNode* ptr2 = <span style="color: #0000ff;">new</span><span style="color: #000000;"> ArcNode;
+</span><span style="color: #008080;">326</span>                 <span style="color: #0000ff;">if</span><span style="color: #000000;">(ptr2)
+</span><span style="color: #008080;">327</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;">328</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">注意各变量的类型，不要搞混了</span>
+<span style="color: #008080;">329</span>                     cin &gt;&gt;<span style="color: #000000;"> e;
+</span><span style="color: #008080;">330</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">输入弧上的信息</span>
+<span style="color: #008080;">331</span>                     cin &gt;&gt; ptr2-&gt;<span style="color: #000000;">info;
+</span><span style="color: #008080;">332</span>                     Index =<span style="color: #000000;"> LocateVex(G.vertices, G.vexnum, e);
+</span><span style="color: #008080;">333</span>                     ptr2-&gt;adjvex =<span style="color: #000000;"> Index;
+</span><span style="color: #008080;">334</span>                     ptr2-&gt;nextarc =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">335</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">注意此处的连接节点与以前写的有点不同（ptr&lsquo;一直&rsquo;为空）</span>
+<span style="color: #008080;">336</span>                     p-&gt;nextarc =<span style="color: #000000;"> ptr2;
+</span><span style="color: #008080;">337</span>                     p = p-&gt;<span style="color: #000000;">nextarc;
+</span><span style="color: #008080;">338</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">339</span>                 <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">340</span>                     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ERROR;
+</span><span style="color: #008080;">341</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">342</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">343</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">344</span> <span style="color: #000000;">    Print(G);
+</span><span style="color: #008080;">345</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> OK;
+</span><span style="color: #008080;">346</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">347</span> <span style="color: #008000;">//</span><span style="color: #008000;">定位顶点在一维数组中的位置</span>
+<span style="color: #008080;">348</span> <span style="color: #0000ff;">int</span> LocateVex(VNode vertices[], <span style="color: #0000ff;">int</span><span style="color: #000000;"> vexnum, VertexType e)
+</span><span style="color: #008080;">349</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">350</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;">351</span>     <span style="color: #0000ff;">for</span>(i = <span style="color: #800080;">0</span>; i &lt; vexnum; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">352</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">353</span>         <span style="color: #0000ff;">if</span>(vertices[i].data ==<span style="color: #000000;"> e)
+</span><span style="color: #008080;">354</span>             <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">355</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">356</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;">357</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">358</span> <span style="color: #008000;">//</span><span style="color: #008000;">打印图</span>
+<span style="color: #008080;">359</span> <span style="color: #0000ff;">void</span> Print(<span style="color: #0000ff;">const</span> ALGraph&amp;<span style="color: #000000;"> G)
+</span><span style="color: #008080;">360</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">361</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">您所创建的图用邻接表存储结构展示如下:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">362</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; G.vexnum; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">363</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">364</span>         cout  &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">[</span><span style="color: #800000;">"</span> &lt;&lt; G.vertices[i].data &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">]</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">365</span>         ArcNode* ptr =<span style="color: #000000;"> G.vertices[i].firstarc;
+</span><span style="color: #008080;">366</span>         <span style="color: #0000ff;">while</span><span style="color: #000000;">(ptr)
+</span><span style="color: #008080;">367</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">368</span>             <span style="color: #008000;">//</span><span style="color: #008000;">打印出下标（从零开始）</span>
+<span style="color: #008080;">369</span>             cout  &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">&mdash;&gt;</span><span style="color: #800000;">"</span> &lt;&lt; ptr-&gt;<span style="color: #000000;">adjvex;
+</span><span style="color: #008080;">370</span>             ptr = ptr-&gt;<span style="color: #000000;">nextarc;
+</span><span style="color: #008080;">371</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">372</span>         cout &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">373</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">374</span> }</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

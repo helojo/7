@@ -1,0 +1,153 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go语言交叉编译工具gox' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go语言交叉编译工具gox</center></div><div class='banquan'>原文出处:本文由博客园博主张以诺提供。<br/>
+原文连接:https://www.cnblogs.com/enochzzg/p/11020201.html</div><br>
+    <h2 id="基本介绍">基本介绍</h2>
+<p>交叉编译是为了在不同平台编译出其他平台的程序，比如在Linux编译出Windows程序，在Windows能编译出Linux程序，32位系统下编译出64位程序，今天介绍的gox就是其中一款交叉编译工具。</p>
+<h2 id="配置环境">配置环境</h2>
+<p>首先配置好Go语言的环境变量，并在<code>~/.bash_profile</code>中设置，简单说明一下为什么要添加至该文件，首先以下代码在终端执行完成后只对当前会话有效，关闭终端变量就失效了，而<code>.bash_profile</code>文件在用户每次登录时都会执行一次，把环境变量设置到该文件中，每次登录都会初始化环境变量。当然，放在<code>~/.bashrc</code>中也是可以的，它不仅会在登录时执行，还会在每次打开终端时执行。</p>
+<pre><code><code>export GOPATH=${HOME}/go
+export GOROOT=/usr/local/go
+export GOBIN=${GOPATH}/bin
+export PATH=${PATH}:${GOBIN}</code></pre>
+<p>GOROOT与GOPATH要根据自身情况设置，不要盲目跟从，设置完成后若要该文件立即生效，可以执行<code>source</code>命令。</p>
+<pre><code><code>source ~/.bash_profile</code></pre>
+<p>如果你的终端装了<code>zsh</code>，可能重新打开终端后依然会失效，那么可以在<code>~/.zshrc</code>文件的最后一行追加上<code>source</code>指令。</p>
+<pre><code><code>source ~/.bash_profile</code></pre>
+<h2 id="gox的安装">gox的安装</h2>
+<p>在终端执行以下指令进行安装。</p>
+<pre><code><code>go get github.com/mitchellh/gox</code></pre>
+<p>安装结束后，执行<code>gox -h</code>，如果有展示帮助信息，代表安装成功。</p>
+<pre><code><code>➜  ~ gox -h
+Usage: gox [options] [packages]
+
+  Gox cross-compiles Go applications in parallel.
+
+  If no specific operating systems or architectures are specified, Gox
+  will build for all pairs supported by your version of Go.
+  ......</code></pre>
+<h2 id="gox的使用">gox的使用</h2>
+<p>按照惯例，我们先祭出<code>hello,world</code>的演示代码。</p>
+<pre class="go"><code>package main
+
+import &quot;fmt&quot;
+
+func main() {
+    fmt.Print(&quot;hello,world&quot;)
+}</code></pre>
+<p>此时进入项目中的工作目录（$GOPATH/src/[你的项目名]），直接执行<code>gox</code>命令，会生成多达21个不同平台的可执行文件，横跨linux、windows、freebsd、darwin等系统。</p>
+<pre><code><code>➜  hello gox
+Number of parallel builds: 3
+
+--&gt;     linux/amd64: hello
+--&gt;   openbsd/amd64: hello
+--&gt;      darwin/386: hello
+--&gt;    linux/mipsle: hello
+--&gt;     windows/386: hello
+--&gt;   windows/amd64: hello
+--&gt;    darwin/amd64: hello
+--&gt;       linux/386: hello
+--&gt;     linux/s390x: hello
+--&gt;      netbsd/386: hello
+--&gt;       linux/arm: hello
+--&gt;     freebsd/386: hello
+--&gt;    netbsd/amd64: hello
+--&gt;     freebsd/arm: hello
+--&gt;   freebsd/amd64: hello
+--&gt;     openbsd/386: hello
+--&gt;    linux/mips64: hello
+--&gt;      linux/mips: hello
+--&gt;  linux/mips64le: hello
+--&gt;      netbsd/arm: hello</code></pre>
+<p>但我并不想一次生成所有平台的程序，这时就需要gox的参数进行指定，如下所示，<code>os</code>参数指定要生成的系统名称，<code>arch</code>指定CPU的架构。</p>
+<pre><code><code>gox -os &quot;windows&quot; -arch amd64</code></pre>
+<p>其实它所支持的并不止21款，这些只是默认生成的，下面是gox对各种系统的定义，感兴趣的同学可以自行了解。</p>
+<pre class="go"><code>Platforms_1_0 = []Platform{
+        {&quot;darwin&quot;, &quot;386&quot;, true},
+        {&quot;darwin&quot;, &quot;amd64&quot;, true},
+        {&quot;linux&quot;, &quot;386&quot;, true},
+        {&quot;linux&quot;, &quot;amd64&quot;, true},
+        {&quot;linux&quot;, &quot;arm&quot;, true},
+        {&quot;freebsd&quot;, &quot;386&quot;, true},
+        {&quot;freebsd&quot;, &quot;amd64&quot;, true},
+        {&quot;openbsd&quot;, &quot;386&quot;, true},
+        {&quot;openbsd&quot;, &quot;amd64&quot;, true},
+        {&quot;windows&quot;, &quot;386&quot;, true},
+        {&quot;windows&quot;, &quot;amd64&quot;, true},
+    }
+
+    Platforms_1_1 = append(Platforms_1_0, []Platform{
+        {&quot;freebsd&quot;, &quot;arm&quot;, true},
+        {&quot;netbsd&quot;, &quot;386&quot;, true},
+        {&quot;netbsd&quot;, &quot;amd64&quot;, true},
+        {&quot;netbsd&quot;, &quot;arm&quot;, true},
+        {&quot;plan9&quot;, &quot;386&quot;, false},
+    }...)
+
+    Platforms_1_3 = append(Platforms_1_1, []Platform{
+        {&quot;dragonfly&quot;, &quot;386&quot;, false},
+        {&quot;dragonfly&quot;, &quot;amd64&quot;, false},
+        {&quot;nacl&quot;, &quot;amd64&quot;, false},
+        {&quot;nacl&quot;, &quot;amd64p32&quot;, false},
+        {&quot;nacl&quot;, &quot;arm&quot;, false},
+        {&quot;solaris&quot;, &quot;amd64&quot;, false},
+    }...)
+
+    Platforms_1_4 = append(Platforms_1_3, []Platform{
+        {&quot;android&quot;, &quot;arm&quot;, false},
+        {&quot;plan9&quot;, &quot;amd64&quot;, false},
+    }...)
+
+    Platforms_1_5 = append(Platforms_1_4, []Platform{
+        {&quot;darwin&quot;, &quot;arm&quot;, false},
+        {&quot;darwin&quot;, &quot;arm64&quot;, false},
+        {&quot;linux&quot;, &quot;arm64&quot;, false},
+        {&quot;linux&quot;, &quot;ppc64&quot;, false},
+        {&quot;linux&quot;, &quot;ppc64le&quot;, false},
+    }...)
+
+    Platforms_1_6 = append(Platforms_1_5, []Platform{
+        {&quot;android&quot;, &quot;386&quot;, false},
+        {&quot;linux&quot;, &quot;mips64&quot;, false},
+        {&quot;linux&quot;, &quot;mips64le&quot;, false},
+    }...)
+
+    Platforms_1_7 = append(Platforms_1_5, []Platform{
+        // While not fully supported s390x is generally useful
+        {&quot;linux&quot;, &quot;s390x&quot;, true},
+        {&quot;plan9&quot;, &quot;arm&quot;, false},
+        // Add the 1.6 Platforms, but reflect full support for mips64 and mips64le
+        {&quot;android&quot;, &quot;386&quot;, false},
+        {&quot;linux&quot;, &quot;mips64&quot;, true},
+        {&quot;linux&quot;, &quot;mips64le&quot;, true},
+    }...)
+
+    Platforms_1_8 = append(Platforms_1_7, []Platform{
+        {&quot;linux&quot;, &quot;mips&quot;, true},
+        {&quot;linux&quot;, &quot;mipsle&quot;, true},
+    }...)</code></pre>
+<p>除了刚才的命令外还有另一种生成方式，用斜杠的方式将系统与架构合并批量生成。</p>
+<pre><code><code>gox -osarch &quot;windows/amd64 linux/amd64&quot;</code></pre>
+<p>赶紧把你生成的程序发给小伙伴执行试试吧，以上就是本文全部内容，感谢阅读。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

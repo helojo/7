@@ -1,0 +1,79 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Qt插件热加载-QPluginLoader实现' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Qt插件热加载-QPluginLoader实现</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/10831111.html</div><br>
+    <p>上一篇<a href="https://note.youdao.com/">C++消息框架-基于sigslot</a>文章中我们讲述了使用sigslot信号槽实现自己的消息框架，这是一个比较粗糙，而且小的框架。当我们的程序逐渐变大时，我们可能就会考虑功能插件化，或者支持某些模块动态加载和卸载。</p>
+<blockquote>
+<p>功能动态加载，也就是我们平时所说的插件化，插件支持热插拔。</p>
+</blockquote>
+<p>之前工作中，刚好接触过这一块的内容。下面是一个Qt加载dll的方式，当我们把dll加载上以后，可以尝试转化为PluginInterface接口，如果可以转换成功，则说明我们这个dll是我们需要的插件，然后我们就可以进行插件初始化。</p>
+<blockquote>
+<p>如果插件代码需要和主程序通信，我们只需要在初始化插件的时候把相关参数传递进去即可。</p>
+</blockquote>
+<pre><code>void ReadPluginsInfo( const QString &amp; pluginsDirPath /*= &quot;&quot;*/ )
+{
+    QString pluginsPath = pluginsDirPath;
+    if (pluginsDirPath.isEmpty())
+    {
+        pluginsPath = QApplication::applicationDirPath();
+    }
+    QDir pluginsDir(pluginsPath);
+    pluginsDir.cd(&quot;Plugins&quot;);
+
+    QFileInfoList pluginsFile = pluginsDir.entryInfoList(QStringList() &lt;&lt; &quot;*.dll&quot;, QDir::Files);
+    foreach(QFileInfo fileInfo, pluginsFile)
+    {
+        QPluginLoader loader(fileInfo.absoluteFilePath());
+        bool isLoad = loader.isLoaded();
+        QString info = loader.errorString();
+
+        if (QObject * plugin = loader.instance())
+        {
+            if (PluginInterface * pinterface = dynamic_cast&lt;PluginInterface *&gt;(plugin))
+            {
+                pinterface-&gt;install(PluginParam());//初始化插件
+                m_lstPluginInterFace.push_back(pinterface);
+            }  
+        }
+        else
+        {
+            qDebug() &lt;&lt; loader.errorString();
+        }
+    }
+}</code></pre>
+<p>上述代码伪代码如下：</p>
+<pre><code>void ReadPluginsInfo( const QString &amp; pluginsDirPath /*= &quot;&quot;*/ )
+{
+    进入插件路径
+    获取路径下所有dll
+    foreach(dll集合)
+    {
+        使用QPluginLoader加载动态库文件
+        if (转化为插件接口类)
+        {
+            初始化插件
+        }
+    }
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

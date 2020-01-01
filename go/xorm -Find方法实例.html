@@ -1,0 +1,262 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修xorm -Find方法实例' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>xorm -Find方法实例</center></div><div class='banquan'>原文出处:本文由博客园博主j_x_x提供。<br/>
+原文连接:https://www.cnblogs.com/jiangxiangxiang/p/10932551.html</div><br>
+    <p>查询多条数据使用<code>Find</code>方法，Find方法的第一个参数为<code>slice</code>的指针或<code>Map</code>指针，即为查询后返回的结果，第二个参数可选，为查询的条件struct的指针。</p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    _ &quot;github.com/go-sql-driver/mysql&quot;
+    &quot;github.com/go-xorm/xorm&quot;
+    &quot;log&quot;
+    &quot;time&quot;
+)
+
+var engine *xorm.Engine
+
+type User struct {
+    Name      string    `xorm:&quot;varchar(25) &#39;name&#39;&quot;`
+    Id        int       `xorm:&quot;pk &#39;id&#39; autoincr&quot;`
+    CreatedAt time.Time `xorm:&quot;created&quot;`
+}
+
+func main() {
+    var err error
+    engine, err = xorm.NewEngine(&quot;mysql&quot;, &quot;root:123456@/test&quot;)
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+
+    err = engine.CreateTables(User{})
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+//下面插入语句第一次运行程序时运行，后面注释掉
+  /*
+    u := make([]User, 5)
+    u[0].Name = &quot;abcd&quot;
+    u[1].Name = &quot;acbd&quot;
+    u[2].Name = &quot;dbac&quot;
+    u[3].Name = &quot;cbda&quot;
+    u[4].Name = &quot;bdca&quot;
+
+    _, err = engine.Insert(u)
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+*/
+
+
+/*  1) 传入Slice用于返回数据
+    everyone := make([]Userinfo, 0)
+    err := engine.Find(&amp;everyone)
+
+    pEveryOne := make([]*Userinfo, 0)
+    err := engine.Find(&amp;pEveryOne)*/
+
+    users := make([]User,0)
+    err = engine.Find(&amp;users)
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+
+    for i,u := range users{
+        fmt.Println(&quot;只传第一个参数，传入slice用于返回数据，index:&quot;,i,&quot;user&quot;,u.Name)
+    }
+    fmt.Println()
+
+
+    users1 := make([]User,0)
+    err = engine.Find(&amp;users1)
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+
+    for i,u := range users1{
+        fmt.Println(&quot;只传第一参数，传入slice用于返回数据，index:&quot;,i,&quot;user&quot;,u.Name)
+    }
+    fmt.Println()
+
+
+    users2 := make([]User,0)
+    s2 := new(User)
+    s2.Name =&quot;abcd&quot;
+
+    err = engine.Find(&amp;users2,s2)
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+
+    for i,u := range users2{
+        fmt.Println(&quot;传两个参数，传入slice用于返回数据，index:&quot;,i,&quot;user&quot;,u.Name)
+    }
+
+    fmt.Println()
+
+
+    users3 := make([]User,0)
+    s3 := new(User)
+    s3.Name =&quot;abcd&quot;
+    err = engine.Find(&amp;users3,s3)
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+
+    for i,u := range users3{
+        fmt.Println(&quot;只传第一参数，传入slice用于返回数据，index:&quot;,i,&quot;user&quot;,u.Name)
+    }
+
+    fmt.Println()
+    fmt.Println()
+
+    /*2) 传入Map用户返回数据，map必须为map[int64]Userinfo的形式，map的key为id，因此对于复合主键无法使用这种方式。
+
+    users := make(map[int64]Userinfo)
+    err := engine.Find(&amp;users)
+
+    pUsers := make(map[int64]*Userinfo)
+    err := engine.Find(&amp;pUsers)*/
+
+
+    users4 := make(map[int64]User,0)
+    err = engine.Find(&amp;users4)
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+
+    for i,u := range users4{
+        fmt.Println(&quot;只传第一个参数，传入map用于返回数据，index:&quot;,i,&quot;user&quot;,u.Name)
+    }
+    fmt.Println()
+
+
+    users5 := make(map[int64]User,0)
+    s5 := new(User)
+    s5.Name =&quot;abcd&quot;
+
+    err = engine.Find(&amp;users5,s5)
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+
+    for i,u := range users5{
+        fmt.Println(&quot;传两个参数，传入map用于返回数据，index:&quot;,i,&quot;user&quot;,u.Name)
+    }
+
+    fmt.Println()
+    fmt.Println()
+
+
+
+
+/*
+    3) 也可以加入各种条件
+    users := make([]Userinfo, 0)
+    err := engine.Where(&quot;age &gt; ? or name = ?&quot;, 30, &quot;xlw&quot;).Limit(20, 10).Find(&amp;users)
+    */
+
+    users6 := make(map[int64]User,0)
+    err = engine.Where(&quot;name &gt; ?&quot;,&quot;baaa&quot;).Find(&amp;users6)
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+
+    for i,u := range users6{
+        fmt.Println(&quot;只传第一个参数，传入map用于返回数据，index:&quot;,i,&quot;user&quot;,u.Name)
+    }
+    fmt.Println()
+
+
+
+
+    /*4) 如果只选择单个字段，也可使用非结构体的Slice
+    var ints []int64
+    err := engine.Table(&quot;user&quot;).Cols(&quot;id&quot;).Find(&amp;ints)
+*/
+
+    var ints []int64
+    err = engine.Table(&quot;user&quot;).Cols(&quot;id&quot;).Find(&amp;ints)
+
+    if err != nil {
+        log.Fatal(err)
+        return
+    }
+
+    for i := range ints{
+        fmt.Println(&quot;如果只选择单个字段，也可使用非结构体的Slice，index:&quot;,i)
+    }
+}
+
+/*
+输出：
+只传第一个参数，传入slice用于返回数据，index: 0 user abcd
+只传第一个参数，传入slice用于返回数据，index: 1 user acbd
+只传第一个参数，传入slice用于返回数据，index: 2 user dbac
+只传第一个参数，传入slice用于返回数据，index: 3 user cbda
+只传第一个参数，传入slice用于返回数据，index: 4 user bdca
+
+只传第一参数，传入slice用于返回数据，index: 0 user abcd
+只传第一参数，传入slice用于返回数据，index: 1 user acbd
+只传第一参数，传入slice用于返回数据，index: 2 user dbac
+只传第一参数，传入slice用于返回数据，index: 3 user cbda
+只传第一参数，传入slice用于返回数据，index: 4 user bdca
+
+传两个参数，传入slice用于返回数据，index: 0 user abcd
+
+只传第一参数，传入slice用于返回数据，index: 0 user abcd
+
+
+只传第一个参数，传入map用于返回数据，index: 1 user abcd
+只传第一个参数，传入map用于返回数据，index: 2 user acbd
+只传第一个参数，传入map用于返回数据，index: 3 user dbac
+只传第一个参数，传入map用于返回数据，index: 4 user cbda
+只传第一个参数，传入map用于返回数据，index: 5 user bdca
+
+传两个参数，传入map用于返回数据，index: 1 user abcd
+
+
+只传第一个参数，传入map用于返回数据，index: 3 user dbac
+只传第一个参数，传入map用于返回数据，index: 4 user cbda
+只传第一个参数，传入map用于返回数据，index: 5 user bdca
+
+如果只选择单个字段，也可使用非结构体的Slice，index: 0
+如果只选择单个字段，也可使用非结构体的Slice，index: 1
+如果只选择单个字段，也可使用非结构体的Slice，index: 2
+如果只选择单个字段，也可使用非结构体的Slice，index: 3
+如果只选择单个字段，也可使用非结构体的Slice，index: 4
+
+*/
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

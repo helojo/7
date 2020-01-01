@@ -1,0 +1,111 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] 轻量服务器框架tcp的粘包问题 封包与拆包' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] 轻量服务器框架tcp的粘包问题 封包与拆包</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/12057619.html</div><br>
+    <p>tcp传输的数据是以流的形式传输的，因此就没有办法判断到哪里结束算是自己的一个消息，这样就会出现粘包问题，多个包粘在一起了</p>
+<p>可以使用这样一个自定义的形式来解决，一个消息分为 head+body&nbsp; head包括数据的长度和数据编号 ， 长度和编号都是uint32类型 也就是32位 占有4个字节 ， 总共head占有8个字节</p>
+<p>封装一个消息的结构体，作为一个数据实体，比如下面这个，编号 数据 数据长度&nbsp; 三个属性</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package znet
+
+type Message struct {
+    Id     uint32
+    Data   []</span><span style="color: #0000ff;">byte</span><span style="color: #000000;">
+    MsgLen uint32
+}
+
+func NewMessage() </span>*<span style="color: #000000;">Message {
+    m :</span>= &amp;<span style="color: #000000;">Message{}
+    return m
+}
+func (m </span>*<span style="color: #000000;">Message) GetId() uint32 {
+    return m.Id
+}
+func (m </span>*Message) GetData() []<span style="color: #0000ff;">byte</span><span style="color: #000000;"> {
+    return m.Data
+}
+func (m </span>*<span style="color: #000000;">Message) GetMsgLen() uint32 {
+    return m.MsgLen
+}
+func (m </span>*Message) SetId(<span style="color: #0000ff;">id</span><span style="color: #000000;"> uint32) {
+    m.Id </span>= <span style="color: #0000ff;">id</span><span style="color: #000000;">
+}
+func (m </span>*Message) SetData(data []<span style="color: #0000ff;">byte</span><span style="color: #000000;">) {
+    m.Data </span>=<span style="color: #000000;"> data
+}
+func (m </span>*<span style="color: #000000;">Message) SetMsgLen(len uint32) {
+    m.MsgLen </span>=<span style="color: #000000;"> len
+}</span></pre>
+</div>
+<p>封装一个封包解包的结构体，包括封包和解包的方法，封包就是先写长度，再写编号，再写数据；解包只是获取下长度和编号，数据下次再取</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package znet
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">zinx/zinterface</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">bytes</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">encoding/binary</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type DataPack struct {
+}
+
+func NewDataPack() </span>*<span style="color: #000000;">DataPack {
+    dp :</span>= &amp;<span style="color: #000000;">DataPack{}
+    return dp
+}
+func (dp </span>*DataPack) Pack(m zinterface.IMessage) ([]<span style="color: #0000ff;">byte</span><span style="color: #000000;">, error) {
+    dataBuff :</span>= bytes.NewBuffer([]<span style="color: #0000ff;">byte</span><span style="color: #000000;">{})
+    binary.Write(dataBuff, binary.LittleEndian, m.GetMsgLen())
+    binary.Write(dataBuff, binary.LittleEndian, m.GetId())
+    binary.Write(dataBuff, binary.LittleEndian, m.GetData())
+    return dataBuff.Bytes(), nil
+}
+func (dp </span>*DataPack) Unpack(d []<span style="color: #0000ff;">byte</span><span style="color: #000000;">) (zinterface.IMessage, error) {
+    m :</span>=<span style="color: #000000;"> NewMessage()
+    r :</span>=<span style="color: #000000;"> bytes.NewReader(d)
+    binary.Read(r, binary.LittleEndian, </span>&amp;<span style="color: #000000;">m.MsgLen)
+    binary.Read(r, binary.LittleEndian, </span>&amp;<span style="color: #000000;">m.Id)
+    return m, nil
+}</span></pre>
+</div>
+<p>测试，先封包再解包</p>
+<div class="cnblogs_code">
+<pre><code>    body:=[]<span style="color: #0000ff;">byte</span>(<span style="color: #800000;">"</span><span style="color: #800000;">nihao</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    m:</span>=<span style="color: #000000;">znet.NewMessage()
+    m.SetId(</span><span style="color: #800080;">888</span><span style="color: #000000;">)
+    m.SetData(body)
+    m.SetMsgLen(uint32(len(body)))
+    log.Println(m)
+
+    dp:</span>=<span style="color: #000000;">znet.NewDataPack()
+    dataPack,_:</span>=<span style="color: #000000;">dp.Pack(m)
+    log.Println(dataPack)
+
+    m2,_:</span>=<span style="color: #000000;">dp.Unpack(dataPack)
+    log.Println(m2)</span></pre>
+</div>
+<p>2019/12/17 15:42:30 &amp;{888 [110 105 104 97 111] 5}<br />2019/12/17 15:42:30 [5 0 0 0 120 3 0 0 110 105 104 97 111]<br />2019/12/17 15:42:30 &amp;{888 [] 5}</p>
+<p>结果就是上面的样子，解出来就可以去用了</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

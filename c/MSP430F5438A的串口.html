@@ -1,0 +1,56 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修MSP430F5438A的串口' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>MSP430F5438A的串口</center></div><div class='banquan'>原文出处:本文由博客园博主尧舜语提供。<br/>
+原文连接:https://www.cnblogs.com/yaoshunyu/p/10761987.html</div><br>
+    <div class="cnblogs_code" onclick="cnblogs_code_show('abd2c027-a6c4-4c0a-8dc6-ea70b5a53254')">设置串口，最关键的是波特率的设置，推荐一个网站，很方便地计算波特率，http://software-dl.ti.com/msp430/msp430_public_sw/mcu/msp430/MSP430BaudRateConverter/index.html
+<div class="cnblogs_code" onclick="cnblogs_code_show('abd2c027-a6c4-4c0a-8dc6-ea70b5a53254')">
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> P3SEL |= (BIT4 + BIT5);                      <span style="color: #008000;">//</span><span style="color: #008000;"> P3.4,5 = USCI_A0 TXD/RXD</span>
+<span style="color: #008080;">2</span>   UCA0CTL1 |= UCSWRST;                      <span style="color: #008000;">//</span><span style="color: #008000;"> **Put state machine in reset**</span>
+<span style="color: #008080;">3</span>   UCA0CTL1 |= UCSSEL_2;                     <span style="color: #008000;">//</span><span style="color: #008000;"> CLK = SMCLK</span>
+<span style="color: #008080;">4</span>   UCA0BR0 = <span style="color: #800080;">26</span>;                           <span style="color: #008000;">//</span><span style="color: #008000;"> 24MHz/57600=26,1,0,1</span>
+<span style="color: #008080;">5</span>   UCA0BR1 = <span style="color: #800080;">0</span>;                           <span style="color: #008000;">//
+</span><span style="color: #008080;">6</span>   UCA0MCTL = UCBRF_1+UCBRS_0+UCOS16;        <span style="color: #008000;">//</span><span style="color: #008000;"> Modulation UCBRSx=0, UCBRFx=0,UCOS16 = 1</span>
+<span style="color: #008080;">7</span>   UCA0CTL1 &amp;= ~UCSWRST;                     <span style="color: #008000;">//</span><span style="color: #008000;"> **Initialize USCI state machine**</span>
+<span style="color: #008080;">8</span>   UCA0IE |= UCRXIE;                         <span style="color: #008000;">//</span><span style="color: #008000;"> Enable USCI_A0 RX interrupt</span></code></pre>
+
+<p>&nbsp;</p>
+
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">#pragma</span> vector=USCI_A0_VECTOR<span style="color: #000000;">
+__interrupt </span><span style="color: #0000ff;">void</span> USCI_A0_ISR(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+{
+  </span><span style="color: #0000ff;">switch</span>(__even_in_range(UCA0IV,<span style="color: #800080;">4</span><span style="color: #000000;">))
+  {
+  </span><span style="color: #0000ff;">case</span> <span style="color: #800080;">0</span>:<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">case</span> <span style="color: #800080;">2</span>:<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">case</span> <span style="color: #800080;">4</span>:<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">default</span>:<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+  }
+}</span></code></pre>
+
+<p>关键就是UCA0IV 寄存器，通过看文档得知，这是 USCI_Ax Interrupt Vector Register，具体功能如下：</p>
+<p>00h = No interrupt pending，0是无中断<br />02h = Interrupt Source: Data received; Interrupt Flag: UCRXIFG; Interrupt<br />Priority: Highest，2是数据接收触发中断<br />04h = Interrupt Source: Transmit buffer empty; Interrupt Flag: UCTXIFG;<br />Interrupt Priority: Lowest，4是数据发送中断</p>
+<p>经常使用的是接收中断，没用过发送中断</p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

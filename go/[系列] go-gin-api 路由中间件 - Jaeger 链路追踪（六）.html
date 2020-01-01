@@ -1,0 +1,253 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（六）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（六）</center></div><div class='banquan'>原文出处:本文由博客园博主新亮笔记提供。<br/>
+原文连接:https://www.cnblogs.com/xinliangcoder/p/11604880.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#概述">概述</a></li>
+        <li><a href="#jaeger-部署">Jaeger 部署</a></li>
+        <li><a href="#准备测试服务">准备测试服务</a></li>
+        <li><a href="#应用示例">应用示例</a></li>
+        <li><a href="#运行">运行</a></li>
+        <li><a href="#效果">效果</a></li>
+        <li><a href="#api-源码地址">API 源码地址</a></li>
+        <li><a href="#service-源码地址">Service 源码地址</a></li>
+        <li><a href="#go-gin-api-系列文章">go-gin-api 系列文章</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="概述">概述</h2>
+<p>首先同步下项目概况：</p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（六）0.png" /></p>
+<p>上篇文章分享了，路由中间件 - Jaeger 链路追踪（理论篇），这篇文章咱们接着分享：路由中间件 - Jaeger 链路追踪（实战篇）。</p>
+<p>这篇文章，确实让大家久等了，主要是里面有一些技术点都是刚刚研究的，没有存货。</p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（六）1.png" /></p>
+<p>先看下咱们要实现的东西：</p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（六）2.png" /></p>
+<p>API 调用了 5 个服务，其中 4 个 gRPC 服务，1 个 HTTP 服务，服务与服务之间又相互调用：</p>
+<ul>
+<li>Speak 服务，又调用了 Listen 服务 和 Sing 服务。</li>
+<li>Read 服务，又调用了 Listen 服务 和 Sing 服务。</li>
+<li>Write 服务，又调用了 Listen 服务 和 Sing 服务。</li>
+</ul>
+<p>咱们要实现的就是查看 API 调用的链路。</p>
+<p>关于一些理论的东西，大家可以去看看上篇文章或查阅一些资料，这篇文章就是实现怎么用。</p>
+<p>OK，开整。</p>
+<h2 id="jaeger-部署">Jaeger 部署</h2>
+<p>咱们使用 All in one 的方式，进行本地部署。</p>
+<p>下载地址：<a href="https://www.jaegertracing.io/download/" class="uri">https://www.jaegertracing.io/download/</a></p>
+<p>我的电脑是 macOS 选择 -&gt; Binaries -&gt; macOS</p>
+<p>下载后并解压，会发现以下文件：</p>
+<ul>
+<li>example-hotrod</li>
+<li>jaeger-agent</li>
+<li>jaeger-all-in-one</li>
+<li>jaeger-collector</li>
+<li>jaeger-ingester</li>
+<li>jaeger-query</li>
+</ul>
+<p>进入到解压后的目录执行：</p>
+<pre><code><code>./jaeger-all-in-one</code></pre>
+<p>目测启动后，访问地址：</p>
+<p><a href="http://127.0.0.1:16686/" class="uri">http://127.0.0.1:16686/</a></p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（六）3.png" /></p>
+<p>到这，Jaeger 已经部署成功了。</p>
+<h2 id="准备测试服务">准备测试服务</h2>
+<p>准备的五个测试服务如下：</p>
+<h4 id="听listen">听（listen）</h4>
+<ul>
+<li>端口：9901</li>
+<li>通讯：gRPC</li>
+</ul>
+<h4 id="说speak">说（speak）</h4>
+<ul>
+<li>端口：9902</li>
+<li>通讯：gRPC</li>
+</ul>
+<h4 id="读read">读（read）</h4>
+<ul>
+<li>端口：9903</li>
+<li>通讯：gRPC</li>
+</ul>
+<h4 id="写write">写（write）</h4>
+<ul>
+<li>端口：9904</li>
+<li>通讯：gRPC</li>
+</ul>
+<h4 id="唱sing">唱（sing）</h4>
+<ul>
+<li>端口：9905</li>
+<li>通讯：HTTP</li>
+</ul>
+<p>听、说、读、写、唱，想这几个服务的名称就花了好久 ~</p>
+<p>我默认大家都会写 grpc 服务，如果不会写的，可以查看下我原来的文章《<a href="https://mp.weixin.qq.com/s/MrlrK3xsjYYAW4JInXuHwg">Go gRPC Hello World</a>》。</p>
+<h2 id="应用示例">应用示例</h2>
+<h4 id="实例化-tracer">实例化 Tracer</h4>
+<pre><code><code>func NewJaegerTracer(serviceName string, jaegerHostPort string) (opentracing.Tracer, io.Closer, error) {
+
+    cfg := &amp;jaegerConfig.Configuration {
+        Sampler: &amp;jaegerConfig.SamplerConfig{
+            Type  : &quot;const&quot;, //固定采样
+            Param : 1,       //1=全采样、0=不采样
+        },
+
+        Reporter: &amp;jaegerConfig.ReporterConfig{
+            LogSpans           : true,
+            LocalAgentHostPort : jaegerHostPort,
+        },
+
+        ServiceName: serviceName,
+    }
+
+    tracer, closer, err := cfg.NewTracer(jaegerConfig.Logger(jaeger.StdLogger))
+    if err != nil {
+        panic(fmt.Sprintf(&quot;ERROR: cannot init Jaeger: %v\n&quot;, err))
+    }
+    opentracing.SetGlobalTracer(tracer)
+    return tracer, closer, err
+}</code></pre>
+<h4 id="http-注入">HTTP 注入</h4>
+<pre><code><code>injectErr := jaeger.Tracer.Inject(span.Context(), opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(req.Header))
+if injectErr != nil {
+    log.Fatalf(&quot;%s: Couldn&#39;t inject headers&quot;, err)
+}</code></pre>
+<h4 id="http-拦截">HTTP 拦截</h4>
+<pre><code><code>spCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(c.Request.Header))
+if err != nil {
+    ParentSpan = Tracer.StartSpan(c.Request.URL.Path)
+    defer ParentSpan.Finish()
+} else {
+    ParentSpan = opentracing.StartSpan(
+        c.Request.URL.Path,
+        opentracing.ChildOf(spCtx),
+        opentracing.Tag{Key: string(ext.Component), Value: &quot;HTTP&quot;},
+        ext.SpanKindRPCServer,
+    )
+    defer ParentSpan.Finish()
+}</code></pre>
+<h4 id="grpc-注入">gRPC 注入</h4>
+<pre><code><code>func ClientInterceptor(tracer opentracing.Tracer, spanContext opentracing.SpanContext) grpc.UnaryClientInterceptor {
+    return func(ctx context.Context, method string,
+        req, reply interface{}, cc *grpc.ClientConn,
+        invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+
+        span := opentracing.StartSpan(
+            &quot;call gRPC&quot;,
+            opentracing.ChildOf(spanContext),
+            opentracing.Tag{Key: string(ext.Component), Value: &quot;gRPC&quot;},
+            ext.SpanKindRPCClient,
+        )
+
+        defer span.Finish()
+
+        md, ok := metadata.FromOutgoingContext(ctx)
+        if !ok {
+            md = metadata.New(nil)
+        } else {
+            md = md.Copy()
+        }
+
+        err := tracer.Inject(span.Context(), opentracing.TextMap, MDReaderWriter{md})
+        if err != nil {
+            span.LogFields(log.String(&quot;inject-error&quot;, err.Error()))
+        }
+
+        newCtx := metadata.NewOutgoingContext(ctx, md)
+        err = invoker(newCtx, method, req, reply, cc, opts...)
+        if err != nil {
+            span.LogFields(log.String(&quot;call-error&quot;, err.Error()))
+        }
+        return err
+    }
+}</code></pre>
+<h4 id="grpc-拦截">gRPC 拦截</h4>
+<pre><code><code>func serverInterceptor(tracer opentracing.Tracer) grpc.UnaryServerInterceptor {
+    return func(ctx context.Context,
+        req interface{},
+        info *grpc.UnaryServerInfo,
+        handler grpc.UnaryHandler) (resp interface{}, err error) {
+
+        md, ok := metadata.FromIncomingContext(ctx)
+        if !ok {
+            md = metadata.New(nil)
+        }
+
+        spanContext, err := tracer.Extract(opentracing.TextMap, MDReaderWriter{md})
+        if err != nil &amp;&amp; err != opentracing.ErrSpanContextNotFound {
+            grpclog.Errorf(&quot;extract from metadata err: %v&quot;, err)
+        } else {
+            span := tracer.StartSpan(
+                info.FullMethod,
+                ext.RPCServerOption(spanContext),
+                opentracing.Tag{Key: string(ext.Component), Value: &quot;gRPC&quot;},
+                ext.SpanKindRPCServer,
+            )
+            defer span.Finish()
+
+            ParentContext = opentracing.ContextWithSpan(ctx, span)
+        }
+
+        return handler(ParentContext, req)
+    }
+}</code></pre>
+<p>上面是一些核心的代码，涉及到的全部代码我都会上传到 github，供下载。</p>
+<h2 id="运行">运行</h2>
+<h4 id="启动服务">启动服务</h4>
+<pre><code><code>// 启动 Listen 服务
+cd listen &amp;&amp; go run main.go
+
+// 启动 Speak 服务
+cd speak &amp;&amp; go run main.go
+
+// 启动 Read 服务
+cd read &amp;&amp; go run main.go
+
+// 启动 Write 服务
+cd write &amp;&amp; go run main.go
+
+// 启动 Sing 服务
+cd sing &amp;&amp; go run main.go
+
+// 启动 go-gin-api 服务
+cd go-gin-api &amp;&amp; go run main.go</code></pre>
+<h4 id="访问路由">访问路由</h4>
+<p><a href="http://127.0.0.1:9999/jaeger_test" class="uri">http://127.0.0.1:9999/jaeger_test</a></p>
+<h2 id="效果">效果</h2>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（六）4.png" /></p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（六）5.png" /></p>
+<p>就到这吧。</p>
+<h2 id="api-源码地址">API 源码地址</h2>
+<p><a href="https://github.com/xinliangnote/go-gin-api" class="uri">https://github.com/xinliangnote/go-gin-api</a></p>
+<h2 id="service-源码地址">Service 源码地址</h2>
+<p><a href="https://github.com/xinliangnote/go-jaeger-demo" class="uri">https://github.com/xinliangnote/go-jaeger-demo</a></p>
+<h2 id="go-gin-api-系列文章">go-gin-api 系列文章</h2>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s/1XNTEgZ0XGZZdxFOfR5f_A">1. 使用 go modules 初始化项目</a></li>
+<li><a href="https://mp.weixin.qq.com/s/11AuXptWGmL5QfiJArNLnA">2. 规划项目目录和参数验证</a></li>
+<li><a href="https://mp.weixin.qq.com/s/eTygPXnrYM2xfrRQyfn8Tg">3. 路由中间件 - 日志记录</a></li>
+<li><a href="https://mp.weixin.qq.com/s/SconDXB_x7Gan6T0Awdh9A">4. 路由中间件 - 捕获异常</a></li>
+<li><a href="https://mp.weixin.qq.com/s/28UBEsLOAHDv530ePilKQA">5. 路由中间件 - Jaeger 链路追踪（理论篇）</a></li>
+</ul>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

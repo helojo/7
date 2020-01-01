@@ -1,0 +1,274 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修【算法导论】--分治策略Strassen算法（运用下标运算）【c++】' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>【算法导论】--分治策略Strassen算法（运用下标运算）【c++】</center></div><div class='banquan'>原文出处:本文由博客园博主凶恶的真实提供。<br/>
+原文连接:https://www.cnblogs.com/OneStargazer/p/11289874.html</div><br>
+    <p>由于偷懒不想用泛型，所以直接用了整型来写了一份</p>
+<p>①首先你得有一个矩阵的class Matrix</p>
+<p>②Matrix为了方便用下标进行运算，</p>
+<p>Matrix的结构如图：(我知道我的字丑。。。)</p>
+<p><img src="./images/【算法导论】--分治策略Strassen算法（运用下标运算）【c++】0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;Matrix.h代码如下：(个人并不喜欢把代码全写在一块，对于阅读者是相当巨大的负担，其实自己受不了（逃）)</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">#pragma</span> once
+<span style="color: #008080;"> 2</span> #include&lt;vector&gt;
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Matrix
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 7</span>     vector&lt;vector&lt;<span style="color: #0000ff;">int</span>&gt;&gt;<span style="color: #000000;"> nums;
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> x0, y0;
+</span><span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> size;
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    Matrix();
+</span><span style="color: #008080;">12</span>     ~<span style="color: #000000;">Matrix();
+</span><span style="color: #008080;">13</span>     Matrix(<span style="color: #0000ff;">int</span> size, <span style="color: #0000ff;">int</span> x0, <span style="color: #0000ff;">int</span><span style="color: #000000;"> y0);
+</span><span style="color: #008080;">14</span>     Matrix(Matrix input, <span style="color: #0000ff;">int</span> x0, <span style="color: #0000ff;">int</span> y0, <span style="color: #0000ff;">int</span><span style="color: #000000;"> size);
+</span><span style="color: #008080;">15</span>     Matrix(vector&lt;vector&lt;<span style="color: #0000ff;">int</span>&gt;&gt;<span style="color: #000000;">input);
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> Display();
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> MatrixMultiInit(Matrix &amp;A, Matrix &amp;<span style="color: #000000;">B);
+</span><span style="color: #008080;">18</span>     <span style="color: #0000ff;">static</span><span style="color: #000000;"> Matrix MatrixMulti(Matrix A, Matrix B);
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">static</span><span style="color: #000000;"> Matrix MatrixAdd(Matrix A, Matrix B);
+</span><span style="color: #008080;">20</span>     <span style="color: #0000ff;">static</span><span style="color: #000000;"> Matrix MatrixSub(Matrix A, Matrix B);
+</span><span style="color: #008080;">21</span> };</pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>Matrix.cpp对类的实现<br /><br /></p>
+<p>一，构造，析构函数</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">Matrix::Matrix()
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> Matrix::~<span style="color: #000000;">Matrix()
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span> Matrix::Matrix(<span style="color: #0000ff;">int</span> size, <span style="color: #0000ff;">int</span> x0, <span style="color: #0000ff;">int</span><span style="color: #000000;"> y0)
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">12</span>     vector&lt;vector&lt;<span style="color: #0000ff;">int</span>&gt;&gt; temp(size, *<span style="color: #0000ff;">new</span> vector&lt;<span style="color: #0000ff;">int</span>&gt;<span style="color: #000000;">(size));
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; size; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">14</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; size; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">15</span>             temp[i][j] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">this</span>-&gt;nums =<span style="color: #000000;"> temp;
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">this</span>-&gt;x0 =<span style="color: #000000;"> x0;
+</span><span style="color: #008080;">18</span>     <span style="color: #0000ff;">this</span>-&gt;y0 =<span style="color: #000000;"> y0;
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">this</span>-&gt;size =<span style="color: #000000;"> size;
+</span><span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span> Matrix::Matrix(Matrix input, <span style="color: #0000ff;">int</span> x0, <span style="color: #0000ff;">int</span> y0, <span style="color: #0000ff;">int</span><span style="color: #000000;"> size)
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">25</span>     <span style="color: #0000ff;">this</span>-&gt;nums =<span style="color: #000000;"> input.nums;
+</span><span style="color: #008080;">26</span>     <span style="color: #0000ff;">this</span>-&gt;x0 =<span style="color: #000000;"> x0;
+</span><span style="color: #008080;">27</span>     <span style="color: #0000ff;">this</span>-&gt;y0 =<span style="color: #000000;"> y0;
+</span><span style="color: #008080;">28</span>     <span style="color: #0000ff;">this</span>-&gt;size =<span style="color: #000000;"> size;
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">30</span> 
+<span style="color: #008080;">31</span> Matrix::Matrix(vector&lt;vector&lt;<span style="color: #0000ff;">int</span>&gt;&gt;<span style="color: #000000;"> input)
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">33</span>     <span style="color: #0000ff;">this</span>-&gt;nums =<span style="color: #000000;"> input;
+</span><span style="color: #008080;">34</span>     <span style="color: #0000ff;">this</span>-&gt;x0 = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">35</span>     <span style="color: #0000ff;">this</span>-&gt;y0 = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">36</span>     <span style="color: #0000ff;">this</span>-&gt;size =<span style="color: #000000;"> input.size();
+</span><span style="color: #008080;">37</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>二，A+B，A-B实现</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">Matrix Matrix::MatrixAdd(Matrix A, Matrix B)
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span>     Matrix result(A.size, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; result.nums.size(); i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 5</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; result.nums.size(); j++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 6</span>             result.nums[i][j] = A.nums[A.x0 + i][A.y0 + j] + B.nums[B.x0 + i][B.y0 +<span style="color: #000000;"> j];
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> result;
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span> <span style="color: #000000;">Matrix Matrix::MatrixSub(Matrix A, Matrix B)
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span>     Matrix result(A.size, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; result.nums.size(); i++<span style="color: #000000;">)
+</span><span style="color: #008080;">15</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; result.nums.size(); j++<span style="color: #000000;">)
+</span><span style="color: #008080;">16</span>             result.nums[i][j] = A.nums[A.x0 + i][A.y0 + j] - B.nums[B.x0 + i][B.y0 +<span style="color: #000000;"> j];
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> result;
+</span><span style="color: #008080;">18</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>三，A*B的实现</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">Matrix Matrix::MatrixMulti(Matrix A, Matrix B)
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">int</span> n =<span style="color: #000000;"> A.size;
+</span><span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">int</span> halfsize =n / <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 5</span>     Matrix result(n, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">if</span> (n == <span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 7</span>         result.nums[<span style="color: #800080;">0</span>][<span style="color: #800080;">0</span>] = A.nums[A.x0][A.y0] *<span style="color: #000000;"> B.nums[B.x0][B.y0];
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 9</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">10</span>         Matrix tempS[<span style="color: #800080;">10</span><span style="color: #000000;">];
+</span><span style="color: #008080;">11</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">10</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">13</span>             tempS[i] = *<span style="color: #0000ff;">new</span> Matrix(halfsize, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">15</span> 
+<span style="color: #008080;">16</span>         <span style="color: #008000;">//</span><span style="color: #008000;">00--  A.x0,A.y0,halfsize
+</span><span style="color: #008080;">17</span>         <span style="color: #008000;">//</span><span style="color: #008000;">01-- A.x0,A.y0+halfsize,halfsize
+</span><span style="color: #008080;">18</span>         <span style="color: #008000;">//</span><span style="color: #008000;">10--  A.x0+halfsize,A.y0,halfsize
+</span><span style="color: #008080;">19</span>         <span style="color: #008000;">//</span><span style="color: #008000;">11--    A.x0+halfsize,A.y0+halfsize,halfsize
+</span><span style="color: #008080;">20</span>                 
+<span style="color: #008080;">21</span>         <span style="color: #008000;">//</span><span style="color: #008000;">00-- B.x0,B.y0,halfsize
+</span><span style="color: #008080;">22</span>         <span style="color: #008000;">//</span><span style="color: #008000;">01-- B.x0,B.y0+halfsize,halfsize
+</span><span style="color: #008080;">23</span>         <span style="color: #008000;">//</span><span style="color: #008000;">10-- B.x0+halfsize,B.y0,halfsize
+</span><span style="color: #008080;">24</span>         <span style="color: #008000;">//</span><span style="color: #008000;">11--    B.x0+halfsize,B.y0+halfsize,halfsize</span>
+<span style="color: #008080;">25</span>         tempS[<span style="color: #800080;">0</span>] = tempS[<span style="color: #800080;">0</span>].MatrixSub(*<span style="color: #0000ff;">new</span> Matrix(B, B.x0, B.y0 + halfsize, halfsize), *<span style="color: #0000ff;">new</span> Matrix(B, B.x0 + halfsize, B.y0 + halfsize, halfsize));<span style="color: #008000;">//</span><span style="color: #008000;">01-11 B</span>
+<span style="color: #008080;">26</span>         tempS[<span style="color: #800080;">1</span>] = tempS[<span style="color: #800080;">1</span>].MatrixAdd(*<span style="color: #0000ff;">new</span> Matrix(A, A.x0, A.y0, halfsize), *<span style="color: #0000ff;">new</span> Matrix(A, A.x0, A.y0 + halfsize, halfsize));<span style="color: #008000;">//</span><span style="color: #008000;">00+01 A</span>
+<span style="color: #008080;">27</span>         tempS[<span style="color: #800080;">2</span>] = tempS[<span style="color: #800080;">2</span>].MatrixAdd(*<span style="color: #0000ff;">new</span> Matrix(A, A.x0 + halfsize, A.y0, halfsize), *<span style="color: #0000ff;">new</span> Matrix(A, A.x0 + halfsize, A.y0 + halfsize, halfsize));<span style="color: #008000;">//</span><span style="color: #008000;">10+11 A</span>
+<span style="color: #008080;">28</span>         tempS[<span style="color: #800080;">3</span>] = tempS[<span style="color: #800080;">3</span>].MatrixSub(*<span style="color: #0000ff;">new</span> Matrix(B, B.x0 + halfsize, B.y0, halfsize), *<span style="color: #0000ff;">new</span> Matrix(B, B.x0, B.y0, halfsize));<span style="color: #008000;">//</span><span style="color: #008000;">10-00 B</span>
+<span style="color: #008080;">29</span>         tempS[<span style="color: #800080;">4</span>] = tempS[<span style="color: #800080;">4</span>].MatrixAdd(*<span style="color: #0000ff;">new</span> Matrix(A, A.x0, A.y0, halfsize), *<span style="color: #0000ff;">new</span> Matrix(A, A.x0 + halfsize, A.y0 + halfsize, halfsize));<span style="color: #008000;">//</span><span style="color: #008000;">00+11 A</span>
+<span style="color: #008080;">30</span>         tempS[<span style="color: #800080;">5</span>] = tempS[<span style="color: #800080;">5</span>].MatrixAdd(*<span style="color: #0000ff;">new</span> Matrix(B, B.x0, B.y0, halfsize), *<span style="color: #0000ff;">new</span> Matrix(B, B.x0 + halfsize, B.y0 + halfsize, halfsize));<span style="color: #008000;">//</span><span style="color: #008000;">00+11 B</span>
+<span style="color: #008080;">31</span>         tempS[<span style="color: #800080;">6</span>] = tempS[<span style="color: #800080;">6</span>].MatrixSub(*<span style="color: #0000ff;">new</span> Matrix(A, A.x0, A.y0 + halfsize, halfsize), *<span style="color: #0000ff;">new</span> Matrix(A, A.x0 + halfsize, A.y0 + halfsize, halfsize));<span style="color: #008000;">//</span><span style="color: #008000;">01-11 A</span>
+<span style="color: #008080;">32</span>         tempS[<span style="color: #800080;">7</span>] = tempS[<span style="color: #800080;">7</span>].MatrixAdd(*<span style="color: #0000ff;">new</span> Matrix(B, B.x0 + halfsize, B.y0, halfsize), *<span style="color: #0000ff;">new</span> Matrix(B, B.x0 + halfsize, B.y0 + halfsize, halfsize));<span style="color: #008000;">//</span><span style="color: #008000;">10+11 B</span>
+<span style="color: #008080;">33</span>         tempS[<span style="color: #800080;">8</span>] = tempS[<span style="color: #800080;">8</span>].MatrixSub(*<span style="color: #0000ff;">new</span> Matrix(A, A.x0, A.y0, halfsize), *<span style="color: #0000ff;">new</span> Matrix(A, A.x0 + halfsize, A.y0, halfsize));<span style="color: #008000;">//</span><span style="color: #008000;">00-10 A</span>
+<span style="color: #008080;">34</span>         tempS[<span style="color: #800080;">9</span>] = tempS[<span style="color: #800080;">9</span>].MatrixAdd(*<span style="color: #0000ff;">new</span> Matrix(B, B.x0, B.y0, halfsize), *<span style="color: #0000ff;">new</span> Matrix(B, B.x0, B.y0 + halfsize, halfsize));<span style="color: #008000;">//</span><span style="color: #008000;">00+01 B</span>
+<span style="color: #008080;">35</span> 
+<span style="color: #008080;">36</span> 
+<span style="color: #008080;">37</span>         Matrix tempP[<span style="color: #800080;">7</span><span style="color: #000000;">];
+</span><span style="color: #008080;">38</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">7</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">39</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">40</span>             tempP[i] = *<span style="color: #0000ff;">new</span> Matrix(n / <span style="color: #800080;">2</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">42</span>         tempP[<span style="color: #800080;">0</span>] = tempP[<span style="color: #800080;">0</span>].MatrixMulti(*<span style="color: #0000ff;">new</span> Matrix(A, A.x0, A.y0, halfsize), *<span style="color: #0000ff;">new</span> Matrix(tempS[<span style="color: #800080;">0</span>], <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">, halfsize));
+</span><span style="color: #008080;">43</span>         tempP[<span style="color: #800080;">1</span>] = tempP[<span style="color: #800080;">1</span>].MatrixMulti(*<span style="color: #0000ff;">new</span> Matrix(tempS[<span style="color: #800080;">1</span>], <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>,halfsize), *<span style="color: #0000ff;">new</span> Matrix(B, B.x0 + halfsize, B.y0 +<span style="color: #000000;"> halfsize, halfsize));
+</span><span style="color: #008080;">44</span>         tempP[<span style="color: #800080;">2</span>] = tempP[<span style="color: #800080;">2</span>].MatrixMulti(*<span style="color: #0000ff;">new</span> Matrix(tempS[<span style="color: #800080;">2</span>], <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, halfsize), *<span style="color: #0000ff;">new</span><span style="color: #000000;"> Matrix(B, B.x0, B.y0, halfsize));
+</span><span style="color: #008080;">45</span>         tempP[<span style="color: #800080;">3</span>] = tempP[<span style="color: #800080;">3</span>].MatrixMulti(*<span style="color: #0000ff;">new</span> Matrix(A, A.x0 + halfsize, A.y0 + halfsize, halfsize), *<span style="color: #0000ff;">new</span> Matrix(tempS[<span style="color: #800080;">3</span>], <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">, halfsize));
+</span><span style="color: #008080;">46</span>         tempP[<span style="color: #800080;">4</span>] = tempP[<span style="color: #800080;">4</span>].MatrixMulti(*<span style="color: #0000ff;">new</span> Matrix(tempS[<span style="color: #800080;">4</span>], <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, halfsize), *<span style="color: #0000ff;">new</span> Matrix(tempS[<span style="color: #800080;">5</span>], <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">, halfsize));
+</span><span style="color: #008080;">47</span>         tempP[<span style="color: #800080;">5</span>] = tempP[<span style="color: #800080;">5</span>].MatrixMulti(*<span style="color: #0000ff;">new</span> Matrix(tempS[<span style="color: #800080;">6</span>], <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, halfsize), *<span style="color: #0000ff;">new</span> Matrix(tempS[<span style="color: #800080;">7</span>], <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">, halfsize));
+</span><span style="color: #008080;">48</span>         tempP[<span style="color: #800080;">6</span>] = tempP[<span style="color: #800080;">6</span>].MatrixMulti(*<span style="color: #0000ff;">new</span> Matrix(tempS[<span style="color: #800080;">8</span>], <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, halfsize), *<span style="color: #0000ff;">new</span> Matrix(tempS[<span style="color: #800080;">9</span>], <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">, halfsize));
+</span><span style="color: #008080;">49</span> 
+<span style="color: #008080;">50</span> 
+<span style="color: #008080;">51</span> 
+<span style="color: #008080;">52</span>         Matrix result00 = result00.MatrixAdd(tempP[<span style="color: #800080;">4</span>], tempP[<span style="color: #800080;">3</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">53</span>         result00 = result00.MatrixSub(result00, tempP[<span style="color: #800080;">1</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">54</span>         result00 = result00.MatrixAdd(result00, tempP[<span style="color: #800080;">5</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">55</span>         Matrix result01 = result01.MatrixAdd(tempP[<span style="color: #800080;">0</span>], tempP[<span style="color: #800080;">1</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">56</span>         Matrix result10 = result10.MatrixAdd(tempP[<span style="color: #800080;">2</span>], tempP[<span style="color: #800080;">3</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">57</span>         Matrix result11 = result11.MatrixAdd(tempP[<span style="color: #800080;">4</span>], tempP[<span style="color: #800080;">0</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">58</span>         result11 = result11.MatrixSub(result11, tempP[<span style="color: #800080;">2</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">59</span>         result11 = result11.MatrixSub(result11, tempP[<span style="color: #800080;">6</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">60</span> 
+<span style="color: #008080;">61</span>         <span style="color: #0000ff;">if</span> (n == <span style="color: #800080;">3</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">62</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;n/<span style="color: #800080;">2</span>+<span style="color: #800080;">1</span>;i++<span style="color: #000000;">)
+</span><span style="color: #008080;">63</span>             <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; n / <span style="color: #800080;">2</span> + <span style="color: #800080;">1</span>; j++<span style="color: #000000;">) {
+</span><span style="color: #008080;">64</span>             
+<span style="color: #008080;">65</span>             result.nums[i][j]=<span style="color: #000000;"> result00.nums[i][j];
+</span><span style="color: #008080;">66</span>             result.nums[i][j+n/<span style="color: #800080;">2</span>+<span style="color: #800080;">1</span>] =<span style="color: #000000;"> result01.nums[i][j];
+</span><span style="color: #008080;">67</span>             result.nums[i+n/<span style="color: #800080;">2</span>+<span style="color: #800080;">1</span>][j] =<span style="color: #000000;"> result10.nums[i][j];
+</span><span style="color: #008080;">68</span>             result.nums[i+n/<span style="color: #800080;">2</span>+<span style="color: #800080;">1</span>][j+n/<span style="color: #800080;">2</span>+<span style="color: #800080;">1</span>] =<span style="color: #000000;"> result11.nums[i][j];
+</span><span style="color: #008080;">69</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">70</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">71</span> 
+<span style="color: #008080;">72</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;n/<span style="color: #800080;">2</span>;i++<span style="color: #000000;">)
+</span><span style="color: #008080;">73</span>             <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; n / <span style="color: #800080;">2</span>; j++<span style="color: #000000;">) {
+</span><span style="color: #008080;">74</span>             
+<span style="color: #008080;">75</span>             result.nums[i][j]=<span style="color: #000000;"> result00.nums[i][j];
+</span><span style="color: #008080;">76</span>             result.nums[i][j+n/<span style="color: #800080;">2</span>] =<span style="color: #000000;"> result01.nums[i][j];
+</span><span style="color: #008080;">77</span>             result.nums[i+n/<span style="color: #800080;">2</span>][j] =<span style="color: #000000;"> result10.nums[i][j];
+</span><span style="color: #008080;">78</span>             result.nums[i+n/<span style="color: #800080;">2</span>][j+n/<span style="color: #800080;">2</span>] =<span style="color: #000000;"> result11.nums[i][j];
+</span><span style="color: #008080;">79</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">80</span> 
+<span style="color: #008080;">81</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">82</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> result;
+</span><span style="color: #008080;">83</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>四，防止size%2！=0的处理函数（即矩阵的行列数为奇数）</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">void</span> Matrix::MatrixMultiInit(Matrix &amp;A, Matrix &amp;<span style="color: #000000;">B) {
+</span><span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">if</span> (A.nums.size() % <span style="color: #800080;">2</span> != <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 5</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; A.nums.size(); i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 6</span>             A.nums[i].push_back(<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 7</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; B.nums.size(); i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 8</span>             B.nums[i].push_back(<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 9</span>         A.nums.push_back(*<span style="color: #0000ff;">new</span> vector&lt;<span style="color: #0000ff;">int</span>&gt;(A.nums[<span style="color: #800080;">0</span>].size(), <span style="color: #800080;">0</span><span style="color: #000000;">));
+</span><span style="color: #008080;">10</span>         B.nums.push_back(*<span style="color: #0000ff;">new</span> vector&lt;<span style="color: #0000ff;">int</span>&gt;(B.nums[<span style="color: #800080;">0</span>].size(), <span style="color: #800080;">0</span><span style="color: #000000;">));
+</span><span style="color: #008080;">11</span>         A.size++<span style="color: #000000;">;
+</span><span style="color: #008080;">12</span>         B.size++<span style="color: #000000;">;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">14</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>五，输出函数（这个读者随意）</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Matrix::Display()
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #0000ff;">this</span>-&gt;nums.size(); i++<span style="color: #000000;">) {
+</span><span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">||</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 6</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #0000ff;">this</span>-&gt;nums[i].size(); j++<span style="color: #000000;">) {
+</span><span style="color: #008080;"> 7</span>             cout &lt;&lt; <span style="color: #0000ff;">this</span>-&gt;nums[i][j] &lt;&lt; <span style="color: #800000;">"</span> <span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 9</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">||</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">12</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>六，测试函数</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include<span style="color: #800000;">"</span><span style="color: #800000;">Matrix.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     vector&lt;vector&lt;<span style="color: #0000ff;">int</span>&gt;&gt; input =<span style="color: #000000;"> { 
+</span><span style="color: #008080;"> 6</span>         {<span style="color: #800080;">1</span>,<span style="color: #800080;">2</span>,<span style="color: #800080;">3</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 7</span>         {<span style="color: #800080;">1</span>,<span style="color: #800080;">2</span>,<span style="color: #800080;">3</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 8</span>         {<span style="color: #800080;">1</span>,<span style="color: #800080;">1</span>,<span style="color: #800080;">1</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    };
+</span><span style="color: #008080;">10</span>     Matrix test0 <span style="color: #000000;">(input);
+</span><span style="color: #008080;">11</span>     Matrix test1 <span style="color: #000000;">(input);
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    Matrix test2;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    test2.MatrixMultiInit(test0, test1);
+</span><span style="color: #008080;">14</span>     test2=<span style="color: #000000;"> test2.MatrixMulti(test0, test1);
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    test2.Display();
+</span><span style="color: #008080;">16</span> 
+<span style="color: #008080;">17</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>本人比较愚笨，耗时一天半才完成，不知道是不是天气热的原因，人太燥了，沉不下心来思考bug。</p>
+<p>&nbsp;</p>
+<p>A*B有一点需要注意的是分块的逻辑应该怎么表示，一开始我用了两个顶点来表示一个矩阵的分块，如图：</p>
+<p><img src="./images/【算法导论】--分治策略Strassen算法（运用下标运算）【c++】1.png" alt="" /></p>
+<p>然后halfsize还得一个一个的算，然后自己敲错的几率还会加大，并且还不一定表示正确每个分块，然后就逼疯自己了。</p>
+<p>感觉这两天被这一堆bug都弄自闭了。。。。</p>
+<p>幸好还是撑过来了，这算是我啃算法导论的第一个坎吧。</p>
+<p>幸好第二天在csdn里面看到了别人怎么分块的。看到了一个变量halfsize，于是才开始改自己Matrix的构造。</p>
+<p>虽然一开始不愿意，但是改完之后，竟然一次过了！woc！</p>
+<p>给我了一个教训，以后能&ldquo;少&rdquo;一个变量尽量&ldquo;少&rdquo;一个变量。</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

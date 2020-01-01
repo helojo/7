@@ -1,0 +1,241 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修day21' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>day21</center></div><div class='banquan'>原文出处:本文由博客园博主Frost_Delay提供。<br/>
+原文连接:https://www.cnblogs.com/Frost-Delay/p/day21.html</div><br>
+    <p>好难，得分40/400；</p>
+<p><span style="text-decoration: line-through;">加个0不就满分了吗</span></p>
+<p><a href="https://gmoj.net/senior/#main/show/3514" target="_blank">T1</a>写了个最小生成树，但没有考虑完全；</p>
+<p>题意：从N个点中取M个点生成一棵最小生成树，使他的边权与点权的比值最小；</p>
+<p>由于N及其小，可以枚举取哪些点来做一棵最小生成树；</p>
+<p>为了避免精度问题，可以考虑去分母变成乘法</p>
+<p>代码</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('aaebe557-767b-406e-8281-b41043fceeb3')"><img id="code_img_closed_aaebe557-767b-406e-8281-b41043fceeb3" class="code_img_closed" src="./images/day210.png" alt="" /><img id="code_img_opened_aaebe557-767b-406e-8281-b41043fceeb3" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('aaebe557-767b-406e-8281-b41043fceeb3',event)" src="./images/day211.png" alt="" />
+<div id="cnblogs_code_open_aaebe557-767b-406e-8281-b41043fceeb3" class="cnblogs_code_hide">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;cstdio&gt;<span style="color: #000000;">
+#include</span>&lt;algorithm&gt;<span style="color: #000000;">
+#include</span>&lt;cctype&gt;<span style="color: #000000;">
+#include</span>&lt;cstring&gt;
+<span style="color: #0000ff;">#define</span> oyy main
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+inline </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> read()
+{
+    </span><span style="color: #0000ff;">int</span> x=<span style="color: #800080;">0</span>,f=<span style="color: #800080;">1</span>;<span style="color: #0000ff;">char</span> c=<span style="color: #000000;">getchar();
+    </span><span style="color: #0000ff;">while</span>(!isdigit(c)){<span style="color: #0000ff;">if</span>(c==<span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span>)f=-<span style="color: #800080;">1</span>;c=<span style="color: #000000;">getchar();}
+    </span><span style="color: #0000ff;">while</span>(isdigit(c)){x=(x&lt;&lt;<span style="color: #800080;">3</span>)+(x&lt;&lt;<span style="color: #800080;">1</span>)+(c^<span style="color: #800080;">48</span>);c=<span style="color: #000000;">getchar();}
+    </span><span style="color: #0000ff;">return</span> x*<span style="color: #000000;">f;
+}
+</span><span style="color: #0000ff;">int</span> w[<span style="color: #800080;">20</span><span style="color: #000000;">],m,n;
+</span><span style="color: #0000ff;">int</span> mp[<span style="color: #800080;">20</span>][<span style="color: #800080;">20</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span> ans[<span style="color: #800080;">20</span>],v[<span style="color: #800080;">20</span>],temp[<span style="color: #800080;">20</span>],ans1=<span style="color: #800080;">1</span>,ans2=<span style="color: #800080;">1</span><span style="color: #000000;">,bq,dq;
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> prime()
+{
+    </span><span style="color: #0000ff;">int</span> d[<span style="color: #800080;">20</span>]={},vv[<span style="color: #800080;">20</span>]=<span style="color: #000000;">{};
+    memset(d,</span><span style="color: #800080;">0x3f</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(d));
+    d[temp[</span><span style="color: #800080;">1</span>]]=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=m;i++<span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">int</span> k=<span style="color: #800080;">0</span>,minn=<span style="color: #800080;">0x7ffff</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>;j&lt;=m;j++<span style="color: #000000;">)
+        </span><span style="color: #0000ff;">if</span>(!vv[temp[j]]&amp;&amp;minn&gt;<span style="color: #000000;">d[temp[j]])
+        {
+            minn</span>=d[temp[j]];k=<span style="color: #000000;">temp[j];
+        }
+        vv[k]</span>=<span style="color: #800080;">1</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>;j&lt;=m;j++<span style="color: #000000;">)
+        </span><span style="color: #0000ff;">if</span>(!vv[temp[j]]&amp;&amp;d[temp[j]]&gt;mp[k][temp[j]])d[temp[j]]=<span style="color: #000000;">mp[k][temp[j]];
+    }
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=m;i++<span style="color: #000000;">)
+    {
+        bq</span>+=<span style="color: #000000;">d[temp[i]];
+        dq</span>+=<span style="color: #000000;">w[temp[i]];
+    }
+    </span><span style="color: #0000ff;">if</span>(bq*ans2&lt;dq*<span style="color: #000000;">ans1)
+    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=m;i++<span style="color: #000000;">)
+        ans[i]</span>=<span style="color: #000000;">temp[i];
+        ans1</span>=<span style="color: #000000;">bq;
+        ans2</span>=<span style="color: #000000;">dq;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;">;
+}
+</span><span style="color: #0000ff;">void</span> dfs(<span style="color: #0000ff;">int</span> x,<span style="color: #0000ff;">int</span><span style="color: #000000;"> i)
+{
+    </span><span style="color: #0000ff;">if</span>(x==<span style="color: #000000;">m)
+    {
+        bq</span>=<span style="color: #800080;">0</span>;dq=<span style="color: #800080;">0</span><span style="color: #000000;">;
+        prime();
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;">;
+    }
+    i</span>++<span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(;i&lt;=n;i++<span style="color: #000000;">)
+        </span><span style="color: #0000ff;">if</span>(!<span style="color: #000000;">v[i])
+        {
+            x</span>++<span style="color: #000000;">;
+            temp[x]</span>=<span style="color: #000000;">i;
+            v[i]</span>=<span style="color: #800080;">1</span><span style="color: #000000;">;
+            dfs(x,i);
+            temp[x]</span>=<span style="color: #800080;">0</span><span style="color: #000000;">;
+            v[i]</span>=<span style="color: #800080;">0</span><span style="color: #000000;">;
+            x</span>--<span style="color: #000000;">;
+        }
+}
+inline </span><span style="color: #0000ff;">int</span> cmp(<span style="color: #0000ff;">int</span> x,<span style="color: #0000ff;">int</span> y){<span style="color: #0000ff;">return</span> x&lt;<span style="color: #000000;">y;}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> oyy()
+{
+    freopen(</span><span style="color: #800000;">"</span><span style="color: #800000;">ratio.in</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">r</span><span style="color: #800000;">"</span>,stdin);freopen(<span style="color: #800000;">"</span><span style="color: #800000;">ratio.out</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">w</span><span style="color: #800000;">"</span><span style="color: #000000;">,stdout);
+    n</span>=read();m=<span style="color: #000000;">read();
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">)
+    w[i]</span>=<span style="color: #000000;">read();
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>;j&lt;=n;j++<span style="color: #000000;">){
+    mp[i][j]</span>=read();<span style="color: #0000ff;">if</span>(i==j)mp[i][j]=<span style="color: #800080;">0x7ffff</span><span style="color: #000000;">;}
+    dfs(</span><span style="color: #800080;">0</span>,<span style="color: #800080;">0</span><span style="color: #000000;">);
+    sort(ans</span>+<span style="color: #800080;">1</span>,ans+m+<span style="color: #800080;">1</span><span style="color: #000000;">,cmp);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=m;i++<span style="color: #000000;">)
+    cout</span>&lt;&lt;ans[i]&lt;&lt;<span style="color: #800000;">"</span> <span style="color: #800000;">"</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>&nbsp;<a href="https://gmoj.net/senior/#main/show/3515" target="_blank">T2</a>二分答案！；</p>
+<p>时间只在1~10000；</p>
+<p>设 $f[i][j]$ 表示前 $i$ 个人做了 $j$ 个1任务后能做的最多2任务的个数；</p>
+<p>转移显然 $f[i][j]=max{f[i][j],f[i-1][j-k]+(ans-k*A[i])/B[i]}$&nbsp;</p>
+<p>复杂度$O（n*m^2*log(10000))$</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('1ea78861-ac24-4db5-b702-da45c5989f13')"><img id="code_img_closed_1ea78861-ac24-4db5-b702-da45c5989f13" class="code_img_closed" src="./images/day210.png" alt="" /><img id="code_img_opened_1ea78861-ac24-4db5-b702-da45c5989f13" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('1ea78861-ac24-4db5-b702-da45c5989f13',event)" src="./images/day211.png" alt="" />
+<div id="cnblogs_code_open_1ea78861-ac24-4db5-b702-da45c5989f13" class="cnblogs_code_hide">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;cstdio&gt;<span style="color: #000000;">
+#include</span>&lt;algorithm&gt;<span style="color: #000000;">
+#include</span>&lt;cctype&gt;
+<span style="color: #0000ff;">#define</span> oyy main
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+inline </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> read()
+{
+    </span><span style="color: #0000ff;">int</span> x=<span style="color: #800080;">0</span>,f=<span style="color: #800080;">1</span>;<span style="color: #0000ff;">char</span> c=<span style="color: #000000;">getchar();
+    </span><span style="color: #0000ff;">while</span>(!isdigit(c)){<span style="color: #0000ff;">if</span>(c==<span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span>)f=-<span style="color: #800080;">1</span>;c=<span style="color: #000000;">getchar();}
+    </span><span style="color: #0000ff;">while</span>(isdigit(c)){x=(x&lt;&lt;<span style="color: #800080;">3</span>)+(x&lt;&lt;<span style="color: #800080;">1</span>)+(c^<span style="color: #800080;">48</span>);c=<span style="color: #000000;">getchar();}
+    </span><span style="color: #0000ff;">return</span> x*<span style="color: #000000;">f;
+}
+</span><span style="color: #0000ff;">int</span> a[<span style="color: #800080;">110</span>],b[<span style="color: #800080;">110</span><span style="color: #000000;">],n,m;
+inline </span><span style="color: #0000ff;">bool</span> check(<span style="color: #0000ff;">int</span><span style="color: #000000;"> ans)
+{
+    </span><span style="color: #0000ff;">int</span> f[<span style="color: #800080;">120</span>][<span style="color: #800080;">200</span>]=<span style="color: #000000;">{};
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;=n;i++<span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>;j&lt;=m;j++<span style="color: #000000;">)
+        f[i][j]</span>=-<span style="color: #800080;">0x3f3f3f</span><span style="color: #000000;">;
+        f[i][</span><span style="color: #800080;">0</span>]=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">0</span>;j&lt;=m;j++<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> k=<span style="color: #800080;">0</span>;k&lt;=j;k++<span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">if</span>(k*a[i]&lt;=<span style="color: #000000;">ans)
+        f[i][j]</span>=max(f[i][j],f[i-<span style="color: #800080;">1</span>][j-k]+(ans-k*a[i])/<span style="color: #000000;">b[i]);
+    }
+    </span><span style="color: #0000ff;">return</span> f[n][m]&gt;=<span style="color: #000000;">m;
+}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> oyy()
+{
+    freopen(</span><span style="color: #800000;">"</span><span style="color: #800000;">company.in</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">r</span><span style="color: #800000;">"</span>,stdin);freopen(<span style="color: #800000;">"</span><span style="color: #800000;">company.out</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">w</span><span style="color: #800000;">"</span><span style="color: #000000;">,stdout);
+    n</span>=read();m=<span style="color: #000000;">read();
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">)
+    a[i]</span>=read(),b[i]=<span style="color: #000000;">read();
+    </span><span style="color: #0000ff;">int</span> l=<span style="color: #800080;">1</span>,r=<span style="color: #800080;">10000</span>,mid=l+r&gt;&gt;<span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span>(l&lt;<span style="color: #000000;">r)
+    {
+        </span><span style="color: #0000ff;">if</span>(!check(mid))l=mid+<span style="color: #800080;">1</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">else</span> r=<span style="color: #000000;">mid;
+        mid</span>=l+r&gt;&gt;<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    cout</span>&lt;&lt;mid&lt;&lt;<span style="color: #000000;">endl;
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>&nbsp;<a href="https://gmoj.net/senior/#main/show/3517" target="_blank">T3</a>转化一下模型，把每两个星系之间连一条边，弗洛伊德乱搞一下就过了，</p>
+<p><span style="text-decoration: line-through;">要不是三维立体太难想，我考场就做了。</span></p>
+<p>三维算距离是$\sqrt{(\Delta x)^2+(\Delta y)^2+(\Delta z)^2}$</p>
+<p>再减去两个星系半径就是距离，如果小于$0$就用$0$代替(毕竟距离没有负的)</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('df0111af-69b3-448e-affe-28f568fa469f')"><img id="code_img_closed_df0111af-69b3-448e-affe-28f568fa469f" class="code_img_closed" src="./images/day210.png" alt="" /><img id="code_img_opened_df0111af-69b3-448e-affe-28f568fa469f" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('df0111af-69b3-448e-affe-28f568fa469f',event)" src="./images/day211.png" alt="" />
+<div id="cnblogs_code_open_df0111af-69b3-448e-affe-28f568fa469f" class="cnblogs_code_hide">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;cstdio&gt;<span style="color: #000000;">
+#include</span>&lt;cctype&gt;<span style="color: #000000;">
+#include</span>&lt;cmath&gt;
+<span style="color: #0000ff;">#define</span> oyy main
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+inline </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> read()
+{
+    </span><span style="color: #0000ff;">int</span> x=<span style="color: #800080;">0</span>,f=<span style="color: #800080;">1</span>;<span style="color: #0000ff;">char</span> c=<span style="color: #000000;">getchar();
+    </span><span style="color: #0000ff;">while</span>(!isdigit(c)){<span style="color: #0000ff;">if</span>(c==<span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span>)f=-<span style="color: #800080;">1</span>;c=<span style="color: #000000;">getchar();}
+    </span><span style="color: #0000ff;">while</span>(isdigit(c)){x=(x&lt;&lt;<span style="color: #800080;">3</span>)+(x&lt;&lt;<span style="color: #800080;">1</span>)+(c^<span style="color: #800080;">48</span>);c=<span style="color: #000000;">getchar();}
+    </span><span style="color: #0000ff;">return</span> x*<span style="color: #000000;">f;
+}
+</span><span style="color: #0000ff;">double</span> mp[<span style="color: #800080;">103</span>][<span style="color: #800080;">103</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> n;
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> node{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> x,y,z,r;
+}a[</span><span style="color: #800080;">103</span><span style="color: #000000;">];
+inline </span><span style="color: #0000ff;">double</span> jl(<span style="color: #0000ff;">double</span> x1,<span style="color: #0000ff;">double</span> x2,<span style="color: #0000ff;">double</span> y1,<span style="color: #0000ff;">double</span> y2,<span style="color: #0000ff;">double</span> z1,<span style="color: #0000ff;">double</span><span style="color: #000000;"> z2)
+{
+    </span><span style="color: #0000ff;">return</span> (x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)+(z1-z2)*(z1-<span style="color: #000000;">z2);
+}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> oyy()
+{
+    freopen(</span><span style="color: #800000;">"</span><span style="color: #800000;">warp.in</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">r</span><span style="color: #800000;">"</span>,stdin);freopen(<span style="color: #800000;">"</span><span style="color: #800000;">warp.out</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">w</span><span style="color: #800000;">"</span><span style="color: #000000;">,stdout);
+    n</span>=<span style="color: #000000;">read();
+    </span><span style="color: #0000ff;">while</span>(n!=-<span style="color: #800080;">1</span><span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">)
+        {
+            a[i].x</span>=read();a[i].y=read();a[i].z=read();a[i].r=<span style="color: #000000;">read();
+        }
+        a[</span><span style="color: #800080;">0</span>].x=read();a[<span style="color: #800080;">0</span>].y=read();a[<span style="color: #800080;">0</span>].z=<span style="color: #000000;">read();
+        a[n</span>+<span style="color: #800080;">1</span>].x=read();a[n+<span style="color: #800080;">1</span>].y=read();a[n+<span style="color: #800080;">1</span>].z=<span style="color: #000000;">read();
+        a[</span><span style="color: #800080;">0</span>].r=a[n+<span style="color: #800080;">1</span>].r=<span style="color: #800080;">0</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;=n+<span style="color: #800080;">1</span>;i++<span style="color: #000000;">)
+            </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">0</span>;j&lt;=n+<span style="color: #800080;">1</span>;j++<span style="color: #000000;">)
+                </span><span style="color: #0000ff;">if</span>(i!=<span style="color: #000000;">j)
+                {
+                    </span><span style="color: #0000ff;">double</span> temp=sqrt(jl(a[i].x,a[j].x,a[i].y,a[j].y,a[i].z,a[j].z))-a[i].r-<span style="color: #000000;">a[j].r;
+                    mp[i][j]</span>=temp&gt;<span style="color: #800080;">0</span>?temp:<span style="color: #800080;">0</span><span style="color: #000000;">;
+                }
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> k=<span style="color: #800080;">0</span>;k&lt;=n+<span style="color: #800080;">1</span>;k++<span style="color: #000000;">)
+            </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;=n+<span style="color: #800080;">1</span>;i++<span style="color: #000000;">)
+                </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">0</span>;j&lt;=n+<span style="color: #800080;">1</span>;j++<span style="color: #000000;">)
+                    </span><span style="color: #0000ff;">if</span>(k!=i&amp;&amp;k!=j&amp;&amp;i!=<span style="color: #000000;">j)
+                        mp[i][j]</span>=min(mp[i][j],mp[i][k]+<span style="color: #000000;">mp[k][j]);
+        </span><span style="color: #0000ff;">double</span> temp=mp[<span style="color: #800080;">0</span>][n+<span style="color: #800080;">1</span>]*<span style="color: #800080;">10</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">int</span> ans=floor(temp+<span style="color: #800080;">0.5</span><span style="color: #000000;">);
+        cout</span>&lt;&lt;ans&lt;&lt;<span style="color: #000000;">endl;
+        n</span>=<span style="color: #000000;">read();
+    }
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>&nbsp;<a href="https://gmoj.net/senior/#main/show/3516" target="_blank">T4</a>鸽了，等我学会最短路+记录路径再做</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

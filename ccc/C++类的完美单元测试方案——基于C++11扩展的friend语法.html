@@ -1,0 +1,60 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++类的完美单元测试方案——基于C++11扩展的friend语法' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++类的完美单元测试方案——基于C++11扩展的friend语法</center></div><div class='banquan'>原文出处:本文由博客园博主松柏玫瑰提供。<br/>
+原文连接:https://www.cnblogs.com/arider/p/10988517.html</div><br>
+    <p>　　版权相关声明：本文所述方案来自于《深入理解C++11&mdash;C++11新特性解析与应用》（Michael Wong著，机械工业出版社，2016.4重印）一书的学习。</p>
+<p>　　项目管理中，C语言工程做单元测试用例直接写就可以了，对于C++语言工程，曾经听到过&ldquo;C++类的私有成员在外部无法访问没法写啊，就测测接口吧？&rdquo;，对于项目管理人员与开发人员，作为C/C++语言使用者的你是否也有过这种烦恼？</p>
+<p>　　提案&ldquo;单元测试用例以私有成员函数的形式写在被测类的里面，通过预处理宏开关，使得发布时不让单元测试编译链接进去&rdquo;，方案在语法上可以，而且也没有破坏封装性，但是测试用例的量很庞大跟生产代码搞在一起好不爽有么有，不优雅，没有人会这么做会让自己的代码变成那样。</p>
+<p>　　提案&ldquo;通过预处理宏开关，使得单元测试时将private替换为public&rdquo;，看上去这个提案简单，但是也不完美，使用默认的private成员限制（如class FooTest : Foo { int x;}），这个方案处理不了这个情形，另外这个方案要求你的程序中变量名和函数名中不能含有private子字符串。</p>
+<hr />
+<p>　　下面将介绍书中的类单元测试的完美解决方案：</p>
+<h2>&nbsp;　　1.语法知识准备：&ldquo;可以为类模板声明友元&rdquo;（C++11新特性）</h2>
+<p>　　　　<span style="color: #008080;">template&lt;typename T&gt;</span></p>
+<p><span style="color: #008080;">　　　　class Foo&nbsp;{</span></p>
+<p><span style="color: #008080;">　　　　　　friend T;</span></p>
+<p><span style="color: #008080;">　　　　}</span></p>
+<p>　　如果FooTest是类，那么Foo&lt;FooTest&gt;会被实例化为一个定义了类FooTest为其友元的Foo&lt;FooTest&gt;类。</p>
+<p>　　而若T为内置类型时，如Foo&lt;int&gt;会被实例化为一个普通的没有友元定义的类型。</p>
+<h2>　　2.生产代码中的类模板实例化</h2>
+<p>　　　<span style="color: #008000;">　<span style="color: #008080;">template&lt;typename T&gt;</span></span></p>
+<p><span style="color: #008080;">　　　　class FooT {</span></p>
+<p><span style="color: #008080;">　　　　public:</span></p>
+<p><span style="color: #008080;">　　　　　　friend T;</span></p>
+<p><span style="color: #008080;">　　　　　　void DoSomthing(){}</span></p>
+<p><span style="color: #008080;">　　　　private:</span></p>
+<p><span style="color: #008080;">　　　　　　int m_data;</span></p>
+<p><span style="color: #008080;">　　　　}</span></p>
+<p><span style="color: #008080;">　　　　using Foo = FooT&lt;int&gt;;</span></p>
+<p>　　　　后续的生产代码可以直接使用Foo，生产代码很优雅。</p>
+<h2>　　3.测试代码中的设计（与原书稍有出入，根据自身需求调整）</h2>
+<p>　　　<span style="color: #008080;">　class&nbsp;FooTester;　　//测试类</span></p>
+<p><span style="color: #008080;">　　　　using FooTestee = FooT&lt;FooTester&gt;;&nbsp;　　//被测试类</span></p>
+<p><span style="color: #008080;">　　　　class&nbsp;FooTester{</span></p>
+<p><span style="color: #008080;">　　　　public:</span></p>
+<p><span style="color: #008080;">　　　　　　void Testcase1() {}</span></p>
+<p><span style="color: #008080;">　　　　}</span></p>
+<p>　　　　在FooTester类里面，我们可以<strong>测试FooTestee的私有或公有成员函数，可以访问FooTestee的私有成员变量</strong>进行验证。总之单元测试很优雅。</p>
+<hr />
+<p>　　学习了上面的完美方案，为C++11的新特性感到欢欣鼓舞，做一名重视单元测试的对自己有要求的C/C++工作者。感谢深入理解C++11这本书。</p>
+<p>　　　　</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

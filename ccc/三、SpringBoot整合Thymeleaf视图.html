@@ -1,0 +1,186 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修三、SpringBoot整合Thymeleaf视图' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>三、SpringBoot整合Thymeleaf视图</center></div><div class='banquan'>原文出处:本文由博客园博主码之泪殇提供。<br/>
+原文连接:https://www.cnblogs.com/gongsir/p/11637358.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#thymeleaf视图介绍">3.1 Thymeleaf视图介绍</a></li>
+        <li><a href="#创建springboot项目">3.2 创建SpringBoot项目</a></li>
+        <li><a href="#配置thymeleaf">3.2 配置Thymeleaf</a></li>
+        <li><a href="#编写demo">3.3 编写Demo</a></li>
+        <li><a href="#小结">3.4 小结</a></li>
+        </ul>
+    </div>
+</div>
+<h3 id="thymeleaf视图介绍">3.1 Thymeleaf视图介绍</h3>
+<p>先看下官网的介绍：<br />
+==Thymeleaf是适用于Web和独立环境的现代服务器端Java模板引擎。<br />
+Thymeleaf的主要目标是为您的开发工作流程带来优雅的自然模板 -HTML可以在浏览器中正确显示，也可以作为静态原型工作，从而可以在开发团队中加强协作。<br />
+Thymeleaf拥有适用于Spring Framework的模块，与您喜欢的工具的大量集成以及插入您自己的功能的能力，对于现代HTML5 JVM Web开发而言，Thymeleaf是理想的选择。==<br />
+在SpringBoot中，SpringBoot对Thymeleaf提供了良好的支持，同时也提供了自动化配置，因此在SpringBoot中使用Thymeleaf非常快捷方便。</p>
+<h3 id="创建springboot项目">3.2 创建SpringBoot项目</h3>
+<p>创建方法建议使用IDEA快速创建SpringBoot项目，并选择web、Thymeleaf依赖：<br />
+<img src="./images/三、SpringBoot整合Thymeleaf视图0.png" alt="在这里插入图片描述" /><br />
+创建完成后，IDEA自动在pom中加入了web和Thymeleaf依赖管理，pom.xml:</p>
+<pre><code>    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-thymeleaf&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+        &lt;/dependency&gt;
+
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+            &lt;scope&gt;test&lt;/scope&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;</code></pre>
+<p>项目架构：<br />
+<img src="./images/三、SpringBoot整合Thymeleaf视图1.png" alt="在这里插入图片描述" /></p>
+<h3 id="配置thymeleaf">3.2 配置Thymeleaf</h3>
+<p>SpringBoot为Thymeleaf提供了自动化配置类<code>ThymeleafAutoConfiguration</code>，源码：</p>
+<pre class="java"><code>@Configuration
+@EnableConfigurationProperties({ThymeleafProperties.class})
+@ConditionalOnClass({TemplateMode.class, SpringTemplateEngine.class})
+@AutoConfigureAfter({WebMvcAutoConfiguration.class, WebFluxAutoConfiguration.class})
+public class ThymeleafAutoConfiguration {...}</code></pre>
+<p>可以看出相关的配置信息是从<code>ThymeleafProperties</code>类中获得的，进一步查看<code>ThymeleafProperties</code>的源码：</p>
+<pre class="java"><code>@ConfigurationProperties(
+    prefix = &quot;spring.thymeleaf&quot;
+)
+public class ThymeleafProperties {
+    private static final Charset DEFAULT_ENCODING;
+    public static final String DEFAULT_PREFIX = &quot;classpath:/templates/&quot;;
+    public static final String DEFAULT_SUFFIX = &quot;.html&quot;;
+    private boolean checkTemplate = true;
+    private boolean checkTemplateLocation = true;
+    private String prefix = &quot;classpath:/templates/&quot;;
+    private String suffix = &quot;.html&quot;;
+    private String mode = &quot;HTML&quot;;
+    //省略
+}</code></pre>
+<p>从该配置可以看出默认的Thymeleaf存放位置是<code>classpath:/templates/</code>，即<code>resources/templates/</code>下，刚刚我们使用IDEA创建项目时，已经自动生成了该目录。<br />
+我们如果需要对Thymeleaf的配置进行更改，可直接在<code>application.properties</code>中配置：</p>
+<pre class="java"><code>#是否开启缓存,默认为true
+spring.thymeleaf.cache=false
+#检查模板文件是否存在
+spring.thymeleaf.check-template=true
+#检查模本目录是否存在
+spring.thymeleaf.check-template-location=true
+#模板文件编码
+spring.thymeleaf.encoding=UTF-8
+#模板位置
+spring.thymeleaf.prefix=classpath:/templates/
+#模板文件后缀名
+spring.thymeleaf.suffix=.html
+#Content-type
+spring.thymeleaf.servlet.content-type=text/html</code></pre>
+<h3 id="编写demo">3.3 编写Demo</h3>
+<p>1、新建User和UserController：<br />
+User.java:</p>
+<pre class="java"><code>package com.gongsir.springboot02.pojo;
+
+public class User {
+    private String name;
+    private String major;
+    private String grade;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getMajor() {
+        return major;
+    }
+
+    public void setMajor(String major) {
+        this.major = major;
+    }
+
+    public String getGrade() {
+        return grade;
+    }
+
+    public void setGrade(String grade) {
+        this.grade = grade;
+    }
+}</code></pre>
+<p>UserController.java:</p>
+<pre class="java"><code>@Controller
+public class UserController {
+    @GetMapping(path = &quot;/users&quot;)
+    public ModelAndView getUsers(){
+        List&lt;User&gt; list = new ArrayList&lt;&gt;();
+        User u1 = new User();
+        u1.setName(&quot;龚涛&quot;);
+        u1.setMajor(&quot;计算机&quot;);
+        u1.setGrade(&quot;2017&quot;);
+        list.add(u1);
+        User u2 = new User();
+        u2.setName(&quot;李诗雅&quot;);
+        u2.setMajor(&quot;网络工程&quot;);
+        u2.setGrade(&quot;2017&quot;);
+        list.add(u2);
+        //视图模板文件的名字，需在template目录下创建同名模板文件
+        ModelAndView mv = new ModelAndView(&quot;users&quot;);
+        mv.addObject(&quot;users&quot;,list);
+        return mv;
+    }
+}</code></pre>
+<p>2、在模板目录下新建<code>users.html</code>模板文件，显示数据：</p>
+<pre class="html"><code>&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot; xmlns:th=&quot;http://www.thymeleaf.org&quot;&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;UTF-8&quot;&gt;
+    &lt;title&gt;用户列表&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;table border=&quot;1px sold black&quot;&gt;
+        &lt;tr&gt;
+            &lt;td&gt;姓名&lt;/td&gt;
+            &lt;td&gt;专业&lt;/td&gt;
+            &lt;td&gt;年级&lt;/td&gt;
+        &lt;/tr&gt;
+        &lt;tr th:each=&quot;user:${users}&quot;&gt;
+            &lt;td th:text=&quot;${user.name}&quot;&gt;&lt;/td&gt;
+            &lt;td th:text=&quot;${user.major}&quot;&gt;&lt;/td&gt;
+            &lt;td th:text=&quot;${user.grade}&quot;&gt;&lt;/td&gt;
+        &lt;/tr&gt;
+    &lt;/table&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<p>3、启动项目，访问<a href="http://localhost:8080/users" class="uri">http://localhost:8080/users</a>，如图：<br />
+<img src="./images/三、SpringBoot整合Thymeleaf视图2.png" alt="在这里插入图片描述" /></p>
+<h3 id="小结">3.4 小结</h3>
+<p>本文主要介绍SpringBoot整合Thymeleaf视图技术，并给了一个简单demo演示，想学习更多Thymeleaf知识？看官网吧：<a href="https://www.thymeleaf.org/" class="uri">https://www.thymeleaf.org/</a>.<br />
+不过当前流行前后端分离技术，大多数开发不需要在后端整合视图技术，后端只需要提供接口即可，待续.....</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,445 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Linux 用epoll实现的简单http服务器' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Linux 用epoll实现的简单http服务器</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11157145.html</div><br>
+    <h3 id="linux-用epoll实现的简单http服务器">Linux 用epoll实现的简单http服务器</h3>
+<p>main.c</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &quot;epoll.h&quot;
+
+int main(int argc, char** argv){
+
+  if(argc != 3){
+    printf(&quot;eg. port resource_path\n&quot;);
+    exit(1);
+  }
+  int port = atoi(argv[1]);
+  int ret = chdir(argv[2]);
+  if(ret == -1){
+    perror(&quot;chdir error&quot;);
+    exit(1);
+  }
+  
+  int lfd = socket(AF_INET, SOCK_STREAM, 0);
+
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+  ret = bind(lfd, (struct sockaddr*)&amp;addr, sizeof(addr));
+  if(ret == -1){
+    perror(&quot;bind err&quot;);
+    exit(1);
+  }
+  listen(lfd, 64);
+
+  epoll_run(lfd);
+  
+}
+</code></code></pre>
+<p>epoll.h</p>
+<pre><code><code>#define EVENT_MAX 1024
+
+void epoll_run(int lfd);
+void do_accept(int lfd, int efd);
+void do_read(int cfd, int efd);
+int get_line(int sock, char *buf, int size);
+void http_get_request(const char* line, int cfd);
+void send_respond_head(int cfd, int no, const char* desp, const char* type, long len);
+const char *get_file_type(const char *name);
+void send_file(int cfd, const char* path);
+void disconnect(int cfd, int epfd);
+void send_dir(int cfd, const char* path);
+void encode_str(char* to, int tosize, const char* from);
+void decode_str(char *to, char *from);
+</code></code></pre>
+<p>epoll.c</p>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/epoll.h&gt;
+#include &quot;epoll.h&quot;
+#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;dirent.h&gt;
+#include &lt;ctype.h&gt;
+
+void epoll_run(int lfd){
+
+  int efd = epoll_create(EVENT_MAX);
+  if(efd == -1){
+    perror(&quot;epoll_create err&quot;);
+    exit(1);
+  }
+  
+  struct epoll_event ev;
+  ev.events = EPOLLIN;
+  ev.data.fd = lfd;
+
+  int ret = epoll_ctl(efd, EPOLL_CTL_ADD, lfd, &amp;ev); 
+  if(ret == -1){
+    perror(&quot;epoll_ctl err&quot;);
+    exit(1);
+  }
+
+  struct epoll_event evs[EVENT_MAX];
+  
+  while(1){
+    ret = epoll_wait(efd, evs, EVENT_MAX, -1);
+    if(ret == -1){
+      perror(&quot;epoll_wait err&quot;);
+      exit(1);
+    }
+
+    for(int i = 0; i &lt; ret; ++i){
+      if(evs[i].data.fd == lfd){
+    do_accept(lfd, efd);
+      }
+      else {
+    do_read(evs[i].data.fd, efd);
+      }
+    }
+  }
+}
+
+void do_read(int cfd, int efd){
+  char line[1024];
+  int len = get_line(cfd, line, sizeof(line));
+  printf(&quot;head:%s&quot;, line);
+  while(len){
+    char buf[1024];
+    len = get_line(cfd, buf, sizeof buf);
+    printf(&quot;%s&quot;, buf);
+  }
+  if(strncasecmp(&quot;get&quot;, line, 3) == 0){
+    http_get_request(line, cfd);
+    disconnect(cfd, efd);
+  }
+
+}
+
+void http_get_request(const char* line, int cfd){
+  char method[12] = {0};
+  char res[1024] = {0};
+  sscanf(line, &quot;%[^ ] %[^ ]&quot;, method, res);
+
+  // 转码 将不能识别的中文乱码 - &gt; 中文
+  // 解码 %23 %34 %5f
+  char destr[1024];
+  decode_str(destr, res);
+  // 处理path  /xx
+  // 去掉path中的/
+  char* file = destr + 1;
+  char fbuf[1024];
+  if(strcmp(res, &quot;/&quot;) == 0){
+    file = &quot;./&quot;;
+    //getcwd(fbuf, sizeof(fbuf));
+    //printf(&quot;root:[%s]\n&quot;, fbuf);
+    //   file = fbuf;
+  }
+
+  struct stat st;
+  printf(&quot;file:[%s]\n&quot;, file);
+  int ret = stat(file, &amp;st);
+  if(ret == -1){
+    //todo 404
+    perror(&quot;stat error&quot;);
+    exit(1);
+  }
+  if(S_ISDIR(st.st_mode)){
+    //dir
+    // 发送头信息
+    send_respond_head(cfd, 200, &quot;OK&quot;, get_file_type(&quot;.html&quot;), 100000);
+    send_dir(cfd, file);
+  }
+  else if(S_ISREG(st.st_mode)){
+    //reg file
+    send_respond_head(cfd, 200, &quot;OK&quot;, get_file_type(file), st.st_size);
+    send_file(cfd, file);
+  }
+}
+
+void send_dir(int cfd, const char* path){
+  char file[1024] = {0};
+  char buf[4096] = {0};
+  sprintf(buf, &quot;&lt;html&gt;&lt;head&gt;&lt;title&gt;目录名: %s&lt;/title&gt;&lt;/head&gt;&quot;, path);
+  sprintf(buf+strlen(buf), &quot;&lt;body&gt;&lt;h1&gt;当前目录: %s&lt;/h1&gt;&lt;table&gt;&quot;, path);
+#if 1
+  DIR* dir = opendir(path);
+  if(dir == NULL){
+    perror(&quot;opendir error&quot;);
+    exit(1);
+  }
+  // 读目录
+  char enstr[1024] = {0};
+  struct dirent* ptr = NULL;
+  while((ptr = readdir(dir)) != NULL){
+    char* name = ptr-&gt;d_name;
+    // 拼接文件的完整路径
+    sprintf(file, &quot;%s/%s&quot;, path, name);
+
+    encode_str(enstr, sizeof(enstr), name);
+    struct stat st;
+    int ret = stat(file, &amp;st);
+    if(ret == -1){
+      perror(&quot;stat err&quot;);
+      exit(1);
+    }
+    // 如果是文件
+    if(S_ISREG(st.st_mode)){
+      sprintf(buf+strlen(buf), 
+          &quot;&lt;tr&gt;&lt;td&gt;&lt;a href=\&quot;%s\&quot;&gt;%s&lt;/a&gt;&lt;/td&gt;&lt;td&gt;%ld&lt;/td&gt;&lt;/tr&gt;&quot;,
+          enstr, name, (long)st.st_size);
+    }
+    // 如果是目录
+    else if(S_ISDIR(st.st_mode)){
+      sprintf(buf+strlen(buf), 
+          &quot;&lt;tr&gt;&lt;td&gt;&lt;a href=\&quot;%s/\&quot;&gt;%s/&lt;/a&gt;&lt;/td&gt;&lt;td&gt;%ld&lt;/td&gt;&lt;/tr&gt;&quot;,
+          enstr, name, (long)st.st_size);
+    }
+    send(cfd, buf, strlen(buf), 0);
+    memset(buf, 0, sizeof(buf));
+  }
+  sprintf(buf+strlen(buf), &quot;&lt;/table&gt;&lt;/body&gt;&lt;/html&gt;&quot;);
+  send(cfd, buf, strlen(buf), 0);
+#endif
+}
+// 断开连接的函数
+void disconnect(int cfd, int epfd){
+  int ret = epoll_ctl(epfd, EPOLL_CTL_DEL, cfd, NULL);
+  if(ret == -1){
+    perror(&quot;epoll_ctl del cfd error&quot;);
+    exit(1);
+  }
+  close(cfd);
+}
+
+void send_file(int cfd, const char* path){
+  int fd = open(path, O_RDONLY);
+  if(fd == -1){
+    //todo 404
+    perror(&quot;open err&quot;);
+    exit(1);
+  }
+
+  char buf[4096];
+  int ret = 0;
+  while((ret = read(fd, buf, sizeof buf)) &gt; 0){
+    send(cfd, buf, ret, 0);
+  }
+  if(ret == -1){
+    perror(&quot;read err&quot;);
+    exit(1);
+  }
+  close(fd);
+}
+void send_respond_head(int cfd, int no, const char* desp, const char* type, long len){
+  char buf[1024] = {0};
+  // 状态行
+  sprintf(buf, &quot;http/1.1 %d %s\r\n&quot;, no, desp);
+  send(cfd, buf, strlen(buf), 0);
+  // 消息报头
+  memset(buf, 0, sizeof buf);
+  sprintf(buf, &quot;Content-Type:%s\r\n&quot;, type);
+  sprintf(buf+strlen(buf), &quot;Content-Length:%ld\r\n&quot;, len);
+  send(cfd, buf, strlen(buf), 0);
+  // 空行
+  send(cfd, &quot;\r\n&quot;, 2, 0);
+}
+void do_accept(int lfd, int efd){
+
+  struct sockaddr_in cli;
+  socklen_t len = sizeof(cli);;
+  int cfd = accept(lfd, (struct sockaddr*)&amp;cli, &amp;len);
+  if(cfd == -1){
+    perror(&quot;accept err&quot;);
+    exit(1);
+  }
+
+  //set nonblock socket
+  int flag = fcntl(cfd, F_GETFL);
+  flag |= O_NONBLOCK;
+  fcntl(cfd, F_SETFL, flag);
+  
+  struct epoll_event ev;
+  ev.events = EPOLLIN | EPOLLET;
+  ev.data.fd = cfd;
+  int ret = epoll_ctl(efd, EPOLL_CTL_ADD, cfd, &amp;ev);
+  if(ret == -1){
+      perror(&quot;epoll_ctl err&quot;);
+      exit(1);
+  }
+}
+
+// 解析http请求消息的每一行内容
+int get_line(int sock, char *buf, int size){
+  int i = 0;
+  char c = &#39;\0&#39;;
+  int n;
+  while ((i &lt; size - 1) &amp;&amp; (c != &#39;\n&#39;)){
+    n = recv(sock, &amp;c, 1, 0);
+    if (n &gt; 0){
+      if (c == &#39;\r&#39;){
+    n = recv(sock, &amp;c, 1, MSG_PEEK);
+    if ((n &gt; 0) &amp;&amp; (c == &#39;\n&#39;)){
+      recv(sock, &amp;c, 1, 0);
+    }
+    else{
+      c = &#39;\n&#39;;
+    }
+      }
+      buf[i] = c;
+      i++;
+    }
+    else{
+      c = &#39;\n&#39;;
+    }
+  }
+  buf[i] = &#39;\0&#39;;
+
+  return i;
+}
+// 通过文件名获取文件的类型
+const char *get_file_type(const char *name){
+  char* dot;
+
+  // 自右向左查找‘.’字符, 如不存在返回NULL
+  dot = strrchr(name, &#39;.&#39;);   
+  if (dot == NULL)
+    return &quot;text/plain; charset=utf-8&quot;;
+  if (strcmp(dot, &quot;.html&quot;) == 0 || strcmp(dot, &quot;.htm&quot;) == 0)
+    return &quot;text/html; charset=utf-8&quot;;
+  if (strcmp(dot, &quot;.jpg&quot;) == 0 || strcmp(dot, &quot;.jpeg&quot;) == 0)
+    return &quot;image/jpeg&quot;;
+  if (strcmp(dot, &quot;.gif&quot;) == 0)
+    return &quot;image/gif&quot;;
+  if (strcmp(dot, &quot;.png&quot;) == 0)
+    return &quot;image/png&quot;;
+  if (strcmp(dot, &quot;.css&quot;) == 0)
+    return &quot;text/css&quot;;
+  if (strcmp(dot, &quot;.au&quot;) == 0)
+    return &quot;audio/basic&quot;;
+  if (strcmp( dot, &quot;.wav&quot; ) == 0)
+    return &quot;audio/wav&quot;;
+  if (strcmp(dot, &quot;.avi&quot;) == 0)
+    return &quot;video/x-msvideo&quot;;
+  if (strcmp(dot, &quot;.mov&quot;) == 0 || strcmp(dot, &quot;.qt&quot;) == 0)
+    return &quot;video/quicktime&quot;;
+  if (strcmp(dot, &quot;.mpeg&quot;) == 0 || strcmp(dot, &quot;.mpe&quot;) == 0)
+    return &quot;video/mpeg&quot;;
+  if (strcmp(dot, &quot;.vrml&quot;) == 0 || strcmp(dot, &quot;.wrl&quot;) == 0)
+    return &quot;model/vrml&quot;;
+  if (strcmp(dot, &quot;.midi&quot;) == 0 || strcmp(dot, &quot;.mid&quot;) == 0)
+    return &quot;audio/midi&quot;;
+  if (strcmp(dot, &quot;.mp3&quot;) == 0)
+    return &quot;audio/mpeg&quot;;
+  if (strcmp(dot, &quot;.ogg&quot;) == 0)
+    return &quot;application/ogg&quot;;
+  if (strcmp(dot, &quot;.pac&quot;) == 0)
+    return &quot;application/x-ns-proxy-autoconfig&quot;;
+
+  return &quot;text/plain; charset=utf-8&quot;;
+}
+// 16进制数转化为10进制
+int hexit(char c)
+{
+    if (c &gt;= &#39;0&#39; &amp;&amp; c &lt;= &#39;9&#39;)
+        return c - &#39;0&#39;;
+    if (c &gt;= &#39;a&#39; &amp;&amp; c &lt;= &#39;f&#39;)
+        return c - &#39;a&#39; + 10;
+    if (c &gt;= &#39;A&#39; &amp;&amp; c &lt;= &#39;F&#39;)
+        return c - &#39;A&#39; + 10;
+
+    return 0;
+}
+
+/*
+ *  这里的内容是处理%20之类的东西！是&quot;解码&quot;过程。
+ *  %20 URL编码中的‘ ’(space)
+ *  %21 &#39;!&#39; %22 &#39;&quot;&#39; %23 &#39;#&#39; %24 &#39;$&#39;
+ *  %25 &#39;%&#39; %26 &#39;&amp;&#39; %27 &#39;&#39;&#39; %28 &#39;(&#39;......
+ *  相关知识html中的‘ ’(space)是&amp;nbsp
+ */
+void encode_str(char* to, int tosize, const char* from)
+{
+    int tolen;
+
+    for (tolen = 0; *from != &#39;\0&#39; &amp;&amp; tolen + 4 &lt; tosize; ++from) 
+    {
+        if (isalnum(*from) || strchr(&quot;/_.-~&quot;, *from) != (char*)0) 
+        {
+            *to = *from;
+            ++to;
+            ++tolen;
+        } 
+        else 
+        {
+            sprintf(to, &quot;%%%02x&quot;, (int) *from &amp; 0xff);
+            to += 3;
+            tolen += 3;
+        }
+
+    }
+    *to = &#39;\0&#39;;
+}
+
+
+void decode_str(char *to, char *from)
+{
+    for ( ; *from != &#39;\0&#39;; ++to, ++from  ) 
+    {
+        if (from[0] == &#39;%&#39; &amp;&amp; isxdigit(from[1]) &amp;&amp; isxdigit(from[2])) 
+        { 
+
+            *to = hexit(from[1])*16 + hexit(from[2]);
+
+            from += 2;                      
+        } 
+        else
+        {
+            *to = *from;
+
+        }
+
+    }
+    *to = &#39;\0&#39;;
+
+}
+</code></code></pre>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/Linux 用epoll实现的简单http服务器0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

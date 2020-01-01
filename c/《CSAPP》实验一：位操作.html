@@ -1,0 +1,302 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修《CSAPP》实验一：位操作' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>《CSAPP》实验一：位操作</center></div><div class='banquan'>原文出处:本文由博客园博主my-tiga提供。<br/>
+原文连接:https://www.cnblogs.com/my-tiga/p/12076604.html</div><br>
+    <p><a href="https://book.douban.com/subject/26912767/">《CSAPP》</a>号称程序员圣经，虽然中文译名为《深入理解计算机系统》，但其实没那么“深”，只是覆盖面很广，一般用作计算机专业大一导论课的教科书。早就听闻书上配套的实验十分经典，这次重温新版（第三版），打算把所有的实验都做一下，也写个系列博文，好记录实验过程。实验可以在书本配套网站<a href="http://csapp.cs.cmu.edu/3e/labs.html">CSAPP: Lab Assignments</a>下载，这篇从第一个实验 —— 位操作开始。</p>
+<h4 id="概述">概述</h4>
+<p>本实验是第二章《信息的表示与处理》的配套实验，要求使用一个高度限制的C语言子集实现一些特定的逻辑，整数，浮点数的函数。延用第一章的说法，信息就是位加上下文，计算机系统中所有的信息都是由一串比特（或者说一串二进制数字）表示的，第二章就讲了C语言中整数与浮点数的编码方式，即典型地，计算机是如何用一串比特来表示整数与浮点数的：</p>
+<ul>
+<li>无符号整数：直接二进制编码</li>
+<li>有符号整数：二进制补码，最高位为负权</li>
+<li>浮点数：<a href="https://en.wikipedia.org/wiki/IEEE_754">IEEE 754</a></li>
+</ul>
+<p>同样从内存里取出4个字节 <span class="math inline">\(0x80000000\)</span> ，把它当无符号整数看，就是 <span class="math inline">\(2147483648\)</span>；把它当有符号整数看，就是 <span class="math inline">\(-2147483648\)</span>；把它当单精度浮点数看，就是 <span class="math inline">\(-0\)</span>。所谓上下文，就是解读这串比特的方式，横看成岭侧成峰。值得注意的是，尽管在几乎所有系统上，C语言整数与浮点数都是这么编码的，但C语言标准本身并没有这样规定，不知道有生之年能不能遇上非主流的编码方式。<br />
+如果没有完全掌握这些数字的编码方式以及C语言的位操作，是一定无法完成实验一的。实验一好就好在会让你反复回忆这些基础知识，深入细节之中，做完实验后想忘都忘不了：）</p>
+<h4 id="前提">前提</h4>
+<p>尽管有C语言有标准，但Undefined Behavior还是太多，尤其是深入底层进行位操作的情况下，因此实验预设： 有符号整数使用32位二进制补码编码； 右移操作为算术位移，高位补符号位。实验还要求：不能使用宏；整数操作不能使用大于0xFF的常量。下面就逐个函数记录实验过程了。</p>
+<h4 id="bitand">bitAnd</h4>
+<p>用<code>~</code>和<code>|</code>实现<code>&amp;</code>，有公式很简单，但记不住，用韦恩图辅助思考：全集表示所有位都为1，<code>x</code>与<code>y</code>分别表示特定位置为1的子集，想象一下<code>~</code>，<code>|</code>和<code>&amp;</code>的韦恩图，一下子就推出公式来了。</p>
+<pre><code><code>/*
+ * bitAnd - x&amp;y using only ~ and |
+ *   Example: bitAnd(6, 5) = 4
+ *   Legal ops: ~ |
+ *   Max ops: 8
+ *   Rating: 1
+ */
+int bitAnd(int x, int y) {
+    return ~(~x | ~y);
+}</code></code></pre>
+<h4 id="getbyte">getByte</h4>
+<p><code>x</code>右移 <code>n * 8</code> 位，取最后一个字节即可，利用了<code>n * 8 == n &lt;&lt; 3</code>。</p>
+<pre><code><code>/*
+ * getByte - Extract byte n from word x
+ *   Bytes numbered from 0 (LSB) to 3 (MSB)
+ *   Examples: getByte(0x12345678,1) = 0x56
+ *   Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 6
+ *   Rating: 2
+ */
+int getByte(int x, int n) {
+    return (x &gt;&gt; (n &lt;&lt; 3)) &amp; 0xFF;
+}</code></code></pre>
+<h4 id="logicalshift">logicalShift</h4>
+<p>实验预设了右移为算术位移，那么对<code>x</code>右移<code>n</code>位再用掩码将高位补的<code>n</code>位置0即可。</p>
+<pre><code><code>/*
+ * logicalShift - shift x to the right by n, using a logical shift
+ *   Can assume that 0 &lt;= n &lt;= 31
+ *   Examples: logicalShift(0x87654321,4) = 0x08765432
+ *   Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 20
+ *   Rating: 3
+ */
+int logicalShift(int x, int n) {
+    int mask = ~(((1 &lt;&lt; 31) &gt;&gt; n) &lt;&lt; 1);
+    return (x &gt;&gt; n) &amp; mask;
+}</code></code></pre>
+<h4 id="bitcount">bitCount</h4>
+<p>这题想了很久，正常的想法是将<code>x</code>一位一位地右移，用掩码1取最低位，再求和，然而操作符数量超标:D 然后想到，用<code>x &amp; 1</code>去检查<code>x</code>最后一位是否是1比较亏，可以用<code>x &amp; 0x00010001</code>，这样可以一次检查两位，最后将前后16位的结果汇总即可，然而操作符数量还是超标:D最终将<code>x</code>分了8组，<code>x &amp; 0x11111111</code>，每次检查8位，用了38个操作符，终于达标。这是所有题目中用的操作符数量最多的一题了。</p>
+<pre><code><code>/*
+ * bitCount - returns count of number of 1&#39;s in word
+ *   Examples: bitCount(5) = 2, bitCount(7) = 3
+ *   Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 40
+ *   Rating: 4
+ */
+int bitCount(int x) {
+    int mask = 0x11 + (0x11 &lt;&lt; 8) + (0x11 &lt;&lt; 16) + (0x11 &lt;&lt; 24);
+
+    int count = (x &amp; mask) + ((x &gt;&gt; 1) &amp; mask) +
+        ((x &gt;&gt; 2) &amp; mask) + ((x &gt;&gt; 3) &amp; mask);
+
+    return (count &amp; 7) + ((count &gt;&gt; 4) &amp; 7) + ((count &gt;&gt; 8) &amp; 7) +
+        ((count &gt;&gt; 12) &amp; 7) + ((count &gt;&gt; 16) &amp; 7) + ((count &gt;&gt; 20) &amp; 7) +
+        ((count &gt;&gt; 24) &amp; 7) + ((count &gt;&gt; 28) &amp; 7);
+}</code></code></pre>
+<h4 id="bang">bang</h4>
+<p>一开始想在0上面作文章，毕竟只有<code>bang(0) = 1</code>，但此路不通。<code>|</code>操作，二分法，逐渐把高位的1收集到低位，如<code>x = x | (x &gt;&gt; 16)</code>，如果高位的16位有1的话，就会被收集到低位的16位上，依此二分，收集到最后一位，刚好12个操作符。</p>
+<pre><code><code>/*
+ * bang - Compute !x without using !
+ *   Examples: bang(3) = 0, bang(0) = 1
+ *   Legal ops: ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 12`
+ *   Rating: 4
+ */
+int bang(int x) {
+    x = x | (x &gt;&gt; 16);
+    x = x | (x &gt;&gt; 8);
+    x = x | (x &gt;&gt; 4);
+    x = x | (x &gt;&gt; 2);
+    x = x | (x &gt;&gt; 1);
+    return ~x &amp; 1;
+}</code></code></pre>
+<h4 id="tmin">tmin</h4>
+<p>最简单的一题，要熟悉二进制补码。</p>
+<pre><code><code>/*
+ * tmin - return minimum two&#39;s complement integer
+ *   Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 4
+ *   Rating: 1
+ */
+int tmin(void) {
+    return 1 &lt;&lt; 31;
+}</code></code></pre>
+<h4 id="fitsbits">fitsBits</h4>
+<p>若<code>x</code>非负，考虑到<code>n</code>位二进制补码能表示的最大非负数为 $0b0111...111 $ （共<code>n-1</code>个1），用掩码将<code>x</code>低位的<code>n-1</code>位置0，检查高位的<code>32 - (n - 1)</code>位是否为0即可。若<code>x</code>为负，先将其转为非负数<code>~x</code>，编码<code>~x</code>必需的位数与编码<code>x</code>的是相同的。</p>
+<pre><code><code>/*
+ * fitsBits - return 1 if x can be represented as an
+ *  n-bit, two&#39;s complement integer.
+ *   1 &lt;= n &lt;= 32
+ *   Examples: fitsBits(5,3) = 0, fitsBits(-4,3) = 1
+ *   Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 15
+ *   Rating: 2
+ */
+int fitsBits(int x, int n) {
+    int minusOne = ~0;
+    int mask = minusOne &lt;&lt; (n + minusOne);
+    return !((x ^ (x &gt;&gt; 31)) &amp; mask);
+}</code></code></pre>
+<h4 id="divpwr2">divpwr2</h4>
+<p><code>x &gt;&gt; n</code>即为<span class="math inline">\(\lfloor x / 2^n \rfloor\)</span>，结果是向下取整的，但题目要求向0取整，若<code>x</code>非负向下取整即是向0取整没有问题，若<code>x</code>为负，需要向<code>x</code>加上一个偏移值<span class="math inline">\(2^n - 1\)</span>，使得<code>x &gt;&gt; n</code>向上取整。</p>
+<pre><code><code>/*
+ * divpwr2 - Compute x/(2^n), for 0 &lt;= n &lt;= 30
+ *  Round toward zero
+ *   Examples: divpwr2(15,1) = 7, divpwr2(-33,4) = -2
+ *   Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 15
+ *   Rating: 2
+ */
+int divpwr2(int x, int n) {
+    int signBit = (x &gt;&gt; 31) &amp; 1;
+    int bias = (signBit &lt;&lt; n) + (~signBit + 1);
+    return (x + bias) &gt;&gt; n;
+}</code></code></pre>
+<h4 id="negate">negate</h4>
+<p>n位二进制补码的值域是<span class="math inline">\([-2^{n-1},\ 2^{n-1} - 1]\)</span>，并不关于0对称，因此当<code>x</code>为最小值时<code>-x</code>是它自己。</p>
+<pre><code><code>/*
+ * negate - return -x
+ *   Example: negate(1) = -1.
+ *   Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 5
+ *   Rating: 2
+ */
+int negate(int x) {
+  return ~x + 1;
+}</code></code></pre>
+<h4 id="ispositive">isPositive</h4>
+<p>正数的符号位为0，0的符号位也是0，是特殊情况。</p>
+<pre><code><code>/*
+ * isPositive - return 1 if x &gt; 0, return 0 otherwise
+ *   Example: isPositive(-1) = 0.
+ *   Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 8
+ *   Rating: 3
+ */
+int isPositive(int x) {
+    return (!!x) &amp; (!(x &gt;&gt; 31));
+}</code></code></pre>
+<h4 id="islessorequal">isLessOrEqual</h4>
+<p><code>isLessOrEqual</code>等价于<code>!isGreater</code>，实现<code>isGreater</code>简单点：若<code>x</code> <code>y</code>异号，则<code>x</code>必须非负<code>y</code>必须为负；若<code>x</code> <code>y</code> 同号，<code>x - y</code>不会溢出，必有<code>x - y &gt; 0</code>，即<code>x - y - 1 &gt;= 0</code>，即<code>x + ~y &gt;= 0</code>，检查<code>x + ~y</code>的符号位即可。</p>
+<pre><code><code>/*
+ * isLessOrEqual - if x &lt;= y  then return 1, else return 0
+ *   Example: isLessOrEqual(4,5) = 1.
+ *   Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 24
+ *   Rating: 3
+ */
+int isLessOrEqual(int x, int y) {
+    int xSign = x &gt;&gt; 31;
+    int ySign = y &gt;&gt; 31;
+
+    int hasSameSign = !(xSign ^ ySign);
+    int diffSign = (x + ~y) &gt;&gt; 31;
+
+    int isXPosYNeg = (!xSign) &amp; ySign;
+    int isGreater = isXPosYNeg | (hasSameSign &amp; !diffSign);
+
+    return !isGreater;
+}</code></code></pre>
+<h4 id="ilog2">ilog2</h4>
+<p>这道题允许90个操作符，是所有题目对操作符数量最宽松的了。<code>ilog2</code>的实质是求<code>x</code>最高位的1的索引，若<code>x</code>高位的16位有1，则不用管低位的16位；若<code>x</code>高位的8位有1，则不用管低位的24位，依次类推。实现起来还是十分巧妙的:)</p>
+<pre><code><code>/*
+ * ilog2 - return floor(log base 2 of x), where x &gt; 0
+ *   Example: ilog2(16) = 4
+ *   Legal ops: ! ~ &amp; ^ | + &lt;&lt; &gt;&gt;
+ *   Max ops: 90
+ *   Rating: 4
+ */
+int ilog2(int x) {
+    int high16, high8, high4, high2, high1;
+
+    high16 = (!!(x &gt;&gt; 16)) &lt;&lt; 4;
+    x = x &gt;&gt; high16;
+
+    high8 = (!!(x &gt;&gt; 8)) &lt;&lt; 3;
+    x = x &gt;&gt; high8;
+
+    high4 = (!!(x &gt;&gt; 4) &lt;&lt; 2);
+    x = x &gt;&gt; high4;
+
+    high2 = (!!(x &gt;&gt; 2) &lt;&lt; 1);
+    x = x &gt;&gt; high2;
+
+    high1 = !!(x &gt;&gt; 1);
+    return high1 + high2 + high4 + high8 + high16;
+}</code></code></pre>
+<h4 id="float_neg">float_neg</h4>
+<p>终于到浮点数了，浮点数的题对操作符要求宽松一点，还可以用循环跟判断语句。第一题，只要对IEEE754熟悉就行了。</p>
+<pre><code><code>/*
+ * float_neg - Return bit-level equivalent of expression -f for
+ *   floating point argument f.
+ *   Both the argument and result are passed as unsigned int&#39;s, but
+ *   they are to be interpreted as the bit-level representations of
+ *   single-precision floating point values.
+ *   When argument is NaN, return argument.
+ *   Legal ops: Any integer/unsigned operations incl. ||, &amp;&amp;. also if, while
+ *   Max ops: 10
+ *   Rating: 2
+ */
+unsigned float_neg(unsigned uf) {
+    int isNaN = (((uf &gt;&gt; 23) &amp; 0xFF) == 0xFF) &amp;&amp; (uf &lt;&lt; 9);
+    return isNaN ? uf : ((1 &lt;&lt; 31) ^ uf);
+}</code></code></pre>
+<h4 id="float_i2f">float_i2f</h4>
+<p>没什么技巧，十分暴力。从符号位，阶码，尾数，舍入，一个一个来。注意，<code>float(x)</code>是向偶数取整的。</p>
+<pre><code><code>/*
+ * float_i2f - Return bit-level equivalent of expression (float) x
+ *   Result is returned as unsigned int, but
+ *   it is to be interpreted as the bit-level representation of a
+ *   single-precision floating point values.
+ *   Legal ops: Any integer/unsigned operations incl. ||, &amp;&amp;. also if, while
+ *   Max ops: 30
+ *   Rating: 4
+ */
+unsigned float_i2f(int x) {
+    unsigned sign = x &amp; (1 &lt;&lt; 31);
+    unsigned exp = 0;
+    unsigned frac = 0;
+    unsigned round = 0;
+
+    unsigned absX = sign ? (~x + 1) : x;
+    unsigned tmp = absX;
+    while ((tmp = tmp &gt;&gt; 1))
+        ++exp;
+
+    frac = absX &lt;&lt; (31 - exp) &lt;&lt; 1;
+    round = frac &lt;&lt; 23 &gt;&gt; 23;
+    frac = frac &gt;&gt; 9;
+
+    if (round &gt; 0x100) round = 1;
+    else if (round &lt; 0x100) round = 0;
+    else round = frac &amp; 1;
+
+    return x ? (sign | ((exp + 0x7F) &lt;&lt; 23) | frac) + round : 0;
+}</code></code></pre>
+<h4 id="float_twice">float_twice</h4>
+<p>还是很暴力，按照浮点数分类一个一个来：特殊值，直接返回；规范化的浮点数，阶码加1；非规范化的，左移一位并保持符号位不变。</p>
+<pre><code><code>/*
+ * float_twice - Return bit-level equivalent of expression 2*f for
+ *   floating point argument f.
+ *   Both the argument and result are passed as unsigned int&#39;s, but
+ *   they are to be interpreted as the bit-level representation of
+ *   single-precision floating point values.
+ *   When argument is NaN, return argument
+ *   Legal ops: Any integer/unsigned operations incl. ||, &amp;&amp;. also if, while
+ *   Max ops: 30
+ *   Rating: 4
+ */
+unsigned float_twice(unsigned uf) {
+    unsigned sign = 1 &lt;&lt; 31;
+    unsigned isNormalized = uf &lt;&lt; 1 &gt;&gt; 24;
+    unsigned isSpecial = isNormalized == 0xFF;
+
+    if (isSpecial || uf == 0 || uf == sign)
+        return uf;
+
+    if (isNormalized)
+        return uf + (1 &lt;&lt; 23);
+
+    return (uf &lt;&lt; 1) | (uf &amp; sign);
+}</code></code></pre>
+
+
+</div></div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

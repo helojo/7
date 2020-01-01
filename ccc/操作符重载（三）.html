@@ -1,0 +1,246 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修操作符重载（三）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>操作符重载（三）</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11581043.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#结论">1. 结论</a></li>
+        <li><a href="#逻辑操作符重载">2. 逻辑操作符重载</a></li>
+        <li><a href="#逗号操作符重载">3. 逗号操作符重载</a></li>
+        </ul>
+    </div>
+</div>
+<h1 id="结论">1. 结论</h1>
+<p>前面两次笔记都是C++中可以重载且无副作用的操作符，本次笔记比较特殊，主要列出两个<font color=red>C++语法允许重载、但在工程中不应该（不允许）重载</font>的操作符：</p>
+<ul>
+<li>逻辑操作符 <code>&amp;&amp;</code> 和 <code>||</code></li>
+<li>逗号操作符<code>,</code>构成的逗号表达式</li>
+</ul>
+<p>这两个操作符在工程中不允许重载的原因是：<font color=blue>重载后无法完全实现操作符的原生语义。</font></p>
+<h1 id="逻辑操作符重载">2. 逻辑操作符重载</h1>
+<p>先来回忆一下逻辑操作符的原生语义</p>
+<ul>
+<li>操作数只有true和false两种值</li>
+<li><font color=magenta>逻辑表达式不需要完全计算就能确定最终结果（短路法则）</font></li>
+<li>最终结果也只能是true或者false</li>
+</ul>
+<p>C++语法是允许重载逻辑操作符的，看下面的示例代码</p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Test
+{
+    int mValue;
+public:
+    Test(int v)
+    {
+        mValue = v;
+    }
+    int value() const
+    {
+        return mValue;
+    }
+};
+
+bool operator &amp;&amp; (const Test &amp;l, const Test &amp;r)
+{
+    return l.value() &amp;&amp; r.value();
+}
+
+bool operator || (const Test &amp;l, const Test &amp;r)
+{
+    return l.value() || r.value();
+}
+
+Test func(Test i)
+{
+    cout &lt;&lt; &quot;Test func(Test i) : i.value() = &quot; &lt;&lt; i.value() &lt;&lt; endl;
+
+    return i;
+}
+
+int main()
+{
+    Test t0(0);
+    Test t1(1);
+
+    /*
+     * 根据短路法则，期望的正确输出为:
+     * Test func(Test i) : i.value() = 0
+     * Result is false!
+    */
+    if( func(t0) &amp;&amp; func(t1) )
+    {
+        cout &lt;&lt; &quot;Result is true!&quot; &lt;&lt; endl;
+    }
+    else
+    {
+        cout &lt;&lt; &quot;Result is false!&quot; &lt;&lt; endl;
+    }
+
+    cout &lt;&lt; endl;
+
+    /*
+     * 根据短路法则，期望的正确输出为:
+     * Test func(Test i) : i.value() = 1
+     * Result is true!
+    */
+    if( func(1) || func(0) )
+    {
+        cout &lt;&lt; &quot;Result is true!&quot; &lt;&lt; endl;
+    }
+    else
+    {
+        cout &lt;&lt; &quot;Result is false!&quot; &lt;&lt; endl;
+    }
+
+    return 0;
+}</code></pre>
+<p><img src="./images/操作符重载（三）0.png" /></p>
+<p>代码中注释了我们期待的正确输出，但实际运行结果一个都没对上，为什么呢？</p>
+<ul>
+<li>操作符重载的本质是通过函数调用扩展操作符的功能，47行和63行的if条件分别等价于<code>operator &amp;&amp; (func(t0), func(t1))</code>和<code>operator || (func(t1), func(t0))</code></li>
+<li><font color=blue>重载函数在进入函数体之前必须完成所有参数的计算，而函数参数的计算顺序是不确定的</font></li>
+<li><font color=orange>短路法则完全失效，逻辑操作符重载后无法完全实现原生语义</font></li>
+</ul>
+<p>因此，<font color=red>在工程中应当避免重载逻辑操作符，</font><font color=magenta>建议采用重载比较操作符或提供成员函数的方式，来代替重载逻辑操作符。</font></p>
+<h1 id="逗号操作符重载">3. 逗号操作符重载</h1>
+<p>逗号操作符<code>,</code>可以构成逗号表达式，下面是逗号表达式的原生语义</p>
+<ul>
+<li>逗号表达式用于将多个子表达式连接为一个表达式，如<code>exp1, exp2, exp3, ... , expN</code></li>
+<li>逗号表达式中<font color=magenta>前N-1个子表达式可以没有返回值，最后一个子表达式必须有返回值</font></li>
+<li>逗号表达式的<font color=blue>最终结果为最后一个子表达式的值</font></li>
+<li>逗号表达式<font color=red>严格按照从左向右的顺序计算每个子表达式的值</font></li>
+</ul>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+void func(int i)
+{
+    cout &lt;&lt; &quot;func() : i = &quot; &lt;&lt; i &lt;&lt; endl;
+}
+
+int main()
+{
+    int a[3][3] =
+    {
+        (0, 1, 2),   //逗号表达式，等价于a[3][3] = {2, 5, 8,};
+        (3, 4, 5),
+        (6, 7, 8)
+    };
+
+    int i = 0;
+    int j = 0;
+
+    while (i &lt; 5)
+        func(i),    //逗号表达式，等价于func(i), i++;
+
+             i++;
+
+    cout &lt;&lt; endl;
+
+    for (i = 0; i &lt; 3; i++)
+    {
+        for (j = 0; j &lt; 3; j++)
+        {
+            cout &lt;&lt; a[i][j] &lt;&lt; endl;
+        }
+    }
+
+    cout &lt;&lt; endl;
+
+    (i, j) = 6;  //逗号表达式，等价于 j = 6;
+
+    cout &lt;&lt; &quot;i = &quot; &lt;&lt; i &lt;&lt; endl;
+    cout &lt;&lt; &quot;j = &quot; &lt;&lt; j &lt;&lt; endl;
+
+    return 0;
+}</code></pre>
+<p><img src="./images/操作符重载（三）1.png" /></p>
+<p>在C++中重载逗号操作符是合法的，重载函数的参数必须有一个是类类型，且重载函数的返回值类型必须是引用</p>
+<pre><code>Class &amp;operator , (const Class &amp;a, const Class &amp;b)
+{
+    return const_cast&lt;Class &amp;&gt;(b);
+}</code></pre>
+<p>看下面的示例代码</p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Test
+{
+    int mValue;
+public:
+    Test(int i)
+    {
+        mValue = i;
+    }
+    int value()
+    {
+        return mValue;
+    }
+};
+
+Test &amp;operator , (const Test &amp;a, const Test &amp;b)
+{
+    return const_cast&lt;Test &amp;&gt;(b);
+}
+
+Test func(Test &amp;i)
+{
+    cout &lt;&lt; &quot;func() : i = &quot; &lt;&lt; i.value() &lt;&lt; endl;
+
+    return i;
+}
+
+int main()
+{
+    Test t0(0);
+    Test t1(1);
+
+    /*
+     * 期望的正确输出为:
+     * func() : i = 0
+     * func() : i = 1
+     * 1
+    */
+    Test tt = (func(t0), func(t1));
+    cout &lt;&lt; tt.value() &lt;&lt; endl;
+
+    return 0;
+}</code></pre>
+<p><img src="./images/操作符重载（三）2.png" /></p>
+<p>虽然第44行输出结果和预期相符，但第43行输出和预期不符，<font color=red>原因和逻辑操作符重载一样，都是由函数参数计算顺序的不确定性造成的，</font>也就是说：</p>
+<ul>
+<li>逗号操作符重载后，构成的逗号表达式<font color=magenta>无法严格按照从左向右的顺序计算各个子表达式</font></li>
+<li><font color=blue>逗号操作符重载后无法完全实现原生语义</font></li>
+<li>因此，<font color=orange>在工程中不要重载逗号操作符</font></li>
+</ul>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

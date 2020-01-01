@@ -1,0 +1,254 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修数据结构入门-线性结构' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>数据结构入门-线性结构</center></div><div class='banquan'>原文出处:本文由博客园博主山丘i提供。<br/>
+原文连接:https://www.cnblogs.com/mengd/p/11828044.html</div><br>
+    <p><strong>把所有的节点用一根直线串起来</strong></p>
+<h4 id="连续存储数组">连续存储[数组]</h4>
+<p>什么叫做数组：元素类型相同，大小相等</p>
+<p>重点看代码吧，需要注意的都在注释里，多敲几遍，当然了，有些功能还没有实现，以后再实现</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdbool.h&gt;
+
+// 定义了一个数据类型，这个数据类型的名字叫做struct Arr，有三个成员
+struct Arr
+{
+    int * pBase;  // 存储的是数组第一个元素的地址
+    int len;  // 数组所能容纳的最大元素的个数
+    int cnt; // 当前元素有效元素的个数
+};
+
+
+void init_arr(struct Arr * pArr , int length);
+bool append_arr(struct Arr * pArr  , int val); 
+bool insert_arr(struct Arr * pArr , int pos , int val); //pos值从1开始
+bool delete_arr(struct Arr * pArr , int pos , int *pval); // 这个指针用来接收删除的那个值
+bool is_empty(struct Arr * pArr );
+bool is_full(struct Arr * pArr );
+void sort_arr(struct Arr * pArr );
+void show_arr(struct Arr * pArr );
+void inversion_arr(struct Arr * pArr);
+
+
+
+int main(void)
+{
+    struct Arr arr;
+    int val;
+
+    // 这里要传入地址
+    init_arr(&amp;arr , 6);
+    append_arr(&amp;arr,2);
+    append_arr(&amp;arr,18);
+    append_arr(&amp;arr,55);
+    append_arr(&amp;arr,99);
+    append_arr(&amp;arr,6);
+    inversion_arr(&amp;arr);
+    // insert_arr(&amp;arr,1,100);
+    // show_arr(&amp;arr);
+    // if(delete_arr(&amp;arr, 6 , &amp;val))
+    //  printf(&quot;删除的元素为：%d\n&quot;, val);
+    sort_arr(&amp;arr);
+    show_arr(&amp;arr);
+
+
+    
+
+    return 0;
+}
+
+// 用于初始化,自己指定长度
+void init_arr(struct Arr * pArr , int length)
+{
+    // 指针变量pArr指向结构体中的pBase成员
+    pArr-&gt;pBase = (int *)malloc(sizeof(int) * length);
+    if (NULL == pArr-&gt;pBase)
+    {
+        printf(&quot;动态内存分配失败\n&quot;);
+        exit(-1);  // 终止整个程序
+    }
+    else
+    {
+        pArr-&gt;len = length;
+        pArr-&gt;cnt = 0;
+        printf(&quot;初始化成功\n&quot;);
+    }
+    return;
+
+}
+
+// 输出数组
+void show_arr(struct Arr * pArr )
+{
+    if (is_empty(pArr))
+    {
+        printf(&quot;数组为空！\n&quot;);
+    }
+    else
+    {
+        int i;
+        printf(&quot;数组中的元素为：\n&quot;);
+        for (i = 0; i &lt; pArr-&gt;cnt; i++)
+        {
+            // 这里需要注意，输出的时候是这样，根据元素地址来
+            printf(&quot;%d\n&quot;, pArr-&gt;pBase[i]);
+        }
+    }
+}
+
+// 判断数组是否为空
+bool is_empty(struct Arr * pArr )
+{
+    if (pArr-&gt;cnt == 0)
+        return true;
+    else
+        return false;
+}
+
+
+// 判断数组是否满了
+bool is_full(struct Arr * pArr )
+{
+    if (pArr-&gt;cnt == pArr-&gt;len) 
+        return true;
+    else
+        return false;
+}
+
+
+// 末尾添加元素
+bool append_arr(struct Arr * pArr  , int val)
+{
+
+    if (is_full(pArr))
+    {
+        printf(&quot;数组已经满了\n&quot;);
+        return false;
+    }
+    else
+    {
+        // 这里需要注意，把用户传入的值添加到当前对应的数组有效个数的后面，
+        // 由于是数组，这里直接写cnt就可以了，完事之后有效个数加1
+        pArr-&gt;pBase[pArr-&gt;cnt] = val;
+        (pArr-&gt;cnt)++;
+        printf(&quot;添加成功\n&quot;);
+        return true;
+
+    }
+}
+
+
+
+// 指定位置插入指定的元素
+bool insert_arr(struct Arr * pArr , int pos , int val)
+{
+
+    int i;
+
+    if (is_full(pArr))
+        return false;
+    if (pos &lt; 1 || pos &gt; pArr-&gt;cnt+1)
+        return false;
+
+    // 这里需要注意，画图很直接就出来了
+    for (i = pArr-&gt;cnt - 1; i &gt;= pos-1; i--)
+    {
+        // 把前面的值往后面移
+        pArr-&gt;pBase[i+1] = pArr-&gt;pBase[i];
+    }
+    // 把指定元素插入到指定位置就可以了,然后个数加1
+    pArr-&gt;pBase[pos-1] = val;
+    pArr-&gt;cnt++;
+    printf(&quot;插入成功\n&quot;);
+
+    return true;
+}
+
+
+// 删除指定位置的值，并返回删除的值，用指针
+bool delete_arr(struct Arr * pArr , int pos , int *pval)
+{
+    int i;
+
+    if (is_empty(pArr))
+    {
+        return false;
+    }
+    if (pos &lt; 1 || pos &gt; pArr-&gt;cnt)
+    {
+        return false;
+    }
+
+    // 把要删除的那个值先赋值
+    *pval = pArr-&gt;pBase[pos-1];
+
+    for (i = pos; i &lt;= pArr-&gt;cnt; i++)
+    {
+        pArr-&gt;pBase[i-1] = pArr-&gt;pBase[i];
+    }
+
+    pArr-&gt;cnt--;
+    printf(&quot;删除成功\n&quot;);
+    return true;
+
+}
+
+
+// 进行倒置
+void inversion_arr(struct Arr * pArr)
+{
+    int i = 0;
+    int j = pArr-&gt;cnt - 1;
+    int t;
+    while(i &lt; j)
+    {
+        t = pArr-&gt;pBase[i];
+        pArr-&gt;pBase[i] = pArr-&gt;pBase[j];
+        pArr-&gt;pBase[j] = t;
+        ++i;
+        --j;
+    }
+    return;
+}
+
+
+// 排序
+void sort_arr(struct Arr * pArr )
+{
+    int i , j , t;
+
+    for (i = 0; i &lt; pArr-&gt;cnt; ++i)
+    {
+        for (j = i+1; j &lt; pArr-&gt;cnt; ++j)
+        {
+            if (pArr-&gt;pBase[i] &gt; pArr-&gt;pBase[j])
+            {
+                t = pArr-&gt;pBase[i];
+                pArr-&gt;pBase[i] = pArr-&gt;pBase[j];
+                pArr-&gt;pBase[j] = t;
+            }
+        }
+    }
+}</code></code></pre>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

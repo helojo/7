@@ -1,0 +1,205 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修【C++11应用】基于C++11及stdthread实现的线程池' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>【C++11应用】基于C++11及stdthread实现的线程池</center></div><div class='banquan'>原文出处:本文由博客园博主bigosprite提供。<br/>
+原文连接:https://www.cnblogs.com/bigosprite/p/11071462.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#基于c11及stdthread实现的线程池">基于C++11及std::thread实现的线程池</a></li>
+        </ul>
+    </div>
+</div>
+<h1 id="基于c11及stdthread实现的线程池">基于C++11及std::thread实现的线程池</h1>
+<p>线程池源码：</p>
+<pre><code>#pragma once
+#include &lt;functional&gt;
+#include &lt;deque&gt;
+#include &lt;thread&gt;
+#include &lt;mutex&gt;
+#include &lt;condition_variable&gt;
+#include &lt;vector&gt;
+#include &lt;memory&gt;
+#include &lt;cassert&gt;
+
+/*
+ * Example：
+ *
+ * // 初始回调
+ * void InitCb() {
+ *   static int i = 0;
+ *   printf(&quot;InitCb: %d\n&quot;, i++);
+ * }
+ *
+ * // 任务函数
+ * void TaskCb() {
+ *   static int i = 0;
+ *   printf(&quot;TaskCb: %d\n&quot;, i++);
+ * }
+ *
+ * // 实例化大小为10的线程池
+ * std::unique_ptr&lt;ThreadPool&gt; upTp(new ThreadPool(10, std::bind(InitCb)));
+ * // 启动5个线程
+ * upTp-&gt;Start(5);
+ * do {
+ *   // 投递任务进行处理
+ *   upTp-&gt;InputTask(std::bind(TaskCb));
+ * } while(true);
+ *
+ */
+class ThreadPool
+{
+public:
+  ThreadPool(const ThreadPool&amp; other) = delete;
+  ThreadPool&amp; operator=(const ThreadPool&amp; other) = delete;
+  using Task = std::function&lt;void()&gt;;
+
+  ThreadPool(size_t max_queue_size, Task cb)
+    : cb_(std::move(cb)),
+    max_queue_size_(max_queue_size),
+    running_(false)
+  {
+  }
+
+  ~ThreadPool()
+  {
+    if (running_)
+    {
+      Stop();
+    }
+  }
+
+  void Start(unsigned num_threads)
+  {
+    assert(threads_.empty());
+    running_ = true;
+    threads_.reserve(num_threads);
+    for (auto i = 0; i &lt; num_threads; ++i)
+    {
+      threads_.emplace_back(new std::thread(&amp;ThreadPool::Process, this, i));
+    }
+
+    if (num_threads == 0 &amp;&amp; cb_)
+    {
+      cb_();
+    }
+  }
+
+  void Stop()
+  {
+    {
+      std::lock_guard&lt;std::mutex&gt; lk(mtx_);
+      running_ = false;
+      not_empty_cond_.notify_all();
+    }
+  
+    for (auto&amp; th : threads_)
+    {
+      th-&gt;join();
+    }
+  }
+
+  void InputTask(Task task)
+  {
+    if (threads_.empty())
+    {
+      task();
+    }
+    else
+    {
+      std::unique_lock&lt;std::mutex&gt; lk(mtx_);
+      while (IsFull())
+      {
+        not_full_cond_.wait(lk);
+      }
+      assert(!IsFull());
+
+      queue_.push_back(std::move(task));
+      not_empty_cond_.notify_one();
+    }
+  }
+
+private:
+  void Process(unsigned nId)
+  {
+    printf(&quot;current thread id: %d\n&quot;, nId);
+    try
+    {
+      if (cb_)
+      {
+          cb_();
+      }
+
+      while (running_)
+      {
+          Task task(Pop());
+          if (task)
+          {
+              task();
+          }
+      }
+    }
+    catch (...)
+    {
+      // TODO
+      throw;
+    }
+  }
+
+  Task Pop()
+  {
+    std::unique_lock&lt;std::mutex&gt; lk(mtx_);
+    while (queue_.empty() &amp;&amp; running_)
+    {
+      not_empty_cond_.wait(lk);
+    }
+
+    Task task;
+    if (!queue_.empty())
+    {
+      task = queue_.front();
+      queue_.pop_front();
+      if (max_queue_size_ &gt; 0)
+      {
+          not_full_cond_.notify_one();
+      }
+    }
+    return task;
+  }
+
+  bool IsFull()
+  {
+    return max_queue_size_ &gt; 0 &amp;&amp; queue_.size() &gt;= max_queue_size_;
+  }
+
+  mutable std::mutex mtx_;
+  std::condition_variable not_empty_cond_;
+  std::condition_variable not_full_cond_;
+  Task cb_;
+  std::vector&lt;std::unique_ptr&lt;std::thread&gt;&gt; threads_;
+  std::deque&lt;Task&gt; queue_;
+  size_t max_queue_size_;
+  bool running_;
+};</code></pre>
+<p>参考：陈硕——《Linux多线程服务器编程》</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,145 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang module 在 spacemcs 中的配置' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang module 在 spacemcs 中的配置</center></div><div class='banquan'>原文出处:本文由博客园博主wang_yb提供。<br/>
+原文连接:https://www.cnblogs.com/wang_yb/p/11505508.html</div><br>
+    <h1 id="概述">概述</h1>
+<p>golang 官方的包管理从 1.11 版本就开始支持了, 之前尝试了几次, 效果都不理想, 就一直用 dep 来管理 package.</p>
+<p>最近 1.13 版本发布了, 使用 go module 的官方管理方式越来越多, dep 也早就不在继续开发了. 鉴于此, 是时候把 golang 的包管理方式迁移到 go module 上来了.</p>
+<p>我一直是用 spacemacs 来开发各种应用, 所以本文也是介绍如何在 spacemacs 中配置 golang module 的开发环境.</p>
+<h1 id="配置方法">配置方法</h1>
+<p>go module 其实本身是不需要什么配置, 这里的配置其实为了更方便的编码而做的 spacemacs 配置. 能够让它支持自动补全, 代码调转等等开发时常用的操作.</p>
+<h2 id="需要的软件">需要的软件</h2>
+<p>使用 <strong>go module</strong>, golang 的工程不用在放在 <strong>GOPATH</strong> 下, 所有传统的 gocode 不能再用来做代码补全这些了. 我们这里采用 gopls 来代替 gocode.</p>
+<p>出来 golang 1.13, 额外需要的软件就是 <strong>gopls</strong></p>
+<p>安装好 golang 1.13, 安装 <strong>gopls</strong> 非常简单:</p>
+<pre><code><code>$ GO111MODULE=on go get golang.org/x/tools/gopls@latest</code></pre>
+<h2 id="spacemacs-的配置">spacemacs 的配置</h2>
+<h3 id="go-layer">go layer</h3>
+<p>spacemacs 的 develop 分支默认继承了 lsp 的功能. <a href="https://microsoft.github.io/language-server-protocol/">LSP 是什么</a> 所以配置起来很简单, 在 <strong>dotspacemacs-configuration-layers</strong> 下配置:</p>
+<pre class="lisp"><code>dotspacemacs-configuration-layers
+&#39;(
+  ... ...
+  lsp
+  ;; ----------------------------------------------------------------
+  ;; Example of useful layers you may want to use right away.
+  ;; Uncomment some layer names and press `SPC f e R&#39; (Vim style) or
+  ;; `M-m f e R&#39; (Emacs style) to install them.
+  ;; ----------------------------------------------------------------
+
+  (go :variables
+      go-backend &#39;lsp
+      go-tab-width 8
+      godoc-at-point-function &#39;godoc-gogetdoc)
+ ... ...
+ )</code></pre>
+<h3 id="lsp-mode">lsp-mode</h3>
+<p><a href="https://github.com/emacs-lsp/lsp-mode">lsp-mode</a> 是 emacs 对 lsp 的封装, 参考其中 golang 的部分, 在 <strong>dotspacemacs/user-config</strong> 中配置:</p>
+<pre class="lisp"><code>;; lsp
+(use-package lsp-mode
+  :hook (go-mode . lsp-deferred)
+  :commands (lsp lsp-deferred))
+
+(setq lsp-auto-guess-root nil)
+(setq lsp-ui-doc-enable nil)
+(setq lsp-ui-sideline-enable nil)
+(setq lsp-prefer-flymake :none)</code></pre>
+<h3 id="project-root-设置">project root 设置</h3>
+<p>使用 go module 之后, golang 项目的目录不一定在 <strong>GOPATH</strong> 下, 所以定义了个配置 project root 的函数. 当然, 如果不设置, 默认值是 emacs 的 <strong>projectile-project-root</strong></p>
+<pre class="lisp"><code>;; project path settings
+(setq current-project-path (projectile-project-root))
+
+(defun set-project-path (relative-path)
+  (interactive
+   (list (read-string &quot;relative path: &quot; &quot;.&quot; nil nil nil)))
+  (setq current-project-path (file-truename relative-path)))
+
+(defun get-project-path ()
+  (interactive)
+  (message current-project-path))</code></pre>
+<h3 id="buildinstall-快捷键">build/install 快捷键</h3>
+<p>增加 2 个快捷键, 用来执行 <strong>go build</strong> 和 <strong>go install</strong></p>
+<pre class="lisp"><code>;; go build/install
+(setq default-go-package &quot;&quot;)
+
+(defun go-build (&amp;optional pkg)
+  (interactive
+   (list (read-string (format &quot;Package Name[%s]: &quot; default-go-package) nil nil &quot;&quot;)))
+
+  (if (not (string= pkg &quot;&quot;))
+      (setq default-go-package pkg))
+
+  (if (string= current-project-path &quot;&quot;)
+      (message &quot;You MUST set current-project-path FIRST!&quot;)
+    (projectile-with-default-dir current-project-path
+      (projectile-run-compilation (concat &quot;go build &quot; default-go-package))))
+  )
+
+(defun go-install (&amp;optional pkg)
+  (interactive
+   (list (read-string (format &quot;Package Name[%s]: &quot; default-go-package) nil nil &quot;&quot;)))
+
+  (if (not (string= pkg &quot;&quot;))
+      (setq default-go-package pkg))
+
+  (if (string= current-project-path &quot;&quot;)
+      (message &quot;You MUST set current-project-path FIRST!&quot;)
+    (projectile-with-default-dir current-project-path
+      (projectile-run-compilation (concat &quot;go install &quot; default-go-package))))
+)
+
+;; set shortcuts
+(spacemacs/set-leader-keys-for-major-mode &#39;go-mode
+  &quot;xi&quot; &#39;go-install)
+
+(spacemacs/set-leader-keys-for-major-mode &#39;go-mode
+  &quot;xb&quot; &#39;go-build)</code></pre>
+<p><strong>go build</strong> 和 <strong>go install</strong> 的快捷键分别是: <strong>SPC m x b</strong> 和 <strong>SPC m x i</strong></p>
+<h1 id="使用中遇到的坑">使用中遇到的坑</h1>
+<p>在尝试使用的过程中, 遇到 2 个坑, 耗费了大半天的时间… :(</p>
+<h2 id="错误内容-lsp-main.go-not-in-project-or-it-is-blacklisted">错误内容: LSP : main.go not in project or it is blacklisted</h2>
+<p>在 spacemacs 的 ****Message**** buffer 中, 提示 LSP : main.go not in project or it is blacklisted 几近波折, 才发现不知道什么时候, 当前的项目被加入到 blacklist 中了…</p>
+<p>解决方法:</p>
+<ol>
+<li>M-X lsp-workspace-blacklist-remove</li>
+<li>找到项目所在的文件夹, 然后选择它, 将它从 blacklist 中移除即可</li>
+</ol>
+<h2 id="错误内容-no-ast-for-file....foo.go">错误内容: no AST for <a href="file:///..../foo.go" class="uri">file:///..../foo.go</a></h2>
+<p>如果项目本身就是 golang 工程的话, 一般不会出现这个问题, 我有个项目, golang 工程是其中的一部分, 工程结构大致如下:</p>
+<pre><code><code>.
+├── backend
+│   └── this-is-golang-project-root
+├── deploy
+│   ├── builder
+│   └── docker-compose.yml
+├── frontend
+│   └── ui
+└── README.md</code></pre>
+<p>golang 工程不在项目的根目录, 使用时在 spacemacs 的 ****Message**** buffer 中, 提示: no AST for <a href="file:///..../foo.go" class="uri">file:///..../foo.go</a></p>
+<p>解决方式:</p>
+<ol>
+<li>设置 (setq lsp-auto-guess-root nil)</li>
+<li>M-x set-project-path</li>
+<li>设置 golang project path, 设置这个的目的是为了使用 <strong>SPC m x b</strong> 和 <strong>SPC m x i</strong> 来随时执行 <strong>go build</strong> 和 <strong>go install</strong></li>
+</ol>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

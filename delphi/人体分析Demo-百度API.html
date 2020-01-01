@@ -1,0 +1,90 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修人体分析Demo-百度API' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>人体分析Demo-百度API</center></div><div class='banquan'>原文出处:本文由博客园博主忠诚卫士提供。<br/>
+原文连接:https://www.cnblogs.com/adsoft/p/11564023.html</div><br>
+    <p>本示例是采用Delphi 7 调用百度人体分析API；首先说明一下，怎么创建测试应用。</p>
+<p>1、&nbsp; 登录百度云官网 <a href="https://cloud.baidu.com/">https://cloud.baidu.com/</a> 当然需要一个百度账号</p>
+<p>2、&nbsp; 进入管理控制台，然后选择产品服务-人工智能-人体分析</p>
+<p><img src="./images/人体分析Demo-百度API0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;3、&nbsp;&nbsp;创建应用即可获取，相应API Key 信息/</p>
+<p><img src="./images/人体分析Demo-百度API1.png" alt="" />&nbsp;</p>
+<p>4、&nbsp; 人流量统计：对应API地址 <a href="https://cloud.baidu.com/doc/BODY/s/Pjwvxzafo">https://cloud.baidu.com/doc/BODY/s/Pjwvxzafo</a></p>
+<p><img src="./images/人体分析Demo-百度API2.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;返回数量和已经渲染的过的图片(非必选)。不知道，有没有17个人。</p>
+<p><img src="./images/人体分析Demo-百度API3.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>获取图片类型时有个小插曲；内存流两个字节是图片类型，一般定义为word，但我直接写了个dword，大家可以自己查一下，有什么区别；</p>
+<p>在我正常加载图片的时候，好像没有区别，jpg图片确实是D8FF。但是当在调用人流量统计API返回的渲染图时会多出两位来，出现过18D8FF，4ED8FF。</p>
+<p>最后Dword改为Word就可以了。大家可以测试一下/</p>
+<div class="cnblogs_Highlighter">
+<pre><code>procedure TFrmMain.cxButton2Click(Sender: TObject);
+var
+  memImg: TMemoryStream;
+  strImg: TStringStream;
+  sUrl: string;
+  lstParam: TStrings;
+  ret: ISuperObject;
+
+  buff: dWORD;
+begin
+  memImg := TMemoryStream.Create;
+  strImg := TStringStream.Create('');
+  lstParam := TStringList.Create;
+  try
+    if Image2.Picture.Graphic = nil then
+    begin
+      ShowMessage('图片为空, 请下加载图片');
+      Exit;
+    end;
+    Image2.Picture.Graphic.SaveToStream(memImg);
+    memImg.Position := 0;
+    memImg.ReadBuffer(buff, 2);
+    memImg.Position := 0;
+    EncdDecd.EncodeStream(memImg, strImg);
+    lstParam.Add(Format('image=%S', [strImg.DataString]));
+    lstParam.Add(Format('show=true', []));
+    sUrl := Format(sUrl_TrafficStat, [FToken]);
+    ret := SO(UTF8Decode(IdHTTP1.Post(sUrl, lstParam)));
+    cxMemo1.Text := ret.AsString;
+    Image2.Picture.Bitmap.Assign(StringToBitmap(ret.S['image']));
+  finally
+    memImg.Free;
+    strImg.Free;
+    lstParam.Free;
+  end;
+end;
+</pre>
+</div>
+<p>5、&nbsp; 手势识别：对应API地址 <a href="https://cloud.baidu.com/doc/BODY/s/tjwvxz8jp">https://cloud.baidu.com/doc/BODY/s/tjwvxz8jp</a></p>
+<p>单手比心/</p>
+<p><img src="./images/人体分析Demo-百度API4.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;其它的大家摸索一下。人体关键点识别，人体属性识别。感觉不是很准，有时候传回的数据也有问题（json串）</p>
+<p>不知道是不是图片的问题。</p>
+<p>&nbsp;<a id="" href="https://files.cnblogs.com/files/adsoft/%E6%BA%90%E7%A0%81%28D7%29.rar">源码(D7).rar</a></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

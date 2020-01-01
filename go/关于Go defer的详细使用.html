@@ -1,0 +1,499 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修关于Go defer的详细使用' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>关于Go defer的详细使用</center></div><div class='banquan'>原文出处:本文由博客园博主周伯通的麦田提供。<br/>
+原文连接:https://www.cnblogs.com/phpper/p/11984161.html</div><br>
+    <p>先抛砖引玉defer的延迟调用：<br />defer特性：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #800080;">1</span><span style="color: #000000;">. 关键字 defer 用于注册延迟调用。
+</span><span style="color: #800080;">2</span><span style="color: #000000;">. 这些调用直到 return 前才被执。因此，可以用来做资源清理。
+</span><span style="color: #800080;">3</span><span style="color: #000000;">. 多个defer语句，按先进后出的方式执行。
+</span><span style="color: #800080;">4</span>. defer语句中的变量，在defer声明时就决定了。</pre>
+</div>
+<p>defer用途：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #800080;">1</span><span style="color: #000000;">. 关闭文件句柄
+</span><span style="color: #800080;">2</span><span style="color: #000000;">. 锁资源释放
+</span><span style="color: #800080;">3</span>. 数据库连接释放</pre>
+</div>
+<p>好，废话不多说，实例加深理解，我们先看看一段代码</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func main() {
+    </span><span style="color: #0000ff;">var</span> users [<span style="color: #800080;">5</span>]<span style="color: #0000ff;">struct</span><span style="color: #000000;">{}
+    </span><span style="color: #0000ff;">for</span> i :=<span style="color: #000000;"> range users {
+        defer fmt.Println(i)
+    }
+}</span></pre>
+</div>
+<p>输出：4 3 2 1 0 ,defer 是先进后出,这个输出没啥好说的。</p>
+<p>我们把上面的代码改下：<br /><strong>defer 换上闭包</strong>：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func main() {
+    </span><span style="color: #0000ff;">var</span> users [<span style="color: #800080;">5</span>]<span style="color: #0000ff;">struct</span><span style="color: #000000;">{}
+    </span><span style="color: #0000ff;">for</span> i :=<span style="color: #000000;"> range users {
+        defer func() { fmt.Println(i) }()
+    }
+}</span></pre>
+</div>
+<p>输出：4 4 4 4 4，很多人也包括我。预期的结果不是 4 3 2 1 0 吗？官网对defer 闭包的使用大致是这个意思：</p>
+<p>函数正常执行,由于闭包用到的变量 i 在执行的时候已经变成4,所以输出全都是4。那么 如何正常输出预期的 4 3 2 1 0 呢？<br /><strong>不用闭包，换成函数：</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func main() {
+    </span><span style="color: #0000ff;">var</span> users [<span style="color: #800080;">5</span>]<span style="color: #0000ff;">struct</span><span style="color: #000000;">{}
+    </span><span style="color: #0000ff;">for</span> i :=<span style="color: #000000;"> range users {
+        defer Print(i)
+    }
+}
+func Print(i </span><span style="color: #0000ff;">int</span><span style="color: #000000;">) {
+    fmt.Println(i)
+}</span></pre>
+</div>
+<p>函数正常延迟输出：4 3 2 1 0。</p>
+<p>我们再举一个可能一不小心会犯错的例子：<br /><strong>defer调用引用结构体函数</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type Users </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func (t </span>*Users) GetName() { <span style="color: #008000;">//</span><span style="color: #008000;"> 注意这里是 * 传地址 引用Users</span>
+<span style="color: #000000;">    fmt.Println(t.name)
+}
+func main() {
+    list :</span>= []Users{{<span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span>}, {<span style="color: #800000;">"</span><span style="color: #800000;">慕容复</span><span style="color: #800000;">"</span>}, {<span style="color: #800000;">"</span><span style="color: #800000;">清风扬</span><span style="color: #800000;">"</span><span style="color: #000000;">}}
+    </span><span style="color: #0000ff;">for</span> _, t :=<span style="color: #000000;"> range list {
+        defer t.GetName()
+    }
+}</span></pre>
+</div>
+<p>输出：清风扬&nbsp;清风扬&nbsp;清风扬。</p>
+<p>这个输出并不会像我们预计的输出：清风扬 慕容复 乔峰</p>
+<p>可是按照前面的go defer函数中的使用说明,应该输出清风扬 慕容复 乔峰才对啊？</p>
+<p>那我们换一种方式来调用一下</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type Users </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func (t </span>*Users) GetName() { <span style="color: #008000;">//</span><span style="color: #008000;"> 注意这里是 * 传地址 引用Users</span>
+<span style="color: #000000;">    fmt.Println(t.name)
+}
+func GetName(t Users) { </span><span style="color: #008000;">//</span><span style="color: #008000;"> 定义一个函数，名称自定义</span>
+    t.GetName() <span style="color: #008000;">//</span><span style="color: #008000;"> 调用结构体USers的方法GetName</span>
+<span style="color: #000000;">}
+func main() {
+    list :</span>= []Users{{<span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span>}, {<span style="color: #800000;">"</span><span style="color: #800000;">慕容复</span><span style="color: #800000;">"</span>}, {<span style="color: #800000;">"</span><span style="color: #800000;">清风扬</span><span style="color: #800000;">"</span><span style="color: #000000;">}}
+    </span><span style="color: #0000ff;">for</span> _, t :=<span style="color: #000000;"> range list {
+        defer GetName(t)
+    }
+}</span></pre>
+</div>
+<p>输出：清风扬 慕容复 乔峰。</p>
+<p>这个时候输出的就是所谓"预期"滴了</p>
+<p>当然,如果你不想多写一个函数,也很简单,可以像下面这样（改2处）,同样会输出清风扬 慕容复 乔峰</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type Users </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func (t </span>*Users) GetName() { <span style="color: #008000;">//</span><span style="color: #008000;"> 注意这里是 * 传地址 引用Users</span>
+<span style="color: #000000;">    fmt.Println(t.name)
+}
+func GetName(t Users) { </span><span style="color: #008000;">//</span><span style="color: #008000;"> 定义一个函数，名称自定义</span>
+    t.GetName() <span style="color: #008000;">//</span><span style="color: #008000;"> 调用结构体USers的方法GetName</span>
+<span style="color: #000000;">}
+func main() {
+    list :</span>= []Users{{<span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span>}, {<span style="color: #800000;">"</span><span style="color: #800000;">慕容复</span><span style="color: #800000;">"</span>}, {<span style="color: #800000;">"</span><span style="color: #800000;">清风扬</span><span style="color: #800000;">"</span><span style="color: #000000;">}}
+    </span><span style="color: #0000ff;">for</span> _, t :=<span style="color: #000000;"> range list {
+        t2 :</span>= t <span style="color: #008000;">//</span><span style="color: #008000;"> 定义新变量t2 t赋值给t2</span>
+<span style="color: #000000;">        defer t2.GetName()
+    }
+}</span></pre>
+</div>
+<p>输出：清风扬 慕容复 乔峰。</p>
+<p>通过以上例子</p>
+<p>我们可以得出下面的结论：</p>
+<p>defer后面的语句在执行的时候，函数调用的参数会被保存起来，但是不执行。也就是复制了一份。但是并没有说struct这里的*指针如何处理，</p>
+<p>通过这个例子可以看出go语言并没有把这个明确写出来的this指针(比如这里的* Users)当作参数来看待。到这里有滴朋友会说。看似多此一举的声明，</p>
+<p>直接去掉指针调用 t *Users改成 t Users 不就行了？</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type Users </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func (t Users) GetName() { </span><span style="color: #008000;">//</span><span style="color: #008000;"> 注意这里是 * 传地址 引用Users</span>
+<span style="color: #000000;">    fmt.Println(t.name)
+}
+
+func main() {
+    list :</span>= []Users{{<span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span>}, {<span style="color: #800000;">"</span><span style="color: #800000;">慕容复</span><span style="color: #800000;">"</span>}, {<span style="color: #800000;">"</span><span style="color: #800000;">清风扬</span><span style="color: #800000;">"</span><span style="color: #000000;">}}
+    </span><span style="color: #0000ff;">for</span> _, t :=<span style="color: #000000;"> range list {
+        defer t.GetName()
+    }
+}</span></pre>
+</div>
+<p>输出：清风扬 慕容复 乔峰。这就回归到上面的 defer 函数非引用调用的示例了。所以这里我们要注意defer后面的指针函数和普通函数的调用区别。很容易混淆出错。</p>
+<p>多个 defer 注册，按 FILO 次序执行 ( 先进后出 )。哪怕函数或某个延迟调用发生错误，这些调用依旧会被执行，我们看看这一段</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+func users(i </span><span style="color: #0000ff;">int</span><span style="color: #000000;">) {
+    defer println(</span><span style="color: #800000;">"</span><span style="color: #800000;">北丐</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    defer println(</span><span style="color: #800000;">"</span><span style="color: #800000;">南帝</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+
+    defer func() {
+        println(</span><span style="color: #800000;">"</span><span style="color: #800000;">西毒</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+        println(</span><span style="color: #800080;">10</span> / i) <span style="color: #008000;">//</span><span style="color: #008000;"> 异常未被捕获，逐步往外传递，最终终止进程。</span>
+<span style="color: #000000;">    }()
+
+    defer println(</span><span style="color: #800000;">"</span><span style="color: #800000;">东邪</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+}
+
+func main() {
+    users(</span><span style="color: #800080;">0</span><span style="color: #000000;">)
+    println(</span><span style="color: #800000;">"</span><span style="color: #800000;">武林排行榜,这里不会被输出哦</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+}</span></pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">东邪
+西毒
+南帝
+北丐
+panic: runtime error: </span><span style="color: #0000ff;">integer</span><span style="color: #000000;"> divide by zero
+goroutine </span><span style="color: #800080;">1</span><span style="color: #000000;"> [running]:
+main.users.func1(0x0)</span></pre>
+</div>
+<p>我们发现函数中异常，最后才捕获输出，但是一旦捕获了异常，后面就不会再执行了，即终止了程序。</p>
+<p><strong>*延迟调用参数在求值或复制，指针或闭包会 "延迟" 读取。</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+func test() {
+    x, y :</span>= <span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">慕容复</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+    defer func(s </span><span style="color: #0000ff;">string</span><span style="color: #000000;">) {
+        println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer:</span><span style="color: #800000;">"</span>, s, y) <span style="color: #008000;">//</span><span style="color: #008000;"> y 闭包引用 输出延迟和的值，即y+= 后的值=慕容复第二</span>
+    }(x) <span style="color: #008000;">//</span><span style="color: #008000;"> 匿名函数调用，传送参数x 被复制,注意这里的x 是 乔峰,而不是下面的 x+= 后的值</span>
+<span style="color: #000000;">
+    x </span>+= <span style="color: #800000;">"</span><span style="color: #800000;">第一</span><span style="color: #800000;">"</span><span style="color: #000000;">
+    y </span>+= <span style="color: #800000;">"</span><span style="color: #800000;">第二</span><span style="color: #800000;">"</span><span style="color: #000000;">
+    println(</span><span style="color: #800000;">"</span><span style="color: #800000;">x =</span><span style="color: #800000;">"</span>, x, <span style="color: #800000;">"</span><span style="color: #800000;">y =</span><span style="color: #800000;">"</span><span style="color: #000000;">, y)
+}
+
+func main() {
+    test()
+}</span></pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code>x =<span style="color: #000000;"> 乔峰第一 
+y </span>=<span style="color: #000000;"> 慕容复第二
+defer: 乔峰 慕容复第二</span></pre>
+</div>
+<p><strong>defer 与 return注意</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func Users() (s </span><span style="color: #0000ff;">string</span><span style="color: #000000;">) {
+
+    s </span>= <span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span><span style="color: #000000;">
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">延迟执行后:</span><span style="color: #800000;">"</span>+<span style="color: #000000;">s)
+    }()
+
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">清风扬</span><span style="color: #800000;">"</span><span style="color: #000000;">
+}
+
+func main() {
+    Users() </span><span style="color: #008000;">//</span><span style="color: #008000;"> 输出:延迟执行后:清风扬</span>
+}</pre>
+</div>
+<p>解释：在有命名返回值的函数中（这里命名返回值为 s），执行 return "风清扬" 的时候实际上已经将s 的值重新赋值为 风清扬。</p>
+<p>所以defer 匿名函数 输出结果为 风清扬 而不是 乔峰。</p>
+<p><strong>在错误的位置使用 defer,来一段不严谨滴代码：</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">net/http</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func request() error {
+    res, err :</span>= http.Get(<span style="color: #800000;">"</span><span style="color: #800000;">http://www.google.com</span><span style="color: #800000;">"</span><span style="color: #000000;">) // 不翻墙的情况下。是无法访问滴
+    defer res.Body.Close()
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> err
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> ..继续业务code...</span>
+
+    <span style="color: #0000ff;">return</span><span style="color: #000000;"> nil
+}
+
+func main() {
+    request()
+}</span></pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">panic: runtime error: invalid memory address or nil pointer dereference
+[signal </span><span style="color: #800080;">0xc0000005</span> code=<span style="color: #800080;">0x0</span> addr=<span style="color: #800080;">0x40</span> pc=<span style="color: #800080;">0x5e553e</span>]</pre>
+</div>
+<p>Why？因为在这里我们并没有检查我们的请求是否成功执行，当它失败的时候，我们访问了 Body 中的空变量 res ，所以会抛出异常。</p>
+<p>怎么优化呢？</p>
+<p>我们应该总是在一次成功的资源分配下面使用 defer ，简单点说就是：当且仅当 http.Get 成功执行时才使用 defer.</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">net/http</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func request() error {
+    res, err :</span>= http.Get(<span style="color: #800000;">"</span><span style="color: #800000;">http://www.google.com</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> res !=<span style="color: #000000;"> nil {
+        defer res.Body.Close()
+    }
+
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> err
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> ..继续业务code...</span>
+
+    <span style="color: #0000ff;">return</span><span style="color: #000000;"> nil
+}
+
+func main() {
+    request()
+}</span></pre>
+</div>
+<p>这样，当有错误的时候，err 会被返回，否则当整个函数返回的时候，会关闭 res.Body 。</p>
+<p>解释：在这里，同样需要检查 res 的值是否为 nil ，这是 http.Get 中的一个警告。</p>
+<p>通常情况下，出错的时候，返回的内容应为空并且错误会被返回，可当你获得的是一个重定向 error 时， res 的值并不会为 nil ，</p>
+<p>但其又会将错误返回。所以上面的代码保证了无论如何 Body 都会被关闭。</p>
+<p>另外我们再聊下关于文件的defer close。<strong>在这里，f.Close() 可能会返回一个错误，可这个错误会被我们忽略掉</strong></p>
+<p>我们看一段代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">os</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func open() error {
+    f, err :</span>= os.Open(<span style="color: #800000;">"</span><span style="color: #800000;">result.json</span><span style="color: #800000;">"</span>) <span style="color: #008000;">//</span><span style="color: #008000;"> 确保文件名存在</span>
+    <span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> err
+    }
+
+    </span><span style="color: #0000ff;">if</span> f !=<span style="color: #000000;"> nil {
+        defer f.Close()
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> ..code...</span>
+
+    <span style="color: #0000ff;">return</span><span style="color: #000000;"> nil
+}
+
+func main() {
+    open()
+}</span></pre>
+</div>
+<p>表面上看似没问题，其实f.Close可能关闭文件失败，我们优化下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">os</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func open() error {
+    f, err :</span>= os.Open(<span style="color: #800000;">"</span><span style="color: #800000;">result.json</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> err
+    }
+
+    </span><span style="color: #0000ff;">if</span> f !=<span style="color: #000000;"> nil {
+        defer func() {
+            </span><span style="color: #0000ff;">if</span> err := f.Close(); err !=<span style="color: #000000;"> nil {
+                </span><span style="color: #0000ff;">return</span><span style="color: #000000;">
+            }
+        }()
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> ..code...</span>
+
+    <span style="color: #0000ff;">return</span><span style="color: #000000;"> nil
+}
+
+func main() {
+    open()
+}</span></pre>
+</div>
+<p>如果有代码洁癖优化强迫症滴，哈哈。这里我们还可以优化下，可以通过命名的返回变量来返回 defer 内的错误。&nbsp;如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">os</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func open() (err error) {
+    f, err :</span>= os.Open(<span style="color: #800000;">"</span><span style="color: #800000;">result.json</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> err
+    }
+
+    </span><span style="color: #0000ff;">if</span> f !=<span style="color: #000000;"> nil {
+        defer func() {
+            </span><span style="color: #0000ff;">if</span> ferr := f.Close(); ferr !=<span style="color: #000000;"> nil {
+                err </span>= ferr <span style="color: #008000;">//</span><span style="color: #008000;">这里 通过命名的返回变量ferr赋值给err 来返回 defer 内的错误</span>
+<span style="color: #000000;">            }
+        }()
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> ..code...</span>
+
+    <span style="color: #0000ff;">return</span><span style="color: #000000;"> nil
+}
+
+func main() {
+    open()
+}</span></pre>
+</div>
+<p>最后一个容易忽视的问题：<strong>如果你尝试使用相同的变量释放不同的资源，那么这个操作可能无法正常执行</strong></p>
+<p>神马意思？继续看：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">os</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func open() error {
+    f, err :</span>= os.Open(<span style="color: #800000;">"</span><span style="color: #800000;">result.json</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> err
+    }
+    </span><span style="color: #0000ff;">if</span> f !=<span style="color: #000000;"> nil {
+        defer func() {
+            </span><span style="color: #0000ff;">if</span> err := f.Close(); err !=<span style="color: #000000;"> nil {
+                fmt.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">延迟关闭文件result.json 错误 %v\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, err)
+            }
+        }()
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> ..code...</span>
+<span style="color: #000000;">
+    f, err </span>= os.Open(<span style="color: #800000;">"</span><span style="color: #800000;">result2.json</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> err
+    }
+    </span><span style="color: #0000ff;">if</span> f !=<span style="color: #000000;"> nil {
+        defer func() {
+            </span><span style="color: #0000ff;">if</span> err := f.Close(); err !=<span style="color: #000000;"> nil {
+                fmt.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">延迟关闭文件result2.json 错误 %v\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, err)
+            }
+        }()
+    }
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> nil
+}
+
+func main() {
+    open()
+}</span></pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code>延迟关闭文件result.json 错误 close result2.json: file already closed</pre>
+</div>
+<p>结论：当延迟函数执行时，只有最后一个变量会被用到，因此，f 变量 会成为最后那个资源 (result2.json)。</p>
+<p>而且两个 defer 都会将这个资源作为最后的资源来关闭,也就是优先关闭了result2.json后，再执行第一个defer Close result1.json的时候，</p>
+<p>其实还是在关闭result2.json.这样重复关闭同一个文件导致错误异常。肿么解决？很好办？用io.Closer属性</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">io</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">os</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func open() error {
+    f, err :</span>= os.Open(<span style="color: #800000;">"</span><span style="color: #800000;">result.json</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> err
+    }
+    </span><span style="color: #0000ff;">if</span> f !=<span style="color: #000000;"> nil {
+        defer func(f io.Closer) { </span><span style="color: #008000;">//</span><span style="color: #008000;"> 注意修改滴地方</span>
+            <span style="color: #0000ff;">if</span> err := f.Close(); err !=<span style="color: #000000;"> nil {
+                fmt.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">延迟关闭文件result.json 错误 %v\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, err)
+            }
+        }(f) </span><span style="color: #008000;">//</span><span style="color: #008000;"> 注意修改滴地方</span>
+<span style="color: #000000;">    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> ..code...</span>
+<span style="color: #000000;">
+    f, err </span>= os.Open(<span style="color: #800000;">"</span><span style="color: #800000;">result2.json</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> err
+    }
+    </span><span style="color: #0000ff;">if</span> f !=<span style="color: #000000;"> nil {
+        defer func(f io.Closer) {</span><span style="color: #008000;">//</span><span style="color: #008000;"> 注意修改滴地方</span>
+            <span style="color: #0000ff;">if</span> err := f.Close(); err !=<span style="color: #000000;"> nil {
+                fmt.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">延迟关闭文件result2.json 错误 %v\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, err)
+            }
+        }(f)</span><span style="color: #008000;">//</span><span style="color: #008000;"> 注意修改滴地方</span>
+<span style="color: #000000;">    }
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> nil
+}
+
+func main() {
+    open()
+}</span></pre>
+</div>
+<p>到此，关于Go中defer的使用总结到这里了，有更多的使用技巧或坑，欢迎诸位博友留言指正。。。。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

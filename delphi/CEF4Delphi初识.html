@@ -1,0 +1,188 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修CEF4Delphi初识' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>CEF4Delphi初识</center></div><div class='banquan'>原文出处:本文由博客园博主leno米雷提供。<br/>
+原文连接:https://www.cnblogs.com/lenomirei/p/11945384.html</div><br>
+    <h3 id="代码模块与职责">代码模块与职责</h3>
+<p>所有的代码都在src目录下，这会导致一上手的时候无法快速划分模块，不便于理解，如果分类然后放文件夹就会好一些。</p>
+<p>最关键的部分在于uCEFApplication，是和dll链接的部分</p>
+<p><code>uCEFInterfaces.pas</code>，可以在这个文件内找到所有关于接口类型的声明，抽象了基本类型使用的接口，结构清晰。几乎是个功能都能找到对应的接口。和cef提供的接口有高度一致性。除了cef相关的接口外，还有自定义的一些工具接口。<br />
+<code>uCEFClient.pas</code>，继承自ICefClient，用于实现获取Handler的接口<br />
+<code>uCEFTypes.pas</code>，这个文件声明了大量的类型，但是不知道是不是所有的类型声明都在这里面。<br />
+<code>uCEFChromium.pas</code>，存放了TChromium的类型声明，是实现功能的关键类。<br />
+<code>uCEFLoadHandler</code>，存放了loadHandler相关类型，回调处理器的一个具体实现，还有很多其他的handler。<br />
+<code>uCEFApplication.pas</code>是核心，涉及到关键部分，有关键的类<code>TCefApplication</code>，加载了dll并获取函数，是使用CEF4Delphi的入口。</p>
+<h3 id="关键类型和关键接口">关键类型和关键接口</h3>
+<p><code>ICefBrowser</code>：主要是浏览器级别的接口，获取frame，后退前进，中断加载等接口（浏览器进程的功能接口）；<br />
+<code>ICefFrame</code>：加载网页的对象，LoadUrl功能就是它提供的。可以看成加载网页的那个frame。针对于网页级别的接口（加载网页，复制粘贴等在网页级别的操作接口）；<br />
+<code>ICefClient</code>：接口，提供获取各种各样Handler的接口。其中Handler是回调处理器；<br />
+<code>IChromiumEvents</code>：关键接口，用于执行浏览器的关键操作，和handler回调处理器一起工作，实现连接libcef.dll的事件传递，该接口是自定义接口，非cef接口；</p>
+<h3 id="附件区域">附件区域</h3>
+<h4 id="事件传递流程">事件传递流程</h4>
+<p>libcef.dll中注册的回调事件是如何通知到TChromium对象的呢？</p>
+<p>在文件<code>uCEFChromium.pas</code>中，<code>TChromium</code>对象的常用工作流程<code>CreateBrowser</code>，会进行handler的注册</p>
+<pre><code><code>function TChromium.CreateBrowser(      aParentHandle  : HWND;
+                                       aParentRect    : TRect;
+                                 const aWindowName    : ustring;
+                                    const aContext       : ICefRequestContext;
+                                 const aExtraInfo     : ICefDictionaryValue) : boolean;
+begin
+  Result := False;
+
+  try
+    // GlobalCEFApp.GlobalContextInitialized has to be TRUE before creating any browser
+    // even if you use a custom request context.
+    // If you create a browser in the initialization of your app, make sure you call this
+    // function when GlobalCEFApp.GlobalContextInitialized is TRUE.
+    // Use the GlobalCEFApp.OnContextInitialized event to know when
+    // GlobalCEFApp.GlobalContextInitialized is set to TRUE.
+
+    if not(csDesigning in ComponentState) and
+       not(FClosing)         and
+       (FBrowser     =  nil) and
+       (FBrowserId   =  0)   and
+       (GlobalCEFApp &lt;&gt; nil) and
+       GlobalCEFApp.GlobalContextInitialized  and
+       CreateClientHandler(aParentHandle = 0) then
+      begin
+        GetSettings(FBrowserSettings);
+        InitializeWindowInfo(aParentHandle, aParentRect, aWindowName);
+
+        if GlobalCEFApp.MultiThreadedMessageLoop then
+          Result := CreateBrowserHost(@FWindowInfo, FDefaultUrl, @FBrowserSettings, aExtraInfo, aContext)
+         else
+          Result := CreateBrowserHostSync(@FWindowInfo, FDefaultUrl, @FBrowserSettings, aExtraInfo, aContext);
+      end;
+  except
+    on e : exception do
+      if CustomExceptionHandler(&#39;TChromium.CreateBrowser&#39;, e) then raise;
+  end;
+end;</code></pre>
+<p>其中就有使用到<code>CreateClientHandler</code>这个函数（这里的Client说的就是继承自ICefClient类型，是否和cef的client类似还有待商榷）<br />
+而<code>CreateClientHandler</code>会调用<code>TCustomClientHandler.Create(Self);</code>创建<code>TCustomClientHandler</code>的对象，而且这个函数的传参就是TChromium这个对象自身（因为TChromium继承自IChromiumEvents表示event处理机），见下述代码</p>
+<pre class="psacal"><code>function TChromium.CreateClientHandler(aIsOSR : boolean) : boolean;
+begin
+  Result := False;
+
+  try
+    if (FHandler = nil) then
+      begin
+        FIsOSR   := aIsOsr;
+        FHandler := TCustomClientHandler.Create(Self);
+        Result   := True;
+      end;
+  except
+    on e : exception do
+      if CustomExceptionHandler(&#39;TChromium.CreateClientHandler&#39;, e) then raise;
+  end;
+end;</code></pre>
+<p><code>TCustomClientHandler</code>的对象在构造的同事会再创建一堆handler的对象（我jio得<code>TCustomClientHandler</code>像是一个封装，封装了多个handler并对它们进行管理），以其中的<code>OnLoadError</code>为例（这个事件是当加载一个网页失败的时候会触发），<code>TCustomClientHandler</code>会创建一个<code>TCustomLoadHandler</code>类型的对象（当然依旧是把TChromium对象传递过去）</p>
+<pre><code><code>constructor TCustomClientHandler.Create(const events : IChromiumEvents; aDevToolsClient : boolean);
+begin
+  inherited Create;
+
+  InitializeVars;
+
+  FEvents := Pointer(events);
+
+  if (events &lt;&gt; nil) then
+    begin
+      if aDevToolsClient then
+        begin
+          if events.MustCreateKeyboardHandler    then FKeyboardHandler    := TCustomKeyboardHandler.Create(events);
+        end
+       else
+        begin
+          if events.MustCreateLoadHandler        then FLoadHandler        := TCustomLoadHandler.Create(events);
+          if events.MustCreateFocusHandler       then FFocusHandler       := TCustomFocusHandler.Create(events);
+          if events.MustCreateContextMenuHandler then FContextMenuHandler := TCustomContextMenuHandler.Create(events);
+          if events.MustCreateDialogHandler      then FDialogHandler      := TCustomDialogHandler.Create(events);
+          if events.MustCreateKeyboardHandler    then FKeyboardHandler    := TCustomKeyboardHandler.Create(events);
+          if events.MustCreateDisplayHandler     then FDisplayHandler     := TCustomDisplayHandler.Create(events);
+          if events.MustCreateDownloadHandler    then FDownloadHandler    := TCustomDownloadHandler.Create(events);
+          if events.MustCreateJsDialogHandler    then FJsDialogHandler    := TCustomJsDialogHandler.Create(events);
+          if events.MustCreateLifeSpanHandler    then FLifeSpanHandler    := TCustomLifeSpanHandler.Create(events);
+          if events.MustCreateRenderHandler      then FRenderHandler      := TCustomRenderHandler.Create(events);
+          if events.MustCreateRequestHandler     then FRequestHandler     := TCustomRequestHandler.Create(events);
+          if events.MustCreateDragHandler        then FDragHandler        := TCustomDragHandler.Create(events);
+          if events.MustCreateFindHandler        then FFindHandler        := TCustomFindHandler.Create(events);
+          if events.MustCreateAudioHandler       then FAudioHandler       := TCustomAudioHandler.Create(events);
+        end;
+    end;
+end;</code></pre>
+<p>在文件<code>uCEFLoadHandler.pas</code>中，则定义了相关函数</p>
+<pre><code><code>procedure TCustomLoadHandler.OnLoadError(const browser   : ICefBrowser;
+                                         const frame     : ICefFrame;
+                                               errorCode : TCefErrorCode;
+                                         const errorText : ustring;
+                                         const failedUrl : ustring);
+begin
+  if (FEvents &lt;&gt; nil) then IChromiumEvents(FEvents).doOnLoadError(browser, frame, errorCode, errorText, failedUrl);
+end;</code></pre>
+<p>其中FEvents就是TChromium的对象（类型转换后调用），这样就把TChromium对象的事件处理函数连接到这里来了。</p>
+<p>之后再往前追溯。是如何把delphi的函数注册给C接口的dll的。在文件<code>uCEFLoadHandler.pas</code>中，有下面这么一个函数，命名风格和delphi截然不同，初步怀疑就是它被注册的</p>
+<pre><code><code>procedure cef_load_handler_on_load_error(      self      : PCefLoadHandler;
+                                               browser   : PCefBrowser;
+                                               frame     : PCefFrame;
+                                               errorCode : TCefErrorCode;
+                                         const errorText : PCefString;
+                                         const failedUrl : PCefString); stdcall;
+var
+  TempObject : TObject;
+begin
+  TempObject := CefGetObject(self);
+
+  if (TempObject &lt;&gt; nil) and (TempObject is TCefLoadHandlerOwn) then
+    TCefLoadHandlerOwn(TempObject).OnLoadError(TCefBrowserRef.UnWrap(browser),
+                                               TCefFrameRef.UnWrap(frame),
+                                               errorCode,
+                                               CefString(errorText),
+                                               CefString(failedUrl));
+end;</code></pre>
+<p>它唯一被引用的地方如下</p>
+<pre><code><code>constructor TCefLoadHandlerOwn.Create;
+begin
+  inherited CreateData(SizeOf(TCefLoadHandler));
+
+  with PCefLoadHandler(FData)^ do
+    begin
+      on_loading_state_change := {$IFDEF FPC}@{$ENDIF}cef_load_handler_on_loading_state_change;
+      on_load_start           := {$IFDEF FPC}@{$ENDIF}cef_load_handler_on_load_start;
+      on_load_end             := {$IFDEF FPC}@{$ENDIF}cef_load_handler_on_load_end;
+      on_load_error           := {$IFDEF FPC}@{$ENDIF}cef_load_handler_on_load_error;
+    end;
+end;</code></pre>
+<p><code>inherited CreateData(SizeOf(TCefLoadHandler));</code>代表调用父类的CreateData函数，主要目的是开辟一块内存空间，大小是<code>TCefLoadHandler</code>类型大小那么大的内存空间，而FData就是指向那块内存的地址。</p>
+<p>其中<code>on_load_error</code>的定义如下<code>on_load_error : procedure(self: PCefLoadHandler; browser: PCefBrowser; frame: PCefFrame; errorCode: TCefErrorCode; const errorText, failedUrl: PCefString); stdcall;</code><br />
+是一个函数对象</p>
+<p>而<code>TCefLoadHandlerOwn</code>则是继承自下面这个类型</p>
+<pre><code><code>  // /include/capi/cef_load_handler_capi.h (cef_load_handler_t)
+  TCefLoadHandler = record
+    base                    : TCefBaseRefCounted;
+    on_loading_state_change : procedure(self: PCefLoadHandler; browser: PCefBrowser; isLoading, canGoBack, canGoForward: Integer); stdcall;
+    on_load_start           : procedure(self: PCefLoadHandler; browser: PCefBrowser; frame: PCefFrame; transition_type: TCefTransitionType); stdcall;
+    on_load_end             : procedure(self: PCefLoadHandler; browser: PCefBrowser; frame: PCefFrame; httpStatusCode: Integer); stdcall;
+    on_load_error           : procedure(self: PCefLoadHandler; browser: PCefBrowser; frame: PCefFrame; errorCode: TCefErrorCode; const errorText, failedUrl: PCefString); stdcall;
+  end;</code></pre>
+<p>根据这里的注释，找到了cef中的c接口描述文件，发现<code>TCefLoadHandler</code>类型和c接口定义的<code>_cef_load_handler_t</code>结构体一致，到此处就基本能确定了，<code>TCefLoadHandler</code>就是和C接口对接的注册函数的类型。</p>
+
+</div>
+</div></div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

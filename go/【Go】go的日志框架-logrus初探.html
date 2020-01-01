@@ -1,0 +1,117 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修【Go】go的日志框架-logrus初探' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>【Go】go的日志框架-logrus初探</center></div><div class='banquan'>原文出处:本文由博客园博主Ryan_W提供。<br/>
+原文连接:https://www.cnblogs.com/Ryan16231112/p/11850990.html</div><br>
+    <h2>summary</h2>
+<p>&nbsp;logrus是针对go语言开发的一款日志系统，在本片文章中，将会对上手logrus的过程中遇到的一些问题做一个记录。这个记录参考了<a href="https://blog.csdn.net/wslyk606/article/details/81670713" target="_blank">这篇文章</a>。下面我们开始吧！</p>
+<h2>上手</h2>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import (
+  log "github.com/sirupsen/logrus"
+)
+
+func main() {
+  log.WithFields(log.Fields{
+    "animal": "walrus",
+  }).Info("A walrus appears")
+}</pre>
+</div>
+<p>这样就可以啦，可以看到输出的日志格式如下：</p>
+<div class="cnblogs_Highlighter">
+<pre class="brush:bash;gutter:true;">time="2018-08-11T15:42:22+08:00" level=info msg="A walrus appears" animal=walrus
+</pre>
+</div>
+<p>那么接下来的问题是，以这种方式输出的日志可以看到就还是比较杂乱无章的，那么有没有方式把日志用一种比较有格式的方式输出呢？我们想到了JSON格式。那么下面我们用</p>
+<pre><code>log.SetFormatter(&amp;log.JSONFormatter{})</pre>
+<p>这条语句，以JSON格式来输出我们的日志：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import (
+	"os"
+	log "github.com/sirupsen/logrus"
+)
+
+func init() {
+	// 设置日志格式为json格式
+	log.SetFormatter(&amp;log.JSONFormatter{})
+
+	// 设置将日志输出到标准输出（默认的输出为stderr，标准错误）
+	// 日志消息输出可以是任意的io.writer类型
+	log.SetOutput(os.Stdout)
+
+	// 设置日志级别为warn以上
+	log.SetLevel(log.WarnLevel)
+}
+
+func main() {
+	log.WithFields(log.Fields{
+		"animal": "walrus",
+		"size":   10,
+	}).Info("A group of walrus emerges from the ocean")
+
+	log.WithFields(log.Fields{
+		"omg":    true,
+		"number": 122,
+	}).Warn("The group's number increased tremendously!")
+
+	log.WithFields(log.Fields{
+		"omg":    true,
+		"number": 100,
+	}).Fatal("The ice breaks!")
+}　　</pre>
+</div>
+<p>输出对应如下：</p>
+<div class="cnblogs_Highlighter">
+<pre class="brush:bash;gutter:true;">{"level":"warning","msg":"The group's number increased tremendously!","number":122,"omg":true,"time":"2019-11-13T17:32:42+08:00"}
+{"level":"fatal","msg":"The ice breaks!","number":100,"omg":true,"time":"2019-11-13T17:32:42+08:00"}　　</pre>
+</div>
+<p>除了setFormatter用于把日志的格式设置为JSON之外，我们在这里还设置了显示日志的级别。</p>
+<p>并可以看到，每次在withField之后加上一种输出日志的格式之后就可以输出一行日志了。</p>
+<h2>深入　</h2>
+<p>有时我们也需要在程序的不同部分中，向日志中不断加入信息，并在程序的最后进行输出，下面提供一种使用logger的办法：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>logger:= log.WithFields(log.Fields{
+		"path":       r.URL.Path,
+		"method":     r.Method,
+		"request_id": reqID,
+		"client_ip":  r.RemoteAddr,
+		"start_time": startTime,
+	})
+
+logger = logger.WithFields(log.Fields{
+			"error": err.Error(),
+		})
+
+logger.WithFields(log.Fields{
+		"error_code": aErr.Code,
+		"error_msg":  aErr.Msg,
+	}).Warn("FAIL")
+</pre>
+</div>
+<p>如图，用这种办法就可以在程序的各个部分中向同一段log中加入所需要的内容了。下面所需要做的就是吧logger作为一个参数在各个需要进行输出log的函数中传播了。</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

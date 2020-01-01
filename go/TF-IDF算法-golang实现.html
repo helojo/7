@@ -1,0 +1,149 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修TF-IDF算法-golang实现' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>TF-IDF算法-golang实现</center></div><div class='banquan'>原文出处:本文由博客园博主探索者前行提供。<br/>
+原文连接:https://www.cnblogs.com/tianxingxing/p/10758103.html</div><br>
+    <p>1、TF-IDF算法介绍</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;TF-IDF（term frequency&ndash;inverse document frequency，词频-逆向文件频率）是一种用于信息检索（information retrieval）与文本挖掘（text mining）的常用加权技术。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;TF-IDF是一种统计方法，用以评估一字词对于一个文件集或一个语料库中的其中一份文件的重要程度。字词的重要性随着它在文件中出现的次数成正比增加，但同时会随着它在语料库中出现的频率成反比下降。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;TF-IDF的主要思想是：如果某个单词在一篇文章中出现的频率TF高，并且在其他文章中很少出现，则认为此词或者短语具有很好的类别区分能力，适合用来分类。</p>
+<p>&nbsp;</p>
+<p>（1）TF是词频(Term Frequency)</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 词频（TF）表示词条（关键字）在文本中出现的频率。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 这个数字通常会被归一化(一般是词频除以文章总词数), 以防止它偏向长的文件。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 公式：&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;即：</p>
+<p>&nbsp;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 其中&nbsp;ni,j&nbsp;是该词在文件&nbsp;dj&nbsp;中出现的次数，分母则是文件&nbsp;dj&nbsp;中所有词汇出现的次数总和；</p>
+<p>&nbsp;</p>
+<p>（2） IDF是逆向文件频率(Inverse Document Frequency)</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 逆向文件频率 (IDF)&nbsp;：某一特定词语的IDF，可以由总文件数目除以包含该词语的文件的数目，再将得到的商取对数得到。</p>
+<p>如果包含词条t的文档越少, IDF越大，则说明词条具有很好的类别区分能力。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 公式：&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 其中，|D|&nbsp;是语料库中的文件总数。&nbsp;|{j:ti&isin;dj}|&nbsp;表示包含词语&nbsp;ti&nbsp;的文件数目（即&nbsp;ni,j&ne;0&nbsp;的文件数目）。如果该词语不在语料库中，就会导致分母为零，因此一般情况下使用&nbsp;1+|{j:ti&isin;dj}|</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 即：</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>（3）TF-IDF实际上是：TF * IDF</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;某一特定文件内的高词语频率，以及该词语在整个文件集合中的低文件频率，可以产生出高权重的TF-IDF。因此，TF-IDF倾向于过滤掉常见的词语，保留重要的词语。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;公式：</p>
+<p>&nbsp; &nbsp; &nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;golang 实现TF-IDF 算法</p>
+<div class="cnblogs_code">
+<pre><code> 1 <span>package main
+ 2 
+ 3 import<span> (
+ 4     "fmt"
+ 5     "math"
+ 6     "sort"
+ 7     "time"
+ 8 <span>)
+ 9 
+10 <span>type wordTfIdf struct {
+11 <span>    nworld string
+12 <span>    value  float64
+13 <span>}
+14 
+15 <span>func main() {
+16     start :=<span> currentTimeMillis()
+17 <span>    FeatureSelect(Load())
+18 
+19 
+20      cost := currentTimeMillis() -<span> start
+21      fmt.Printf("耗时 %d ms "<span>,cost)
+22 
+23 <span>}
+24 
+25 <span>type wordTfIdfs []wordTfIdf
+26 <span>type Interface interface {
+27 <span>    Len() int
+28 <span>    Less(i, j int) bool
+29 <span>    Swap(i, j int)
+30 <span>}
+31 
+32 <span>func (us wordTfIdfs) Len() int {
+33     return<span> len(us)
+34 <span>}
+35 <span>func (us wordTfIdfs) Less(i, j int) bool {
+36     return us[i].value &gt;<span> us[j].value
+37 <span>}
+38 <span>func (us wordTfIdfs) Swap(i, j int) {
+39     us[i], us[j] =<span> us[j], us[i]
+40 <span>}
+41 
+42 <span>func currentTimeMillis() int64 {
+43     return time.Now().UnixNano() / 1000000
+44 <span>}
+45 <span>func FeatureSelect(list_words [][]string) {
+46     docFrequency :=<span> make(map[string]float64, 0)
+47     sumWorlds :=<span> 0;
+48     for _, wordList :=<span> range list_words {
+49         for _, v :=<span> range wordList {
+50             docFrequency[v] += 1
+51             sumWorlds++<span>;
+52 <span>        }
+53 <span>    }
+54     wordTf :=<span> make(map[string]float64)
+55     for k, _ :=<span> range docFrequency {
+56         wordTf[k] = docFrequency[k] /<span> float64(sumWorlds)
+57 <span>    }
+58     docNum :=<span> float64(len(list_words))
+59     wordIdf :=<span> make(map[string]float64)
+60     wordDoc :=<span> make(map[string]float64, 0)
+61     for k, _ :=<span> range docFrequency {
+62         for _, v :=<span> range list_words {
+63             for _, vs :=<span> range v {
+64                 if (k ==<span> vs) {
+65                     wordDoc[k] += 1
+66                     break
+67 <span>                }
+68 <span>            }
+69 <span>        }
+70 <span>    }
+71     for k, _ :=<span> range docFrequency {
+72         wordIdf[k] = math.Log(docNum / (wordDoc[k] + 1<span>))
+73 <span>    }
+74 <span>    var wordifS wordTfIdfs
+75     for k, _ :=<span> range docFrequency {
+76 <span>        var wti wordTfIdf
+77         wti.nworld =<span> k
+78         wti.value = wordTf[k] *<span> wordIdf[k]
+79         wordifS =<span> append(wordifS, wti)
+80 <span>    }
+81 <span>    sort.Sort(wordifS)
+82 <span>    fmt.Println(wordifS)
+83 <span>}
+84 
+85 <span>func Load() [][]string {
+86     slice :=<span> [][]string{
+87         {"my", "dog", "has", "flea", "problems", "help", "please"<span>},
+88         {"maybe", "not", "take", "him", "to", "dog", "park", "stupid"<span>},
+89         {"my", "dalmation", "is", "so", "cute", "I", "love", "him"<span>},
+90         {"stop", "posting", "stupid", "worthless", "garbage"<span>},
+91         {"mr", "licks", "ate", "my", "steak", "how", "to", "stop", "him"<span>},
+92         {"quit", "buying", "worthless", "dog", "food", "stupid"<span>},
+93 <span>    }
+94     return<span> slice
+95 }</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

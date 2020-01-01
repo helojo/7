@@ -1,0 +1,92 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修函数，从编辑到编译 (上)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>函数，从编辑到编译 (上)</center></div><div class='banquan'>原文出处:本文由博客园博主tobe的呓语提供。<br/>
+原文连接:https://www.cnblogs.com/tobe98/p/11564536.html</div><br>
+    <h2 id="序">0. 序</h2>
+<p>我从一生下来就呆在这个昏暗的地方。</p>
+<p>我不明白为什么程序员这么喜欢 Dark Mode，Brighten Mode 才是我的最爱。听说最近连 iphone 都开始支持 Dark Mode 了，没话讲。。。说好的绝不妥协呢？</p>
+<p>我周围是熙熙攘攘的函数群，穿插着变量声明和宏定义。</p>
+<p>在我们这里，函数是一等公民。</p>
+<p>当然，不光在 C++，在面向过程的 C 语言、面向对象的 Java ，尤其是在那些函数式编程的语言里，我们都扮演着举足轻重的角色。</p>
+<p>能力越大，责任越大。我和一群函数伙伴们就负责维护着程序的功能。每个函数的一小步，合起来就是功能模块的一大步。</p>
+<p>作为一门静态编译型语言，我们不像那些解释语言一样，写完就能直接运行，而是要先经过编译这一道坎，成为机器语言，才能够运行在我们赖以生存的机器上。</p>
+<p>这道坎不是那么好过的，再顶尖的程序员，也会在这上面栽跟头。</p>
+<p>放在往常，虽然程序偶尔会出 bug ，但大家齐心协力，可谓虫（bug）挡杀虫，过五关斩六将，整个程序也称得上是井井有条。</p>
+<p><strong>但这次，我们遇到了大问题。</strong></p>
+<h2 id="预编译">1. 预编译</h2>
+<p>今天的一切看起来都很平凡，至少我是这么认为的。</p>
+<p>屏幕外的程序员像平常一样敲着代码，我们像平常迎接着新函数的到来，像平常一样嬉笑怒骂，像平常一样期待着预编译进程的到来。</p>
+<p>预编译进程是整个编译进程的先锋。</p>
+<p>像往常一样，我们从磁盘出发，沿着总线来到了内存。这里就是进程的工作车间。</p>
+<p>预编译进程第一步会 <strong>删除所有 <code>#define</code>，展开宏定义。处理条件预编译指令。</strong></p>
+<pre><code><code>#define WINDOWS
+#define BUFSIZE 1024
+#define DEPTH 4
+#define DECODE &quot;utf-8&quot;
+...</code></code></pre>
+<p>上面的就是宏定义，每次我们都要在预编译进程的指挥下，把语句里出现的宏替换成对应的值。</p>
+<p>这一步其实本来不需要我们干的，程序员怕麻烦，想要做到“一处修改，处处更改”，就发明了宏定义，让编译器来干这些“脏活累活”。</p>
+<p>处理条件预编译指令就有点不一样了：</p>
+<pre><code><code>//windows or linux
+#ifdef WINDOWS
+&lt;experssion1&gt;
+#else
+&lt;experssion2&gt;
+#endif</code></code></pre>
+<p>如果宏定义有这个 <code>WINDOWS</code>，就只留下 <code>&lt;experssion1&gt;</code>，没有的话就留 <code>&lt;experssion2&gt;</code> 。说白了，就是个预编译阶段能执行的 <code>if... else ...</code> 语句。上面的语句一处理，就变成了：</p>
+<pre><code><code>&lt;experssion1&gt;</code></code></pre>
+<p>对，注释也会被删除。</p>
+<p>可怜那些注释，这一辈子都不曾领略 CPU 里的风景。</p>
+<p>第二步是<strong>处理 <code>#include</code>预编译指令。</strong></p>
+<p>这一步就比上面的复杂多了。用专业的话来说，处理 “#include ”预编译指令，就是<strong>将被包含的文件插入到该预编译指令的位置。</strong>这个过程是<strong>递归</strong>进行的，也就是说被包含的文件可能还包含其他文件。</p>
+<pre><code><code>#include &quot;config.h&quot;
+&lt;expressions&gt;</code></code></pre>
+<p>别看他们现在就只有短短两句，等把 <code>config.h</code>文件内容复制过来，信息量一下子就大了。</p>
+<pre><code><code>#ifndef _CONFIG_H_
+#define _CONFIG_H_
+
+#define VERSION &quot;1.0.0&quot;
+#define MODE 1
+...
+...
+#endif
+
+&lt;expressions&gt;</code></code></pre>
+<p>补充一句，这个 <code>.h</code> 后缀的家伙，叫头文件。他是我们与其他文件的函数公民的沟通渠道。</p>
+<p>头文件这个家伙和源文件不太一样，他是包含功能函数、数据接口声明的载体文件，主要用于保存程序的声明。也就是说，头文件里是没有函数的——我们曾多次试图占领头文件的领地，但都没有成功——都是因为程序员的约束。</p>
+<p>每个头文件都会带有一组条件预编译语句，用来防止自己被多次编译。</p>
+<p>至于怎么做到的，这太简单了，我不说你也能想出来。</p>
+<p>听说有的编译器还支持 <code>#pragma once</code> ，添在头文件第一行就能做到相同的事情。可惜我们的编译器有点旧，不兼容他们。</p>
+<p>最后这步就比较快了，<strong>添加行号和文件名标识</strong>。</p>
+<p>走到这里，我们已经得到了编译器调试的需要的行号信息，如果编译到哪一步出错，或者出现 <code>warning</code> 这样的警告，就能把行号显示出来，方便程序员及时发现问题源头。</p>
+<p>今天的预编译比我想象中要快一点，可能这次没什么进程跟我们抢 CPU 资源吧。</p>
+<p>预编译阶段结束，<code>#</code> 的数量大大减少，仅剩下几个 <code>#pragma</code> 指令留在这里。</p>
+<p>和其他宏定义指令不一样的是，<code>#pragma</code> 是能够跟编译器平起平坐的存在，预编译进程见了都得避让三分。</p>
+<pre><code><code>#pragma  warning( disable: 4507 34; once: 4385; error: 164 )</code></code></pre>
+<p>像这条指令，就是专门给编译器看的，意思是 ‘不显示4507和34号警告信息 ，4385号警告信息仅报告一次，把164号警告信息作为一个错误’ 。可以说，她是程序员和编译器之间的信鸽。</p>
+<!--要注意的是，这里面的第几步第几步是不严谨的，预编译没有划分这样的界限-->
+<p>对于我来说，预编译阶段是比较轻松的，最复杂也只是处理条件预编译指令——删除几行代码罢了。</p>
+<p>未完待续</p>
+<p>如果大家对文章有什么看法和意见，欢迎提出来~</p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

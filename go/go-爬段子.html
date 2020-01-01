@@ -1,0 +1,174 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go-爬段子' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go-爬段子</center></div><div class='banquan'>原文出处:本文由博客园博主跌倒的小黄瓜提供。<br/>
+原文连接:https://www.cnblogs.com/ygjzs/p/12001375.html</div><br>
+    <h1 id="爬取搞笑的段子横向爬取纵向爬取">爬取搞笑的段子，横向爬取+纵向爬取</h1>
+<p>横向爬取爬页数，纵向爬取，爬每页的内容</p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    &quot;io&quot;
+    &quot;net/http&quot;
+    &quot;os&quot;
+    &quot;regexp&quot;
+    &quot;strconv&quot;
+    &quot;strings&quot;
+)
+
+func HttpGet(url string) (result string, err error) {
+    resp, err1 := http.Get(url)
+    if err1 != nil {
+        err = err1
+        return
+    }
+    defer resp.Body.Close()
+    buf := make([]byte, 4096)
+    for {
+        n, err2 := resp.Body.Read(buf)
+        if n == 0 {
+            break
+        }
+        if err2 != nil &amp;&amp; err2 != io.EOF {
+            err = err2
+            return
+        }
+        result += string(buf[:n])
+    }
+    return
+}
+
+func SaveJoke2File(idx int, fileTitle, fileContent []string) {
+    path := &quot;第&quot; + strconv.Itoa(idx) + &quot;页.txt&quot;
+    f, err := os.Create(path)
+    if err != nil {
+        fmt.Println(&quot;err:&quot;, err)
+        return
+    }
+    defer f.Close()
+    n := len(fileTitle)
+    for i := 0; i &lt; n; i++ {
+        f.WriteString(fileTitle[i] + &quot;\n&quot; + fileContent[i] + &quot;\n&quot;)
+        f.WriteString(&quot;-----------------------------\n&quot;)
+    }
+}
+
+//抓取一个网页
+func Spiderpage(idx int, page chan int) {
+    url := &quot;https://m.pengfue.com/xiaohua_&quot; + strconv.Itoa(idx) + &quot;.html&quot;
+
+    result, err := HttpGet(url)
+    if err != nil {
+        fmt.Println(&quot;httpget err&quot;, err)
+        return
+    }
+
+    ret := regexp.MustCompile(`&lt;h1 class=&quot;f18&quot;&gt;&lt;a href=&quot;(?s:(.*?))&quot;`)
+
+    alls := ret.FindAllStringSubmatch(result, -1)
+
+    fileTitle := make([]string, 0)
+    fileContent := make([]string, 0)
+
+    for _, jokeURL := range alls {
+        //      fmt.Println(&quot;jokeURL&quot;, jokeURL[1])
+        title, content, err := SpiderJokePage(jokeURL[1])
+
+        if err != nil {
+            fmt.Println(&quot;err:&quot;, err)
+            continue
+        }
+
+        //      fmt.Println(&quot;title:&quot;, title)
+        //      fmt.Println(&quot;content:&quot;, content)
+        fileTitle = append(fileTitle, title)
+        fileContent = append(fileContent, content)
+    }
+    SaveJoke2File(idx, fileTitle, fileContent)
+
+    page &lt;- idx
+}
+
+func toWork(start, end int) {
+    fmt.Printf(&quot;正在爬取%d到%d页。。。\n&quot;, start, end)
+
+    page := make(chan int)
+
+    for i := start; i &lt;= end; i++ {
+        //      title, content, err := Spiderpage(i)
+        go Spiderpage(i, page)
+        //      if err != nil {
+        //          fmt.Println(&quot;err:&quot;, err)
+        //          continue
+        //      }
+        //      fmt.Println(&quot;title:&quot;, title)
+        //      fmt.Println(&quot;content:&quot;, content)
+    }
+    for i := start; i &lt;= end; i++ {
+        fmt.Printf(&quot;第%d个页面爬取完成\n&quot;, &lt;-page)
+    }
+}
+
+func SpiderJokePage(url string) (title, content string, err error) {
+    result, err1 := HttpGet(url)
+    if err1 != nil {
+        //      fmt.Println(&quot;httpget err&quot;, err)
+        err = err1
+        return
+    }
+    ret1 := regexp.MustCompile(`&lt;title&gt;(?s:(.*?))&lt;/title&gt;`)
+
+    alls := ret1.FindAllStringSubmatch(result, 1) //两处，取一个
+    for _, timTitle := range alls {
+        title = timTitle[1]
+        title = strings.Replace(title, &quot; &quot;, &quot;&quot;, -1)
+        title = strings.Replace(title, &quot;\n&quot;, &quot;&quot;, -1)
+        break
+    }
+
+    ret2 := regexp.MustCompile(`&lt;div class=&quot;con-txt&quot;&gt;(?s:(.*?))&lt;/div&gt;`)
+
+    alls2 := ret2.FindAllStringSubmatch(result, 1) //两处，取一个
+    for _, timTitle := range alls2 {
+        content = timTitle[1]
+        content = strings.Replace(content, &quot; &quot;, &quot;&quot;, -1)
+        content = strings.Replace(content, &quot;\n&quot;, &quot;&quot;, -1)
+        content = strings.Replace(content, &quot;    &quot;, &quot;&quot;, -1)
+        content = strings.Replace(content, &quot;&amp;nbsp;&quot;, &quot;&quot;, -1)
+        break
+    }
+    return
+}
+
+func main() {
+    var start, end int
+    fmt.Print(&quot;请输入起始页。。。&quot;)
+    fmt.Scan(&amp;start)
+    fmt.Print(&quot;请输入终止页。。。&quot;)
+    fmt.Scan(&amp;end)
+
+    toWork(start, end)
+}
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

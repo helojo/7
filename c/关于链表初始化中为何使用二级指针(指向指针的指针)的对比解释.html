@@ -1,0 +1,429 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修关于链表初始化中为何使用二级指针(指向指针的指针)的对比解释' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>关于链表初始化中为何使用二级指针(指向指针的指针)的对比解释</center></div><div class='banquan'>原文出处:本文由博客园博主GUPU_番茄呀提供。<br/>
+原文连接:https://www.cnblogs.com/fanqieya/p/10778516.html</div><br>
+    <h2 id="引言">###引言###</h2>
+<p>在数据结构的学习过程中,有时候会遇到一些一时无法理解的问题,深究起来却是<strong>语言的底层的语法机制所限制</strong>.<br />
+就例如在链表的构建中,链表的初始化和销毁为何需要使用一个二级指针,而不是只需要传递一个指针就可以了,其问题的<strong>关键就在于c语言的参数传递的方式是值传递</strong><br />
+那么,这篇文章就来聊一聊在链表的初始化中一级指针的传递和二级指针的区别.</p>
+<hr />
+<h2 id="一级指针和二级指针的区别"><strong>一级指针和二级指针的区别</strong></h2>
+<hr />
+<h3 id="前提知识c语言中参数传递的方式是值传递和地址传递">1.<strong>前提知识</strong>:c语言中参数传递的方式是值传递和地址传递</h3>
+<ul>
+<li><strong>值传递:</strong>传递的是实参的副本,即形参是一个新开辟的类型一样,里面的内容一样,地址不一样的一个变量,主函数和被被调用函数用的是不一样的内存空间</li>
+<li><strong>地址传递:</strong>传递的是一个地址,实际上主函数和被调用函数共用的是同一块内存空间,被调用函数依然需要一个新的指针来保存起来这块地址</li>
+</ul>
+<h3 id="传递一级指针无法对原指针指向第地址进行修改">2.<strong>传递一级指针:</strong>无法对原指针指向第地址进行修改</h3>
+<p>一级指针实例:</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+
+#include &lt;stdlib.h&gt;
+
+#define MaxSize 100
+
+typedef int ElemType;
+
+typedef struct SingleNode{
+
+         ElemType data;
+
+         struct SingleNode *next;
+
+}SingleNodeList,*Linklist;
+
+void LinkedListInit(SingleNodeList *head){//用一个指针head接收传入的地址
+
+    Linklist p;
+
+         if((head=(SingleNodeList *)malloc(sizeof(SingleNodeList)))==NULL){
+
+                   exit(1);//给head分配内存,改变了head指针指向的地址(注意这里的head只是LinkedListInit的head,不是主函数那个)
+
+         }
+
+         head-&gt;next=NULL;
+
+}//这个函数结束后head被销毁了,主函数的那个head不变;
+
+int LinkedList_PushFront(SingleNodeList *head,ElemType x){//2单链表头插入
+
+         SingleNodeList *q;
+
+         if((q=(struct SingleNode *)malloc(sizeof (struct SingleNode)))==NULL){
+
+                   exit(1);
+
+         }
+
+        q-&gt;data=x; q-&gt;next=head-&gt;next;//头节点的数据域与指针域赋值
+
+         head-&gt;next=q;//头节点加入链表
+
+         return 1;
+
+}
+
+int LinkedList_PopFront(SingleNodeList *head,ElemType *x){//3单链表头删除
+
+         SingleNodeList *p=head,*q;
+
+         if(p-&gt;next==NULL){
+
+                   printf(&quot;There is no data in the Linkedlist to delete.\n&quot;);
+
+                   *x = -12345;//未成功删除则在x指向单元赋特定值
+
+                   return 0;
+
+         }
+
+        p=head-&gt;next;
+        q=p;
+        head-&gt;next=p-&gt;next;
+        *x=q-&gt;data;
+        free(q);
+        return *x;//请填写多行代码
+
+}
+
+int LinkedListGet_current(SingleNodeList *p,ElemType *x){//4取当前指针指数据
+
+        *x =p-&gt;data;
+
+         return 1;
+
+}
+
+int LinkedListUpdata_current(SingleNodeList *p,ElemType x){//5修改当前指针数据
+
+         p-&gt;data=x;
+
+         return 1;
+
+}
+
+int LinkedListShow(SingleNodeList *head){//6打印单链表
+
+         SingleNodeList *p=head;
+
+         if(p-&gt;next==NULL){
+
+                   printf(&quot;There is no data in the Linkedlist to print.\n&quot;);
+
+                   return 0;
+
+         }
+
+         while(p-&gt;next!=NULL){
+
+                   printf(&quot;%d &quot;,p-&gt;next-&gt;data);
+
+                   p=p-&gt;next;
+
+         }
+
+         printf(&quot;\n&quot;);
+
+         return 1;
+
+}
+
+void LinkedListDestroy(SingleNodeList **head){//7释放链表
+
+         SingleNodeList *p=*head,*q;
+
+         while(p!=NULL){
+
+                   q=p;
+
+                   p=p-&gt;next;
+
+                   free(q);
+
+         }
+
+         *head=NULL;
+
+}
+
+int LinkedListLength(SingleNodeList *head){//8求单链表长度
+
+         SingleNodeList *p=head;
+
+         int size=0;
+
+         while(p-&gt;next!=NULL){
+
+                   size++;
+
+                   p=p-&gt;next;
+
+         }
+
+         return size;
+
+}
+
+int main(){
+
+         SingleNodeList *head,*p;
+
+         ElemType i,x;
+
+         int switch_num;
+
+         scanf(&quot;%d&quot;,&amp;switch_num);
+
+         switch(switch_num){
+
+                   case 1:
+
+                            LinkedListInit(head); //传入指针变量head的地址
+
+                            LinkedList_PushFront(head,1);
+
+                            LinkedList_PushFront(head,3);
+
+                            LinkedList_PushFront(head,2);
+
+                            LinkedListShow(head);
+
+                            break;
+
+       }
+
+       LinkedListDestroy(&amp;head);
+
+       return 0;
+
+}</code></code></pre>
+<p>传递流程如图所示</p>
+<p><img src="./images/关于链表初始化中为何使用二级指针(指向指针的指针)的对比解释0.png" /></p>
+<p>从图中可以看出,main函数中我们定义了 一个指针head,假设它的地址是0x10010,但是还没给它初始化,也就是说它存的地址是随机的,我们也假设它存的是0x12306</p>
+<p>在main函数中,我们把<strong>head这个指针</strong>作为参数传递进去初始化函数(值传递),按照值传递的原则,初始化函数首先开辟了一个*<strong>head</strong>指针,它的地址是0x12345(与main函数的0x10010不一样),但是它的内容是是和主函数的head是一样的,都是指向0x12306这个地址</p>
+<p>在初始化的过程中,我们用malloc函数对初始化函数内的head指针分配内存空间,也就是改变了head指针的值,由未初始化的随机值0x12306改变成了0x10086</p>
+<p>也就是说,由于这个head是作用在初始化函数内的,mallo作用的不是主函数的head,初始化函数结束后,这个head指针就被销毁掉了,主函数中的head不受影响,初始化失败,而分配了内存不能使用,造成了内存泄漏</p>
+<hr />
+<h3 id="传递二级指针对指针指向的内容进行操作head销毁后无影响">3. <strong>传递二级指针:</strong>对指针指向的内容进行操作,head销毁后无影响</h3>
+<p>二级指针传递实例:</p>
+<pre><code><code>    
+
+
+#include &lt;stdio.h&gt;
+
+#include &lt;stdlib.h&gt;
+
+#define MaxSize 100
+
+typedef int ElemType;
+
+typedef struct SingleNode{
+
+         ElemType data;
+
+         struct SingleNode *next;
+
+}SingleNodeList,*Linklist;
+
+void LinkedListInit(SingleNodeList **head){//1初始化有头节点的单链表
+
+    Linklist p;
+
+         if((*head=(SingleNodeList *)malloc(sizeof(SingleNodeList)))==NULL){
+
+                   exit(1);
+
+         }
+
+         (*head)-&gt;next=NULL;
+
+}
+
+int LinkedList_PushFront(SingleNodeList *head,ElemType x){//2单链表头插入
+
+         SingleNodeList *q;
+
+         if((q=(struct SingleNode *)malloc(sizeof (struct SingleNode)))==NULL){
+
+                   exit(1);
+
+         }
+
+        q-&gt;data=x; q-&gt;next=head-&gt;next;//头节点的数据域与指针域赋值
+
+         head-&gt;next=q;//头节点加入链表
+
+         return 1;
+
+}
+
+int LinkedList_PopFront(SingleNodeList *head,ElemType *x){//3单链表头删除
+
+         SingleNodeList *p=head,*q;
+
+         if(p-&gt;next==NULL){
+
+                   printf(&quot;There is no data in the Linkedlist to delete.\n&quot;);
+
+                   *x = -12345;//未成功删除则在x指向单元赋特定值
+
+                   return 0;
+
+         }
+
+        p=head-&gt;next;
+        q=p;
+        head-&gt;next=p-&gt;next;
+        *x=q-&gt;data;
+        free(q);
+        return *x;//请填写多行代码
+
+}
+
+int LinkedListGet_current(SingleNodeList *p,ElemType *x){//4取当前指针指数据
+
+        *x =p-&gt;data;
+
+         return 1;
+
+}
+
+int LinkedListUpdata_current(SingleNodeList *p,ElemType x){//5修改当前指针数据
+
+         p-&gt;data=x;
+
+         return 1;
+
+}
+
+int LinkedListShow(SingleNodeList *head){//6打印单链表
+
+         SingleNodeList *p=head;
+
+         if(p-&gt;next==NULL){
+
+                   printf(&quot;There is no data in the Linkedlist to print.\n&quot;);
+
+                   return 0;
+
+         }
+
+         while(p-&gt;next!=NULL){
+
+                   printf(&quot;%d &quot;,p-&gt;next-&gt;data);
+
+                   p=p-&gt;next;
+
+         }
+
+         printf(&quot;\n&quot;);
+
+         return 1;
+
+}
+
+void LinkedListDestroy(SingleNodeList **head){//7释放链表
+
+         SingleNodeList *p=*head,*q;
+
+         while(p!=NULL){
+
+                   q=p;
+
+                   p=p-&gt;next;
+
+                   free(q);
+
+         }
+
+         *head=NULL;
+
+}
+
+int LinkedListLength(SingleNodeList *head){//8求单链表长度
+
+         SingleNodeList *p=head;
+
+         int size=0;
+
+         while(p-&gt;next!=NULL){
+
+                   size++;
+
+                   p=p-&gt;next;
+
+         }
+
+         return size;
+
+}
+
+int main(){
+
+         SingleNodeList *head,*p;
+
+         ElemType i,x;
+
+         int switch_num;
+
+         scanf(&quot;%d&quot;,&amp;switch_num);
+
+         switch(switch_num){
+
+                   case 1:
+
+                            LinkedListInit(&amp;head);
+
+                            LinkedList_PushFront(head,1);
+
+                            LinkedList_PushFront(head,3);
+
+                            LinkedList_PushFront(head,2);
+
+                            LinkedListShow(head);
+
+                            break;
+
+       }
+
+       LinkedListDestroy(&amp;head);
+
+       return 0;
+
+}
+</code></code></pre>
+<p><img src="./images/关于链表初始化中为何使用二级指针(指向指针的指针)的对比解释1.png" /></p>
+<p>如图所示,如果传递的是二级指针就不一样了,首先我们在main函数中的操作是和一级指针差不多,只是传递的时候传递的不是一个指针变量,而是这个指针变量的地址(<strong>地址传递</strong>),但是在初始化函数中我们接收这个地址的是用一个二级指针,也就是<strong>用一个head指针指向传递主函数那个head指针的地址,从而来进行对初始化函数中head指针内容的改变去影响到主函数中的head的指向</strong></p>
+<p>如图所示,我们在mian函数中传递了一个head的地址,也就是0x10010,这个地址是指向0x12306指针的地址<br />
+在初始化函数中,我们用一个另外的head指针接受这块地址,也就是个二级指针,第一级是0x10010,指向0x12305),第二级是0x12345,指向0x10010</p>
+<p>在初始化函数中,malloc函数操作的对象是head指针内的内容,也就是0x10010这块指针(主函数中的head指针),这样成功改变了主函数中的head指向的地址,而在销毁初始化函数的head指针的时候,主函数的的head指针不受影响</p>
+<hr />
+<h3 id="总结">4. <strong>总结</strong></h3>
+<ul>
+<li><strong>参数传递时,在需要改变指针指向的时候需要传递二级指针,例如初始化和销毁链表</strong></li>
+<li><strong>一二级指针的图片对比如下图</strong><br />
+<img src="./images/关于链表初始化中为何使用二级指针(指向指针的指针)的对比解释2.png" /></li>
+</ul>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

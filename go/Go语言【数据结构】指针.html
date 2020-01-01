@@ -1,0 +1,345 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go语言【数据结构】指针' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go语言【数据结构】指针</center></div><div class='banquan'>原文出处:本文由博客园博主Assassinの提供。<br/>
+原文连接:https://www.cnblogs.com/lianzhilei/p/11563853.html</div><br>
+    <h3><span style="font-size: 15px;">指针</span></h3>
+<p>　　本章围绕字符串、数字、数组、切片、map、channel、结构体与指针赋值及函数传参的应用剖析</p>
+<p>&nbsp;</p>
+<p><strong>字符串</strong></p>
+<p>字符串本身也是StringHeader的结构体，包含Data指针与字符串长度，如下</p>
+<div class="cnblogs_Highlighter">
+<pre><code>type StringHeader struct {
+    Data uintptr
+    Len  int
+}</pre>
+</div>
+<p>Data指向的内存地址不可更改，<strong><span style="color: #888888;">字符串赋值和传参只是拷贝</span></strong>了StringHeader中Data和Len的值</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+func main()  {
+	str := "Hello World!"
+	var data string
+	data = str
+	// 拷贝str中Data与Len
+	fmt.Println(data)
+	data = "Hello Go!"
+	// 修改data的值 在内存中生成新的StringHeader结构体 并赋值给data
+	fmt.Println(data)
+	// str内存未改变
+	fmt.Println(str)
+}
+
+//Hello World!
+//Hello Go!
+//Hello World!</pre>
+</div>
+<p>当声明变量为字符串指针时，变量赋值时对象一定是字符串内存地址，函数传参时拷贝的也是内存地址而已　</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+
+func main()  {
+	str := "Hello World!"
+	var ptr *string
+	// 错误方法 str是字符串类型非指针类型
+	//ptr = str
+	// 正确方式 获取str的地址 赋值给ptr
+	ptr = &amp;str
+
+	fmt.Println(ptr)
+	fmt.Println(*ptr)
+}
+
+//0xc0000421c0
+//Hello World!
+</pre>
+</div>
+<p>　　</p>
+<p><span style="font-size: 14px;"><strong>&nbsp;数字</strong></span></p>
+<p>数字未找到对应的结构体，数字类型赋值、指针、函数传参与字符串一致，不可修改（修改等同于重新赋值）</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+func main()  {
+
+	number := 10
+	var ptr *int
+	// 错误方法 str是字符串类型非指针类型
+	//ptr = str
+	// 正确方式 获取str的地址 赋值给ptr
+	ptr = &amp;number
+
+	fmt.Println(ptr)
+	fmt.Println(*ptr)
+}
+
+//0xc00000a0b8
+//10
+</pre>
+</div>
+<p>　　</p>
+<p><strong>&nbsp;数组</strong></p>
+<p>数组赋值、函数传参时，进行都是内存拷贝，数据都会拷贝一份，新的数组修改不影响被赋值的数组</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+func main()  {
+	list1 := [4] int{1,2,3,4}
+
+	list2 := list1
+	list2[0] =100
+	fmt.Println(list1)
+	fmt.Println(list2)
+}
+
+//[1 2 3 4]
+//[100 2 3 4]</pre>
+</div>
+<p>数组指针，指针修改时不需要加*的；修改时，原数组更改</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+func main()  {
+	list := [4]int{1,2,3,4}
+	// 声明时指定数组大小
+	var ptr *[4]int
+	ptr = &amp;list
+	// 错误赋值
+	//*ptr[0] =100
+	// 正确方式
+	ptr[0] = 100
+	fmt.Println(list)
+	fmt.Println(*ptr)
+}
+
+//[100 2 3 4]
+//[100 2 3 4]
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><strong>切片</strong></p>
+<p>切片结构体&nbsp;SliceHeader 如下</p>
+<div class="cnblogs_Highlighter">
+<pre><code>type SliceHeader struct {
+    // 指向数组内存地址 赋值时拷贝的是数组地址
+    Data uintptr
+    // 长度
+    Len  int
+    // 申请空间
+    Cap  int
+}
+</pre>
+</div>
+<p>赋值、copy、函数传参时只是拷贝了结构体中的变量。详情<a id="cb_post_title_url" class="postTitle2" href="https://www.cnblogs.com/lianzhilei/p/11521771.html">Go语言【数据结构】切片</a></p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+func main()  {
+	slice1 := []int{1,2,3,4}
+
+	slice2 := slice1
+	slice2[0] =100
+	fmt.Println(slice1)
+	fmt.Println(slice2)
+}
+
+//[100 2 3 4]
+//[100 2 3 4]
+</pre>
+</div>
+<p>&nbsp;切片指针，下面方式都不可以修改</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+func main() {
+	slice1 := []int{1,2,3,4}
+	var ptr *[]int
+	ptr = &amp;slice1
+
+	// 下面两种方式都不可以修改
+	ptr[0] =100
+	*ptr[0] =100
+	fmt.Println(slice1)
+	fmt.Println(*ptr)
+}
+
+//[1 2 3 4]
+//[1 2 3 4]
+</pre>
+</div>
+<p>　　</p>
+<p><span style="font-size: 15px;"><strong>channel</strong></span></p>
+<p><span style="font-size: 14px;">通道在赋值时，指向的都是同一块内存地址</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+func main() {
+	 chan1 := make(chan string,1)
+	 chan2 := chan1
+	 chan2 &lt;- "hello"
+	 data := &lt;-chan1
+	 fmt.Println(data)
+	 // 指向同一块地址
+	 fmt.Println(chan1)
+	 fmt.Println(chan2)
+}
+
+//hello
+//0xc000088000
+//0xc000088000</pre>
+</div>
+<p>同时，通道也支持指针</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+func main() {
+	 chan1 := make(chan string,1)
+	 chan2 := &amp;chan1
+	 *chan2 &lt;- "hello"
+	 data := &lt;-chan1
+	 fmt.Println(data)
+	 fmt.Println(chan1)
+	 fmt.Println(chan2)
+}
+
+//hello
+//0xc000038060
+//0xc000006028
+</pre>
+</div>
+<p>　　</p>
+<p><strong>结构体&nbsp;</strong></p>
+<p>那么重点来了，结构体赋值和指针有何区别，先看戏结构体生成的三种方式，其中第二种方式和第三中方式一致</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+type Phone struct {
+	color string
+	name string
+}
+
+func main() {
+	// 第一种生成方式  生成结构体对象
+	phone1 :=Phone{"Red","Iphone"}
+	fmt.Println(phone1.color)
+	fmt.Println(phone1.name)
+	fmt.Println(phone1)
+
+	// 第二种生成方式  生成结构体指针
+	phone2 :=&amp;Phone{"Red","Iphone"}
+	fmt.Println(phone2.color)
+	fmt.Println(phone2.name)
+	fmt.Println(phone2)
+
+	// 第三种生成方式  生成结构体指针
+	phone3 := new(Phone)
+	phone3.color = "Red"
+	phone3.name = "Iphone"
+	fmt.Println(phone3.color)
+	fmt.Println(phone3.name)
+	fmt.Println(phone3)
+}
+
+//Red
+//Iphone
+//{Red Iphone}
+//Red
+//Iphone
+//&amp;{Red Iphone}
+//Red
+//Iphone
+//&amp;{Red Iphone}</pre>
+</div>
+<p>结构体赋值，等同于拷贝了结构体中的变量，函数传参与赋值一样</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+type Phone struct {
+	color string
+	name string
+}
+
+func main() {
+	// 赋值
+	phone1 :=Phone{"Red","Iphone"}
+
+	phone2 := phone1
+	phone2.color = "Green"
+	fmt.Println(phone1.color)
+	fmt.Println(phone2.color)
+}
+
+//Red
+//Green</pre>
+</div>
+<p>&nbsp;而指针只是拷贝了结构体的内存地址，修改会影响原来的值</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+type Phone struct {
+	color string
+	name string
+}
+
+func main() {
+	// 赋值
+	phone1 :=&amp;Phone{"Red","Iphone"}
+
+	phone2 := phone1
+	phone2.color = "Green"
+	fmt.Println(phone1.color)
+	fmt.Println(phone2.color)
+}
+
+//Green
+//Green
+</pre>
+</div>
+<p>　　</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

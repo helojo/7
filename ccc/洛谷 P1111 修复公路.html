@@ -1,0 +1,154 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修洛谷 P1111 修复公路' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>洛谷 P1111 修复公路</center></div><div class='banquan'>原文出处:本文由博客园博主yu__xuan提供。<br/>
+原文连接:https://www.cnblogs.com/poi-bolg-poi/p/11439742.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#题目">题目</a></li>
+        <li><a href="#思路">思路</a></li>
+        <li><a href="#code"><span class="math inline">\(Code\)</span></a></li>
+        </ul>
+    </div>
+</div>
+<hr />
+<h3 id="题目">题目</h3>
+<p><a href="https://www.luogu.org/problem/P1111">P1111 修复公路</a></p>
+<h3 id="思路">思路</h3>
+<p>方法一：跑一遍最小生成树（<span class="math inline">\(\text{Prim}\)</span>或<span class="math inline">\(\text{Kruskal}\)</span>，我用的<span class="math inline">\(\text{Prim}\)</span>）,然后找到最大值，如果有等于<span class="math inline">\(inf\)</span>就输出<code>-1</code><br />
+方法二：并查集，先按照耗费时间由小到大排序，一开始联通块数量为<span class="math inline">\(n\)</span>每连接两个不相同的联通块联通块数量减一，当联通块数量减到一时输出当前这条路的耗费的时间</p>
+<h3 id="code"><span class="math inline">\(Code\)</span></h3>
+<p>方法一：</p>
+<pre><code>#include&lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;string&gt;
+#include&lt;algorithm&gt;
+#define max_(a,b) a&gt;b?a:b;
+using namespace std;
+const int inf=1061109567;
+int n,m;
+bool vis[5001];
+int map[5001][5001],dis[5001];
+inline int read(){
+    int x=0;
+    bool f=0;
+    char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;){if(c==&#39;-&#39;)f=!f;c=getchar();}
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;){x=x*10+c-&#39;0&#39;;c=getchar();}
+    return f?-x:x;
+}
+void Prim(){
+    for(int i=1;i&lt;=n;++i){
+        int k=0;
+        for(int j=1;j&lt;=n;++j){
+            if(!vis[j]&amp;&amp;dis[j]&lt;dis[k]) k=j;
+        }
+        vis[k]=1;
+        for(int j=1;j&lt;=n;++j){
+            if(!vis[j]&amp;&amp;map[k][j]&lt;dis[j]){
+                dis[j]=map[k][j];
+            }
+        }
+    }
+}
+
+int main(){
+    memset(map,0x3f3f3f,sizeof(map));
+    memset(dis,0x3f3f3f,sizeof(dis));
+    dis[1]=0;
+    n=read(),m=read();
+    int x,y,w;
+    for(int i=1;i&lt;=m;++i){
+        x=read(),y=read(),w=read();
+        if(w&lt;map[x][y]){
+            map[x][y]=w,map[y][x]=w;
+        }
+    }
+    Prim();
+    int ans=0;
+    for(int i=1;i&lt;=n;++i){
+        if(dis[i]==inf){
+            printf(&quot;-1\n&quot;);
+            return 0;
+        }else ans=max_(ans,dis[i]);
+    }
+    cout&lt;&lt;ans;
+    return 0;
+}</code></pre>
+<p>方法二：</p>
+<pre><code>#include&lt;iostream&gt;
+#include&lt;cstring&gt;
+#include&lt;string&gt;
+#include&lt;cstdio&gt;
+#include&lt;algorithm&gt;
+#define MAXN 100001
+using namespace std;
+int n,m,fa[1001],r[1001];
+struct info{
+    int u,v,c;
+}a[MAXN];
+bool cmp(info a,info b){
+    return a.c&lt;b.c;
+}
+int find(int x){
+    return fa[x]==x?x:fa[x]=find(fa[x]);
+}
+void Union(int x,int y){
+    int rootx=find(x),rooty=find(y);
+    if(rootx==rooty) return;
+    if(r[rootx]&gt;r[rooty]) fa[rooty]=rootx;
+    else if(r[rooty]&gt;r[rootx]) fa[rootx]=rooty;
+    else{
+        fa[rootx]=rooty;
+        r[rooty]++;
+    }
+}
+inline int read(){
+    int x=0;bool f=0;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;){if(c==&#39;-&#39;)f=!f;c=getchar();}
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;){x=x*10+c-&#39;0&#39;;c=getchar();}
+    return f?-x:x;
+}
+
+int main(){
+    n=read(),m=read();
+    for(int i=1;i&lt;=n;++i) fa[i]=i;
+    for(int i=1,x,y,w;i&lt;=m;++i) a[i].u=read(),a[i].v=read(),a[i].c=read();
+    sort(a+1,a+m+1,cmp);
+    int ub=n;
+    for(int i=1;i&lt;=m;++i){
+        if(find(a[i].u)!=find(a[i].v)){
+            Union(a[i].u,a[i].v);
+            ub--;
+        }
+        if(ub==1){
+            printf(&quot;%d\n&quot;,a[i].c);
+            return 0;
+        }
+    }
+    puts(&quot;-1&quot;);
+    return 0;
+}</code></pre>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,183 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修不一样的go语言-玩转语法之一' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>不一样的go语言-玩转语法之一</center></div><div class='banquan'>原文出处:本文由博客园博主eventer提供。<br/>
+原文连接:https://www.cnblogs.com/laud/p/grammar_1.html</div><br>
+    <p>  这段时间为俗事所累，疲以应付，落下了不少想法，错过了更新的日子。这个专题开始之际，已经准备了不下十几个主题，而在写作的过程中，又有新想法与主题涌现出来。未来预计想写写的内容主要包括：</p>
+<ol>
+<li>玩转语法系列</li>
+<li>Context的来龙去脉</li>
+<li>函数、闭包与范畴论的关系</li>
+<li>线程与协程之争</li>
+<li>通道的那些事</li>
+</ol>
+<p>  今天的玩转语法系列，先起个头，调子稍微低一点，主要想与大家分享一下go语言在实践中的优美之处。用不同的语言来解决相同的问题，最能直观感受语言的魅力。</p>
+<p>  先来看看一版java代码的例子(这里没有贬低java的意思，仅仅是举个例子，java是一门很实用的语言)：</p>
+<pre><code><code>public class Tea {
+    //名称
+    private String name;
+    //奶
+    public boolean milk;
+    //珍珠
+    public boolean pearl;
+    //冰
+    public boolean ice;
+    
+    public String toString() {
+        return name.concat(&quot;, &quot;)
+                   .concat(&quot;milk: &quot;)
+                   .concat(String.valueOf(milk))
+                   .concat(&quot;, pearl: &quot;)
+                   .concat(String.valueOf(pearl))
+                   .concat(&quot;, ice: &quot;)
+                   .concat(String.valueOf(ice));
+    }
+}
+
+public class HeyTeaMaker {
+    public Tea make(String name, boolean milk, boolean pearl, boolean ice) {
+        Tea tea = new Tea();
+        tea.name = name;
+        tea.milk = milk;
+        tea.pearl = pearl;
+        tea.ice = ice;
+        return tea;
+    }
+}
+
+public static void main(String[] args) {
+    HeyTeaMaker maker = new HeyTeaMaker();
+    Tea tea = maker.make(&quot;HeyTea&quot;, true, true, false);
+    System.out.println(&quot;tea: &quot; + tea);
+}</code></pre>
+<p>  上面的代码如果不加以设计，直接以这样的方式编写，那么如果需要给茶增加一个属性，比如糖，带来的修改是灾难性的，不单Tea、HeyTeaMake要修改，所有使用的地方都要修改。当然花一番心思设计一下，比如使用建造者模式包装一下。老话说，拥抱变化，java也是可以很优美的。</p>
+<p>  在这个例子中，其实茶的配料都是可选，但因为java天生没有可选参数，参数亦没有默认值，因而对于这个例子恰巧是java的弱项。而使用go就简洁多了，比如：</p>
+<pre class="go"><code>package main
+
+import &quot;fmt&quot;
+
+func main() {
+    fmt.Println(NewTea(&quot;HeyTea&quot;, AddMilk(), AddPearl()))
+}
+
+type Tea struct {
+    Name  string
+    Milk  bool
+    Pearl bool
+    Ice bool
+}
+
+func NewTea(name string, option ... TeaOption) *Tea {
+    tea := &amp;Tea{Name: name}
+    for _, o := range option {
+        o(tea)
+    }
+    return tea
+}
+
+func (t *Tea) String() string {
+    return fmt.Sprintf(&quot;%s, milk: %t, pearl: %t, ice: %t&quot;, t.Name, t.Milk, t.Pearl, t.Ice)
+}
+
+type TeaOption func(t *Tea);
+
+func AddMilk() TeaOption {
+    return func(t *Tea) {
+        t.Milk = true
+    }
+}
+
+func AddPearl() TeaOption {
+    return func(t *Tea) {
+        t.Pearl = true
+    }
+}
+
+func AddIce() TeaOption {
+    return func(t *Tea) {
+        t.Ice = true
+    }
+}
+</code></pre>
+<p>  go其实也没有可选参数，参数也不允许有默认值，但因为函数与闭包的配合使用，使得go很轻松，很简洁地就解决了问题。即使要给茶增加一个属性糖，只需修改Tea，并且加一个AddSugar方法即可，调用的地方如果不需要糖，就不用修改。</p>
+<p>  java8已经引入了lamba与FunctionalInterface，其实完全依照go的实现，java也是可以写出类似的代码来。比如：</p>
+<pre><code><code>import java.util.function.Function;
+
+public class Tea {
+    //名称
+    private String name;
+    //奶
+    public boolean milk;
+    //珍珠
+    public boolean pearl;
+    //冰
+    public boolean ice;
+
+    public String toString() {
+        return name.concat(&quot;, &quot;)
+                .concat(&quot;milk: &quot;)
+                .concat(String.valueOf(milk))
+                .concat(&quot;, pearl: &quot;)
+                .concat(String.valueOf(pearl))
+                .concat(&quot;, ice: &quot;)
+                .concat(String.valueOf(ice));
+    }
+
+    public static Function&lt;Tea, Void&gt; addMilk() {
+        return (Tea t)-&gt; {
+            t.milk = true;
+            return null;
+        };
+    }
+
+    public static Function&lt;Tea, Void&gt; addPearl() {
+        return (Tea t)-&gt; {
+            t.pearl = true;
+            return null;
+        };
+    }
+    public static Function&lt;Tea, Void&gt; addIce() {
+        return (Tea t)-&gt; {
+            t.ice = true;
+            return null;
+        };
+    }
+
+    public static Tea newTea(String name, Function&lt;Tea, Void&gt; ...option) {
+        Tea tea = new Tea();
+        tea.name = name;
+        for (Function&lt;Tea, Void&gt; item : option) {
+            item.apply(tea);
+        }
+        return tea;
+    }
+
+    public static void main(String[] args) {
+        Tea tea = newTea(&quot;HeyTea&quot;, addIce(), addMilk(), addPearl());
+        System.out.println(&quot;tea: &quot; + tea);
+    }
+}</code></pre>
+<p>  功能倒是实现了，但感觉看起来仍然没有go好，一种妙不可言，只可意会不可言传的感觉。</p>
+<h4 id="欢迎关注个人公众号">欢迎关注个人公众号</h4>
+<p><img src="./images/不一样的go语言-玩转语法之一0.png" alt="不一样的go语言" /></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

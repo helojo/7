@@ -1,0 +1,286 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C语言向txt文件写入当前系统时间（Log）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C语言向txt文件写入当前系统时间（Log）</center></div><div class='banquan'>原文出处:本文由博客园博主wowpH提供。<br/>
+原文连接:https://www.cnblogs.com/wowpH/p/11687385.html</div><br>
+    <p>&nbsp;</p>
+<!-- flowchart 箭头图标 勿删 -->
+<p>程序实现很简单，涉及到的只有两个知识点。</p>
+<p>1、文件最最基本的打开关闭；<br />
+2、系统时间的获取。</p>
+<p>代码是在VS2019环境下编写的，<strong>部分函数在其他编译器中会无法识别</strong>。这个就只能需要自己去查找对应的函数简单修改即可。</p>
+<p>如果遇到问题，欢迎大家提出来一起讨论。</p>
+<h4><a id="_9"></a>文件操作：</h4>
+<p>先来介绍一下 <strong>文件操作</strong> 的基本方法。<br />
+操作文件必须遵从的过程是：<strong>打开</strong>，<strong>读写</strong>，<strong>关闭</strong>。<br />
+一个文件首先要知道的是 <strong>文件名</strong>，当然你也可以新建一个文件。<br />
+如果是不同路径下的文件，还需要知道文件的路径。为了方便，本文采用同一目录下操作来说明。</p>
+<p>只知道文件名并没什么用处，重要的是要通过文件名得到 <strong>文件结构体 FILE</strong> 的变量，里面会保存文件的一些基本但重要的信息。然后通过它来进行下一步的读写。</p>
+<p>先来看一下文件操作的简单代码示例，后面再介绍函数的功能。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">) {
+</span><span style="color: #008080;"> 4</span>     FILE* stream;<span style="color: #008000;">//</span><span style="color: #008000;"> 文件指针</span>
+<span style="color: #008080;"> 5</span>     errno_t err;<span style="color: #008000;">//</span><span style="color: #008000;"> 错误码</span>
+<span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">char</span>* filename = <span style="color: #800000;">"</span><span style="color: #800000;">file.txt</span><span style="color: #800000;">"</span>;<span style="color: #008000;">//</span><span style="color: #008000;"> 文件名
+</span><span style="color: #008080;"> 7</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 打开，以在文件末尾追加(append)数据的形式打开文件filename</span>
+<span style="color: #008080;"> 8</span>     err = fopen_s(&amp;stream, filename, <span style="color: #800000;">"</span><span style="color: #800000;">a</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">if</span> (err == <span style="color: #800080;">0</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">10</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">文件 %s 打开成功\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, filename);
+</span><span style="color: #008080;">11</span>     } <span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">12</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">文件 %s 打开失败\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, filename);
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">14</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 读写</span>
+<span style="color: #008080;">15</span>     <span style="color: #0000ff;">if</span> (stream !=<span style="color: #000000;"> NULL) {
+</span><span style="color: #008080;">16</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> 向文件末尾追加一段文字。</span>
+<span style="color: #008080;">17</span>         fprintf(stream, <span style="color: #800000;">"</span><span style="color: #800000;">%s</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">文件操作成功！\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 关闭</span>
+<span style="color: #008080;">20</span>     <span style="color: #0000ff;">if</span> (stream !=<span style="color: #000000;"> NULL) {
+</span><span style="color: #008080;">21</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> 关闭文件指针，先要判断是否为空</span>
+<span style="color: #008080;">22</span>         err =<span style="color: #000000;"> fclose(stream);
+</span><span style="color: #008080;">23</span>         <span style="color: #0000ff;">if</span> (err == <span style="color: #800080;">0</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">24</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">文件 %s 关闭成功\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, filename);
+</span><span style="color: #008080;">25</span>         } <span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">26</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">文件 %s 关闭失败\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, filename);
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">29</span> }</code></pre>
+
+<pre><code><code class="prism language-c">打开文件用到的是 <a style="font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px;" href="https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/fopen-s-wfopen-s?view=vs-2019" rel="nofollow" data-token="df0d9bfbe867c561cba0e026e0c2d965">fopen_s</a><span style="font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px;"> 函数，函数语法如下：</span></code></code></pre>
+<pre><code><code class="prism language-c">errno_t <span class="token function">fopen_s</span><span class="token punctuation">(</span>
+   FILE<span class="token operator">*</span><span class="token operator">*</span> pFile<span class="token punctuation">,</span>			<span class="token comment">// 一个指向文件指针的指针，它将接收指向打开的文件的指针。</span>
+   <span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>filename<span class="token punctuation">,</span>	<span class="token comment">// 文件名</span>
+   <span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>mode			<span class="token comment">// 文件打开的方式，方式有很多种，可参考上面的链接。</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></code></pre>
+<p>如果打开成功返回 <strong>0</strong>，否则返回相应的错误码。</p>
+<p>写数据用到的函数是 <a href="https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/fprintf-fprintf-l-fwprintf-fwprintf-l?view=vs-2019" rel="nofollow" data-token="66d7d39395e65363fbb024093a235bc5">fprintf</a>，语法如下：</p>
+<pre><code><code class="prism language-c"><span class="token keyword">int</span> <span class="token function">fprintf</span><span class="token punctuation">(</span>
+   FILE <span class="token operator">*</span>stream<span class="token punctuation">,</span>			<span class="token comment">// 文件指针</span>
+   <span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>format <span class="token punctuation">[</span><span class="token punctuation">,</span>	<span class="token comment">// 格式控制字符串</span>
+   argument <span class="token punctuation">]</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span>			<span class="token comment">// 可选参数</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></code></pre>
+<p>类似 printf 函数，只不过多了个文件指针而已。很好理解。<br />
+返回值是写入的字节数，通常用不到，可忽略。<br />
+当然，不止这一个函数可以写操作，还有 fwrite 函数，fputs 函数等等。</p>
+<p>关闭文件用的是 <a href="https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/fclose-fcloseall?view=vs-2019" rel="nofollow" data-token="b01e411a5da0911853195eae07cfb99b">fclose</a> 函数，语法如下：</p>
+<pre><code><code class="prism language-c"><span class="token keyword">int</span> <span class="token function">fclose</span><span class="token punctuation">(</span>
+   FILE <span class="token operator">*</span>stream		<span class="token comment">// 文件指针</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></code></pre>
+<p>关闭成功，返回 <strong>0</strong>，错误返回 <strong>EOF</strong>。</p>
+<p>有了上面这些知识，你就可以向文件写入一个 Hello World 了。其实还有很多内容，但是如标题所示，现在要写的是时间。是个字符串，只需要用到这些内容。其他的可参考 <a href="https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/crt-alphabetical-function-reference?view=vs-2019" rel="nofollow" data-token="96e6b7df8d728cfb3ca15640fb703f6d">UCRT alphabetical function reference</a>。</p>
+<h4><a id="_90"></a>获取时间：</h4>
+<p>现在来看看怎么获取当前时间。直接上代码，再说明函数语法（其实看注释就够了）。</p>
+<pre><code><code class="prism language-c"><span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdio.h&gt;</span></span>
+<span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;time.h&gt;</span></span>
+
+<span class="token keyword">int</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token keyword">void</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	<span class="token keyword">char</span> timebuf<span class="token punctuation">[</span><span class="token number">21</span><span class="token punctuation">]</span><span class="token punctuation">;</span><span class="token comment">// 字符串形式保存时间</span>
+	time_t ltime<span class="token punctuation">;</span><span class="token comment">// 时间戳</span>
+	<span class="token keyword">struct</span> tm today<span class="token punctuation">;</span><span class="token comment">// 本地时间结构体</span>
+	errno_t err<span class="token punctuation">;</span><span class="token comment">// 错误码</span>
+	
+	<span class="token function">time</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>ltime<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">// 获取系统时间</span>
+	err <span class="token operator">=</span> <span class="token function">_localtime64_s</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>today<span class="token punctuation">,</span> <span class="token operator">&amp;</span>ltime<span class="token punctuation">)</span><span class="token punctuation">;</span><span class="token comment">// 转换为本地时间</span>
+	<span class="token keyword">if</span> <span class="token punctuation">(</span>err <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+		<span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"无法转换为本地时间\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token function">exit</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token punctuation">}</span>
+	<span class="token comment">// 将时间转换为字符串，自定义格式</span>
+	<span class="token function">strftime</span><span class="token punctuation">(</span>timebuf<span class="token punctuation">,</span> <span class="token number">21</span><span class="token punctuation">,</span> <span class="token string">"%Y/%m/%d %T%n"</span><span class="token punctuation">,</span> <span class="token operator">&amp;</span>today<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token function">printf</span><span class="token punctuation">(</span>timebuf<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+</code></code></pre>
+<p>用到的函数有：<a href="https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/time-time32-time64?view=vs-2019" rel="nofollow" data-token="5921d26ae4ac5661ec09e19d9ce0ea19">time</a>，<a href="https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/localtime-s-localtime32-s-localtime64-s?view=vs-2019" rel="nofollow" data-token="d388fe747eb41da162764718e49c3129">_localtime64_s</a>，<a href="https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/strftime-wcsftime-strftime-l-wcsftime-l?view=vs-2019" rel="nofollow" data-token="3ae0fa0187f0ce225ec071158faceee5">strftime</a></p>
+<p><strong>time</strong> 语法如下：</p>
+<pre><code><code class="prism language-c">time_t <span class="token function">time</span><span class="token punctuation">(</span> time_t <span class="token operator">*</span>destTime <span class="token punctuation">)</span><span class="token punctuation">;</span>	<span class="token comment">// 获取系统时间，参数是指向时间的存储位置的指针</span>
+</code></code></pre>
+<p>返回值是从 1970/01/01 00:00:00 以来经过的秒数。有错误返回 <strong>-1</strong>。</p>
+<p><strong>_localtime64_s</strong> 语法如下：</p>
+<pre><code><code class="prism language-c">errno_t <span class="token function">_localtime64_s</span><span class="token punctuation">(</span>
+   <span class="token keyword">struct</span> tm<span class="token operator">*</span> tmDest<span class="token punctuation">,</span>				<span class="token comment">// 指向要填充的时间结构体</span>
+   __time64_t <span class="token keyword">const</span><span class="token operator">*</span> sourceTime		<span class="token comment">// 指向时间的存储位置的指针</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>									<span class="token comment">// 将时间转换为本地时间结构体</span>
+</code></code></pre>
+<p>转换成功返回 <strong>0</strong>，否则返回对应的错误码。</p>
+<p><strong>strftime</strong> 语法如下：</p>
+<pre><code><code class="prism language-c">size_t <span class="token function">strftime</span><span class="token punctuation">(</span>
+   <span class="token keyword">char</span> <span class="token operator">*</span>strDest<span class="token punctuation">,</span>				<span class="token comment">// 保存时间的字符串</span>
+   size_t maxsize<span class="token punctuation">,</span>				<span class="token comment">// strDest指向的大小</span>
+   <span class="token keyword">const</span> <span class="token keyword">char</span> <span class="token operator">*</span>format<span class="token punctuation">,</span>			<span class="token comment">// 格式控制串，参照使用手册。</span>
+   <span class="token keyword">const</span> <span class="token keyword">struct</span> tm <span class="token operator">*</span>timeptr		<span class="token comment">// 时间结构体</span>
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></code></pre>
+<p>返回填充的字符数，如果超过了 <strong>maxsize</strong>，返回 <strong>0</strong>。</p>
+<hr />
+<p>到这里差不多就已经掌握了简单的写入时间操作。可以试试自己写一写。</p>
+<p>不会也没关系，下面的代码是封装好的。可以直接调用。</p>
+<h4><a id="_155"></a>函数原型：</h4>
+<pre><code><code class="prism language-c"><span class="token comment">// 功能：向txt文件filename末尾追加格式为YYYY/MM/DD HH:MM:SS的时间</span>
+<span class="token comment">// filename是文件名，文件名本身不带双引号</span>
+<span class="token keyword">void</span> <span class="token function">log_time_filename</span><span class="token punctuation">(</span><span class="token keyword">char</span> <span class="token keyword">const</span><span class="token operator">*</span> filename<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></code></pre>
+<pre><code><code class="prism language-c"><span class="token comment">// 功能：向stream指向的文件末尾追加格式为YYYY/MM/DD HH:MM:SS的时间</span>
+<span class="token comment">// stream必须打开</span>
+<span class="token keyword">void</span> <span class="token function">log_time_stream</span><span class="token punctuation">(</span>FILE<span class="token operator">*</span> stream<span class="token punctuation">)</span><span class="token punctuation">;</span>		<span class="token comment">// 参数是文件指针</span>
+</code></code></pre>
+<pre><code><code class="prism language-c"><span class="token comment">// 功能：向txt文件filename末尾追加格式为YYYY/MM/DD HH:MM:SS的时间并换行</span>
+<span class="token comment">// filename是文件名，文件名本身不带双引号</span>
+<span class="token keyword">void</span> <span class="token function">log_time_line_filename</span><span class="token punctuation">(</span><span class="token keyword">char</span> <span class="token keyword">const</span><span class="token operator">*</span> filename<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></code></pre>
+<pre><code><code class="prism language-c"><span class="token comment">// 功能：向stream指向的文件末尾追加格式为YYYY/MM/DD HH:MM:SS的时间并换行</span>
+<span class="token comment">// stream必须打开</span>
+<span class="token keyword">void</span> <span class="token function">log_time_line_stream</span><span class="token punctuation">(</span>FILE<span class="token operator">*</span> stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></code></pre>
+<h4><a id="logh_183"></a>log.h文件：</h4>
+<p>将代码保存到与 <strong>调用文件</strong> 在同一级目录下的 <strong>log.h</strong> 文件中。有四个外部函数可供调用。</p>
+<pre><code><code class="prism language-c"><span class="token comment">/*********************************************************************
+	文件：	log.h
+	环境：	Windows 10
+	IDE：	Visual Studio 2019
+	版本：	1.5.0.1910
+	功能：	1、向 &lt;文件名.txt&gt; 文件末尾追加当前系统时间
+			2、向 &lt;FILE* stream&gt; 指向的文件末尾追加当前系统时间
+	备注：	1、目前只有默认日期格式，即YYYY/MM/DD hh:mm:ss
+			2、支持换行和不换行两种形式
+	日期：	2019年10月16日15:42:15
+	作者：	wowpH
+*********************************************************************/</span>
+<span class="token macro property">#<span class="token directive keyword">pragma</span> once</span>
+<span class="token macro property">#<span class="token directive keyword">pragma</span> message("log.h - wowpH - 1.5.0.1910")</span>
+
+<span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdio.h&gt;</span></span>
+<span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;stdlib.h&gt;</span></span>
+<span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">&lt;time.h&gt;</span></span>
+
+<span class="token comment">// 时间格式的最大长度</span>
+<span class="token macro property">#<span class="token directive keyword">define</span> MAX_TIME_MODE_SIZE 21</span>
+
+<span class="token comment">//</span>
+<span class="token comment">//	可调用的函数</span>
+<span class="token comment">//</span>
+
+<span class="token comment">// 通过文件名追加时间</span>
+<span class="token keyword">void</span> <span class="token function">log_time_filename</span><span class="token punctuation">(</span><span class="token keyword">char</span> <span class="token keyword">const</span><span class="token operator">*</span> filename<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 通过文件指针追加时间</span>
+<span class="token keyword">void</span> <span class="token function">log_time_stream</span><span class="token punctuation">(</span>FILE<span class="token operator">*</span> stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 通过文件名追加时间，换行</span>
+<span class="token keyword">void</span> <span class="token function">log_time_line_filename</span><span class="token punctuation">(</span><span class="token keyword">char</span> <span class="token keyword">const</span><span class="token operator">*</span> filename<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 通过文件指针追加时间，换行</span>
+<span class="token keyword">void</span> <span class="token function">log_time_line_stream</span><span class="token punctuation">(</span>FILE<span class="token operator">*</span> stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">//</span>
+<span class="token comment">// 供内部使用的函数，外部调用可能出错</span>
+<span class="token comment">//</span>
+
+<span class="token comment">// 向strDest写入当前时间</span>
+<span class="token keyword">void</span> <span class="token function">get_local_time</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span> strDest<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 打开文件</span>
+<span class="token keyword">void</span> <span class="token function">open_file</span><span class="token punctuation">(</span>FILE<span class="token operator">*</span><span class="token operator">*</span> stream<span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token keyword">const</span><span class="token operator">*</span> filename<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">// 关闭文件</span>
+<span class="token keyword">void</span> <span class="token function">close_file</span><span class="token punctuation">(</span>FILE<span class="token operator">*</span> stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+</code></code></pre>
+<h4><a id="logc_240"></a>log.c文件：</h4>
+<p>将代码保存到与 <strong>调用文件</strong> 同一级目录下的 <strong>log.c</strong> 文件中。</p>
+<pre><code><code class="prism language-c"><span class="token macro property">#<span class="token directive keyword">include</span> <span class="token string">"log.h"</span></span>
+
+<span class="token keyword">const</span> <span class="token keyword">char</span><span class="token operator">*</span> null_stream <span class="token operator">=</span> <span class="token string">"文件指针为空，请先打开一个文件！"</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token keyword">char</span><span class="token operator">*</span> error_open <span class="token operator">=</span> <span class="token string">"文件打开失败！"</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token keyword">char</span><span class="token operator">*</span> error_close <span class="token operator">=</span> <span class="token string">"文件关闭失败！"</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token keyword">char</span><span class="token operator">*</span> error_to_localtime <span class="token operator">=</span> <span class="token string">"无法转换为本地时间！"</span><span class="token punctuation">;</span>
+
+<span class="token keyword">void</span> <span class="token function">log_time_filename</span><span class="token punctuation">(</span><span class="token keyword">char</span> <span class="token keyword">const</span><span class="token operator">*</span> filename<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	FILE<span class="token operator">*</span> stream <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
+	<span class="token function">open_file</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>stream<span class="token punctuation">,</span> filename<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token function">log_time_stream</span><span class="token punctuation">(</span>stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token function">close_file</span><span class="token punctuation">(</span>stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">void</span> <span class="token function">log_time_stream</span><span class="token punctuation">(</span>FILE<span class="token operator">*</span> <span class="token keyword">const</span> stream<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	<span class="token keyword">if</span> <span class="token punctuation">(</span>stream <span class="token operator">!=</span> <span class="token constant">NULL</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+		<span class="token keyword">char</span> time<span class="token punctuation">[</span>MAX_TIME_MODE_SIZE<span class="token punctuation">]</span><span class="token punctuation">;</span>
+		<span class="token function">get_local_time</span><span class="token punctuation">(</span>time<span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token function">fprintf</span><span class="token punctuation">(</span>stream<span class="token punctuation">,</span> <span class="token string">"%s"</span><span class="token punctuation">,</span> time<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+		<span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"%s\n"</span><span class="token punctuation">,</span> null_stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token function">exit</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">void</span> <span class="token function">log_time_line_filename</span><span class="token punctuation">(</span><span class="token keyword">char</span> <span class="token keyword">const</span><span class="token operator">*</span> filename<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	FILE<span class="token operator">*</span> stream <span class="token operator">=</span> <span class="token constant">NULL</span><span class="token punctuation">;</span>
+	<span class="token function">open_file</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>stream<span class="token punctuation">,</span> filename<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token function">log_time_line_stream</span><span class="token punctuation">(</span>stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token function">close_file</span><span class="token punctuation">(</span>stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">void</span> <span class="token function">log_time_line_stream</span><span class="token punctuation">(</span>FILE<span class="token operator">*</span> stream<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	<span class="token function">log_time_stream</span><span class="token punctuation">(</span>stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token function">fprintf</span><span class="token punctuation">(</span>stream<span class="token punctuation">,</span> <span class="token string">"\n"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">get_local_time</span><span class="token punctuation">(</span><span class="token keyword">char</span><span class="token operator">*</span> strDest<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	time_t ltime<span class="token punctuation">;</span>
+	<span class="token function">time</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>ltime<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token keyword">struct</span> tm today<span class="token punctuation">;</span>
+	errno_t err<span class="token punctuation">;</span>
+	err <span class="token operator">=</span> <span class="token function">_localtime64_s</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>today<span class="token punctuation">,</span> <span class="token operator">&amp;</span>ltime<span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token keyword">if</span> <span class="token punctuation">(</span>err <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+		<span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"%s\n"</span><span class="token punctuation">,</span> error_to_localtime<span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token function">exit</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token punctuation">}</span>
+	<span class="token comment">// 将时间转换为字符串，自定义格式</span>
+	<span class="token function">strftime</span><span class="token punctuation">(</span>strDest<span class="token punctuation">,</span> MAX_TIME_MODE_SIZE<span class="token punctuation">,</span> <span class="token string">"%Y/%m/%d %T"</span><span class="token punctuation">,</span> <span class="token operator">&amp;</span>today<span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">open_file</span><span class="token punctuation">(</span>FILE<span class="token operator">*</span><span class="token operator">*</span> stream<span class="token punctuation">,</span> <span class="token keyword">char</span> <span class="token keyword">const</span><span class="token operator">*</span> filename<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	errno_t err <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+	err <span class="token operator">=</span> <span class="token function">fopen_s</span><span class="token punctuation">(</span>stream<span class="token punctuation">,</span> filename<span class="token punctuation">,</span> <span class="token string">"a"</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token keyword">if</span> <span class="token punctuation">(</span>err <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+		<span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"%s\n"</span><span class="token punctuation">,</span> error_open<span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token function">exit</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">static</span> <span class="token keyword">void</span> <span class="token function">close_file</span><span class="token punctuation">(</span>FILE<span class="token operator">*</span> stream<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+	<span class="token keyword">if</span> <span class="token punctuation">(</span>stream <span class="token operator">!=</span> <span class="token constant">NULL</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+		errno_t err <span class="token operator">=</span> <span class="token number">0</span><span class="token punctuation">;</span>
+		err <span class="token operator">=</span> <span class="token function">fclose</span><span class="token punctuation">(</span>stream<span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token keyword">if</span> <span class="token punctuation">(</span>err <span class="token operator">!=</span> <span class="token number">0</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+			<span class="token function">printf</span><span class="token punctuation">(</span><span class="token string">"%s\n"</span><span class="token punctuation">,</span> error_close<span class="token punctuation">)</span><span class="token punctuation">;</span>
+			<span class="token function">exit</span><span class="token punctuation">(</span><span class="token operator">-</span><span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+		<span class="token punctuation">}</span>
+	<span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></code></pre>
+<h4><a id="_316"></a>执行结果：</h4>
+<p><img src="./images/C语言向txt文件写入当前系统时间（Log）0.png" alt="log.jpg" /></p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

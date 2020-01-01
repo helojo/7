@@ -1,0 +1,129 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Linux C 后台服务程序单进程控制' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Linux C 后台服务程序单进程控制</center></div><div class='banquan'>原文出处:本文由博客园博主小林coding提供。<br/>
+原文连接:https://www.cnblogs.com/xiaolincoding/p/11439586.html</div><br>
+    <h2 id="介绍">介绍</h2>
+<p>通常后台服务器程序都必须有且只有一个进程，那么如何单进程呢？</p>
+<p>本例子是通过<code>flock</code>函数对<code>/var/run/myserver.pid</code>记录pid文件的进行加锁</p>
+<ul>
+<li>若加锁不正常，说明后台服务进程已经在运行了，这时则直接报错退出</li>
+<li>若加锁成功，说明后台服务进程没有在运行，这时可以正常启用进程</li>
+</ul>
+<hr />
+<h2 id="后台服务程序单进程控制">后台服务程序单进程控制</h2>
+<p>详细不多说，直接看代码</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;fcntl.h&gt;
+
+#define  PID_BUF_LEN   (20)
+#define  RUN_PID_FILE  &quot;/var/run/myserver.pid&quot;
+
+//服务进程单实例运行
+//返回值: 1--正在运行，0--未运行，-1--出错
+int server_is_running()
+{
+    int fd = open(RUN_PID_FILE, O_WRONLY|O_CREAT);
+    if(fd &lt; 0)
+    {
+        printf(&quot;open run pid err(%d)! %s\n&quot;, errno, RUN_PID_FILE);
+        return -1;
+    }
+     
+    // 加锁
+    // LOCK_SH 建立共享锁定。多个进程可同时对同一个文件作共享锁定。
+    // LOCK_EX 建立互斥锁定。一个文件同时只有一个互斥锁定。
+    if(flock(fd, LOCK_EX|LOCK_NB) == -1)
+    {
+        //加不上锁，则是服务正在运行，已上锁了
+        printf(&quot;server is runing now! errno=%d\n&quot;, errno);
+        close(fd);
+        return 1;
+    }
+
+    // 加锁成功，证明服务没有运行
+    // 文件句柄不要关，也不要解锁
+    // 进程退出，自动就解锁了
+    printf(&quot;myserver is not running! begin to run..... pid=%ld\n&quot;, (long)getpid());
+
+    char pid_buf[PID_BUF_LEN] = {0};
+    snprintf(pid_buf, sizeof(pid_buf)-1, &quot;%ld\n&quot;, (long)getpid());
+
+    // 把进程pid写入到/var/run/myserver.pid文件
+    write(fd, pid_buf, strlen(pid_buf));
+
+    return 0;
+}
+
+int main(void)
+{
+
+    //进程单实例运行检测
+    if(0 != server_is_running())
+    {
+        printf(&quot;myserver process is running!!!!! Current process will exit !\n&quot;);
+        return -1;
+    }
+
+    while(1)
+    {
+        printf(&quot;myserver doing ... \n&quot;);
+        sleep(2);
+    }
+
+    return 0;
+}</code></code></pre>
+<h4 id="运行结果">运行结果</h4>
+<p>运行程序，可知进程pid是<code>6965</code></p>
+<pre class="shell"><code>[root@lincoding singleprocess]# ./myserver 
+server is not running! begin to run..... pid=6965
+myserver doing ... 
+myserver doing ... 
+myserver doing ... 
+myserver doing ... 
+myserver doing ... 
+myserver doing ... 
+myserver doing ... 
+myserver doing ... 
+</code></code></pre>
+<p><code>/var/run/myserver.pid</code>也记录此进程的pid号，<code>ps auxf | grep myserver</code>可知<code>mysever</code>进程一直运行着</p>
+<pre class="shell"><code>[root@lincoding singleprocess]# cat /var/run/myserver.pid 
+6965
+[root@lincoding singleprocess]# 
+[root@lincoding singleprocess]# ps auxf | grep myserver
+root      6965  0.0  0.0   3924   460 pts/0    S+   00:32   0:00  |       \_ ./myserver
+root      9976  0.0  0.0 103256   856 pts/1    S+   00:35   0:00          \_ grep myserver
+[root@lincoding singleprocess]# </code></code></pre>
+<p>此时，再运行<code>myserver</code>程序，这时会报错退出，因为检测到<code>myserver</code>程序已经在运行中，不可以起另外一个进程，从而达到了后台服务程序单进程控制</p>
+<pre class="shell"><code>[root@lincoding singleprocess]# ./myserver 
+server is runing now! errno=11
+myserver process is running!!!!! Current process will exit !</code></code></pre>
+<hr />
+<blockquote>
+<p><img src="./images/Linux C 后台服务程序单进程控制0.png" /></p>
+</blockquote>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

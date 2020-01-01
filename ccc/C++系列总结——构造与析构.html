@@ -1,0 +1,237 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++系列总结——构造与析构' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++系列总结——构造与析构</center></div><div class='banquan'>原文出处:本文由博客园博主一罪提供。<br/>
+原文连接:https://www.cnblogs.com/yizui/p/10590840.html</div><br>
+    <h2 id="前言">前言</h2>
+<p>在使用资源前，我们需要做一些准备工作保证资源能正常使用，在使用完资源后，我们需要做一些扫尾工作保证资源没有泄露，这就是构造与析构了，这和编程语言是无关的，而是使用资源的一种方式。C++只不过是把这个过程内置到了语言本身，规定了构造函数和析构函数的形式以及执行时机。</p>
+<h2 id="编译器的无私奉献">编译器的无私奉献</h2>
+<p>下面这段代码很好理解</p>
+<pre><code>#include &lt;iostream&gt;
+class A
+{
+public:
+    A()
+    {
+        std::cout &lt;&lt; &quot;A\n&quot;;
+    }
+    ~A()
+    {
+        std::cout &lt;&lt; &quot;~A\n&quot;;
+    }
+};
+int main()
+{
+    A local;
+    return 0;
+}</code></pre>
+<p>如果执行的话，会输出</p>
+<pre><code>A
+~A</code></pre>
+<p>对于一个从C转到C++的人，我就很纠结为什么我没有调用<code>A::A()</code>和<code>A::~A()</code>，它们却执行了。</p>
+<p><strong>在GDB面前，程序是没有秘密的</strong>，因此就让我们开始GDB，看看剥去高级语言的外衣后的程序是什么样子。<br />
+用GDB的<code>disassemble</code>命令查看汇编代码，可以看到实际上调用了<code>A::A()</code>（<code>callq  0x400888 &lt;A::A()&gt;</code>）和<code>A::~A()</code>（<code>callq  0x4008a6 &lt;A::~A()&gt;</code>）。果然没有任何神奇的地方，函数都是需要被调用才会执行的，只不过我没有做的时候，编译器帮我做了。</p>
+<pre><code>(gdb) disassemble                                                                                                    
+Dump of assembler code for function main():                                                                          
+   0x0000000000400806 &lt;+0&gt;:     push   %rbp                                                                          
+   0x0000000000400807 &lt;+1&gt;:     mov    %rsp,%rbp                                                                     
+   0x000000000040080a &lt;+4&gt;:     push   %rbx                                                                          
+   0x000000000040080b &lt;+5&gt;:     sub    $0x18,%rsp                                                                    
+=&gt; 0x000000000040080f &lt;+9&gt;:     lea    -0x11(%rbp),%rax                                                              
+   0x0000000000400813 &lt;+13&gt;:    mov    %rax,%rdi                                                                     
+   0x0000000000400816 &lt;+16&gt;:    callq  0x400888 &lt;A::A()&gt;                                                             
+   0x000000000040081b &lt;+21&gt;:    mov    $0x0,%ebx                                                                     
+   0x0000000000400820 &lt;+26&gt;:    lea    -0x11(%rbp),%rax                                                              
+   0x0000000000400824 &lt;+30&gt;:    mov    %rax,%rdi                                                                     
+   0x0000000000400827 &lt;+33&gt;:    callq  0x4008a6 &lt;A::~A()&gt;                                                            
+   0x000000000040082c &lt;+38&gt;:    mov    %ebx,%eax                                                                     
+   0x000000000040082e &lt;+40&gt;:    add    $0x18,%rsp                                                                    
+   0x0000000000400832 &lt;+44&gt;:    pop    %rbx                                                                          
+   0x0000000000400833 &lt;+45&gt;:    pop    %rbp                                                                          
+   0x0000000000400834 &lt;+46&gt;:    retq                                                                                 
+End of assembler dump.</code></pre>
+<p>编译器除了帮我们调用构造函数和析构函数外，<strong>如果我们没有写构造函数和析构函数，编译器会帮我们补上默认的构造函数和析构函数吗？</strong><br />
+在下面的情况下，编译器会帮我们补上默认的构造函数</p>
+<ul>
+<li>类成员变量有构造函数：默认的构造函数里就是为了调用一下类成员变量的构造函数</li>
+<li>类的父类有构造函数：默认的构造函数就是为了调用一下父类的构造函数。父类是否有默认构造函数，同样取决于上一种情况。</li>
+<li>类的父类有虚函数：默认的构造函数就是为了设置一下虚函数表</li>
+</ul>
+<p>在下面的情况下，编译器会帮我们补上默认的析构函数</p>
+<ul>
+<li>类成员变量有自己的析构函数：默认的析构函数里就只是为了调用一下类成员变量的析构函数</li>
+<li>类的父类有自己的析构函数：默认的析构函数为了调用父类的析构函数</li>
+</ul>
+<p>从上面我们也可以看出<strong>编译器不做无用之事</strong>。当不需要构造函数或析构函数时，编译器就不会补上默认的构造函数和析构函数。我们知道C语言中是没有构造函数和析构函数的，可以简单的认为符合C语言语法的自定义类型，编译器都不会补上默认的构造函数和析构函数。大家可以了解下<a href="https://en.wikipedia.org/wiki/Passive_data_structure">POD类型</a>。</p>
+<blockquote>
+<p>”符合C语言语法的自定义类型“的描述是不准确的，这是在将<code>class</code>视为<code>struct</code>，忽略权限关键字<code>public</code>、<code>protected</code>、<code>private</code>的基础上说的，毕竟C中没有这些关键字。</p>
+</blockquote>
+<h2 id="构造和析构的时机">构造和析构的时机</h2>
+<p><em>下面描述的前提是存在构造函数和析构函数</em></p>
+<p>当实例化对象时，会执行构造函数，而实例化对象分为两种情况</p>
+<ul>
+<li>定义变量，如<code>A a;</code>。需要特别注意的是通过thread_local修饰定义的变量，在首次在线程中使用时才会执行构造函数。</li>
+<li><p><code>new</code>实例化，如<code>new A;</code></p>
+<blockquote>
+<p>构造函数是无法主动调用的</p>
+</blockquote></li>
+</ul>
+<p>当对象存储期结束时，就会执行析构函数，存储期分为</p>
+<ul>
+<li>静态存储期：进程退出时执行析构函数，如全局变量和静态局部变量</li>
+<li>自动存储期：离开变量的作用域时执行析构函数，如普通局部变量</li>
+<li>动态存储期：new实例化的对象，在delete时会执行析构函数。</li>
+<li><p>线程存储期：线程退出时执行析构函数，如thread_local修饰的变量</p>
+<blockquote>
+<p>因为析构函数是可以主动调用的，所以delete也可以只释放内存而不调用析构函数。</p>
+</blockquote></li>
+</ul>
+<h2 id="构造和析构的顺序">构造和析构的顺序</h2>
+<p>顺序就一句话：<strong>先构造后析构</strong>。分两部分来理解</p>
+<ul>
+<li>为什么需要先构造后析构</li>
+<li><p>如何实现先构造后析构</p>
+<blockquote>
+<p>先构造意味着先定义，但这只在同一文件中生效，不同文件之间的全局变量构造顺序是不确定的。</p>
+</blockquote></li>
+</ul>
+<h3 id="为什么需要先构造后析构">为什么需要先构造后析构</h3>
+<p>原因很朴素：先构造的对象说明其可能会被后续的对象使用，因此为了程序运行安全，必须等到其使用者结束使用后，才能析构该对象即在那些之后构造的对象析构后才能析构。</p>
+<p>先构造后析构也是保证我们安全使用资源的一个原则。假设我们把一个功能的初始化封装为<code>init()</code>，把功能的销毁封装为<code>destroy()</code>，一般<code>destroy()</code>中资源销毁的顺序是<code>init()</code>中资源申请的逆序。</p>
+<p>基于以上，我们就能很容易的理解</p>
+<ul>
+<li>为什么父类的构造函数先执行：因为本类的构造函数可能要用到父类的东西</li>
+<li>为什么类成员变量的构造函数先执行：因为本类的构造函数内可能要用到类成员变量</li>
+</ul>
+<h3 id="如何实现先构造后析构">如何实现先构造后析构</h3>
+<p>普通局部变量的先构造后析构，就是编译器按照定义顺序插入对应的构造函数，然后再逆序插入析构函数。</p>
+<pre><code>int main()
+{
+    A local_1;
+    A local_2;
+    return 0;
+}</code></pre>
+<p>其汇编如下</p>
+<pre><code>0x000000000040088f &lt;+9&gt;:     lea    -0x12(%rbp),%rax
+0x0000000000400893 &lt;+13&gt;:    mov    %rax,%rdi               # local_1的地址
+0x0000000000400896 &lt;+16&gt;:    callq  0x40093c &lt;A::A()&gt;                    
+0x000000000040089b &lt;+21&gt;:    lea    -0x11(%rbp),%rax                     
+0x000000000040089f &lt;+25&gt;:    mov    %rax,%rdi                 # local_2的地址                            
+0x00000000004008a2 &lt;+28&gt;:    callq  0x40093c &lt;A::A()&gt;                    
+0x00000000004008a7 &lt;+33&gt;:    mov    $0x0,%ebx                            
+0x00000000004008ac &lt;+38&gt;:    lea    -0x11(%rbp),%rax                     
+0x00000000004008b0 &lt;+42&gt;:    mov    %rax,%rdi                 # local_2的地址
+0x00000000004008bf &lt;+57&gt;:    callq  0x40095a &lt;A::~A()&gt;                   
+0x00000000004008c4 &lt;+62&gt;:    mov    %ebx,%eax                            
+0x00000000004008c6 &lt;+64&gt;:    jmp    0x4008e2 &lt;main()+92&gt;                 
+0x00000000004008c8 &lt;+66&gt;:    mov    %rax,%rbx                            
+0x00000000004008cb &lt;+69&gt;:    lea    -0x12(%rbp),%rax                     
+0x00000000004008cf &lt;+73&gt;:    mov    %rax,%rdi                # local_1的地址  
+0x00000000004008d2 &lt;+76&gt;:    callq  0x40095a &lt;A::~A()&gt;</code></pre>
+<p>全局变量和静态局部变量在析构函数的设置上稍有差别。</p>
+<pre><code>A global;
+int main()
+{
+    return 0;
+}</code></pre>
+<p>因为全局变量的构造在<code>main()</code>之前，所以在<code>A::A()</code>上设置断点。执行后，打印调用栈如下</p>
+<pre><code>(gdb) bt                                                                                                             
+#0  A::A (this=0x601171 &lt;gloabl&gt;) at main.cpp:15                                                                     
+#1  0x0000000000400856 in __static_initialization_and_destruction_0 (                                                
+    __initialize_p=1, __priority=65535) at main.cpp:23                                                               
+#2  0x0000000000400880 in _GLOBAL__sub_I_gloabl () at main.cpp:27                                                    
+#3  0x000000000040090d in __libc_csu_init ()                                                                         
+#4  0x00007ffff771fe55 in __libc_start_main (main=0x400806 &lt;main()&gt;, argc=1,                                         
+    argv=0x7fffffffec48, init=0x4008c0 &lt;__libc_csu_init&gt;,                                                            
+    fini=&lt;optimized out&gt;, rtld_fini=&lt;optimized out&gt;, stack_end=0x7fffffffec38)                                       
+    at libc-start.c:246                                                                                              
+#5  0x0000000000400739 in _start ()</code></pre>
+<p>让我们回到frame 1截取一小段它的汇编代码</p>
+<pre><code>   0x0000000000400851 &lt;+64&gt;:    callq  0x400882 &lt;A::A()&gt;                                                             
+=&gt; 0x0000000000400856 &lt;+69&gt;:    mov    $0x601058,%edx                                                                
+   0x000000000040085b &lt;+74&gt;:    mov    $0x601171,%esi                                                                
+   0x0000000000400860 &lt;+79&gt;:    mov    $0x4008a0,%edi                                                                
+   0x0000000000400865 &lt;+84&gt;:    callq  0x4006d0 &lt;__cxa_atexit@plt&gt;</code></pre>
+<p>我们发现在执行完<code>A::A()</code>后，还调用了<code>__cxa_atexit@plt</code>。看到<code>__cxa_atexit@plt</code>，有没有觉得很熟悉，是不是立即就想到<code>int atexit( void (*function)(void))</code>。我们知道<code>atexit()</code>用于注册一个在进程退出时执行的函数，那么这里是不是注册了全局变量的析构函数？<br />
+<code>mov    $0x4008a0,%edi</code>就是给`<code>__cxa_atexit@plt</code>传递参数，可知注册的函数地址是<code>0x4008a0</code>。我们可以轻易地发现<code>A::~A()</code>的地址就是<code>0x4008a0</code>。</p>
+<blockquote>
+<p>类成员函数的第一个参数是<code>this</code>，<code>mov    $0x601171,%esi</code>的<code>0x601171</code>就是变量<code>global</code>的地址。</p>
+</blockquote>
+<p>由此我们知道全局变量的析构函数是在执行构造函数后，注册为进程退出时的执行函数。我们知道通过<code>atexit()</code>注册的函数的执行顺序是先注册的后执行即FILO，<code>__cxa_atexit</code>也是一样，也就实现了先构造后析构。<strong>静态局部变量的析构函数也是一样的设置方式</strong>。</p>
+<p>假设一个类继承自一个有构造函数的类，且其成员变量也拥有构造函数。我们知道会先执行父类和成员变量的构造函数，然后再执行本类的构造函数。按这样的描述，岂不是要在每个实例化该类的地方加上很多额外的代码了，编译器会这么蠢么？让我们来看一下</p>
+<pre><code>class A
+{
+public:
+    A(){}
+    ~A(){}
+};
+class B
+{
+public:
+    B(){}
+    ~B(){}
+};
+class C : public A
+{
+public:
+    C(){ std::cout &lt;&lt; &quot;C\n&quot; };
+    ~C(){}
+    B a;
+};
+int main()
+{
+    C local;
+    return 0;
+}</code></pre>
+<p>查看汇编，可知实际调用的仍是<code>C::C()</code>，并非在<code>C::C()</code>之前插入A和B的构造函数，</p>
+<pre><code>   0x00000000004006e6 &lt;+16&gt;:    callq  0x400788 &lt;C::C()&gt;                    
+   0x00000000004006eb &lt;+21&gt;:    mov    $0x0,%ebx                            
+   0x00000000004006f0 &lt;+26&gt;:    lea    -0x11(%rbp),%rax                     
+   0x00000000004006f4 &lt;+30&gt;:    mov    %rax,%rdi                            
+   0x00000000004006f7 &lt;+33&gt;:    callq  0x4007b0 &lt;C::~C()&gt;</code></pre>
+<p>而是在<code>C::C()</code>的第一行代码前，插入了A和B的构造函数。</p>
+<pre><code>Dump of assembler code for function C::C(): 
+   0x0000000000400788 &lt;+0&gt;:     push   %rbp                                 
+=&gt; 0x0000000000400789 &lt;+1&gt;:     mov    %rsp,%rbp                            
+   0x000000000040078c &lt;+4&gt;:     sub    $0x10,%rsp                           
+   0x0000000000400790 &lt;+8&gt;:     mov    %rdi,-0x8(%rbp)                      
+   0x0000000000400794 &lt;+12&gt;:    mov    -0x8(%rbp),%rax                      
+   0x0000000000400798 &lt;+16&gt;:    mov    %rax,%rdi                            
+   0x000000000040079b &lt;+19&gt;:    callq  0x400758 &lt;A::A()&gt;                    
+   0x00000000004007a0 &lt;+24&gt;:    mov    -0x8(%rbp),%rax                      
+   0x00000000004007a4 &lt;+28&gt;:    mov    %rax,%rdi                            
+   0x00000000004007a7 &lt;+31&gt;:    callq  0x400770 &lt;B::B()&gt;                    
+   0x00000000004007ac &lt;+36&gt;:    nop                                         
+   0x00000000004007ad &lt;+37&gt;:    leaveq                                      
+   0x00000000004007ae &lt;+38&gt;:    retq</code></pre>
+<p>当然<code>C::~C()</code>的最后一行代码之后，也会插入A和B的析构函数。</p>
+<h2 id="常见问题">常见问题</h2>
+<p>问题通常都来自于错误的构造顺序。<br />
+一种情况是a.cpp中定义的全局变量A使用了b.cpp中定义的全局变量B，实际A先构造，此时A使用到了还未构造的B，程序会出现异常。建议是保证不同全局变量之间是独立的。如果存在使用关系，则定义为指针类型，延迟到<code>main()</code>中再按预期的顺序依次实例化。</p>
+<p>还有一种更常见的情况是使用了静态局部变量。因为静态局部变量包含在函数内部，更隐晦，所以更容易出现问题。问题通常是在进程退出时出现的，静态局部变量先析构了，导致程序异常。</p>
+<h2 id="后话">后话</h2>
+<p>构造与析构是一种资源使用机制，我们常用C++的构造函数和析构函数来实现RAII（Resource Acquisition Is Initialization），保证诸如锁、内存等资源的正确使用和释放。</p>
+<blockquote>
+<p>以上的代码都在www.onlinegdb.com上运行调试的。不同平台，不同编译器，其底层实现会存在差异，高级语言本就是为了隐藏这些底层差异，因此不必纠结于具体实现，而是要关注思维方式。</p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

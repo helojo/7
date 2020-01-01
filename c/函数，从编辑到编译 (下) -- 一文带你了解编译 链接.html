@@ -1,0 +1,125 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修函数，从编辑到编译 (下) -- 一文带你了解编译 链接' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>函数，从编辑到编译 (下) -- 一文带你了解编译 链接</center></div><div class='banquan'>原文出处:本文由博客园博主tobe的呓语提供。<br/>
+原文连接:https://www.cnblogs.com/tobe98/p/11567922.html</div><br>
+    <p>上篇的链接在这里：<br />
+<a href="https://blog.csdn.net/tobe98/article/details/101118574">函数，从编辑到编译 (上) --带你了解预编译做了什么</a></p>
+<p>下面继续：</p>
+<h2 id="编译">2. 编译</h2>
+<p>所谓编译过程，就是<strong>把预处理完的文件进行一系列词法分析，语法分析，语义分析及优化后生产相应的汇编代码文件。</strong>这一步是整个程序构建的核心部分，也是最容易出错的一部分。</p>
+<p>从现在开始，步骤就变得十分复杂了。</p>
+<p>对函数来说，这一阶段是最繁琐也是最为危险的：稍有不慎，轻则 <code>warning</code> 重则 <code>error</code> 。</p>
+<p>我见过许多出错的函数，他们连着行号被编译器带到窗口，当街示众。</p>
+<p>也有些函数和 <code>#pragma</code> 关系比较好，小错误被遮掩过去，免去了示众的命运。</p>
+<h3 id="扫描">2.1 扫描</h3>
+<p>我们要先经过一台<strong>扫描器</strong> （Scanner），这机器如此庞大，以至于我根本看不出内部的细节。</p>
+<p>我对大型机器充满好奇，编译器给了我一本手册——《编译宝典》，他说里面有讲扫描器的实现。</p>
+<p>可我看不懂。</p>
+<p>编译器告诉我，想要参透这本宝典，需要付出代价。</p>
+<p>“代价？像岳不群那样？”</p>
+<p>“你想哪儿去了！你说的那是《葵花宝典》，我说的代价是时间和精力！编译器这种庞大的工程，需要一个团队来合作完成，除非你是打算写写玩具编译器。”</p>
+<p>所以我放弃了造出这些机器的想法，因为函数的一生太短了，希望你能实现我的愿望。</p>
+<p>在扫描器里的体验不太舒服，它像一台 X 光机，把我的身体里里外外看了个遍，给我的感觉很不妙。</p>
+<p>出了机器，会收到一个检查报告，像这样（篇幅有限，只拿一个表达式举例子）：<br />
+<img src="./images/函数，从编辑到编译 (下) -- 一文带你了解编译 链接0.png" alt="file" /></p>
+<p>拿着这份报告，就该去进行语法分析了。</p>
+<h3 id="语法分析">2.2 语法分析</h3>
+<p>语法分析器（Grammar Parser）就不需要我整个躺进去，只用把扫描器生成的检查报告交给他。</p>
+<p>分析好之后，我拿到了<del>一个盆栽</del> 新的报告 —— 一棵树，或者，准确一点，一棵语法树（Syntax Tree）。<br />
+<img src="./images/函数，从编辑到编译 (下) -- 一文带你了解编译 链接1.png" alt="file" /></p>
+<p>树的枝叶一切正常，表示我的表达式是合法的。毫无疑问，我再次通过了检查。</p>
+<p>但有的函数就不这么幸运了，他们会在这一步检查出问题，比如括号不匹配，表达式中缺少操作符等等，这些错误会上报编译器，最后报告给程序员。——他们面临着整改的命运。</p>
+<h3 id="语义分析">2.3 语义分析</h3>
+<p>刚刚的语法分析器，顾名思义，只完成了语法层面的分析，但他不了解表达式是不是真的有意义。</p>
+<p>比如让两个指针做乘法，在语法上是合法的，但这是没有意义的。语义分析器（Semantic Analyzer）就能够检查出这个错误。</p>
+<p>但语义分析也不是万能的，它也有局限性——语义分析仅仅能分析<strong>静态语句</strong>。</p>
+<p>你问我什么是静态语义？</p>
+<p><del>我不知道，因为我只是一个函数。</del></p>
+<p>所谓静态语义，是能在编译期间可以确定的语义，与之相对的动态语义，就是只有在运行期才能确定的语义。</p>
+<pre><code><code>int a = 6 / 0;</code></code></pre>
+<p>从静态语义上看，这句话是合法的，编译期间不会报错，但等到程序运行到这句时，就会报出 <code>devided by 0</code> 的错误，造成程序异常退出。</p>
+<h3 id="代码生成与优化">2.4 代码生成与优化</h3>
+<p>走到这，编译部分也算快结束了。</p>
+<p>剩下的两台机器，一台叫代码生成器（Code Generator），一台叫目标代码优化器（Target Code Optimizer）。</p>
+<p>目标代码优化器总是嫌弃代码生成器，因为代码生成器生成的代码效率低，还需要他花大功夫来优化。</p>
+<p>用优化器的话讲：“生成器那家伙，每次生成一堆低效率的代码，我还得从头读到尾，进行基于<strong>数据流分析</strong>（data-flow analyse）技术的全局优化，太累了。”</p>
+<p>其实代码生成器有做优化，叫做<strong>局部</strong>代码优化，只是优化程度远远不及优化器，所以他不好意思反驳优化器。</p>
+<p>不过这不代表代码生成器结构就简单了，它生成代码的过程十分依赖于目标机器——这意味着它要适配许许多多的机器，不同的机器有着不同的字长、寄存器、整数数据类型和浮点数数据类型等，它要考虑的事情太多了。</p>
+<p>经过生成器，表达式的样子发生了巨大的变化（这里以 x86 的汇编语言来表示）：</p>
+<pre class="assembly"><code>movl index, %ecx          ; value of index to ecx 
+addl $4, %ecx             ; ecx = ecx + 4 
+mull $8, %ecx             ; ecx = ecx * 8 
+movl index, %eax          ; value of index to eax 
+movl %ecx, array(,eax,4)  ; array[index] = ecx</code></code></pre>
+<p>优化器对上面的代码又做了一番深层次的优化，包括选择寻址方式，删除多余指令等。（代码比较短，所以优化效果并不明显。）</p>
+<pre class="assembly"><code>movl  index, %edx 
+leal  32(,%edx,8), %eax 
+movl  %eax, array(,%edx,4)</code></code></pre>
+<p>每次走过这些流程，我都不得不感叹于编译器复杂的结构，也只有优秀的程序员们，才能够完成这么伟大的工程吧。</p>
+<p>函数的编译，就是这么繁琐，且枯燥。</p>
+<p>今天令我惊讶的是，所有函数都完美的通过了编译阶段。</p>
+<p>“Nice~ 这次可以早点休息了！”不止是我，其他函数也是这么想的吧。</p>
+<p>我们有说有笑，悠然等待着链接程序来做最后的收尾工作。</p>
+<p>但万万没想到，危机竟出现在链接阶段。</p>
+<h2 id="链接">3. 链接</h2>
+<p>我听长辈们说，链接器，拥有比编译器更为悠久的历史。</p>
+<p>每当我把这个事实告诉新来的函数时，他们总是一脸不可思议：</p>
+<p>“我们都是先编译，再链接的，怎么会先有链接器，再有编译器？这又不是先有鸡还是先有蛋的哲学问题。”</p>
+<p>我第一次听说的时候，也有这样的疑惑。</p>
+<p>“链接是在汇编语言时代就出现了的概念。在那之前，是机器语言的时代。但是想要对机器语言进行修改，那就太困难了，因为机器指令的修改经常造成具体指令地址的改变，牵一发而动全身。所以汇编语言产生了，用符号来标记位置，而符号与实际地址的映射工作，就是链接器来做的。”我向他解释道。</p>
+<p>“我明白了，因为高级语言出现在后面，所以从高级语言到汇编语言的步骤——编译，要比链接来的晚一些。”</p>
+<p>是啊，编程语言的发展，从机器语言，到汇编语言，再到现在的高级语言，经过了几十年的时间。但尽管是现代，我们编译型高级语言，想要运行，还是得回到汇编语言，再被翻译成机器语言，看起来是绕了一个大圈，但人类程序员的生产力，却得到了质的飞跃。</p>
+<p>人类总是能想出各种办法来减轻他们的工作量。</p>
+<p>...</p>
+<p>链接过程主要包括了地址和空间分配（Address and Storage Allocation）、符号决议（Symbol Resolution）和重定位（Relocation）等这些步骤。</p>
+<p>看起来挺高大上，其实链接器做的和早期程序员人工调整地址没什么两样，只是更加复杂而已——你不要指望现在的语言特性比早期简单。</p>
+<p>但从本质上说，就是把指令对其他符号地址的引用加以修正。链接的重点就是两个不同的目标文件。</p>
+<p>这一阶段本来是很容易通过的，但今天，居然出现了大错误。</p>
+<p>问题出在 main.c 中。</p>
+<p>出乎所有函数的意料，包括 main。</p>
+<!--因为静态链接的步骤比较少，所以讲的也比较简略，以后会详细补充链接器相关内容的-->
+<h2 id="尾声">4. 尾声</h2>
+<p>回到编辑器，我们检查遍了 main 函数内部的所有函数，从他们的声明，再到他们的实现，全都没有问题。</p>
+<p>“会不会是 <code>#include</code> 的时候出了什么问题？”有函数提出了自己的看法。</p>
+<p>我们决定分头行动，一部分和其他文件协作检查函数声明，剩下一部分负责排查有没有出现循环 <code>#include</code> 问题。</p>
+<p>不知过了多少 CPU 周期，大家回来了，一无所获，两种问题都没有出现。</p>
+<p>我们一筹莫展。</p>
+<p>“ main.c ，链接出错...”我满脑子都在想可能原因，“不会是 main 函数本身出了问题吧！”</p>
+<p>“快，去看看宏定义有没有异常！”</p>
+<p>宏定义？虽然大家有些疑惑，但还是照做了。</p>
+<p>果然，发现了异常：</p>
+<pre><code><code>...
+...
+#define main mian
+...
+...</code></code></pre>
+<p>我心里怒骂“谁这么缺德，干这种事情？！”</p>
+<p>好在删掉这条“间谍”指令后，一切恢复正常，完美通过编译链接。</p>
+<p>我们终于可以休息了。</p>
+<p>PS：危险指令，请勿模仿。除非，，，你想挨一顿毒打。</p>
+<p>PPS：函数的运行以后也会写到。</p>
+<p>PPPS：如果大家对文章有什么看法和意见，欢迎提出来~ 如果觉得文章有意思，点个赞再走吧</p>
+<p>文中插图来自《程序员的自我修养》。</p>
+<p><strong>声明：原创文章，未经授权，禁止转载</strong></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,118 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修洛谷P2184 贪婪大陆' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>洛谷P2184 贪婪大陆</center></div><div class='banquan'>原文出处:本文由博客园博主yu__xuan提供。<br/>
+原文连接:https://www.cnblogs.com/poi-bolg-poi/p/11122954.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#题目">题目</a></li>
+        <li><a href="#思路">思路</a></li>
+        <li><a href="#code"><span class="math inline">\(Code\)</span></a></li>
+        </ul>
+    </div>
+</div>
+<h3 id="题目">题目</h3>
+<p><a href="https://www.luogu.org/problemnew/show/P2184">戳</a></p>
+<h3 id="思路">思路</h3>
+<p>修改区间时在开始位置<span class="math inline">\(s+1\)</span>表示从则例开始埋一种雷，在结束位置<span class="math inline">\(e+1\)</span>表示有一种雷埋到这里就结束了。<br />
+查询时输出<span class="math inline">\([1,r]\)</span>s的和减去<span class="math inline">\([1，l-1]\)</span>的e的和。用线段树来实现。</p>
+<h3 id="code"><span class="math inline">\(Code\)</span></h3>
+<pre><code>#include&lt;iostream&gt;
+#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;string&gt;
+#include&lt;algorithm&gt;
+using namespace std;
+const int MAXN=1000001;
+int n,m;
+struct node{
+    int l,r,s,e;
+}tree[MAXN+1];
+inline int read(){
+    int x=0;bool f=0;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;){if(c==&#39;-&#39;)f=!f;c=getchar();}
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;){x=x*10+c-&#39;0&#39;;c=getchar();}
+    return f?-x:x;
+}
+void build(int l,int r,int now){
+    tree[now].l=l,tree[now].r=r;
+    if(l==r){
+        tree[now].s=0;tree[now].e=0;
+        return;
+    }
+    int mid=(l+r)&gt;&gt;1;
+    build(l,mid,now&lt;&lt;1);
+    build(mid+1,r,now&lt;&lt;1|1);
+}
+void a_s(int x,int now){
+    if(tree[now].l==tree[now].r){
+        tree[now].s+=1;
+        return;
+    }
+    int mid=(tree[now].l+tree[now].r)&gt;&gt;1;
+    if(x&lt;=mid) a_s(x,now&lt;&lt;1);
+    else a_s(x,now&lt;&lt;1|1);
+    tree[now].s=tree[now&lt;&lt;1].s+tree[now&lt;&lt;1|1].s;
+}
+void a_e(int x,int now){
+    if(tree[now].l==tree[now].r){
+        tree[now].e+=1;
+        return;
+    }
+    int mid=(tree[now].l+tree[now].r)&gt;&gt;1;
+    if(x&lt;=mid) a_e(x,now&lt;&lt;1);
+    else a_e(x,now&lt;&lt;1|1);
+    tree[now].e=tree[now&lt;&lt;1].e+tree[now&lt;&lt;1|1].e;
+}
+int ask_s(int x,int y,int now){
+    if(tree[now].l&gt;=x&amp;&amp;tree[now].r&lt;=y){
+        return tree[now].s;
+    }
+    int mid=(tree[now].l+tree[now].r)&gt;&gt;1,ans=0;
+    if(x&lt;=mid) ans+=ask_s(x,y,now&lt;&lt;1);
+    if(y&gt;mid) ans+=ask_s(x,y,now&lt;&lt;1|1);
+    return ans;
+}
+int ask_e(int x,int y,int now){
+    if(tree[now].l&gt;=x&amp;&amp;tree[now].r&lt;=y){
+        return tree[now].e;
+    }
+    int mid=(tree[now].l+tree[now].r)&gt;&gt;1,ans=0;
+    if(x&lt;=mid) ans+=ask_e(x,y,now&lt;&lt;1);
+    if(y&gt;mid) ans+=ask_e(x,y,now&lt;&lt;1|1);
+    return ans;
+}
+
+int main(){
+    n=read(),m=read();
+    build(1,n,1);
+    int bz,x,y;
+    while(m--){
+        bz=read(),x=read(),y=read();
+        if(bz==1) a_s(x,1),a_e(y,1);
+        else printf(&quot;%d\n&quot;,ask_s(1,y,1)-ask_e(1,x-1,1));
+    }
+    return 0;
+}</code></pre>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

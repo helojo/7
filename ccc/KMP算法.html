@@ -1,0 +1,56 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修KMP算法' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>KMP算法</center></div><div class='banquan'>原文出处:本文由博客园博主ycx060617提供。<br/>
+原文连接:https://www.cnblogs.com/ycx-akioi/p/KMP-algorithm.html</div><br>
+    <h2 id="kmp算法">KMP算法</h2>
+<p>KMP是一种字符串匹配算法。此算法的核心在于<span class="math inline">\(kmp\)</span>数组以及它的求法。</p>
+<p>（以下约定字符串下标从<span class="math inline">\(1\)</span>开始）</p>
+<h3 id="kmp数组"><span class="math inline">\({kmp}\)</span>数组</h3>
+<p>定义<span class="math inline">\(kmp\)</span>数组：<span class="math inline">\(kmp_{a,i}\)</span>表示字符串<span class="math inline">\(a\)</span>的前缀<span class="math inline">\(a_{1\sim i}\)</span>的最长相同真前后缀的长度，即<span class="math inline">\(kmp_{a,i}=\max\limits_{j\in[0,i),a_{1\sim j}=a_{i-j+1\sim i}}\{j\}\)</span>。显然，<span class="math inline">\(kmp_{a,1}=0\)</span>恒成立。例如若<span class="math inline">\(a=``\text{abacaabac&#39;&#39;}\)</span>，那么<span class="math inline">\(kmp_a=[0,0,1,0,1,1,2,3,4]\)</span>。</p>
+<h3 id="kmp数组的求法"><span class="math inline">\({kmp}\)</span>数组的求法</h3>
+<p>给定一个字符串<span class="math inline">\(a\)</span>，现在我们要求<span class="math inline">\(kmp_a\)</span>。</p>
+<p><span class="math inline">\(\forall i\in(1,|a|]\)</span>，假设已经知道了<span class="math inline">\(kmp_{a,1\sim i-1}\)</span>，现在要求出<span class="math inline">\(kmp_{a,i}\)</span>。考虑试试在<span class="math inline">\(a_{1\sim i-1}\)</span>的一组相同真前后缀的后面同时加上<span class="math inline">\(1\)</span>个字符，看看这<span class="math inline">\(2\)</span>个字符相不相同。设当前试的的为<span class="math inline">\(a_{1\sim i-1}\)</span>的长度为<span class="math inline">\(now\)</span>的相同真前后缀。执行以下步骤：</p>
+<ol>
+<li>从最长的开始试起，即初始令<span class="math inline">\(now=kmp_{a,i-1}\)</span>。</li>
+<li><p>如果往后加的<span class="math inline">\(2\)</span>个字符（分别为<span class="math inline">\(a_{now+1},a_i\)</span>）相等的话，则匹配成功，直接令<span class="math inline">\(kmp_{a,i}=now+1\)</span>并结束（因为比它长的相同真前后缀都试过了）；否则找次长一点的<span class="math inline">\(a_{1\sim i-1}\)</span>的相同真前后缀，不难发现<span class="math inline">\(kmp_{a,now}\)</span>就是次长一点的长度（原因见下图），便令<span class="math inline">\(now=kmp_{a,now}\)</span>。</p>
+<p><img src="./images/KMP算法0.png" /></p></li>
+<li><p>不断重复第<span class="math inline">\(2\)</span>步，如果中途没有结束，那么直到<span class="math inline">\(now=0\)</span>的时候，令<span class="math inline">\(kmp_{a,i}=[a_1=a_i]\)</span>并结束。</p></li>
+</ol>
+<p>这样先令<span class="math inline">\(kmp_{a,1}=0\)</span>，然后按上述方法从<span class="math inline">\(i=2\)</span>到<span class="math inline">\(i=|a|\)</span>递推，即可求出<span class="math inline">\(kmp_a\)</span>。</p>
+<p>求<span class="math inline">\(kmp\)</span>数组的代码如下：<del>（很短吧？很好写吧？很爽吧？</del></p>
+<pre><code>void kmp_init(){//求kmp数组
+    kmp[1]=0;//恒成立
+    for(int i=2;i&lt;=n;i++){//从i=2递推到i=n
+        int now=kmp[i-1];//初始化now
+        while(now&amp;&amp;a[now+1]!=a[i])now=kmp[now];//重复第2步
+        kmp[i]=a[now+1]==a[i]?now+1:0;
+    }
+}</code></pre>
+<h3 id="时间复杂度">时间复杂度</h3>
+<p>上述方法求<span class="math inline">\(kmp\)</span>数组的时间复杂度是是线性的<span class="math inline">\(\mathrm O(|a|)\)</span>。</p>
+<p>证明：我们可以把<span class="math inline">\(now\)</span>看成一个定义在<code>for</code>外面的变量来研究它的增减，<code>kmp[i]=now+1;</code>可理解成<code>now++;</code>，因为下一轮循环的时候就会执行<code>now=kmp[i-1];</code>。不难发现，<code>for</code>里的第<span class="math inline">\(2\)</span>行<code>while</code>会使<span class="math inline">\(now\)</span>进行不增变化（也就是可能不变，可能减少），第<span class="math inline">\(3\)</span>行会使<span class="math inline">\(now\)</span>增加<span class="math inline">\(0\sim 1\)</span>。那么<span class="math inline">\(now\)</span>增加<span class="math inline">\(1\)</span>的次数为<span class="math inline">\(\mathrm O(|a|)\)</span>，于是<span class="math inline">\(now\)</span>减少也只能有<span class="math inline">\(\mathrm O(|a|)\)</span>次机会了。所以总共就是<span class="math inline">\(\mathrm O(|a|)\)</span>了。</p>
+<h2 id="kmp算法的应用">KMP算法的应用</h2>
+<p>KMP算法可以用来字符串模式匹配（这个Z算法和哈希也能做到线性复杂度）。看到网上很多blog都是用<span class="math inline">\(kmp\)</span>数组来优化暴力匹配，但我有更好理解的方法（复杂度不变）。与<a href="https://www.cnblogs.com/ycx-akioi/p/Z-algorithm.html">Z算法</a>类似，我们可以把模式串<span class="math inline">\(b\)</span>隔一个不常用字符接到文本串<span class="math inline">\(a\)</span>前面，即令<span class="math inline">\(c=b+`\text{!&#39;}+a\)</span>。然后求出<span class="math inline">\(kmp_c\)</span>，从<span class="math inline">\(i=|b|+2\)</span>到<span class="math inline">\(i=|c|\)</span>扫一遍，如果<span class="math inline">\(kmp_{c,i}=|b|\)</span>，那么在<span class="math inline">\(a\)</span>的<span class="math inline">\(i-|b|+1-|b|-1=i-2|b|\)</span>处匹配成功。</p>
+<p>不仅如此，如果想专门求字符串<span class="math inline">\(a\)</span>的某前缀的最长相同真前后缀的长度，哈希的复杂度就无异于暴力了（因为匹配成败没有单调性，不好二分）。Z算法稍微好一点，<span class="math inline">\(\forall i\in[1,|a|]\)</span>，令<span class="math inline">\(\forall j\in [1,z_{a,i}],ans_{i+j-1}=\max(ans_{i+j-1},j)\)</span>，这个可以用差分或线段树实现，复杂度都带<span class="math inline">\(\log\)</span>，没有KMP的线性复杂度好。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

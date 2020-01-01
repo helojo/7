@@ -1,0 +1,55 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修矩阵乘法（四）：分析问题，确定递推式，采用矩阵快速幂求解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>矩阵乘法（四）：分析问题，确定递推式，采用矩阵快速幂求解</center></div><div class='banquan'>原文出处:本文由博客园博主aTeacher提供。<br/>
+原文连接:https://www.cnblogs.com/cs-whut/p/11456718.html</div><br>
+    <p>&nbsp; &nbsp; &nbsp; 应用矩阵快速幂运算可以解决递推问题。在实际应用中，有时候题目并没有直接给出递推式，需要认真分析问题，找出递推式，然后再利用矩阵快速幂运算加快问题的求解。</p>
+<p><strong><span style="font-size: 16px;">【例1】程序阅读理解。</span></strong></p>
+<p>&nbsp; &nbsp; &nbsp; 有如下的C语言程序：</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;<br />int main()<br />{<br />&nbsp; &nbsp; &nbsp;int n,m,f,i;<br />&nbsp; &nbsp; &nbsp;while(scanf("%d%d",&amp;n,&amp;m)!=EOF)<br />&nbsp; &nbsp; &nbsp;{<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;f=0;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;for(i=1;i&lt;=n;i++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (i&amp;1)f=(f*2+1)%m;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; else f=f*2%m;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;printf("%d\n",f);<br />&nbsp; &nbsp; &nbsp;}<br />&nbsp; &nbsp; &nbsp;return 0;<br />}</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;阅读上面的程序，根据输入的n和m，写出程序运行的结果。例如，输入 3&nbsp; 10，输出应为5。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;但由于给定输入的n和m的数据范围为1&lt;=n, m &lt;= 1000000000，且测试集中数据量较大，因此如果直接将给定的程序提交会超时的。请你编写一个程序，能根据输入的n和m快速完成问题的求解，以实现给定程序的功能。</p>
+<p>&nbsp; &nbsp; &nbsp; （1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; 给定程序段实际是通过迭代的方式求f(n)%m的值。先不考虑求余，找到f(n)的求法。</p>
+<p>&nbsp; &nbsp; &nbsp; 分析给定程序知，f(0)=0， 当 n为奇数时，f(n)=2*f(n-1)+1；当n为偶数时，f(n)=2*f(n-1)。</p>
+<p>&nbsp; &nbsp; &nbsp; 下面进一步分析，找到不考虑n的奇偶性的一个统一的递推式。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;当 n为奇数时，f(n)=2*f(n-1)+1，n-1一定为偶数，f(n-1)=2*f(n-2)。因此，</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; f(n)=f(n-1)+f(n-1)+1=2*f(n-2)+f(n-1)+1。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;当 n为偶数时，f(n)=2*f(n-1)，n-1一定为奇数，f(n-1)=2*f(n-2)+1。因此，</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; f(n)=f(n-1)+f(n-1)=2*f(n-2)+f(n-1)+1。</p>
+<p>&nbsp; &nbsp; &nbsp; 由此，得到统一的递推式： f(0)=0，f(1)=1，&nbsp;&nbsp;f(n)=2*f(n-2)+f(n-1)+1&nbsp; (n&gt;=3)。</p>
+<p>&nbsp; &nbsp; &nbsp; 确定了递推式后，可以构造矩阵P，进行快速幂运算求解。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;<img src="./images/矩阵乘法（四）：分析问题，确定递推式，采用矩阵快速幂求解0.png" alt="" width="126" height="69" /></p>
+<p>&nbsp; &nbsp; &nbsp;&nbsp;<img src="./images/矩阵乘法（四）：分析问题，确定递推式，采用矩阵快速幂求解1.png" alt="" /></p>
+<p>&nbsp;&nbsp; &nbsp; &nbsp;&nbsp;<img src="./images/矩阵乘法（四）：分析问题，确定递推式，采用矩阵快速幂求解2.png" alt="" /></p>
+<p>&nbsp;&nbsp; &nbsp; &nbsp; &nbsp;（2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;<br />#include &lt;string.h&gt;<br />struct Matrix<br />{<br />&nbsp; &nbsp; &nbsp; __int64 mat[4][4];  // 存储矩阵中各元素<br />};<br />Matrix matMul(Matrix a ,Matrix b,int n,int m)<br />{<br />&nbsp; &nbsp; &nbsp; Matrix c;<br />&nbsp; &nbsp; &nbsp; memset(c.mat,0,sizeof(c.mat));<br />&nbsp; &nbsp; &nbsp; int i,j,k;<br />&nbsp; &nbsp; &nbsp; for (k = 1; k&lt;=n ; k++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (i=1 ;i&lt;=n ; i++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (a.mat[i][k]!=0)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (j = 1 ;j&lt;=n ;j++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; c.mat[i][j] = (c.mat[i][j] + a.mat[i][k] * b.mat[k][j]) % m;<br />&nbsp; &nbsp; &nbsp; return c;<br />}<br />Matrix quickMatPow(Matrix a ,int n,int b,int m) // n阶矩阵a快速b次幂<br />{<br />&nbsp; &nbsp; &nbsp; Matrix c;<br />&nbsp; &nbsp; &nbsp; memset(c.mat ,0 ,sizeof(c.mat));<br />&nbsp; &nbsp; &nbsp; int i;<br />&nbsp; &nbsp; &nbsp; for (i = 1 ;i &lt;= n ;i++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;c.mat[i][i] = 1;<br />&nbsp; &nbsp; &nbsp; while (b!=0)<br />&nbsp; &nbsp; &nbsp; {<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (b &amp; 1) <br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;c = matMul(c ,a ,n,m); // c=c*a; <br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;a = matMul(a ,a ,n,m); // a=a*a<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;b /= 2;<br />&nbsp; &nbsp; &nbsp; }<br />&nbsp; &nbsp; &nbsp; return c;<br />}<br />int main()<br />{<br />&nbsp; &nbsp; &nbsp; int n,m;<br />&nbsp; &nbsp; &nbsp; __int64 ans;<br />&nbsp; &nbsp; &nbsp; Matrix p;<br />&nbsp; &nbsp; &nbsp; while(scanf("%d%d" ,&amp;n,&amp;m)!=EOF)<br />&nbsp; &nbsp; &nbsp; {<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; memset(p.mat,0,sizeof(p.mat));<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; p.mat[2][1]=2;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; p.mat[1][2]=p.mat[2][2]=1;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; p.mat[2][3]=p.mat[3][3]=1;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (n&lt;3)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;printf("%d\n",n%m);<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;else<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;p = quickMatPow(p,3,n-2,m);<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;ans=p.mat[2][1]% m;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;ans=(ans+p.mat[2][2]*2)% m;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;ans=(ans+p.mat[2][3])% m;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;printf("%I64d\n" ,ans);<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }<br />&nbsp; &nbsp; &nbsp; }<br />&nbsp; &nbsp; &nbsp; return 0; <br />}</p>
+<p style="margin-left: 30px;">将此源程序提交给<a href="http://acm.hdu.edu.cn/showproblem.php?pid=4990" target="_blank">HDU 4990 &ldquo;Reading comprehension&rdquo;</a>，可以Accepted。</p>
+<p><strong><span style="font-size: 16px;">【例2】将灯全熄灭。</span></strong></p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;有n个灯排成一行，初始时是全亮的，第一个灯可以按（按下之后改变状态）。然后如果前k个灯全熄灭且第k+1个灯亮，则第k+2个灯可以按。问至少要多少步灭掉所有灯？</p>
+<p>&nbsp; &nbsp; &nbsp; 例如，n=2时，需要2歩。第1歩灭掉2号灯，第2歩灭掉1号灯。n=3时，需要5歩。第1歩灭掉1号灯，第2歩灭掉3号灯，第3歩点亮1号灯（注意1号灯不点亮，不能直接灭2号灯），第4歩灭掉2号灯，第5歩灭掉1号灯。</p>
+<p>&nbsp; &nbsp; &nbsp; （1）编程思路。&nbsp;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;设f[n]代表n个全亮的灯变成全熄灭所需的最少步数，也可以代表n个全熄灭的灯变成全点亮所需的最少步数。&nbsp;<br />&nbsp; &nbsp; &nbsp; 1）要想灭掉最后一个灯，得先灭掉前n-2个灯（第n-1个灯留亮），需要步数 f[n-2]+1。&nbsp;<br />&nbsp; &nbsp; &nbsp; 2）要想灭掉第n-1个灯，得先让第n-2个灯变回亮，要第n-2个灯变回亮，得先让第n-3个灯变回亮...即要把前n-2个灯都变回亮，需要步数 f[n-2]。&nbsp;<br />&nbsp; &nbsp; &nbsp; 3）把前n-2个灯变回亮后，就剩下前n-1个灯都是亮的，即剩下的任务就是把n-1个灯灭掉，需要步数 f[n-1]。&nbsp;<br />&nbsp; &nbsp; &nbsp; 综上所述：f[n] = 2*f[n-2] + f[n-1] + 1。 （n&gt;=3）&nbsp; f[1]=1，f[2]=2。</p>
+<p>&nbsp; &nbsp; &nbsp; （2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;<br />#include &lt;string.h&gt;<br />#define MOD 200907<br />struct Matrix<br />{<br />&nbsp; &nbsp; &nbsp; &nbsp;__int64 mat[4][4];  // 存储矩阵中各元素<br />};<br />Matrix matMul(Matrix a ,Matrix b,int n)<br />{<br />&nbsp; &nbsp; &nbsp; Matrix c;<br />&nbsp; &nbsp; &nbsp; memset(c.mat,0,sizeof(c.mat));<br />&nbsp; &nbsp; &nbsp; int i,j,k;<br />&nbsp; &nbsp; &nbsp; for (k = 1; k&lt;=n ; k++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (i=1 ;i&lt;=n ; i++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (a.mat[i][k]!=0)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (j = 1 ;j&lt;=n ;j++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; c.mat[i][j] = (c.mat[i][j] + a.mat[i][k] * b.mat[k][j]) % MOD;<br />&nbsp; &nbsp; &nbsp; return c;<br />}<br />Matrix quickMatPow(Matrix a ,int n,int b) // n阶矩阵a快速b次幂<br />{<br />&nbsp; &nbsp; &nbsp; Matrix c;<br />&nbsp; &nbsp; &nbsp; memset(c.mat ,0 ,sizeof(c.mat));<br />&nbsp; &nbsp; &nbsp; int i;<br />&nbsp; &nbsp; &nbsp; for (i = 1 ;i &lt;= n ;i++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; c.mat[i][i] = 1;<br />&nbsp; &nbsp; &nbsp; while (b!=0)<br />&nbsp; &nbsp; &nbsp; {<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (b &amp; 1) <br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; c = matMul(c ,a ,n); // c=c*a; <br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;a = matMul(a ,a ,n); // a=a*a<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;b /= 2;<br />&nbsp; &nbsp; &nbsp; }<br />&nbsp; &nbsp; &nbsp; return c;<br />}<br />int main()<br />{<br />&nbsp; &nbsp; &nbsp; int n;<br />&nbsp; &nbsp; &nbsp; __int64 ans;<br />&nbsp; &nbsp; &nbsp; Matrix p;<br />&nbsp; &nbsp; &nbsp; while(scanf("%d" ,&amp;n) &amp;&amp; n!=0)<br />&nbsp; &nbsp; &nbsp; {<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;memset(p.mat,0,sizeof(p.mat));<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;p.mat[1][2]=2;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;p.mat[1][1]=p.mat[1][3]=1;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;p.mat[2][1]=p.mat[3][3]=1;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (n&lt;3)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;printf("%d\n",n%MOD);<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;else<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; p = quickMatPow(p,3,n-2);<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ans=(p.mat[1][1]*2+p.mat[1][2]+p.mat[1][3])%MOD;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; printf("%I64d\n" ,ans);<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}<br />&nbsp; &nbsp; &nbsp; }<br />&nbsp; &nbsp; &nbsp; return 0; <br />}</p>
+<p style="margin-left: 30px;">将此源程序提交给<a href="http://acm.hdu.edu.cn/showproblem.php?pid=2842" target="_blank">HDU 2842 &ldquo;Chinese Rings&rdquo;</a>，可以Accepted。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

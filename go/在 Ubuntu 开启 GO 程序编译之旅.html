@@ -1,0 +1,106 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修在 Ubuntu 开启 GO 程序编译之旅' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>在 Ubuntu 开启 GO 程序编译之旅</center></div><div class='banquan'>原文出处:本文由博客园博主三人行工作室提供。<br/>
+原文连接:https://www.cnblogs.com/timeddd/p/11087602.html</div><br>
+    <p>本文将使用 putty 连接到一台阿里云 Ubuntu 16.04 服务器，在其上安装 go 语言的编译环境，旨在呈现从安装到“你好，世界！”涉及的方方面面，希望完成这个过程无须觅它处。</p>
+<h3 id="安装">1. 安装</h3>
+<h4 id="方式一使用-apt-get">方式一使用 apt-get</h4>
+<pre><code><code>apt-get install golang-go</code></pre>
+<p>执行完成之后，会把 golang 安装在这个位置：<code>/usr/lib/go-1.6/</code>，go 命令会在该目录的 bin 子目录下，同时，/usr/bin 下会有该命令的文件链接。</p>
+<p>当然，也许你并不知道到底安装在哪，可以通过以下命令找找观察判断一下。</p>
+<pre><code><code># 找名字为 go 的文件
+find / -name go</code></pre>
+<p>执行 <code>/usr/bin/go version</code>，结果如下，显示的版本号为 go1.6.2，版本比较低。</p>
+<p><img src="./images/在 Ubuntu 开启 GO 程序编译之旅0.png" /></p>
+<p>是不是想卸载？使用以下命令可以完成卸载，跟安装一一对应。</p>
+<pre><code><code>apt-get --purge remove golang-go</code></pre>
+<h4 id="方式二使用-wget">方式二使用 wget</h4>
+<p>直接下载想要的版本进行安装，一切皆在掌控之中。通过以下两条命令，我们把 golang 安装在 /usr/local/go 下。</p>
+<pre><code><code># 下载
+wget https://storage.googleapis.com/golang/go1.9.1.linux-amd64.tar.gz
+# 解压
+tar -xzf go1.9.1.linux-amd64.tar.gz -C /usr/local</code></pre>
+<h3 id="设置环境变量">2. 设置环境变量</h3>
+<p>这里会涉及到3个环境变量，分别是 PATH、GOROOT、GOPATH。<br />
+<strong>PATH</strong>，是为了让 go 命令随处可敲。<br />
+<strong>GOROOT</strong>，代表 golang 的根目录，在设置PATH时可以用一下，如　export PATH=$GOROOT/bin。<br />
+<strong>GOPATH</strong>，特别重要，单独做一节(2.2)来讲。</p>
+<h4 id="设置">2.1 设置</h4>
+<p>环境变量可以设置在不同的文件中。<br />
+etc/profile : 对所有用户生效<br />
+~/.profile : 对当前用户生效</p>
+<p>配置在哪都行，能用到即可。在配置文件末尾加上以下文本。</p>
+<pre><code><code>export GOROOT=/usr/local/go
+export GOPATH=/usr/goprojs
+export PATH=$GOROOT/bin:$PATH:$GOPATH/bin</code></pre>
+<p>GOPATH、PATH 多个路径，中间使用冒号分隔。<br />
+配置完成后，使用<code>source ~/.profile</code> 让其立即生效。</p>
+<h4 id="gopath">2.2 GOPATH</h4>
+<p>GOPATH 是GO程序找依赖包的路径。<br />
+其子目录 src 中可放置各个包的源码，编译时会通过 GOPATH 去引用它们。<br />
+子目录 bin 则是编译之后的可执行文件，在PATH 里要加上各$GOPATH/bin 可以让编译的运行文件在执行搜索路径范围内方便执行。<br />
+子目录 pkg，编译包的中间文件，不太关心它。</p>
+<p><strong>GOPATH 的第一个路径特别重要</strong>。<br />
+使用 go get 下载的包都会安装在第一个路径，所以如果想让公共包统一在某处，应该要为它单独建立一个路径作为GOPATH的第一个路径，从而使得 go get 总去向那里。实际项目最好另建路径加入GOPATH，这样即在引用范围 go get 又影响不到。</p>
+<p>附 go get 可带参数：<br />
+|参数|描述|<br />
+|------|------|<br />
+| -v |显示操作流程的日志及信息 |<br />
+| -u |仅下载丢失的包，不更新已存在的 |<br />
+| -d | 只下载，不安装 |<br />
+| -insecure | 允许使用HTTP，而不一定要HTTPS |</p>
+<h3 id="你好世界">3. 你好，世界！</h3>
+<h4 id="编写代码">3.1 编写代码</h4>
+<p>建立代码文件。<a href="https://www.runoob.com/try/runcode.php?filename=helloworld&amp;type=go">点此可以在线尝鲜 GO 代码</a></p>
+<pre><code><code>vi hello.go
+// 输入以下代码保存
+package main
+import &quot;fmt&quot;
+
+func main(){
+    fmt.Println(&quot;Hello world!&quot;)
+}</code></pre>
+<h4 id="执行">3.2 执行</h4>
+<p>直接在文件目录执行以下命令运行。</p>
+<pre><code><code>go run hello.go
+// 或者
+go build hello.go
+./hello</code></pre>
+<h3 id="附件">4. 附件</h3>
+<p>设置环境变量的配置文件，有网友总结：</p>
+<blockquote>
+<p>/etc/profile，/etc/bashrc 是系统全局环境变量设定<br />
+~/.profile，~/.bashrc用户家目录下的私有环境变量设定<br />
+当登入系统时候获得一个shell进程时，其读取环境设定档有三步<br />
+1）.首先读入的是全局环境变量设定档/etc/profile，然后根据其内容读取额外的设定的文档，如<br />
+/etc/profile.d和/etc/inputrc<br />
+2）.然后根据不同使用者帐号，去其家目录读取~/.bash_profile，如果这读取不了就读取~/.bash_login，这个也读取不了才会读取<br />
+~/.profile，这三个文档设定基本上是一样的，读取有优先关系<br />
+3）.然后在根据用户帐号读取~/.bashrc<br />
+~/.profile与~/.bashrc的区别<br />
+都具有个性化定制功能<br />
+~/.profile可以设定本用户专有的路径，环境变量，等，它只能登入的时候执行一次<br />
+~/.bashrc也是某用户专有设定文档，可以设定路径，命令别名，每次shell script的执行都会使用它一次</p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

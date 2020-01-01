@@ -1,0 +1,178 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修基于STM32F767两路互补SPWM波(HAL库)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>基于STM32F767两路互补SPWM波(HAL库)</center></div><div class='banquan'>原文出处:本文由博客园博主小小强小小提供。<br/>
+原文连接:https://www.cnblogs.com/g-qiang/p/11172331.html</div><br>
+    <p>SPWM波指的是占空比呈正弦规律变化的PWM波，生成方式是在定时器中断中调整PWM波的占空比。</p>
+<p>对于互补的两路SPWM波，一路为低电平 &lsquo;0&rsquo; 时，另一路为高电平 &lsquo;1&rsquo;，即两路是互补的。</p>
+<p>对于STM32F7，使用高级定时器TIM1可以方便地生成互补SPWM波。步骤如下：</p>
+<p>1、确定载波周期 Tc，也即是每个SPWM波的周期。对于逆变电路，常采用20kHz，也即 Tc =&nbsp; 50us；</p>
+<p>2、确定基波周期 Tb，此处取50Hz，即 Tb = 20ms；</p>
+<p>3、计算取点数N，Tb / Tc = 20ms/50us = 4000；半个周期内则为&nbsp; N = 2000点；</p>
+<p>4、计算占空比，Di = sin(i*pi / N), i = 1, 2, 3, ..., N；</p>
+<p>5、确定最大最小占空比，例如最小占空比 Dmin = 0，最大占空比Dmax = 100%；</p>
+<p>6、计算并修改定时器的比较值。将占空比为0%时，定时器的比较值设置为Cmin = 0；将占空比为100%时，定时器的比较值设为Cmax = 5399；则每中断一次，占空比的值设为 Cmax*Di，直接在中断里完成计算。</p>
+<p>根据以上计算，可以修改最小占空比和最大占空比，也可以修改基波与载波频率。</p>
+<p>以下是具体定时器配置与中断服务函数程序，基于STM32F767IGBT:</p>
+<p>&nbsp;</p>
+<div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">使用高级定时器 1 完成
+</span><span style="color: #008000;">//</span><span style="color: #008000;">Update--2019.6.3
+</span><span style="color: #008000;">//</span><span style="color: #008000;">sin_k =    TIM1_ARR / 200.0 * (float)(spwm_max_duty - spwm_min_duty ) ;    </span><span style="color: #008000;">//</span><span style="color: #008000;">正弦波的比例系数,一个简单的数学代换
+</span><span style="color: #008000;">//</span><span style="color: #008000;">sin_b = TIM1_ARR / 200.0 * (float)(spwm_max_duty + spwm_min_duty ) ; </span><span style="color: #008000;">//</span><span style="color: #008000;">正弦波的截距</span>
+<span style="color: #000000;">    
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">timer1.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">led.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">math.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+TIM_HandleTypeDef      TIM1_Handler;         </span><span style="color: #008000;">//</span><span style="color: #008000;">定时器句柄 </span>
+TIM_OC_InitTypeDef     TIM1_CH1Handler;     <span style="color: #008000;">//</span><span style="color: #008000;">定时器3通道4句柄</span>
+<span style="color: #000000;">TIM_BreakDeadTimeConfigTypeDef BreakDeadTime_Config;
+
+</span><span style="color: #0000ff;">#define</span> PWM_GPIO        GPIOA
+<span style="color: #0000ff;">#define</span> PWM_PIN1        GPIO_PIN_8　　　　　　
+<span style="color: #0000ff;">#define</span> PWM_PIN2        GPIO_PIN_7
+
+<span style="color: #0000ff;">#define</span> TIM1_ARR        5399
+
+<span style="color: #008000;">//</span><span style="color: #008000;">SPWM波相关计算
+</span><span style="color: #008000;">//</span><span style="color: #008000;">sin_points -- 一个周期内中断计算的正弦点数，20KHz载波，Tc = 50us，基波周期 Tb = 50us * sin_points
+</span><span style="color: #008000;">//</span><span style="color: #008000;">Tb = 20Hz  = 50ms = 50,000us, sin_points = 1000
+</span><span style="color: #008000;">//</span><span style="color: #008000;">Tb = 100Hz = 10ms = 10,000us , sin_points =  200
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">(-sin_k + sin_b ) / TIM1_ARR = spwm_min_duty %
+</span><span style="color: #008000;">//</span><span style="color: #008000;">( sin_k + sin_b ) / TIM1_ARR = spwm_max_duty %，反解出 sin_k, sin_b
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> sin_k = TIM1_ARR / 200.0 * (float)(spwm_max_duty - spwm_min_duty )
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> sin_b = TIM1_ARR / 200.0 * (float)(spwm_max_duty + spwm_min_duty )        </span>
+<span style="color: #000000;">
+uint8_t   spwm_min_duty    </span>=    <span style="color: #800080;">10</span>;                    <span style="color: #008000;">//</span><span style="color: #008000;">SPWM波最小占空比</span>
+uint8_t   spwm_max_duty    =    <span style="color: #800080;">90</span>;                  <span style="color: #008000;">//</span><span style="color: #008000;">SPWM波最大占空比</span>
+<span style="color: #000000;">
+uint16_t  count </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+uint16_t  sin_points </span>=    <span style="color: #800080;">200</span><span style="color: #000000;">;
+uint16_t  cc1_value;                                    </span><span style="color: #008000;">//</span><span style="color: #008000;">比较寄存器 1的值，修改改变占空比</span>
+
+<span style="color: #0000ff;">float</span><span style="color: #000000;">          sin_k,sin_b;
+
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">TIM1 PWM部分初始化 
+</span><span style="color: #008000;">//</span><span style="color: #008000;">PWM输出初始化
+</span><span style="color: #008000;">//</span><span style="color: #008000;">arr：自动重装值
+</span><span style="color: #008000;">//</span><span style="color: #008000;">psc：时钟预分频数</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> TIM1_PWM_Init(u16 arr,u16 psc)
+{ 
+      </span><span style="color: #008000;">//</span><span style="color: #008000;">时钟配置</span>
+    TIM1_Handler.Instance = TIM1;            <span style="color: #008000;">//</span><span style="color: #008000;">定时器3</span>
+    TIM1_Handler.Init.Prescaler = psc;       <span style="color: #008000;">//</span><span style="color: #008000;">定时器分频</span>
+    TIM1_Handler.Init.CounterMode=TIM_COUNTERMODE_UP;<span style="color: #008000;">//</span><span style="color: #008000;">向上计数模式</span>
+    TIM1_Handler.Init.Period=arr;          <span style="color: #008000;">//</span><span style="color: #008000;">自动重装载值</span>
+    TIM1_Handler.Init.ClockDivision=<span style="color: #000000;">TIM_CLOCKDIVISION_DIV1;
+    HAL_TIM_PWM_Init(</span>&amp;TIM1_Handler);       <span style="color: #008000;">//</span><span style="color: #008000;">初始化PWM，会调用HAL_TIM_PWM_Init(*)
+    
+    
+      </span><span style="color: #008000;">//</span><span style="color: #008000;">PWM配置</span>
+    TIM1_CH1Handler.OCMode=TIM_OCMODE_PWM1; <span style="color: #008000;">//</span><span style="color: #008000;">模式选择PWM1</span>
+    TIM1_CH1Handler.Pulse=arr/<span style="color: #800080;">2</span>;            <span style="color: #008000;">//</span><span style="color: #008000;">设置比较值,此值用来确定占空比，默认比较值为自动重装载值的一半,即占空比为50%</span>
+    TIM1_CH1Handler.OCPolarity = TIM_OCPOLARITY_HIGH;<span style="color: #008000;">//</span><span style="color: #008000;">输出比较极性为高         </span>
+    TIM1_CH1Handler.OCNPolarity =<span style="color: #000000;"> TIM_OCPOLARITY_HIGH;
+    TIM1_CH1Handler.OCIdleState </span>=<span style="color: #000000;"> TIM_OCIDLESTATE_SET;
+    TIM1_CH1Handler.OCNIdleState </span>=<span style="color: #000000;"> TIM_OCIDLESTATE_SET;
+    HAL_TIM_PWM_ConfigChannel(</span>&amp;TIM1_Handler,&amp;TIM1_CH1Handler,TIM_CHANNEL_1);<span style="color: #008000;">//</span><span style="color: #008000;">配置TIM1通道1
+      
+     /</span><span style="color: #008000;">/</span><span style="color: #008000;">死区时间配置
+     </span><span style="color: #008000;">//</span><span style="color: #008000; text-decoration: underline;">https://blog.csdn.net/DZRYWYBL/article/details/82527889</span> 
+    BreakDeadTime_Config.OffStateRunMode =<span style="color: #000000;"> TIM_OSSR_DISABLE;  
+    BreakDeadTime_Config.OffStateIDLEMode </span>=<span style="color: #000000;"> TIM_OSSI_DISABLE;  
+    BreakDeadTime_Config.LockLevel </span>=<span style="color: #000000;"> TIM_LOCKLEVEL_OFF;  
+    BreakDeadTime_Config.DeadTime </span>= <span style="color: #800080;">0X00</span>; <span style="color: #008000;">//</span><span style="color: #008000;">0x00~0xFF,当设置为0xFF时，50us周期，约有4.68us死区时间；0x0F约有100ns死区时间</span>
+    BreakDeadTime_Config.BreakState =<span style="color: #000000;"> TIM_BREAK_DISABLE;  
+    BreakDeadTime_Config.BreakPolarity </span>=<span style="color: #000000;"> TIM_BREAKPOLARITY_HIGH;  
+    BreakDeadTime_Config.AutomaticOutput </span>=<span style="color: #000000;"> TIM_AUTOMATICOUTPUT_DISABLE;  
+    HAL_TIMEx_ConfigBreakDeadTime(</span>&amp;TIM1_Handler, &amp;<span style="color: #000000;">BreakDeadTime_Config);
+
+
+     </span><span style="color: #008000;">//</span><span style="color: #008000;">中断配置</span>
+    HAL_NVIC_SetPriority(TIM1_CC_IRQn,<span style="color: #800080;">1</span>,<span style="color: #800080;">3</span>);    <span style="color: #008000;">//</span><span style="color: #008000;">设置中断优先级，抢占优先级1，子优先级3</span>
+    HAL_NVIC_EnableIRQ(TIM1_CC_IRQn);          <span style="color: #008000;">//</span><span style="color: #008000;">开启ITM3中断  
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">开启PWM并使能中断</span>
+    HAL_TIM_PWM_Start_IT(&amp;TIM1_Handler, TIM_CHANNEL_1); <span style="color: #008000;">//</span><span style="color: #008000;">开启PWM输出并使能中断</span>
+    HAL_TIMEx_PWMN_Start(&amp;TIM1_Handler, TIM_CHANNEL_1); <span style="color: #008000;">//</span><span style="color: #008000;">打开互补通道</span>
+<span style="color: #000000;">}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">定时器底层驱动，时钟使能，引脚配置
+</span><span style="color: #008000;">//</span><span style="color: #008000;">此函数会被HAL_TIM_PWM_Init()调用
+</span><span style="color: #008000;">//</span><span style="color: #008000;">htim:定时器句柄</span>
+<span style="color: #0000ff;">void</span> HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *<span style="color: #000000;">htim)
+{
+    GPIO_InitTypeDef GPIO_Initure;
+    __HAL_RCC_TIM1_CLK_ENABLE();            </span><span style="color: #008000;">//</span><span style="color: #008000;">使能定时器3</span>
+<span style="color: #000000;">    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    
+    GPIO_Initure.Pin</span>=PWM_PIN1 | PWM_PIN2;   <span style="color: #008000;">//</span><span style="color: #008000;">PWM Pin</span>
+    GPIO_Initure.Mode=GPIO_MODE_AF_PP;      <span style="color: #008000;">//</span><span style="color: #008000;">复用推完输出</span>
+    GPIO_Initure.Pull=GPIO_PULLUP;          <span style="color: #008000;">//</span><span style="color: #008000;">上拉</span>
+    GPIO_Initure.Speed=GPIO_SPEED_HIGH;     <span style="color: #008000;">//</span><span style="color: #008000;">高速</span>
+    GPIO_Initure.Alternate=GPIO_AF1_TIM1;   <span style="color: #008000;">//</span><span style="color: #008000;">PA8复用为TIM1_CH1</span>
+    HAL_GPIO_Init(PWM_GPIO,&amp;<span style="color: #000000;">GPIO_Initure); 
+      
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">设置TIM通道4的占空比
+</span><span style="color: #008000;">//</span><span style="color: #008000;">compare:比较值</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> TIM_SetTIM1Compare1(u32 compare)
+{
+    TIM1</span>-&gt;CCR1=<span style="color: #000000;">compare; 
+}
+
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">定时器1中断服务函数</span>
+<span style="color: #0000ff;">void</span> TIM1_CC_IRQHandler(<span style="color: #0000ff;">void</span>)    <span style="color: #008000;">//</span><span style="color: #008000;">注意名称与通用计时器不同，多了 CC</span>
+<span style="color: #000000;">{
+    HAL_TIM_IRQHandler(</span>&amp;<span style="color: #000000;">TIM1_Handler);
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">定时器1中断服务函数调用</span>
+<span style="color: #0000ff;">void</span> HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *<span style="color: #000000;">htim)
+{
+    </span><span style="color: #0000ff;">if</span>(htim==(&amp;<span style="color: #000000;">TIM1_Handler))
+    {
+          count </span>++<span style="color: #000000;">;
+          </span><span style="color: #0000ff;">if</span>(count ==<span style="color: #000000;">  sin_points)
+              count </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+                
+          sin_k </span>=    TIM1_ARR / <span style="color: #800080;">200.0</span> * (<span style="color: #0000ff;">float</span>)(spwm_max_duty - spwm_min_duty ) ;    <span style="color: #008000;">//</span><span style="color: #008000;">正弦波的比例系数,一个简单的数学代换</span><span style="color: #008000;">//</span><span style="color: #008000;">更正为相减</span>
+          sin_b = TIM1_ARR / <span style="color: #800080;">200.0</span> * (<span style="color: #0000ff;">float</span>)(spwm_max_duty + spwm_min_duty ) ;       <span style="color: #008000;">//</span><span style="color: #008000;">正弦波的截距</span><span style="color: #008000;">//</span><span style="color: #008000;">更正为相加</span>
+          cc1_value = (uint16_t) (sin_k * sin( (<span style="color: #0000ff;">double</span>)count * <span style="color: #800080;">6.28318</span> / (<span style="color: #0000ff;">double</span>)sin_points) + sin_b);    <span style="color: #008000;">//</span><span style="color: #008000;">正弦值计算，得到SPWM波占空比</span>
+<span style="color: #000000;">          TIM_SetTIM1Compare1(cc1_value);
+    }
+}</span></code></pre>
+
+<p>&nbsp;主函数配置为</p>
+<div class="cnblogs_code">
+<pre><code>TIM1_PWM_Init(<span style="color: #800080;">5400</span>-<span style="color: #800080;">1</span>,<span style="color: #800080;">2</span>-<span style="color: #800080;">1</span>);     <span style="color: #008000;">//</span><span style="color: #008000;">216M / (5400 * 2 ) = 20K</span></code></pre>
+
+<p>&nbsp;</p>
+
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

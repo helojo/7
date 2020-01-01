@@ -1,0 +1,233 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修多进程界面开发-Qt试玩儿' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>多进程界面开发-Qt试玩儿</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11100513.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一概述">一、概述</a></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三使用方法">三、使用方法</a><ul>
+        <li><a href="#启动外部进程">1、启动外部进程</a></li>
+        <li><a href="#创建qt窗口">2、创建Qt窗口</a></li>
+        <li><a href="#加入到主进程布局">3、加入到主进程布局</a></li>
+        </ul></li>
+        <li><a href="#四嵌入notepad">四、嵌入NotePad</a></li>
+        <li><a href="#五调用ping命令">五、调用Ping命令</a></li>
+        <li><a href="#六嵌入其他qwidget窗体">六、嵌入其他QWidget窗体</a></li>
+        <li><a href="#七相关文章">七、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="一概述">一、概述</h2>
+<p>做客户端开发已经有好几个年头了，今天看到同事发了一篇关于富途牛牛的文章，核心思想就是想说，新版本的富途支持多进程架构了，效率大大提升啦，可以更好的里有多核CPU，提供软件运行效率。</p>
+<p>听到这个消息，我不仅感叹，我靠，真的好牛逼。</p>
+<p>但是心里又在默默的想，这个东西到底有什么好处，多进程写界面！！！从来没这么搞过呀，会不会有坑，到底比多线程好在了哪里？带着这个问题，从百度上看了几篇相关文章，主要是讲解了线程和进程的一些区别。当然了，最重要的还是目前的多进程架构的客户端已经开始变得多了起来。</p>
+<p>其实很早以前就接触过多进程，支持自己好想也没有想那么多，一直对多进程架构的概念不是那么清晰。今天和同事聊了一些相关话题，感觉自己的知识面豁然开朗，要学习的东西好像还挺多。</p>
+<p>看下面这张图，是任务管理器的应用截图，以前还真是没发现，居然我自己用的这么多应用都是多进程架构的。</p>
+<p>我们平时最常用的Chrome浏览器，客户端版本微信，还有有道云笔记等等<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/多进程界面开发-Qt试玩儿0.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<p>有了这么多的多进程架构开发的客户端软件，难道说多进程开发已经是势在必行了？</p>
+<p><strong>说这么多，还不如来点儿实际的干货，这篇文章是我初步开始使用多进程开发段产品的初步尝试，有不对的地方欢迎大家指出，可以给出更好建议</strong></p>
+<h2 id="二效果展示">二、效果展示</h2>
+<p>下面是我做的一个demo程序截图，测试程序中一共包含了4个使用场景，分别是：</p>
+<ol>
+<li>Qt嵌入系统自带计算机</li>
+<li>Qt嵌入系统自带记事本</li>
+<li>Qt调用系统ping命令，并收集结果</li>
+<li>Qt嵌入其他Qt可执行程序</li>
+</ol>
+<html>
+<center>
+<div>
+    <img src="./images/多进程界面开发-Qt试玩儿1.png" />
+</div>
+</center>
+</html>
+<p>大家可以先看看效果图，如果觉着有价值的可以继续往下看，下面我会分章节把四个事例进行讲解。</p>
+<h2 id="三使用方法">三、使用方法</h2>
+<p>首先需要清楚，我们是多进程界面开发，那么我们的exe启动后，势必是需要启动其他可执行程序的，并且把其他进程的界面嵌入到我们的窗口中来</p>
+<h3 id="启动外部进程">1、启动外部进程</h3>
+<p>启动外部进程有多重方式，Qt使用比较习惯的同学可以直接使用QProcess类，这个类是Qt封装的一个跨平台的类。</p>
+<p>启动方式可能像下面这样</p>
+<pre><code>QProcess * myProcess = new QProcess(this);
+QStringList arguments;
+myProcess-&gt;start(&quot;C:/Windows/System32/notepad.exe&quot;);
+myProcess-&gt;waitForFinished(2000);</code></pre>
+<p>除过QProcess之外，Windows系统上我们还可以使用CreateProcess方法来创建进程。</p>
+<pre><code>QString cmd = &quot;C:/Windows/system32/calc.exe&quot;;
+STARTUPINFO si = { sizeof(si) };
+PROCESS_INFORMATION pi;
+si.dwFlags = STARTF_USESHOWWINDOW;
+si.wShowWindow = true;
+
+bool bRet = CreateProcess(
+    NULL,
+    (LPWSTR)cmd.toStdWString().c_str(),
+    NULL,
+    NULL,
+    FALSE,
+    CREATE_NEW_CONSOLE,
+    NULL,
+    NULL, &amp;si, &amp;pi);</code></pre>
+<h3 id="创建qt窗口">2、创建Qt窗口</h3>
+<p>外部进程启动后，我们可以在任务管理器中找到启动的进程</p>
+<p>接着我们需要使用SPY++工具进行查看外部进程的类名称和窗口名称，并使用FindWindow接口进程查找，找到这个进程的主窗口句柄后，嵌入到我们的程序中来。</p>
+<p>类名和窗口名称查找过程可以参考<a href="https://blog.csdn.net/u013394556/article/details/78534833">外部进程嵌入到Qt进程界面</a>这篇文章中的内容。</p>
+<pre><code>WId wid = (WId)FindWindow(QStringLiteral(&quot;Notepad&quot;).toStdWString().c_str()
+        , QStringLiteral(&quot;无标题 - 记事本&quot;).toStdWString().c_str());
+
+QWindow * window = QWindow::fromWinId(wid);
+if (window)
+{
+    window-&gt;setFlags(window-&gt;flags() | Qt::CustomizeWindowHint | Qt::WindowTitleHint); //这边可以设置一下属性
+
+    QWidget * widget = QWidget::createWindowContainer(window, this, Qt::Widget);
+}</code></pre>
+<p>如上代码所示，我们如果找到外部进程的主窗口句柄后，就可以使用Qt提供的createWindowContainer这个接口进行创建QWidget，并加入到我们的程序中来。</p>
+<h3 id="加入到主进程布局">3、加入到主进程布局</h3>
+<p>外部进程被封装成为一个QWidget后，我们只需要加入到自己的布局中即可。</p>
+<pre><code>ui.verticalLayout_2-&gt;addWidget(widget);</code></pre>
+<p>接下来我们分别讲解不同场景下的多进程界面开发的简单使用</p>
+<h2 id="四嵌入notepad">四、嵌入NotePad</h2>
+<p>第三小节已经把嵌入其他程序的流程大致说了一遍，这里我就不在详细说明了，直接给出具体代码。</p>
+<p>代码中比较关键的有2个地方</p>
+<ol>
+<li>QProcess不能使用临时变量，要不然函数执行完毕notepad.exe进程也就退出了。</li>
+<li>FindWindow的两个参数，一个是类名，一个窗口标题栏名称，这两个信息都可以用个SPY++进行查找。</li>
+</ol>
+<pre><code>void EmbedCalculate::on_pushButton_2_clicked()
+{
+    //创建进程
+    QString cmd = &quot;C:/Windows/System32/notepad.exe&quot;;
+
+    QProcess * myProcess = new QProcess(this);
+    QStringList arguments;
+    myProcess-&gt;start(cmd);
+    myProcess-&gt;waitForFinished(2000);
+
+    WId wid = (WId)FindWindow(QStringLiteral(&quot;Notepad&quot;).toStdWString().c_str()
+        , QStringLiteral(&quot;无标题 - 记事本&quot;).toStdWString().c_str());
+
+    QWindow * window = QWindow::fromWinId(wid);
+    if (window)
+    {
+        window-&gt;setFlags(window-&gt;flags() | Qt::CustomizeWindowHint | Qt::WindowTitleHint); //这边可以设置一下属性
+
+        QWidget * widget = QWidget::createWindowContainer(window, this, Qt::Widget);
+
+        ui.verticalLayout_2-&gt;addWidget(widget);
+    }
+}</code></pre>
+<h2 id="五调用ping命令">五、调用Ping命令</h2>
+<p>ping命令使用场景主要是想展示主进程和外部进程是怎样通信的，虽然这个事例比较简单，但也算是两者之间发生了信息交换</p>
+<p>子进程在执行完ping一个地址之后，会把得到的结果传递给主进程，主进程使用readAll函数全部读入到主进程中。</p>
+<pre><code>void EmbedCalculate::on_pushButton_3_clicked()
+{
+    //创建进程
+    QProcess * myProcess = new QProcess(this);
+    connect(myProcess, static_cast&lt;void (QProcess::*)(int)&gt;(&amp;QProcess::finished), this, [this, myProcess](int exitCode){
+        if (exitCode == 0) {
+            QTextCodec * gbkCodec = QTextCodec::codecForName(&quot;GBK&quot;);
+            QString result = gbkCodec-&gt;toUnicode(myProcess-&gt;readAll());
+            ui.textEdit-&gt;setText(result);
+        }
+    });
+
+    //myProcess-&gt;start(&quot;cmd.exe&quot;, QStringList() &lt;&lt; &quot;/c&quot; &lt;&lt; &quot;ping www.baidu.com&quot;);
+    myProcess-&gt;start(&quot;cmd.exe&quot;, QStringList() &lt;&lt; &quot;/c&quot; &lt;&lt; &quot;ping &quot; + ui.lineEdit-&gt;text().trimmed());
+    myProcess-&gt;waitForFinished(2000);
+
+    ···
+}</code></pre>
+<h2 id="六嵌入其他qwidget窗体">六、嵌入其他QWidget窗体</h2>
+<p>虽然这个东西是最后讲的，但是这个才是重头戏，有了这个实验之后，我们以后的Qt多进程界面开发也可以进行投入正式环境了。</p>
+<p>如下所示，ChildWidget外部程序的主窗体被我们嵌入到了EmbedCalculate这个进程的主界面上，突然觉着好神奇，给自己点赞，哈哈哈哈。</p>
+<html>
+<center>
+<div>
+    <img src="./images/多进程界面开发-Qt试玩儿2.png" />
+</div>
+</center>
+</html>
+<p>由于我这里的ChildWidget外部程序和EmbedCalculate主程序在一个目录中，因此cmd变量直接就指向了ChildWidget这个外部程序的名称。</p>
+<p>其他部分的代码基本上就和前边几种使用场景差不多。</p>
+<pre><code>void EmbedCalculate::on_pushButton_4_clicked()
+{
+    //创建进程
+    QString cmd = &quot;ChildWidget.exe&quot;;
+
+    QProcess * myProcess = new QProcess(this);
+    QStringList arguments;
+    myProcess-&gt;start(cmd);
+    myProcess-&gt;waitForFinished(2000);
+
+    WId wid = (WId)FindWindow(QStringLiteral(&quot;Qt5QWindowIcon&quot;).toStdWString().c_str()
+        , QStringLiteral(&quot;ChildWidget&quot;).toStdWString().c_str());
+
+    QWindow * window = QWindow::fromWinId(wid);
+    if (window)
+    {
+        window-&gt;setFlags(window-&gt;flags() | Qt::CustomizeWindowHint | Qt::WindowTitleHint); //这边可以设置一下属性
+
+        QWidget * widget = QWidget::createWindowContainer(window, this, Qt::Widget);
+
+        ui.verticalLayout_3-&gt;addWidget(widget);
+    }
+}</code></pre>
+<h2 id="七相关文章">七、相关文章</h2>
+<p><a href="https://blog.csdn.net/u013394556/article/details/78534833">外部进程嵌入到Qt进程界面</a></p>
+<p><br></p>
+<p><strong>以上的内容，基本上就是本篇文章的内容所有内容啦！序列化和反序列化功能基本完成，希望可以帮到大家。</strong></p>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,339 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Windows API 搭建OpenGL窗口' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Windows API 搭建OpenGL窗口</center></div><div class='banquan'>原文出处:本文由博客园博主茶飘香~提供。<br/>
+原文连接:https://www.cnblogs.com/chen9510/p/10923763.html</div><br>
+    <p>&nbsp;</p>
+<p>步骤：</p>
+<p>1、创建windows窗口，得到窗口句柄hwnd</p>
+<p>2、获取该窗口的设备环境hDC（当然也可以获取其他的设备环境，但我们一般是在创建的窗口上绘制）</p>
+<p>3、创建OpenGL绘制环境RC，这个只能从hDC创建</p>
+<p>4、将hDC和RC绑定到当前的线程</p>
+<p>&nbsp;</p>
+<p>注：RC表示OpenGL的绘制环境，所有的OpenGL命令都会在RC这个绘制环境中作用，所以必须在RC绑定到当前线程之后才能调用OpenGL命令，否则运行出错，内存访问错误。</p>
+<p>　　一般的笔刷绘制，在hDC下即可。</p>
+<p>&nbsp;</p>
+<p>封装的窗口类如下：</p>
+<p><strong>　　GLWindow.h</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">#pragma</span> once<span style="color: #000000;">
+#include </span>&lt;windows.h&gt;<span style="color: #000000;">
+#include </span>&lt;GL/glew.h&gt;<span style="color: #000000;">
+#include </span>&lt;iostream&gt;
+<span style="color: #0000ff;">class</span><span style="color: #000000;"> GLContext
+{
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    GLContext();
+    </span>~<span style="color: #000000;">GLContext();
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Setup(HWND,HDC);
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> SetupPixelFormat(HDC);
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    HWND hWnd;
+    HDC hDC;
+    HGLRC hRC;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> format;
+};
+
+GLContext::GLContext()
+{
+    </span><span style="color: #0000ff;">this</span>-&gt;hWnd = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">this</span>-&gt;hDC = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">this</span>-&gt;hRC = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">this</span>-&gt;format = <span style="color: #800080;">0</span><span style="color: #000000;">;
+}
+GLContext::</span>~<span style="color: #000000;">GLContext()
+{
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> GLContext::SetupPixelFormat(HDC hDC) {
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> pixelFormat;
+
+    PIXELFORMATDESCRIPTOR pfd </span>=<span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">sizeof</span>(PIXELFORMATDESCRIPTOR),  <span style="color: #008000;">//</span><span style="color: #008000;"> size</span>
+        <span style="color: #800080;">1</span>,                          <span style="color: #008000;">//</span><span style="color: #008000;"> version</span>
+        PFD_SUPPORT_OPENGL |        <span style="color: #008000;">//</span><span style="color: #008000;"> OpenGL window</span>
+        PFD_DRAW_TO_WINDOW |        <span style="color: #008000;">//</span><span style="color: #008000;"> render to window</span>
+        PFD_DOUBLEBUFFER,           <span style="color: #008000;">//</span><span style="color: #008000;"> support double-buffering</span>
+        PFD_TYPE_RGBA,              <span style="color: #008000;">//</span><span style="color: #008000;"> color type</span>
+        <span style="color: #800080;">32</span>,                         <span style="color: #008000;">//</span><span style="color: #008000;"> prefered color depth</span>
+        <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>,           <span style="color: #008000;">//</span><span style="color: #008000;"> color bits (ignored)</span>
+        <span style="color: #800080;">0</span>,                          <span style="color: #008000;">//</span><span style="color: #008000;"> no alpha buffer</span>
+        <span style="color: #800080;">0</span>,                          <span style="color: #008000;">//</span><span style="color: #008000;"> alpha bits (ignored)</span>
+        <span style="color: #800080;">0</span>,                          <span style="color: #008000;">//</span><span style="color: #008000;"> no accumulation buffer</span>
+        <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>,                 <span style="color: #008000;">//</span><span style="color: #008000;"> accum bits (ignored)</span>
+        <span style="color: #800080;">16</span>,                         <span style="color: #008000;">//</span><span style="color: #008000;"> depth buffer</span>
+        <span style="color: #800080;">0</span>,                          <span style="color: #008000;">//</span><span style="color: #008000;"> no stencil buffer</span>
+        <span style="color: #800080;">0</span>,                          <span style="color: #008000;">//</span><span style="color: #008000;"> no auxiliary buffers</span>
+        PFD_MAIN_PLANE,             <span style="color: #008000;">//</span><span style="color: #008000;"> main layer</span>
+        <span style="color: #800080;">0</span>,                          <span style="color: #008000;">//</span><span style="color: #008000;"> reserved</span>
+        <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>,                    <span style="color: #008000;">//</span><span style="color: #008000;"> no layer, visible, damage masks</span>
+<span style="color: #000000;">    };
+
+    pixelFormat </span>= ChoosePixelFormat(hDC, &amp;<span style="color: #000000;">pfd);
+    SetPixelFormat(hDC, pixelFormat, </span>&amp;<span style="color: #000000;">pfd);
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> GLContext::Setup(HWND hwnd, HDC hdc) {
+    </span><span style="color: #0000ff;">this</span>-&gt;hWnd =<span style="color: #000000;"> hwnd;
+    </span><span style="color: #0000ff;">this</span>-&gt;hDC =<span style="color: #000000;"> hdc;
+    SetupPixelFormat(hDC);
+    hRC </span>=<span style="color: #000000;"> wglCreateContext(hDC);
+    wglMakeCurrent(hDC, hRC);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">initialize glew</span>
+    glewExperimental =<span style="color: #000000;"> GL_TRUE;
+    glewInit();
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (AllocConsole())
+    {
+        freopen(</span><span style="color: #800000;">"</span><span style="color: #800000;">CONOUT$</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">w+t</span><span style="color: #800000;">"</span><span style="color: #000000;">, stdout);
+        freopen(</span><span style="color: #800000;">"</span><span style="color: #800000;">CONOUT$</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">w+t</span><span style="color: #800000;">"</span><span style="color: #000000;">, stderr);
+        </span><span style="color: #0000ff;">const</span> GLubyte* Devise = glGetString(GL_RENDERER);    <span style="color: #008000;">//</span><span style="color: #008000;">返回一个渲染器标识符，通常是个硬件平台  </span>
+        <span style="color: #0000ff;">const</span> GLubyte* str =<span style="color: #000000;"> glGetString(GL_VERSION);
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">OpenGL实现的版本号：%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, str);
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">硬件平台：%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, Devise);
+    }
+}
+
+
+
+
+LRESULT CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+</span><span style="color: #0000ff;">class</span><span style="color: #000000;"> GLWindow
+{
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    GLWindow();
+    </span>~<span style="color: #000000;">GLWindow();
+    </span><span style="color: #0000ff;">void</span> Setup(HINSTANCE, HINSTANCE, LPSTR, <span style="color: #0000ff;">int</span><span style="color: #000000;">);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">LRESULT CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);</span>
+    <span style="color: #0000ff;">void</span> RegisterDisplayFunc(<span style="color: #0000ff;">void</span> (*<span style="color: #000000;">display)()) {
+        </span><span style="color: #0000ff;">this</span>-&gt;Display =<span style="color: #000000;"> display;
+    }
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Run();
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">void</span>(*<span style="color: #000000;">Display)();
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">bool</span> exiting = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">long</span> windowWidth = <span style="color: #800080;">800</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">long</span> windowHeight = <span style="color: #800080;">600</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">long</span> windowBits = <span style="color: #800080;">64</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">bool</span> fullscreen = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+
+    WNDCLASSEX windowClass;     </span><span style="color: #008000;">//</span><span style="color: #008000;"> window class</span>
+    HWND       hwnd;            <span style="color: #008000;">//</span><span style="color: #008000;"> window handle</span>
+<span style="color: #000000;">    HDC           hDC;
+    MSG        msg;             </span><span style="color: #008000;">//</span><span style="color: #008000;"> message</span>
+    DWORD      dwExStyle;       <span style="color: #008000;">//</span><span style="color: #008000;"> Window Extended Style</span>
+    DWORD      dwStyle;         <span style="color: #008000;">//</span><span style="color: #008000;"> Window Style</span>
+<span style="color: #000000;">    RECT       windowRect;
+
+    GLContext glContext;
+};
+GLWindow::GLWindow() {}
+GLWindow::</span>~<span style="color: #000000;">GLWindow() {}
+
+</span><span style="color: #0000ff;">void</span> GLWindow::Setup(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, <span style="color: #0000ff;">int</span><span style="color: #000000;"> nShowCmd)
+{
+    windowRect.left </span>= (<span style="color: #0000ff;">long</span>)<span style="color: #800080;">0</span>;                        <span style="color: #008000;">//</span><span style="color: #008000;"> Set Left Value To 0</span>
+    windowRect.right = (<span style="color: #0000ff;">long</span>)windowWidth; <span style="color: #008000;">//</span><span style="color: #008000;"> Set Right Value To Requested Width</span>
+    windowRect.top = (<span style="color: #0000ff;">long</span>)<span style="color: #800080;">0</span>;                         <span style="color: #008000;">//</span><span style="color: #008000;"> Set Top Value To 0</span>
+    windowRect.bottom = (<span style="color: #0000ff;">long</span>)windowHeight;   <span style="color: #008000;">//</span><span style="color: #008000;"> Set Bottom Value To Requested Height
+    
+                                              </span><span style="color: #008000;">//</span><span style="color: #008000;"> fill out the window class structure</span>
+    windowClass.cbSize = <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(WNDCLASSEX);
+    windowClass.style </span>= CS_HREDRAW |<span style="color: #000000;"> CS_VREDRAW;
+    windowClass.lpfnWndProc </span>= MainWindowProc;    <span style="color: #008000;">//</span><span style="color: #008000;">当窗体触发任何一个事件时，便会调用该函数  </span>
+    windowClass.cbClsExtra = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    windowClass.cbWndExtra </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+    windowClass.hInstance </span>=<span style="color: #000000;"> hInstance;
+    windowClass.hIcon </span>= LoadIcon(NULL, IDI_APPLICATION);  <span style="color: #008000;">//</span><span style="color: #008000;"> default icon</span>
+    windowClass.hCursor = LoadCursor(NULL, IDC_ARROW);      <span style="color: #008000;">//</span><span style="color: #008000;"> default arrow</span>
+    windowClass.hbrBackground = NULL;                             <span style="color: #008000;">//</span><span style="color: #008000;"> don't need background</span>
+    windowClass.lpszMenuName = NULL;                             <span style="color: #008000;">//</span><span style="color: #008000;"> no menu</span>
+    windowClass.lpszClassName = L<span style="color: #800000;">"</span><span style="color: #800000;">Windows API</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    windowClass.hIconSm </span>= LoadIcon(NULL, IDI_WINLOGO);      <span style="color: #008000;">//</span><span style="color: #008000;"> windows logo small icon
+
+                                                            </span><span style="color: #008000;">//</span><span style="color: #008000;"> register the windows class</span>
+    <span style="color: #0000ff;">if</span> (!RegisterClassEx(&amp;<span style="color: #000000;">windowClass)) {
+        puts(</span><span style="color: #800000;">"</span><span style="color: #800000;">Register Class Failed</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+    dwExStyle </span>= WS_EX_APPWINDOW | WS_EX_WINDOWEDGE;   <span style="color: #008000;">//</span><span style="color: #008000;"> Window Extended Style</span>
+    dwStyle = WS_OVERLAPPEDWINDOW;                    <span style="color: #008000;">//</span><span style="color: #008000;"> Windows Style</span>
+    AdjustWindowRectEx(&amp;windowRect, dwStyle, FALSE, dwExStyle);     <span style="color: #008000;">//</span><span style="color: #008000;"> Adjust Window To True Requested Size
+
+                                                                    </span><span style="color: #008000;">//</span><span style="color: #008000;"> class registered, so now create our window</span>
+    hwnd = CreateWindowEx(NULL,                                 <span style="color: #008000;">//</span><span style="color: #008000;"> extended style</span>
+        L<span style="color: #800000;">"</span><span style="color: #800000;">Windows API</span><span style="color: #800000;">"</span>,                          <span style="color: #008000;">//</span><span style="color: #008000;"> class name</span>
+        L<span style="color: #800000;">"</span><span style="color: #800000;">OpenGL</span><span style="color: #800000;">"</span>,      <span style="color: #008000;">//</span><span style="color: #008000;"> app name</span>
+        dwStyle | WS_CLIPCHILDREN |<span style="color: #000000;">
+        WS_CLIPSIBLINGS,
+        </span><span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>,                               <span style="color: #008000;">//</span><span style="color: #008000;"> x,y coordinate</span>
+        windowRect.right -<span style="color: #000000;"> windowRect.left,
+        windowRect.bottom </span>- windowRect.top, <span style="color: #008000;">//</span><span style="color: #008000;"> width, height</span>
+        NULL,                               <span style="color: #008000;">//</span><span style="color: #008000;"> handle to parent</span>
+        NULL,                               <span style="color: #008000;">//</span><span style="color: #008000;"> handle to menu</span>
+        hInstance,                          <span style="color: #008000;">//</span><span style="color: #008000;"> application instance</span>
+        NULL);                              <span style="color: #008000;">//</span><span style="color: #008000;"> no extra params</span>
+<span style="color: #000000;">
+    ShowWindow(hwnd, SW_SHOW);          </span><span style="color: #008000;">//</span><span style="color: #008000;"> display the window</span>
+    UpdateWindow(hwnd);                 <span style="color: #008000;">//</span><span style="color: #008000;"> update the window</span>
+    hDC =<span style="color: #000000;"> GetDC(hwnd);
+    glContext.Setup(hwnd,hDC);
+}
+
+LRESULT CALLBACK MainWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> height, width;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> dispatch messages</span>
+    <span style="color: #0000ff;">switch</span><span style="color: #000000;"> (uMsg)
+    {
+    </span><span style="color: #0000ff;">case</span> WM_CREATE:         <span style="color: #008000;">//</span><span style="color: #008000;"> window creation</span>
+        <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span> WM_DESTROY:            <span style="color: #008000;">//</span><span style="color: #008000;"> window destroy</span>
+    <span style="color: #0000ff;">case</span><span style="color: #000000;"> WM_QUIT:
+        CloseWindow(hWnd);
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> WM_CLOSE:                  <span style="color: #008000;">//</span><span style="color: #008000;"> windows is closing
+
+                                    </span><span style="color: #008000;">//</span><span style="color: #008000;"> deselect rendering context and delete it
+                                    </span><span style="color: #008000;">//</span><span style="color: #008000;">wglMakeCurrent(hDC, NULL);
+                                    </span><span style="color: #008000;">//</span><span style="color: #008000;">wglDeleteContext(hRC);
+                                    </span><span style="color: #008000;">//</span><span style="color: #008000;"> send WM_QUIT to message queue</span>
+        PostQuitMessage(<span style="color: #800080;">0</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> WM_SIZE:
+        height </span>= HIWORD(lParam);        <span style="color: #008000;">//</span><span style="color: #008000;"> retrieve width and height</span>
+        width =<span style="color: #000000;"> LOWORD(lParam);
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span> WM_ACTIVATEAPP:        <span style="color: #008000;">//</span><span style="color: #008000;"> activate app</span>
+        <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span> WM_PAINT:              <span style="color: #008000;">//</span><span style="color: #008000;"> paint</span>
+<span style="color: #000000;">        PAINTSTRUCT ps;
+        BeginPaint(hWnd, </span>&amp;<span style="color: #000000;">ps);
+        EndPaint(hWnd, </span>&amp;<span style="color: #000000;">ps);
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span> WM_LBUTTONDOWN:        <span style="color: #008000;">//</span><span style="color: #008000;"> left mouse button</span>
+        <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span> WM_RBUTTONDOWN:        <span style="color: #008000;">//</span><span style="color: #008000;"> right mouse button</span>
+        <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span> WM_MOUSEMOVE:          <span style="color: #008000;">//</span><span style="color: #008000;"> mouse movement</span>
+        <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span> WM_LBUTTONUP:          <span style="color: #008000;">//</span><span style="color: #008000;"> left button release</span>
+        <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span> WM_RBUTTONUP:          <span style="color: #008000;">//</span><span style="color: #008000;"> right button release</span>
+        <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> WM_KEYUP:
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> WM_KEYDOWN:
+        </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> fwKeys;
+        LPARAM keyData;
+        fwKeys </span>= (<span style="color: #0000ff;">int</span>)wParam;    <span style="color: #008000;">//</span><span style="color: #008000;"> virtual-key code </span>
+        keyData = lParam;          <span style="color: #008000;">//</span><span style="color: #008000;"> key data </span>
+
+        <span style="color: #0000ff;">switch</span><span style="color: #000000;"> (fwKeys)
+        {
+            </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> VK_ESCAPE:
+                PostQuitMessage(</span><span style="color: #800080;">0</span><span style="color: #000000;">);
+                </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">default</span><span style="color: #000000;">:
+                </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        }
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">default</span><span style="color: #000000;">:
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> DefWindowProc(hWnd, uMsg, wParam, lParam);
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> GLWindow::Run() {
+    </span><span style="color: #0000ff;">while</span> (<span style="color: #0000ff;">true</span><span style="color: #000000;">)
+    {
+        (</span>*<span style="color: #000000;">Display)();
+        SwapBuffers(hDC);
+        </span><span style="color: #0000ff;">while</span> (PeekMessage(&amp;msg, NULL, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">, PM_NOREMOVE))
+        {
+            </span><span style="color: #0000ff;">if</span> (!GetMessage(&amp;msg, NULL, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">))
+            {
+                exiting </span>= <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+                </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+            }
+            TranslateMessage(</span>&amp;<span style="color: #000000;">msg);
+            DispatchMessage(</span>&amp;<span style="color: #000000;">msg);
+        }
+    }
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>主函数调用代码示例：</p>
+<div class="cnblogs_code">
+<pre>#include &lt;Windows.h&gt;<span style="color: #000000;">
+#include </span>&lt;cameras/phc.h&gt;<span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">shader.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">Cube.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">GLWindow.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+redips::PhC phc;
+GLWindow window;
+
+Shader</span>*<span style="color: #000000;"> shader;
+Cube</span>*<span style="color: #000000;"> cube;
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Display() {
+    cube</span>-&gt;Draw(*<span style="color: #000000;">shader, phc);
+}
+
+</span><span style="color: #0000ff;">void</span> Initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, <span style="color: #0000ff;">int</span><span style="color: #000000;"> nShowCmd) {
+    phc.lookAt(redips::float3(</span><span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">200</span>), redips::float3(<span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>), redips::float3(<span style="color: #800080;">0</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span><span style="color: #000000;">));
+    window.Setup(hInstance, hPrevInstance, lpCmdLine, nShowCmd);
+    window.RegisterDisplayFunc(Display);
+
+    shader </span>= <span style="color: #0000ff;">new</span> Shader(<span style="color: #800000;">"</span><span style="color: #800000;">./joint.vert</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">./joint.frag</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    cube </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> Cube();
+}
+
+</span><span style="color: #0000ff;">int</span> WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, <span style="color: #0000ff;">int</span><span style="color: #000000;"> nShowCmd)
+{    
+    Initialize(hInstance, hPrevInstance, lpCmdLine, nShowCmd);
+    
+    window.Run();
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>运行：</p>
+<p><img src="./images/Windows API 搭建OpenGL窗口0.png" alt="" /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

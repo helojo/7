@@ -1,0 +1,78 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Qt疑难问题-模态窗口父类被析构' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Qt疑难问题-模态窗口父类被析构</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/10867898.html</div><br>
+    <p>最近遇到一个朋友，问了我一个刁钻的问题，当你模态弹出一个窗体时，后台把这个窗体的父类给析构了，这个时候会出现什么样的情况？</p>
+<p>听到问题后我真是一脸懵逼呀！从来没有这么写过代码。</p>
+<p>随后写了一个简单的测试demo，跟踪了下Qt的源码，得出如下结论：</p>
+<ol>
+<li>首先程序不会崩溃</li>
+<li>模态窗口会被析构并关闭</li>
+</ol>
+<blockquote>
+<p>带着这两个问题我们来研究下Qt的代码</p>
+</blockquote>
+<h3 id="测试代码">1、测试代码</h3>
+<p>测试代码超级简单，就是当我们的模态窗体弹出时，使用定时器10s后析构了其父类obj对象</p>
+<pre><code>QPushButton * obj = new QPushButton;
+QTimer::singleShot(10000, this, [&amp;obj]() {
+    delete obj;
+    obj = nullptr;
+});
+QDialog * p = new QDialog(obj);
+p-&gt;exec();</code></pre>
+<h3 id="堆栈调用">2、堆栈调用</h3>
+<p>首先我们来看下模态窗口析构时，是由谁触发的，如下图所示，从堆栈可以很清楚的看到是父类按钮析构时，析构其所有子窗口干的。</p>
+<html>
+<center>
+<div>
+    <img src="./images/Qt疑难问题-模态窗口父类被析构0.png" />
+</div>
+</center>
+</html>
+<h3 id="分析代码">3、分析代码</h3>
+<h4 id="aqdialogexec">a、QDialog::exec</h4>
+<pre><code>int QDialog::exec()
+{
+    ...
+    QEventLoop eventLoop;
+    d-&gt;eventLoop = &amp;eventLoop;
+    (void) eventLoop.exec(QEventLoop::DialogExec);
+    ...
+}</code></pre>
+<p>当我们调用QDialog的exec方法时，内部开启了一个QEventLoop事件循环</p>
+<h4 id="bqeventloopexec">b、QEventLoop::exec</h4>
+<pre><code>int QDialog::exec()
+{
+    ...
+    while (!d-&gt;exit.loadAcquire())
+        processEvents(flags | WaitForMoreEvents | EventLoopExec);
+    ...
+}</code></pre>
+<p>这个方法里边就是一直死循环处理我们的事件，当d-&gt;exit.loadAcquire()返回不为false时，事件循环退出，也就是我们的模态窗体要关闭了。</p>
+<blockquote>
+<p>下面我们来分析d-&gt;exit.loadAcquire()这个接口为什么返回了真</p>
+</blockquote>
+<p>首先我给所有调用d-&gt;exit.storeRelease方法的地方都打了断点，发现是在QEventLoop::exit函数中命中断点，看了下调用堆栈，没毛病，一切正常。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,390 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修操作符重载（二）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>操作符重载（二）</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11575277.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#数组操作符重载">1. 数组操作符重载</a><ul>
+        <li><a href="#数组操作符重载-1">数组操作符重载</a></li>
+        <li><a href="#数组类intarray改进">数组类IntArray改进</a></li>
+        </ul></li>
+        <li><a href="#函数操作符重载函数对象">2. 函数操作符重载（函数对象）</a></li>
+        <li><a href="#指针操作符重载与智能指针">3. 指针操作符重载与智能指针</a><ul>
+        <li><a href="#指针操作符重载">指针操作符重载</a></li>
+        <li><a href="#智能指针">智能指针</a></li>
+        </ul></li>
+        <li><a href="#前置后置操作符重载">4. 前置、后置操作符重载</a><ul>
+        <li><a href="#重载实现">重载实现</a></li>
+        <li><a href="#前置后置重载的区别">前置、后置重载的区别</a></li>
+        </ul></li>
+        </ul>
+    </div>
+</div>
+<h1 id="数组操作符重载">1. 数组操作符重载</h1>
+<h2 id="数组操作符重载-1">数组操作符重载</h2>
+<p>通过重载数组操作符，可以<font color=blue>使类的对象支持数组的下标访问</font></p>
+<ul>
+<li>数组操作符<font color=red>只能重载为类的成员函数</font></li>
+<li>重载函数<font color=magenta>能且仅能</font>使用一个参数，也就是数组下标</li>
+<li>可以定义不同参数的<font color=orange>多个重载函数</font></li>
+</ul>
+<p>在重载数组操作符时，要记得数组操作符的原生语义——<font color=irange>数组访问</font>和<font color=irange>指针运算</font>。<br />
+<code>a[n] &lt;--&gt; *(a + n) &lt;--&gt; *(n + a) &lt;--&gt; n[a]</code></p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Test
+{
+    int a[3];
+public:
+    int &amp;operator [] (int i)
+    {
+        return a[i];
+    }
+
+    int &amp;operator [] (const string &amp;s)
+    {
+        if( s == &quot;1st&quot; )
+        {
+            return a[0];
+        }
+        else if( s == &quot;2nd&quot; )
+        {
+            return a[1];
+        }
+        else if( s == &quot;3rd&quot; )
+        {
+            return a[2];
+        }
+
+        return a[0];
+    }
+};
+
+int main()
+{
+    Test t;
+
+    for (int i = 0; i &lt; 3; i++)
+    {
+        t[i] = i;
+    }
+
+    for (int i = 0; i &lt; 3; i++)
+    {
+        cout &lt;&lt; t[i] &lt;&lt; endl;
+    }
+
+    cout &lt;&lt; endl;
+
+    cout &lt;&lt; t[&quot;3rd&quot;] &lt;&lt; endl;
+    cout &lt;&lt; t[&quot;2nd&quot;] &lt;&lt; endl;
+    cout &lt;&lt; t[&quot;1st&quot;] &lt;&lt; endl;
+
+    return 0;
+}</code></pre>
+<p><img src="./images/操作符重载（二）0.png" /></p>
+<h2 id="数组类intarray改进">数组类IntArray改进</h2>
+<p><strong>IntArray.h</strong></p>
+<pre><code>class IntArray
+{
+public:
+    int &amp;operator [] (int index); //Add
+    IntArray &amp;self();             //Add
+};</code></pre>
+<p><strong>IntArray.cpp</strong></p>
+<pre><code>int &amp;IntArray::operator [] (int index)
+{
+    return m_pointer[index];
+}
+
+IntArray &amp;IntArray::self()
+{
+    return *this;
+}</code></pre>
+<h1 id="函数操作符重载函数对象">2. 函数操作符重载（函数对象）</h1>
+<ul>
+<li>函数操作符<font color=red>只能通过类的成员函数重载</font></li>
+<li>可以定义不同参数的<font color=magenta>多个重载函数</font></li>
+<li>函数操作符重载的本质是<font color=blue>使用具体的类对象取代函数</font>，也就是函数对象，<font color=blue>函数对象具备函数调用的行为</font></li>
+<li><font color=orange>函数对象用于在工程中取代函数指针</font></li>
+</ul>
+<pre><code>/*
+ * 本示例代码实现以下需求：
+ * - 编写一个函数，可以获得斐波那契数列每项的值
+ * - 每调用一次返回一个值
+ * - 函数可根据需要重复使用
+*/
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Fib
+{
+    int a0;
+    int a1;
+public:
+    Fib()
+    {
+        a0 = 0;
+        a1 = 1;
+    }
+
+    Fib(int n)
+    {
+        a0 = 0;
+        a1 = 1;
+
+        for(int i = 2; i &lt;= n; i++)
+        {
+            int t = a1;
+
+            a1 = a0 + a1;
+            a0 = t;
+        }
+    }
+
+    int operator () ()
+    {
+        int ret = a1;
+
+        a1 = a0 + a1;
+        a0 = ret;
+
+        return ret;
+    }
+};
+
+int main()
+{
+    Fib fib;
+
+    for(int i = 0; i &lt; 10; i++)
+    {
+        cout &lt;&lt; fib() &lt;&lt; endl;
+    }
+
+    cout &lt;&lt; endl;
+
+    for(int i = 0; i &lt; 5; i++)
+    {
+        cout &lt;&lt; fib() &lt;&lt; endl;
+    }
+
+    cout &lt;&lt; endl;
+
+    Fib fib2(10);
+
+    for(int i = 0; i &lt; 5; i++)
+    {
+        cout &lt;&lt; fib2() &lt;&lt; endl;
+    }
+
+    return 0;
+}</code></pre>
+<p><img src="./images/操作符重载（二）1.png" /></p>
+<h1 id="指针操作符重载与智能指针">3. 指针操作符重载与智能指针</h1>
+<h2 id="指针操作符重载">指针操作符重载</h2>
+<p>指针操作符指的是<code>-&gt;</code>和<code>*</code></p>
+<ul>
+<li>指针操作符<font color=red>只能通过类的成员函数重载</font></li>
+<li>重载函数<font color=magenta>不能使用参数</font>，也就是说，<font color=blue>只能定义一个重载函数</font></li>
+</ul>
+<h2 id="智能指针">智能指针</h2>
+<ul>
+<li>利用指针操作符重载，可以实现智能指针</li>
+<li><font color=red><strong>智能指针只能用来指向堆空间中的对象或者变量！！！</strong></font></li>
+<li><font color=orange>智能指针在生命周期结束时会自动释放堆空间</font></li>
+<li>智能指针的意义在于减少开发人员的内存管理工作，最大程度上避免内存问题。</li>
+</ul>
+<pre><code>/*
+ * 实现智能指针类Pointer，要求如下:
+ *  - 一片堆空间最多只能由一个指针标识
+ *  - 禁止指针运算和指针比较
+*/
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Test
+{
+    int i;
+public:
+    Test(int i)
+    {
+        cout &lt;&lt; &quot;Test(int i)&quot; &lt;&lt; endl;
+        this-&gt;i = i;
+    }
+    int value()
+    {
+        return i;
+    }
+    ~Test()
+    {
+        cout &lt;&lt; &quot;~Test()&quot; &lt;&lt; endl;
+    }
+};
+
+class Pointer
+{
+private:
+    Test *mp;
+public:
+    Pointer(Test *p = NULL)
+    {
+        mp = p;
+    }
+
+    Pointer(const Pointer &amp;obj)
+    {
+        mp = obj.mp;
+        const_cast&lt;Pointer &amp;&gt;(obj).mp = NULL;
+    }
+
+    Pointer &amp;operator = (const Pointer &amp;obj)
+    {
+        if (this != &amp;obj)
+        {
+            delete mp;
+            mp = obj.mp;
+            const_cast&lt;Pointer &amp;&gt;(obj).mp = NULL;
+        }
+
+        return *this;
+    }
+
+    Test *operator -&gt; ()
+    {
+        return mp;
+    }
+
+    Test &amp;operator * ()
+    {
+        return *mp;
+    }
+
+    bool isNull()
+    {
+        return (mp == NULL);
+    }
+
+    ~Pointer()
+    {
+        delete mp;
+    }
+};
+
+int main()
+{
+    Pointer p1 = new Test(0);
+    Pointer p2 = p1;
+
+    cout &lt;&lt; p1.isNull() &lt;&lt; endl;
+    cout &lt;&lt; p2-&gt;value() &lt;&lt; endl;
+
+    Pointer p3;
+    p3 = p2;
+
+    cout &lt;&lt; p2.isNull() &lt;&lt; endl;
+    cout &lt;&lt; p3-&gt;value() &lt;&lt; endl;
+
+    return 0;
+}</code></pre>
+<p><img src="./images/操作符重载（二）2.png" /></p>
+<h1 id="前置后置操作符重载">4. 前置、后置操作符重载</h1>
+<h2 id="重载实现">重载实现</h2>
+<p>前置、后置操作符指的是<code>++</code>和<code>--</code>，我们以++为例进行讲解，--和++是一样的</p>
+<ul>
+<li><font color=blue>全局函数</font>和<font color=orange>成员函数</font>均可进行重载</li>
+<li>重载<font color=magenta>前置++操作符不需要参数</font></li>
+<li>重载<font color=red>后置++操作符需要一个int类型的占位参数</font></li>
+</ul>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Test
+{
+    int mValue;
+public:
+    Test(int i)
+    {
+        mValue = i;
+    }
+
+    int value()
+    {
+        return mValue;
+    }
+
+    Test &amp;operator ++ ()
+    {
+        ++mValue;
+
+        return *this;
+    }
+
+    Test operator ++ (int)
+    {
+        Test ret(mValue);
+
+        mValue++;
+
+        return ret;
+    }
+};
+
+int main()
+{
+    Test t1(0);
+    Test t2(0);
+
+    Test t = t1++;
+
+    cout &lt;&lt; t.value() &lt;&lt; endl;
+    cout &lt;&lt; t1.value() &lt;&lt; endl;
+
+    t = ++t2;
+
+    cout &lt;&lt; t.value() &lt;&lt; endl;
+    cout &lt;&lt; t2.value() &lt;&lt; endl;
+
+    return 0;
+}</code></pre>
+<p><img src="./images/操作符重载（二）3.png" /></p>
+<h2 id="前置后置重载的区别">前置、后置重载的区别</h2>
+<ul>
+<li>对于基础类型的变量，前置++和后置++的效率基本相同，没有什么区别</li>
+<li><font color=red>对于类类型的对象，前置++的效率高于后置++</font>，因为后置++重载会调用构造与析构函数</li>
+<li><font color=magenta>在工程中尽量使用前置++重载</font>以提高程序效率</li>
+</ul>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

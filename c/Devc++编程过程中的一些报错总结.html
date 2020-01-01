@@ -1,0 +1,68 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Devc++编程过程中的一些报错总结' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Devc++编程过程中的一些报错总结</center></div><div class='banquan'>原文出处:本文由博客园博主DoTime提供。<br/>
+原文连接:https://www.cnblogs.com/dotime/p/10719618.html</div><br>
+    <p>　　<span style="font-family: 隶书; font-size: 18px;">以下都是我在使用Devc++的过程中出现过的错误，通过查找资料解决问题，今天小小地记录、整理一下。</span></p>
+<h2>1.[Error] invalid conversion from 'const char*' to 'char' [-fpermissive]</h2>
+<p>　　<span style="font-family: 隶书;">出现该错误的原因是：</span>使用字符串操作函数 strcmp，strcpy时传入的必须是指针</p>
+<p>　　例如&nbsp; ：strcmp(a[i],"f")，这是错的，因为a[i]是值，不是指针，应该改为strcmp(&amp;a[i],"f")</p>
+<h2>2.[Error] 'malloc' was not declared in this scope</h2>
+<p>　　<span style="font-family: 隶书;">出现该错误的</span>原因是：使用malloc()函数时需要添加头文件#include&lt;stdlib.h&gt;,可能free()函数也是，因为也报了类似的错误</p>
+<h2>3.Program received signal SIGSEGV，Segmentation fault.报错</h2>
+<p>　　该错误出现在我调试的过程中，错误出现的原因指针未初始化或越界，访问到未分配地址空间。</p>
+<p>　　不过，虽然知道了错误出现的原因，这个问题曾经还是困扰了我很久，下面，我分享一下我与该错误的斗争经过，以下代码是修改正确后的</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> typedef <span style="color: #0000ff;">struct</span>             <span style="color: #008000;">//</span><span style="color: #008000;">数组存储型顺序栈，存储数据int型 </span>
+<span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> data[Maxsize];
+</span><span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> top;
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">}IntStack;
+</span>
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">void</span> InitStack(IntStack **s)    <span style="color: #008000;">//</span><span style="color: #008000;">数据为int型的栈的初始化 </span>
+<span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     *s=(IntStack *)<span style="color: #0000ff;">malloc</span>(<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(IntStack));
+</span> 9     (*s)-&gt;top=-<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">10</span> }</code></pre>
+
+<address>　　<span style="font-size: 14px;">本来照着课本上使用c++的&amp;引用符可以写成void InitStack(IntStack *&amp;s)，然而，我保存文件时保存成.c文件了，于是c++的引用符就用不了了，一旦使用就会出现编译错误。于是，第一次，我去掉了&amp;符号，改成使用指针，改成了void InitStack(IntStack *s)，发现编译过了，但是运行起来是错误的，没有结果输出，返回值也是错误的（如果运行成功应该返回0，然而它却返回一大串随机数字）</span></address>
+<p><span style="font-size: 14px;">　　<span style="font-family: 隶书;">然后，我就开始调试，在进行到第六行时得到这个错误。下面是我自己的理解：</span></span></p>
+<p><span style="font-size: 14px;"><span style="font-family: 隶书;">　　首先，我在main函数中定义了一个&nbsp; IntStack *s=NULL&nbsp; ，并将其初始化为NULL，如果我是用void InitStack(IntStack *s)函数，调用时就要写InitStack(s），那么实际上我是将s中的值传到了函数中，而s中的值是NULL，将NULL传入到函数中，这不是我想要的。<br /></span></span></p>
+<p><span style="font-size: 14px;"><span style="font-family: 隶书;">　　实际上，InitStack函数的调用结果，我想要的是，申请一块可以存储</span></span>IntStack型结构体的空间，并将这块空间的地址保留到s中，以便通过s进行进一步的访问，所以，malloc函数得到的地址其实应该作为s的值，赋给s，于是，我们需要传入的就是s的地址，也就是二级指针，具体函数如上，调用时就写成InitStack(&amp;s)，然后。。妥了，其实也确实是指针越界导致的错误啦，毕竟你啥也没传进去嘛，还想调用，想太多了。。。。</p>
+<h2>4.[Error]ld returned 1 exit status</h2>
+<p>　　出现错误的原因可能有：</p>
+<p>　　　　1.是你的程序已经在运行,关闭原来的程序就可以正常了</p>
+<p>　　　　2.你机器上有杀毒(安全)软件阻止了你程序的生成,退出杀毒(安全)软件再试下。</p>
+<div>　　　　3、检查声明函数名与定义的是否一致，最好复制过来。
+<h2>5.[Error]expected declaration or statement at end of input</h2>
+<p>　　可能错误：</p>
+<p>　　　　1.某一个函数或者变量没有在使用之前声明。</p>
+<p>　　　　2.某个地方少了个括号。即括号不匹配。调试过程中不一定是光标提示处括号不匹配，可能是附近模块。</p>
+<h2>6.文件包含错误</h2>
+<p>　　这个主要是理清文。件间的包含关系，避免重复包含。我现在一般是用Devc++建工程，就三个文件，一个头文件，三个.c文件，其中一个是main文件，两个是放函数的文件，然后在.c文件中都包含.h文件就可以了。</p>
+<h2>7.bool类型在C语言中的使用</h2>
+<p>　　如果想要在Devc++上写C语言，又想用bool类型（C语言貌似是没有bool类型的哦），那么可以通过添加头文件&nbsp; #include&lt;stdbool.h&gt;&nbsp; ，这样就可以使用bool了。</p>
+<p>　　　　　　　　　　　　　　　　　　　　　　　　&nbsp; &nbsp; &nbsp; 初入道不久的小白，如有纰漏，望请指正。</p>
+<div>&nbsp;
+<p>&nbsp;</p>
+<p>&nbsp;　　</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

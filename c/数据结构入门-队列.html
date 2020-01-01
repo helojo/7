@@ -1,0 +1,191 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修数据结构入门-队列' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>数据结构入门-队列</center></div><div class='banquan'>原文出处:本文由博客园博主山丘i提供。<br/>
+原文连接:https://www.cnblogs.com/mengd/p/12045809.html</div><br>
+    <p>一种可以实现&quot;<strong>先进先出</strong>&quot;的存储结构</p>
+<p>分类：</p>
+<ol>
+<li>链式队列：用链表实现</li>
+<li>静态队列：用数组实现，静态队列通常都必须是<strong>循环队列</strong></li>
+</ol>
+<p>循环队列的讲解：</p>
+<ol>
+<li><p>静态队列为什么是循环队列</p>
+<p>减少对内存的浪费</p></li>
+<li><p>循环队列需要几个参数来确定</p>
+<p>两个参数，<strong>frant 、rear</strong> 但这2个参数不同场合有不同的含义，建议初学者先记住</p></li>
+<li><p>循环队列各个参数的含义</p>
+<p>队列初始化：front和rear的值都是零</p>
+<p>队列非空：front代表队列的第一个元素，rear代表队列的最后一个有效元素的下一个元素</p>
+<p>队列空：front和rear的值相等，但不一定是零</p></li>
+<li><p>循环队列入队伪算法</p>
+<p>将值存入rear所代表的位置</p>
+<p>错误的写法：r = r + 1</p>
+<p>正确的应该是r = (r+1)%数组长度</p></li>
+<li><p>循环队列出队伪算法</p>
+<p>front = (front+1)%数组长度</p></li>
+<li><p>如何判断循环队列是否为空</p>
+<p>如果front和rear的值相等，则队列为空</p></li>
+<li><p>如何判断循环队列已满</p>
+<p>多增加一个表标识的参数</p>
+<p><strong>少用一个元素</strong>，通常都是这样：<strong>(rear+1) % 数组长度 == front</strong></p></li>
+</ol>
+<p>具体的实现</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdbool.h&gt;
+
+
+typedef struct Queue
+{
+    int * pBase;
+    int front;
+    int rear;
+}QUEUE;
+
+void init(QUEUE *);
+bool full_queue(QUEUE *);
+bool empty(QUEUE *);
+bool en_queue(QUEUE * , int val); // 入队
+void traverse(QUEUE *);
+bool out(QUEUE *, int * pVal);
+
+
+int main(void)
+{
+    QUEUE Q;
+    int val;
+
+    init(&amp;Q);
+    en_queue(&amp;Q , 1);
+    en_queue(&amp;Q , 2);
+    en_queue(&amp;Q , 3);
+    en_queue(&amp;Q , 4);
+    en_queue(&amp;Q , 5);
+    en_queue(&amp;Q , 6);
+    en_queue(&amp;Q , 7);
+
+    traverse(&amp;Q);
+    if (out(&amp;Q , &amp;val))
+    {
+        printf(&quot;出队成功，出队的元素：%d\n&quot;, val);
+        en_queue(&amp;Q , 9);
+        traverse(&amp;Q);
+    }
+    else
+    {
+        printf(&quot;出队失败\n&quot;);
+    }
+
+
+    return 0;
+}
+
+
+void init(QUEUE * pQ)
+{
+    pQ-&gt;pBase = (int *)malloc(sizeof(int) * 6); // 初始化默认是长度是6
+    if (NULL == pQ-&gt;pBase)
+    {
+        printf(&quot;初始化失败\n&quot;);
+        exit(-1);
+    }
+
+    pQ-&gt;front = 0;
+    pQ-&gt;rear = 0;
+}
+
+bool full_queue(QUEUE *pQ)
+{
+    if ((pQ-&gt;rear+1)%6 == pQ-&gt;front)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool en_queue(QUEUE *pQ , int val)
+{
+    if (full_queue(pQ))
+    {
+        return false;
+    }
+    else
+    {
+        pQ-&gt;pBase[pQ-&gt;rear] = val;
+        pQ-&gt;rear = (pQ-&gt;rear+1)%6;
+        return true;
+    }
+}
+
+void traverse(QUEUE * pQ)
+{
+    int i = pQ-&gt;front;
+
+    while(i != pQ-&gt;rear)
+    {
+        printf(&quot;%d\n&quot;,pQ-&gt;pBase[i] );
+        i = (i+1) % 6;
+    }
+
+    return;
+}
+
+
+bool empty(QUEUE * pQ)
+{
+    if (pQ-&gt;front == pQ-&gt;rear)
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+
+bool out(QUEUE * pQ, int * pVal)
+{
+
+    if (empty(pQ))
+    {
+        return false;
+    }
+    else
+    {
+        *pVal = pQ-&gt;pBase[pQ-&gt;front];
+        pQ-&gt;front = (pQ-&gt;front+1) % 6;
+        return true;
+    }
+
+}</code></code></pre>
+<p>队列的应用</p>
+<ul>
+<li>所有和时间有关的操作都有队列的影子</li>
+</ul>
+
+
+</div></div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

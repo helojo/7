@@ -1,0 +1,252 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++中引用的本质分析' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++中引用的本质分析</center></div><div class='banquan'>原文出处:本文由博客园博主子宇24提供。<br/>
+原文连接:https://www.cnblogs.com/dishengAndziyu/p/10902803.html</div><br>
+    <p align="left">1，引用的意义：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，引用作为变量别名而存在，因此在一些场合可以代替指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，变量的另一个表现形式；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，交换函数时，可代替指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，引用相对于指针来说具有更好的可读性和实用性；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，指针类似手动挡车，引用类似于自动挡车；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，引用实现交换函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，函数中的引用形参不需要进行初始化；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，调用函数的时候才初始化；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">2，const 引用：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，代码示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">int</span> a = <span style="color: #800080;">4</span><span style="color: #000000;">;
+</span><span style="color: #008080;">2</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span>&amp; b =<span style="color: #000000;"> a;
+</span><span style="color: #008080;">3</span> <span style="color: #0000ff;">int</span>* p = (<span style="color: #0000ff;">int</span>*)&amp;b;  <span style="color: #008000;">//</span><span style="color: #008000;"> 等价于取 a 的地址；</span>
+<span style="color: #008080;">4</span> 
+<span style="color: #008080;">5</span> b = <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> Error，只读变量；</span>
+<span style="color: #008080;">6</span> *p = <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> Ok，修改变量 a 的值；</span></pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，在 C++ 中可以声明 const 引用；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，const Type&amp; name = var；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，只有这样一种方式，不想 const 指针有四种方式；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，const 引用让变量拥有只读属性；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，引用对象是常量还是变量可以决定其所能参与的操作，但对于引用本身&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 是不是一个常量未做限定；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，因为引用对象可能是个非常量，所以允许通过其他途径改变它的值；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">3，当使用常量对 const 引用进行初始化时，C++ 编译器会为常量值分配空间，并&nbsp; 将引用名作为这段空间的别名；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，代码示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span>&amp; b = <span style="color: #800080;">1</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> Ok，产生空间，值为 1，别名为 b，生成只读变量；</span>
+       
+<span style="color: #0000ff;">int</span>* p = (<span style="color: #0000ff;">int</span>*)&amp;<span style="color: #000000;">b;
+
+b </span>= <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> Error，只读变量；</span>
+*P = <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> Ok，修改变量 a 的值；</span></pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，这个分配的空间的别名是一个临时变量；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，结论：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，使用常量对 const 引用初始化后将生成一个只读变量；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">4，引用的特殊意义实例分析：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，main.cpp 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Example()
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">Example:\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 6</span>     
+<span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span> a = <span style="color: #800080;">4</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span>&amp; b = a;  <span style="color: #008000;">//</span><span style="color: #008000;"> 只读变量；</span>
+<span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">int</span>* p = (<span style="color: #0000ff;">int</span>*)&amp;<span style="color: #000000;">b;
+</span><span style="color: #008080;">10</span>     
+<span style="color: #008080;">11</span>     <span style="color: #008000;">//</span><span style="color: #008000;">b = 5;  </span><span style="color: #008000;">//</span><span style="color: #008000;"> error: assignment（赋值） of read-only reference 'b'；</span>
+<span style="color: #008080;">12</span>     
+<span style="color: #008080;">13</span>     *p = <span style="color: #800080;">5</span><span style="color: #000000;">;
+</span><span style="color: #008080;">14</span>     
+<span style="color: #008080;">15</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">a = %d\n</span><span style="color: #800000;">"</span>, a);  <span style="color: #008000;">//</span><span style="color: #008000;"> a = 5；</span>
+<span style="color: #008080;">16</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">b = %d\n</span><span style="color: #800000;">"</span>, b);  <span style="color: #008000;">//</span><span style="color: #008000;"> b = 5；</span>
+<span style="color: #008080;">17</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">18</span> 
+<span style="color: #008080;">19</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Demo()
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">21</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">Demo:\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">22</span>     
+<span style="color: #008080;">23</span>     <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span>&amp; c = <span style="color: #800080;">1</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 只读变量；</span>
+<span style="color: #008080;">24</span>     <span style="color: #0000ff;">int</span>* p = (<span style="color: #0000ff;">int</span>*)&amp;<span style="color: #000000;">c;
+</span><span style="color: #008080;">25</span>     
+<span style="color: #008080;">26</span>     <span style="color: #008000;">//</span><span style="color: #008000;">c = 5;  </span><span style="color: #008000;">//</span><span style="color: #008000;"> error: assignment（赋值） of read-only reference 'b'；</span>
+<span style="color: #008080;">27</span>     
+<span style="color: #008080;">28</span>     *p = <span style="color: #800080;">5</span><span style="color: #000000;">;
+</span><span style="color: #008080;">29</span>     
+<span style="color: #008080;">30</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">c = %d\n</span><span style="color: #800000;">"</span>, c);  <span style="color: #008000;">//</span><span style="color: #008000;"> c = 5；</span>
+<span style="color: #008080;">31</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">    Example();
+</span><span style="color: #008080;">36</span>     
+<span style="color: #008080;">37</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">38</span>     
+<span style="color: #008080;">39</span> <span style="color: #000000;">    Demo();
+</span><span style="color: #008080;">40</span> 
+<span style="color: #008080;">41</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">42</span> }</pre>
+</div>
+<p align="left">&nbsp; &nbsp; 2，结论：</p>
+<p align="left">　　1，要使一个已经存在的变量拥有只读属性，变成只读变量，定义一个 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; const 引用即可；</p>
+<p align="left">&nbsp;</p>
+<p align="left">5，引用有自己的存储空间吗？</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，代码示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> TRef
+</span><span style="color: #008080;">2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">3</span>     <span style="color: #0000ff;">char</span>&amp;<span style="color: #000000;"> r;
+</span><span style="color: #008080;">4</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">5</span> 
+<span style="color: #008080;">6</span> printf(<span style="color: #800000;">"</span><span style="color: #800000;">sizeof(TRef) = %d\n</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">sizeof</span>(TRef));</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">6，引用的思考编程实验：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，main.cpp 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> TRef
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">char</span>&amp; r;  <span style="color: #008000;">//</span><span style="color: #008000;"> 定义引用 r；</span>
+<span style="color: #008080;"> 6</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 7</span> 
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">{ 
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">char</span> c = <span style="color: #800000;">'</span><span style="color: #800000;">c</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">char</span>&amp; rc =<span style="color: #000000;"> c;
+</span><span style="color: #008080;">12</span>     TRef <span style="color: #0000ff;">ref</span> = { c };  <span style="color: #008000;">//</span><span style="color: #008000;"> r 引用 c；</span>
+<span style="color: #008080;">13</span>     
+<span style="color: #008080;">14</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">sizeof(char&amp;) = %d\n</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">char</span>&amp;));  <span style="color: #008000;">//</span><span style="color: #008000;"> 1；这里求对应的变量大小；</span>
+<span style="color: #008080;">15</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">sizeof(rc) = %d\n</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">sizeof</span>(rc));  <span style="color: #008000;">//</span><span style="color: #008000;"> sizeof(rc) =&gt; 1；</span>
+<span style="color: #008080;">16</span>     
+<span style="color: #008080;">17</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">sizeof(TRef) = %d\n</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">sizeof</span>(TRef));  <span style="color: #008000;">//</span><span style="color: #008000;"> 4；</span>
+<span style="color: #008080;">18</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">sizeof(ref.r) = %d\n</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">ref</span>.r));  <span style="color: #008000;">//</span><span style="color: #008000;"> sizeof(c) =&gt; 1；</span>
+<span style="color: #008080;">19</span> 
+<span style="color: #008080;">20</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">21</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">7，引用在 C++ 中的内部实现是一个指针常量：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，Type&amp; name &lt;==&gt; Type* const name；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，void f(int&amp; a)&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;void f(int* const a)</p>
+<p align="left">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {</p>
+<p align="left">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; a = 5;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&lt;==&gt;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;*a = 5;&nbsp; // 内部实现是这样；</p>
+<p align="left">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，C++ 编译器在编译过程中用指针常量作为引用的内部实现，因此引用所占用&nbsp;&nbsp;&nbsp;&nbsp; 的空间大小与指针相同；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，从使用的角度，引用只是一个别名，C++ 为了实用性而隐藏了引用的存储空&nbsp;&nbsp;&nbsp;&nbsp; 间这一细节；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">8，引用的存储空间：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，main.cpp 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> TRef
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> before;
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">char</span>&amp; <span style="color: #0000ff;">ref</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> after;
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> argv[])
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">char</span> a = <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">char</span>&amp; b =<span style="color: #000000;"> a;
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">char</span> c = <span style="color: #800000;">'</span><span style="color: #800000;">c</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">15</span> 
+<span style="color: #008080;">16</span>     TRef r = {&amp;a, b, &amp;<span style="color: #000000;">c};
+</span><span style="color: #008080;">17</span> 
+<span style="color: #008080;">18</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">sizeof(r) = %d\n</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">sizeof</span>(r));  <span style="color: #008000;">//</span><span style="color: #008000;"> 12；</span>
+<span style="color: #008080;">19</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">sizeof(r.before) = %d\n</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">sizeof</span>(r.before));  <span style="color: #008000;">//</span><span style="color: #008000;"> 4；</span>
+<span style="color: #008080;">20</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">sizeof(r.after) = %d\n</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">sizeof</span>(r.after));  <span style="color: #008000;">//</span><span style="color: #008000;"> 4；</span>
+<span style="color: #008080;">21</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">&amp;r.before = %p\n</span><span style="color: #800000;">"</span>, &amp;r.before);  <span style="color: #008000;">//</span><span style="color: #008000;"> 0xbf8a300c；</span>
+<span style="color: #008080;">22</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">&amp;r.after = %p\n</span><span style="color: #800000;">"</span>, &amp;r.after);  <span style="color: #008000;">//</span><span style="color: #008000;"> 0xbf8a3014；</span>
+<span style="color: #008080;">23</span> 
+<span style="color: #008080;">24</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">25</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">9，C++ 中的引用旨在大多数情况下代替指针：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，功能性：可以满足多数需要使用指针的场合；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，安全性：可以避开由于指针操作不当而带来的内存错误；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，操作性：简单易用，又不失功能强大；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">10，函数返回引用实例分析：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，main.cpp 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">int</span>&amp; demo()  <span style="color: #008000;">//</span><span style="color: #008000;"> int* const demo()</span>
+<span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">int</span> d = <span style="color: #800080;">0</span>; <span style="color: #008000;">//</span><span style="color: #008000;"> warning: reference to local variable 'd' returned；</span>
+<span style="color: #008080;"> 6</span>     
+<span style="color: #008080;"> 7</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">demo: d = %d\n</span><span style="color: #800000;">"</span>, d);  <span style="color: #008000;">//</span><span style="color: #008000;"> d = 0；</span>
+<span style="color: #008080;"> 8</span>     
+<span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">return</span> d;  <span style="color: #008000;">//</span><span style="color: #008000;"> return &amp;d;，返回局部变量地址是不可以的；</span>
+<span style="color: #008080;">10</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">int</span>&amp;<span style="color: #000000;"> func()
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">int</span> s = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">15</span>     
+<span style="color: #008080;">16</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">func: s = %d\n</span><span style="color: #800000;">"</span>, s);  <span style="color: #008000;">//</span><span style="color: #008000;"> s = 0；</span>
+<span style="color: #008080;">17</span>     
+<span style="color: #008080;">18</span>     <span style="color: #0000ff;">return</span> s;<span style="color: #008000;">//</span><span style="color: #008000;">这里是可以的；return &amp;s;，地址不会因为函数返回而被摧毁；</span>
+<span style="color: #008080;">19</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> argv[])
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">23</span>     <span style="color: #0000ff;">int</span>&amp; rd =<span style="color: #000000;"> demo();
+</span><span style="color: #008080;">24</span>     <span style="color: #0000ff;">int</span>&amp; rs =<span style="color: #000000;"> func();
+</span><span style="color: #008080;">25</span>     
+<span style="color: #008080;">26</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">27</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">main: rd = %d\n</span><span style="color: #800000;">"</span>, rd);  rd = <span style="color: #800080;">13209588</span><span style="color: #000000;">；
+</span><span style="color: #008080;">28</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">main: rs = %d\n</span><span style="color: #800000;">"</span>, rs);  rs = <span style="color: #800080;">0</span><span style="color: #000000;">；
+</span><span style="color: #008080;">29</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">30</span>     
+<span style="color: #008080;">31</span>     rd = <span style="color: #800080;">10</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 对栈上已经释放的四个字节进行操作赋值，没意义；</span>
+<span style="color: #008080;">32</span>     rs = <span style="color: #800080;">11</span><span style="color: #000000;">;
+</span><span style="color: #008080;">33</span>     
+<span style="color: #008080;">34</span>     demo();  <span style="color: #008000;">//</span><span style="color: #008000;"> d = 0； 每次调用都会被重建；</span>
+<span style="color: #008080;">35</span>     func();  <span style="color: #008000;">//</span><span style="color: #008000;"> s = 11；</span>
+<span style="color: #008080;">36</span>     
+<span style="color: #008080;">37</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">38</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">main: rd = %d\n</span><span style="color: #800000;">"</span>, rd);  <span style="color: #008000;">//</span><span style="color: #008000;"> rd = 13209588；</span>
+<span style="color: #008080;">39</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">main: rs = %d\n</span><span style="color: #800000;">"</span>, rs);  <span style="color: #008000;">//</span><span style="color: #008000;"> rs = 11；</span>
+<span style="color: #008080;">40</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">41</span>     
+<span style="color: #008080;">42</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">43</span> }</pre>
+</div>
+<p align="left">　　　1，引用能在最大程度上避开内存操作错误，但是不能够寄希望于完全避&nbsp;&nbsp;&nbsp; 免，因为它本质是指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">11，小结：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，引用作为变量别名而存在旨在代替指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，const 引用可以使得变量只有只读属性；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，可以避开误对变量赋值；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，引用在编译器内部使用指针常量实现；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，引用的最终本质为指针；</p>
+<p>&nbsp;&nbsp;&nbsp; 5，引用可以尽可能的避开内存错误；</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

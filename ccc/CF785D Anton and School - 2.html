@@ -1,0 +1,97 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修CF785D Anton and School - 2' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>CF785D Anton and School - 2</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/CF785D.html</div><br>
+    <p><a href="http://codeforces.com/contest/785/problem/D">题目链接</a></p>
+<h1 id="problem">problem</h1>
+<p>给出一个括号序列，要求删除一些括号使得剩下的括号序列是个匹配的括号序列，且改括号序列左边全部为左括号，右边全部为右括号。</p>
+<h1 id="solution">solution</h1>
+<p>考虑枚举左右括号交界的位置<span class="math inline">\(x\)</span>，为了避免重复计算，强制要求<span class="math inline">\(x\)</span>左边的第一个左括号必选。然后枚举<span class="math inline">\(x\)</span>的时候只枚举左括号的位置。</p>
+<p>然后枚举括号序列的长度。假设长度为<span class="math inline">\(2i\)</span>，那么左右括号就分别有<span class="math inline">\(i\)</span>个，假设左边有<span class="math inline">\(n\)</span>个左括号，右边有<span class="math inline">\(m\)</span>个右括号。那么该位置的答案就是<span class="math inline">\(\sum\limits_{i=1}^{min(n,m)}C_{n-1}^{i-1}C_{m}^i\)</span></p>
+<p>观察上面这个式子，当<span class="math inline">\(i=0\)</span>时没有贡献，所以我们可以等价的写成<span class="math inline">\(\sum\limits_{i=0}^{min(n,m)}C_{n-1}^{i-1}C_m^i\)</span></p>
+<p>假设<span class="math inline">\(n\le m\)</span><br />
+上面的式子也可以写成<br />
+<span class="math inline">\(\sum\limits_{i=0}^nC_{n-1}^{n-i}C_m^i\)</span></p>
+<p>考虑这个东西的组合意义，也就相当于有<span class="math inline">\(n+m-1\)</span>个物品从中选<span class="math inline">\(n\)</span>个。<br />
+所以上面的东西其实就是<span class="math inline">\(C_{n+m-1}^n\)</span>然后就可以<span class="math inline">\(O(1)\)</span>求了。</p>
+<p>可以发现，当<span class="math inline">\(m\le n\)</span>时，推出的式子也是这个。</p>
+<p>这样总复杂度就成了<span class="math inline">\(O(n)\)</span></p>
+<h1 id="code">code</h1>
+<pre><code>#include&lt;cstdio&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;algorithm&gt;
+#include&lt;iostream&gt;
+#include&lt;cstring&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int mod = 1e9 + 7;
+ll read() {
+    ll x = 0,f = 1;char c = getchar();
+    while(c &lt; &#39;0&#39; || c &gt; &#39;9&#39;) {
+        if(c == &#39;-&#39;) f = -1;c = getchar();
+    }
+    while(c &gt;= &#39;0&#39; &amp;&amp; c &lt;= &#39;9&#39;) {
+        x = x * 10 + c - &#39;0&#39;;
+        c = getchar();
+    }
+    return x * f;
+}
+int n;
+const int N = 200100;
+char s[N];
+int cnta,cntb,jc[N],inv[N];
+int C(int x,int y) {
+    return 1ll * jc[x] * inv[y] % mod * inv[x - y] % mod;
+}
+int qm(int x,int y) {
+    int ret = 1;
+    for(;y;y &gt;&gt;= 1,x = 1ll * x * x % mod) {
+        if(y &amp; 1) ret = 1ll * ret * x % mod;
+    }
+    return ret;
+}
+
+int main() {
+    scanf(&quot;%s&quot;,s + 1);
+    n = strlen(s + 1);
+    jc[0] = 1;
+    for(int i = 1;i &lt;= n;++i) jc[i] = 1ll * jc[i - 1] * i % mod;
+    for(int i = 0;i &lt;= n;++i) inv[i] = qm(jc[i],mod - 2);
+    for(int i = 1;i &lt;= n;++i) if(s[i] == &#39;)&#39;) cntb++;
+    ll ans = 0;
+    for(int i = 1;i &lt;= n;++i) {
+        if(s[i] == &#39;(&#39;) {
+            cnta++;
+            ans += C(cnta + cntb - 1,cnta);
+            ans %= mod;
+        }
+        else cntb--;
+    }
+    cout&lt;&lt;ans;
+        
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

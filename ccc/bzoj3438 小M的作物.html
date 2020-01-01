@@ -1,0 +1,146 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修bzoj3438 小M的作物' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>bzoj3438 小M的作物</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/bzoj3438.html</div><br>
+    <p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=3438"><font size=5>题目链接</font></a></p>
+<h1 id="思路">思路</h1>
+<p><strong>先考虑没有额外收益的时候怎么做。</strong></p>
+<p>从<span class="math inline">\(S\)</span>向第<span class="math inline">\(i\)</span>点连一条容量为<span class="math inline">\(A_i\)</span>边，表示种在<span class="math inline">\(A\)</span>中的收益。</p>
+<p>从第<span class="math inline">\(i\)</span>个点向<span class="math inline">\(T\)</span>连一条容量为<span class="math inline">\(B_i\)</span>的边，表示种在<span class="math inline">\(B\)</span>中的收益。</p>
+<p>然后求出来最小割，用总收益减去即可。</p>
+<p>完成之后如下图:</p>
+<p><img src="./images/bzoj3438 小M的作物0.png" /></p>
+<p><strong>然后考虑如何处理额外收益</strong></p>
+<p>对于每一个额外的收益，我们先新建一个点<span class="math inline">\(X\)</span>，表示全部建在<span class="math inline">\(A\)</span>的收益。</p>
+<p>需要保证如果不割掉这条边,那么就说明这些点全部建在<span class="math inline">\(A\)</span>.所以这些点向<span class="math inline">\(T\)</span>的连边必须全部割掉。</p>
+<p>那么就从<span class="math inline">\(S\)</span>向<span class="math inline">\(X\)</span>连边，从<span class="math inline">\(X\)</span>向该组合中所有点连边。</p>
+<p>对于全部建在B处的额外收益，同理。</p>
+<p>加入上图中含有组合<span class="math inline">\(\{1,2\}\)</span>，建图之后如下:</p>
+<p><img src="./images/bzoj3438 小M的作物1.png" /></p>
+<p>然后用总收益减去最小割就是答案。</p>
+<h1 id="代码">代码</h1>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-06-10 08:33:40
+* @Last Modified time: 2019-06-10 09:10:44
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 10100,M = 5000100,INF = 2e9;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+struct node {
+    int v,nxt,w;
+}e[M];
+queue&lt;int&gt;q;
+int dep[N],head[N],ejs = 1;
+void add(int u,int v,int w) {
+    e[++ejs].v = v;e[ejs].w = w;e[ejs].nxt = head[u];head[u] = ejs;
+    e[++ejs].v = u;e[ejs].w = 0;e[ejs].nxt = head[v];head[v] = ejs;
+}
+int S,T,cur[N];
+bool bfs() {
+    memset(dep,0,sizeof(dep));
+    while(!q.empty()) q.pop();
+    dep[S] = 1;q.push(S);
+    while(!q.empty()) {
+        int u = q.front();q.pop();
+        for(int i = head[u];i;i = e[i].nxt) {
+            int v = e[i].v;
+            if(!dep[v] &amp;&amp; e[i].w) {
+                dep[v] = dep[u] + 1;
+                q.push(v);
+                if(v == T) return true;
+            }
+        }
+    }
+    return false;
+}
+int dfs(int u,int now) {
+    if(u == T) return now;
+    int ret = 0;
+    for(int &amp;i = cur[u];i;i = e[i].nxt) {
+        int v = e[i].v;
+        if(dep[v] == dep[u] + 1 &amp;&amp; e[i].w) {
+            int k = dfs(v,min(now - ret,e[i].w));
+            e[i].w -= k;e[i ^ 1].w += k;
+            ret += k;
+            if(ret == now) return ret;
+        }
+    }
+    return ret;
+}
+int dinic() {
+    int ret = 0;
+    while(bfs()) {
+
+        memcpy(cur,head,sizeof(cur));
+        ret += dfs(S,INF);
+    }
+    return ret;
+}
+int ans = 0;
+int main() {
+    int n = read();
+    S = n + 1,T = S + 1;
+    for(int i = 1;i &lt;= n;++i) {
+        int k = read();ans += k;add(S,i,k);
+    }
+    for(int i = 1;i &lt;= n;++i) {
+        int k = read();ans += k;add(i,T,k);
+    }
+    int m = read();
+    int cnt = n + 2;
+    for(int i = 1;i &lt;= m;++i) {
+        int K = read(),C1 = read(),C2 = read();
+        int X = ++cnt,X_ = ++cnt;
+        ans += C1,ans += C2;
+        add(S,X,C1);add(X_,T,C2);
+        for(int j = 1;j &lt;= K;++j) {
+            int x = read();
+            add(X,x,INF);add(x,X_,INF);
+        }
+    }
+    cout&lt;&lt;ans - dinic();
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

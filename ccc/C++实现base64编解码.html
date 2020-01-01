@@ -1,0 +1,157 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++实现base64编解码' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++实现base64编解码</center></div><div class='banquan'>原文出处:本文由博客园博主Weisswire提供。<br/>
+原文连接:https://www.cnblogs.com/Jesse-Cavendish/p/11623240.html</div><br>
+    <p>Base64是常见的加密算法，代码实现了基于C++的对于base64的编码和解码。</p>
+<p>其中注释掉的部分为编码部分，取消注释将解码部分注释掉即可实现编码，反之可以实现解码。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;">  2</span> #include &lt;<span style="color: #0000ff;">string</span>.h&gt;
+<span style="color: #008080;">  3</span> #include &lt;assert.h&gt;
+<span style="color: #008080;">  4</span> 
+<span style="color: #008080;">  5</span> typedef unsigned <span style="color: #0000ff;">char</span><span style="color: #000000;">     uint8;
+</span><span style="color: #008080;">  6</span> typedef unsigned <span style="color: #0000ff;">long</span><span style="color: #000000;">    uint32;
+</span><span style="color: #008080;">  7</span> 
+<span style="color: #008080;">  8</span> <span style="color: #0000ff;">static</span> uint8 alphabet_map[] = <span style="color: #800000;">"</span><span style="color: #800000;">ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">  9</span> <span style="color: #0000ff;">static</span> uint8 reverse_map[] =
+<span style="color: #008080;"> 10</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 11</span>      <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 12</span>      <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 13</span>      <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">62</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">63</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 14</span>      <span style="color: #800080;">52</span>, <span style="color: #800080;">53</span>, <span style="color: #800080;">54</span>, <span style="color: #800080;">55</span>, <span style="color: #800080;">56</span>, <span style="color: #800080;">57</span>, <span style="color: #800080;">58</span>, <span style="color: #800080;">59</span>, <span style="color: #800080;">60</span>, <span style="color: #800080;">61</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 15</span>      <span style="color: #800080;">255</span>,  <span style="color: #800080;">0</span>,  <span style="color: #800080;">1</span>,  <span style="color: #800080;">2</span>,  <span style="color: #800080;">3</span>,  <span style="color: #800080;">4</span>,  <span style="color: #800080;">5</span>,  <span style="color: #800080;">6</span>,  <span style="color: #800080;">7</span>,  <span style="color: #800080;">8</span>,  <span style="color: #800080;">9</span>, <span style="color: #800080;">10</span>, <span style="color: #800080;">11</span>, <span style="color: #800080;">12</span>, <span style="color: #800080;">13</span>, <span style="color: #800080;">14</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 16</span>      <span style="color: #800080;">15</span>, <span style="color: #800080;">16</span>, <span style="color: #800080;">17</span>, <span style="color: #800080;">18</span>, <span style="color: #800080;">19</span>, <span style="color: #800080;">20</span>, <span style="color: #800080;">21</span>, <span style="color: #800080;">22</span>, <span style="color: #800080;">23</span>, <span style="color: #800080;">24</span>, <span style="color: #800080;">25</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 17</span>      <span style="color: #800080;">255</span>, <span style="color: #800080;">26</span>, <span style="color: #800080;">27</span>, <span style="color: #800080;">28</span>, <span style="color: #800080;">29</span>, <span style="color: #800080;">30</span>, <span style="color: #800080;">31</span>, <span style="color: #800080;">32</span>, <span style="color: #800080;">33</span>, <span style="color: #800080;">34</span>, <span style="color: #800080;">35</span>, <span style="color: #800080;">36</span>, <span style="color: #800080;">37</span>, <span style="color: #800080;">38</span>, <span style="color: #800080;">39</span>, <span style="color: #800080;">40</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 18</span>      <span style="color: #800080;">41</span>, <span style="color: #800080;">42</span>, <span style="color: #800080;">43</span>, <span style="color: #800080;">44</span>, <span style="color: #800080;">45</span>, <span style="color: #800080;">46</span>, <span style="color: #800080;">47</span>, <span style="color: #800080;">48</span>, <span style="color: #800080;">49</span>, <span style="color: #800080;">50</span>, <span style="color: #800080;">51</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>, <span style="color: #800080;">255</span>
+<span style="color: #008080;"> 19</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 20</span> 
+<span style="color: #008080;"> 21</span> uint32 base64_encode(<span style="color: #0000ff;">const</span> uint8 *text, uint32 text_len, uint8 *<span style="color: #000000;">encode)
+</span><span style="color: #008080;"> 22</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 23</span> <span style="color: #000000;">    uint32 i, j;
+</span><span style="color: #008080;"> 24</span>     <span style="color: #0000ff;">for</span> (i = <span style="color: #800080;">0</span>, j = <span style="color: #800080;">0</span>; i+<span style="color: #800080;">3</span> &lt;= text_len; i+=<span style="color: #800080;">3</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 25</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 26</span>         encode[j++] = alphabet_map[text[i]&gt;&gt;<span style="color: #800080;">2</span>];                             <span style="color: #008000;">//</span><span style="color: #008000;">取出第一个字符的前6位并找出对应的结果字符</span>
+<span style="color: #008080;"> 27</span>         encode[j++] = alphabet_map[((text[i]&lt;&lt;<span style="color: #800080;">4</span>)&amp;<span style="color: #800080;">0x30</span>)|(text[i+<span style="color: #800080;">1</span>]&gt;&gt;<span style="color: #800080;">4</span>)];     <span style="color: #008000;">//</span><span style="color: #008000;">将第一个字符的后2位与第二个字符的前4位进行组合并找到对应的结果字符</span>
+<span style="color: #008080;"> 28</span>         encode[j++] = alphabet_map[((text[i+<span style="color: #800080;">1</span>]&lt;&lt;<span style="color: #800080;">2</span>)&amp;<span style="color: #800080;">0x3c</span>)|(text[i+<span style="color: #800080;">2</span>]&gt;&gt;<span style="color: #800080;">6</span>)];   <span style="color: #008000;">//</span><span style="color: #008000;">将第二个字符的后4位与第三个字符的前2位组合并找出对应的结果字符</span>
+<span style="color: #008080;"> 29</span>         encode[j++] = alphabet_map[text[i+<span style="color: #800080;">2</span>]&amp;<span style="color: #800080;">0x3f</span>];                         <span style="color: #008000;">//</span><span style="color: #008000;">取出第三个字符的后6位并找出结果字符</span>
+<span style="color: #008080;"> 30</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 31</span> 
+<span style="color: #008080;"> 32</span>     <span style="color: #0000ff;">if</span> (i &lt;<span style="color: #000000;"> text_len)
+</span><span style="color: #008080;"> 33</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 34</span>         uint32 tail = text_len -<span style="color: #000000;"> i;
+</span><span style="color: #008080;"> 35</span>         <span style="color: #0000ff;">if</span> (tail == <span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 36</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 37</span>             encode[j++] = alphabet_map[text[i]&gt;&gt;<span style="color: #800080;">2</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 38</span>             encode[j++] = alphabet_map[(text[i]&lt;&lt;<span style="color: #800080;">4</span>)&amp;<span style="color: #800080;">0x30</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 39</span>             encode[j++] = <span style="color: #800000;">'</span><span style="color: #800000;">=</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 40</span>             encode[j++] = <span style="color: #800000;">'</span><span style="color: #800000;">=</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 41</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 42</span>         <span style="color: #0000ff;">else</span> <span style="color: #008000;">//</span><span style="color: #008000;">tail==2</span>
+<span style="color: #008080;"> 43</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 44</span>             encode[j++] = alphabet_map[text[i]&gt;&gt;<span style="color: #800080;">2</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 45</span>             encode[j++] = alphabet_map[((text[i]&lt;&lt;<span style="color: #800080;">4</span>)&amp;<span style="color: #800080;">0x30</span>)|(text[i+<span style="color: #800080;">1</span>]&gt;&gt;<span style="color: #800080;">4</span><span style="color: #000000;">)];
+</span><span style="color: #008080;"> 46</span>             encode[j++] = alphabet_map[(text[i+<span style="color: #800080;">1</span>]&lt;&lt;<span style="color: #800080;">2</span>)&amp;<span style="color: #800080;">0x3c</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 47</span>             encode[j++] = <span style="color: #800000;">'</span><span style="color: #800000;">=</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 48</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 49</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 50</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> j;
+</span><span style="color: #008080;"> 51</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 52</span> 
+<span style="color: #008080;"> 53</span> uint32 base64_decode(<span style="color: #0000ff;">const</span> uint8 *code, uint32 code_len, uint8 *<span style="color: #000000;">plain)
+</span><span style="color: #008080;"> 54</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 55</span>     assert((code_len&amp;<span style="color: #800080;">0x03</span>) == <span style="color: #800080;">0</span>);  <span style="color: #008000;">//</span><span style="color: #008000;">如果它的条件返回错误，则终止程序执行。4的倍数。</span>
+<span style="color: #008080;"> 56</span> 
+<span style="color: #008080;"> 57</span>     uint32 i, j = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 58</span>     uint8 quad[<span style="color: #800080;">4</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 59</span>     <span style="color: #0000ff;">for</span> (i = <span style="color: #800080;">0</span>; i &lt; code_len; i+=<span style="color: #800080;">4</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 60</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 61</span>         <span style="color: #0000ff;">for</span> (uint32 k = <span style="color: #800080;">0</span>; k &lt; <span style="color: #800080;">4</span>; k++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 62</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 63</span>             quad[k] = reverse_map[code[i+k]];<span style="color: #008000;">//</span><span style="color: #008000;">分组，每组四个分别依次转换为base64表内的十进制数</span>
+<span style="color: #008080;"> 64</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 65</span> 
+<span style="color: #008080;"> 66</span>         assert(quad[<span style="color: #800080;">0</span>]&lt;<span style="color: #800080;">64</span> &amp;&amp; quad[<span style="color: #800080;">1</span>]&lt;<span style="color: #800080;">64</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 67</span> 
+<span style="color: #008080;"> 68</span>         plain[j++] = (quad[<span style="color: #800080;">0</span>]&lt;&lt;<span style="color: #800080;">2</span>)|(quad[<span style="color: #800080;">1</span>]&gt;&gt;<span style="color: #800080;">4</span>); <span style="color: #008000;">//</span><span style="color: #008000;">取出第一个字符对应base64表的十进制数的前6位与第二个字符对应base64表的十进制数的前2位进行组合</span>
+<span style="color: #008080;"> 69</span> 
+<span style="color: #008080;"> 70</span>         <span style="color: #0000ff;">if</span> (quad[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">64</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 71</span>             <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 72</span>         <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (quad[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">64</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 73</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 74</span>             plain[j++] = (quad[<span style="color: #800080;">1</span>]&lt;&lt;<span style="color: #800080;">4</span>)|(quad[<span style="color: #800080;">2</span>]&gt;&gt;<span style="color: #800080;">2</span>); <span style="color: #008000;">//</span><span style="color: #008000;">取出第二个字符对应base64表的十进制数的后4位与第三个字符对应base64表的十进制数的前4位进行组合</span>
+<span style="color: #008080;"> 75</span>             <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 76</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 77</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 78</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 79</span>             plain[j++] = (quad[<span style="color: #800080;">1</span>]&lt;&lt;<span style="color: #800080;">4</span>)|(quad[<span style="color: #800080;">2</span>]&gt;&gt;<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 80</span>             plain[j++] = (quad[<span style="color: #800080;">2</span>]&lt;&lt;<span style="color: #800080;">6</span>)|quad[<span style="color: #800080;">3</span>];<span style="color: #008000;">//</span><span style="color: #008000;">取出第三个字符对应base64表的十进制数的后2位与第4个字符进行组合</span>
+<span style="color: #008080;"> 81</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 82</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 83</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> j;
+</span><span style="color: #008080;"> 84</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 85</span> 
+<span style="color: #008080;"> 86</span> 
+<span style="color: #008080;"> 87</span> <span style="color: #008000;">/*</span><span style="color: #008000;">int main(void)
+</span><span style="color: #008080;"> 88</span> <span style="color: #008000;">{
+</span><span style="color: #008080;"> 89</span> <span style="color: #008000;">    char input[256];
+</span><span style="color: #008080;"> 90</span> <span style="color: #008000;">    while (true){
+</span><span style="color: #008080;"> 91</span> <span style="color: #008000;">    printf("Please input string: ");
+</span><span style="color: #008080;"> 92</span> <span style="color: #008000;">    scanf("%s", input);
+</span><span style="color: #008080;"> 93</span> <span style="color: #008000;">    uint8 *text = (uint8 *)input;
+</span><span style="color: #008080;"> 94</span> <span style="color: #008000;">    uint32 text_len = (uint32)strlen((char *)text);
+</span><span style="color: #008080;"> 95</span> <span style="color: #008000;">    uint8 buffer[1024], buffer2[4096];
+</span><span style="color: #008080;"> 96</span> <span style="color: #008000;">    uint32 size = base64_encode(text, text_len, buffer2);
+</span><span style="color: #008080;"> 97</span> <span style="color: #008000;">    buffer2[size] = 0;
+</span><span style="color: #008080;"> 98</span> <span style="color: #008000;">    printf("%s\n", buffer2);
+</span><span style="color: #008080;"> 99</span> 
+<span style="color: #008080;">100</span> <span style="color: #008000;">    size = base64_decode(buffer2, size, buffer);
+</span><span style="color: #008080;">101</span> <span style="color: #008000;">    buffer[size] = 0;
+</span><span style="color: #008080;">102</span> <span style="color: #008000;">    printf("%s\n", buffer);
+</span><span style="color: #008080;">103</span> 
+<span style="color: #008080;">104</span> <span style="color: #008000;">    }
+</span><span style="color: #008080;">105</span> <span style="color: #008000;">    return 0;
+</span><span style="color: #008080;">106</span> <span style="color: #008000;">}</span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">107</span> <span style="color: #008000;">//</span><span style="color: #008000;">编码</span>
+<span style="color: #008080;">108</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;">109</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">110</span>     <span style="color: #0000ff;">char</span> input[<span style="color: #800080;">256</span><span style="color: #000000;">];
+</span><span style="color: #008080;">111</span>     <span style="color: #0000ff;">while</span> (<span style="color: #0000ff;">true</span><span style="color: #000000;">){
+</span><span style="color: #008080;">112</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">Please input what you want to decode: </span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">113</span>     scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%s</span><span style="color: #800000;">"</span><span style="color: #000000;">, input);
+</span><span style="color: #008080;">114</span>     uint8 *text = (uint8 *<span style="color: #000000;">)input;
+</span><span style="color: #008080;">115</span>     uint32 text_len = (uint32)strlen((<span style="color: #0000ff;">char</span> *<span style="color: #000000;">)text);
+</span><span style="color: #008080;">116</span>     uint8 buffer[<span style="color: #800080;">1024</span>],buffer2[<span style="color: #800080;">4096</span><span style="color: #000000;">];
+</span><span style="color: #008080;">117</span> 
+<span style="color: #008080;">118</span>     uint32 size =<span style="color: #000000;"> base64_decode(text, text_len, buffer);
+</span><span style="color: #008080;">119</span>     buffer[size] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">120</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">Decoded content: %s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, buffer);
+</span><span style="color: #008080;">121</span>     size =<span style="color: #000000;"> base64_encode(buffer, size, buffer2);
+</span><span style="color: #008080;">122</span>     buffer2[size] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">123</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">Confirmation of the original content: %s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, buffer2);
+</span><span style="color: #008080;">124</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">125</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">126</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">127</span> <span style="color: #008000;">//</span><span style="color: #008000;">解码</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

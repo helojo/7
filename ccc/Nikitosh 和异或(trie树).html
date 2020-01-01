@@ -1,0 +1,91 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Nikitosh 和异或(trie树)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Nikitosh 和异或(trie树)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/11265899.html</div><br>
+    <h2 id="题目">题目：</h2>
+<p><a href="https://loj.ac/problem/10051">#10051. 「一本通 2.3 例 3」Nikitosh 和异或</a></p>
+<h2 id="解析">解析：</h2>
+<p>首先我们知道一个性质<span class="math inline">\(x\oplus x=0\)</span><br />
+我们要求<span class="math display">\[\bigoplus_{i = l}^ra_i\]</span>的话，相当于求<span class="math display">\[(\bigoplus_{i = 1}^la_i)\oplus (\bigoplus_{i = 1}^ra_i)\]</span><br />
+所以我们维护一个异或前缀和<span class="math inline">\(sum_i\)</span><br />
+我们用<span class="math inline">\(l_i\)</span>表示从左往右到第<span class="math inline">\(i\)</span>位时的区间最大异或和<br />
+<span class="math inline">\(r_i\)</span>表示从右往左到第<span class="math inline">\(i\)</span>位时的区间最大异或和<br />
+显然<span class="math inline">\(l_i = max\{sum_L\oplus sum_R\}1\leq L&lt;R\leq i\)</span><br />
+<span class="math inline">\(r_i\)</span>同理<br />
+最后枚举求和<span class="math inline">\(ans=max\{ans,l_i+r_{i+1}\}\)</span></p>
+<h2 id="代码">代码</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N = 5e6 + 10;
+
+int n, m, num, ans;
+int a[N], sum[N], l[N], r[N];
+
+struct node {
+    int nx[2];
+} e[N]; 
+
+void insert(int x) {
+    bitset&lt;35&gt;b(x);
+    int rt = 0;
+    for (int i = 30; i &gt;= 0; --i) {
+        int v = (int)b[i];
+        if (!e[rt].nx[v]) e[rt].nx[v] = ++num;
+        rt = e[rt].nx[v];
+    }
+}
+
+int query(int x) {
+    bitset&lt;35&gt;b(x);
+    int rt = 0, ret = 0;
+    for (int i = 30; i &gt;= 0; --i) {
+        int v = (int)b[i];
+        if (e[rt].nx[v ^ 1]) ret = ret &lt;&lt; 1 | 1, rt = e[rt].nx[v ^ 1];
+        else ret &lt;&lt;= 1, rt = e[rt].nx[v];
+    }
+    return ret;
+}
+
+int main() {
+    scanf(&quot;%d&quot;, &amp;n);
+    for (int i = 1; i &lt;= n; ++i) scanf(&quot;%d&quot;, &amp;a[i]), sum[i] = sum[i - 1] ^ a[i];
+    insert(0);
+    for (int i = 1; i &lt;= n; ++i) {
+        ans = max(ans, query(sum[i]));
+        l[i] = ans;
+        insert(sum[i]);
+    }
+    num = ans = 0;
+    memset(e, 0, sizeof e);
+    for (int i = n; i &gt;= 1; --i) {
+        ans = max(ans, query(sum[i]));
+        r[i] = ans;
+        insert(sum[i]);
+    }
+    ans = 0;
+    for (int i = 1; i &lt; n; ++i) ans = max(ans, l[i] + r[i + 1]);
+    cout &lt;&lt; ans;
+}
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

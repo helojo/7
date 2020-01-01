@@ -1,0 +1,240 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C语言之四则运算表达式求值(链栈)—支持浮点型数据，负数， 整型数据运算' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C语言之四则运算表达式求值(链栈)—支持浮点型数据，负数， 整型数据运算</center></div><div class='banquan'>原文出处:本文由博客园博主枫语丶宁提供。<br/>
+原文连接:https://www.cnblogs.com/lzn-2018/p/11872280.html</div><br>
+    <p><strong>&nbsp;运算符间的优先级关系：</strong></p>
+<p><img src="./images/C语言之四则运算表达式求值(链栈)—支持浮点型数据，负数， 整型数据运算0.png" alt="" width="430" height="154" /></p>
+<p>&nbsp;</p>
+<p><strong>链栈结构体定义：</strong></p>
+<p>数据域使用字符串长度为20的字符数组(故需要注意判断读取的字符串是运算符还是数值)</p>
+<p>可支持<span style="text-decoration: underline;">浮点型数据</span>，<span style="text-decoration: underline;">负数</span>，<span style="text-decoration: underline;"> 整型数据</span>的运算</p>
+<p>&nbsp;</p>
+<p><strong>float EvaluateExpression() 函数实现步骤：</strong></p>
+<p>1）初始化OPTR栈和OPND栈，将表达式起始符 &ldquo;#&rdquo; 压入OPTR栈。</p>
+<p>2）扫描表达式，读入第一个字符串str，如果表达式没有扫描完毕至 "#" 或压入OPTR的栈顶元素不为 "#" 时，则循环执行以下操作：</p>
+<p>　　&mdash;&mdash;&gt;使用&nbsp;&nbsp;<strong><em>str_to_float()</em> </strong>函数判断输入的字符串str是否是运算符</p>
+<p>　　　　&mdash;&mdash;&gt;如果str不是运算符，则压入OPND栈，读取下一个字符串str</p>
+<p>　　　　&mdash;&mdash;&gt;如果字符串str是运算符，使用&nbsp;<strong>Precede()</strong> 函数获取OPTR栈顶元素的运算符和字符串str的运算符的优先级：</p>
+<p>　　　　　　&mdash;&mdash;&gt;若是 &lsquo;&lt;&rsquo; ，则字符串str压入OPTR栈，读入下一个字符串str</p>
+<p>　　　　　　&mdash;&mdash;&gt;若是 &lsquo;&gt;&rsquo; ，则弹出OPTR栈顶的<span style="text-decoration: underline;">运算符</span>字符串，从OPND栈弹出两个<span style="text-decoration: underline;">数值</span>字符串，使用&nbsp;<strong>Operate()</strong> 函数对两个字符串进行运算，将得到的浮点型运算结果使用&nbsp;&nbsp;<strong>float_to_str()&nbsp;</strong>函数转换成字符串型数据，压入OPND栈</p>
+<p>　　　　　　&mdash;&mdash;&gt;若是 &lsquo;=&rsquo; ，则OPTR的栈顶元素是 "(" 且 str 是 ")" ，这时弹出OPTR栈顶的 "(" ，相当于括号匹配成功，然后读入下一字符串str</p>
+<p>3)OPND栈顶元素记为表达式求值结果，输出运算结果。</p>
+<p>&nbsp;</p>
+<p><strong>实现代码</strong>(.cpp后缀文件)</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> #include&lt;stdio.h&gt;
+<span style="color: #008080;">  2</span> #include&lt;stdlib.h&gt;
+<span style="color: #008080;">  3</span> #include&lt;<span style="color: #0000ff;">string</span>.h&gt;
+<span style="color: #008080;">  4</span> #include&lt;math.h&gt;
+<span style="color: #008080;">  5</span> 
+<span style="color: #008080;">  6</span> <span style="color: #0000ff;">#define</span> inf float(0x3f3f3f3f)
+<span style="color: #008080;">  7</span> <span style="color: #0000ff;">#define</span> MAXSIZE 100
+<span style="color: #008080;">  8</span> 
+<span style="color: #008080;">  9</span> <span style="color: #0000ff;">char</span> priority[<span style="color: #800080;">7</span>] = {<span style="color: #800000;">'</span><span style="color: #800000;">+</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">*</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">/</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">(</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">)</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">#</span><span style="color: #800000;">'</span><span style="color: #000000;">};
+</span><span style="color: #008080;"> 10</span> 
+<span style="color: #008080;"> 11</span> <span style="color: #0000ff;">char</span> priority_relationship[<span style="color: #800080;">7</span>][<span style="color: #800080;">7</span>] =<span style="color: #000000;"> {
+</span><span style="color: #008080;"> 12</span>     {<span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span><span style="color: #000000;">}, 
+</span><span style="color: #008080;"> 13</span>     {<span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span><span style="color: #000000;">}, 
+</span><span style="color: #008080;"> 14</span>     {<span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span><span style="color: #000000;">}, 
+</span><span style="color: #008080;"> 15</span>     {<span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span><span style="color: #000000;">}, 
+</span><span style="color: #008080;"> 16</span>     {<span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">=</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span> <span style="color: #800000;">'</span><span style="color: #000000;">}, 
+</span><span style="color: #008080;"> 17</span>     {<span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span> <span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span><span style="color: #000000;">}, 
+</span><span style="color: #008080;"> 18</span>     {<span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span> <span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">=</span><span style="color: #800000;">'</span><span style="color: #000000;">} 
+</span><span style="color: #008080;"> 19</span> }; <span style="color: #008000;">//</span><span style="color: #008000;"> 各个运算符之间的优先级关系</span>
+<span style="color: #008080;"> 20</span> 
+<span style="color: #008080;"> 21</span> <span style="color: #0000ff;">int</span> get_index(<span style="color: #0000ff;">char</span><span style="color: #000000;"> str[])
+</span><span style="color: #008080;"> 22</span> {<span style="color: #008000;">//</span><span style="color: #008000;"> 获取相应运算符的索引</span>
+<span style="color: #008080;"> 23</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">7</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 24</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 25</span>         <span style="color: #0000ff;">if</span>(str[<span style="color: #800080;">0</span>] == priority[i]) <span style="color: #0000ff;">return</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;"> 26</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 27</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">未找到匹配的字符\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 28</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 29</span> 
+<span style="color: #008080;"> 30</span> <span style="color: #0000ff;">char</span> Precede(<span style="color: #0000ff;">char</span> inside_data[], <span style="color: #0000ff;">char</span><span style="color: #000000;"> input_data[])
+</span><span style="color: #008080;"> 31</span> {<span style="color: #008000;">//</span><span style="color: #008000;"> 获取两个运算符之间的优先级关系</span>
+<span style="color: #008080;"> 32</span>     <span style="color: #0000ff;">int</span> inside_index =<span style="color: #000000;"> get_index(inside_data);
+</span><span style="color: #008080;"> 33</span>     <span style="color: #0000ff;">int</span> input_index =<span style="color: #000000;"> get_index(input_data);
+</span><span style="color: #008080;"> 34</span> 
+<span style="color: #008080;"> 35</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> priority_relationship[inside_index][input_index];
+</span><span style="color: #008080;"> 36</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 37</span> 
+<span style="color: #008080;"> 38</span> typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> StackNode
+</span><span style="color: #008080;"> 39</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 40</span>     <span style="color: #0000ff;">char</span> data[MAXSIZE];   <span style="color: #008000;">//</span><span style="color: #008000;"> 压入栈里面的数据都是字符型，在进行运行时，记得将字符型数字转换为浮点型数字</span>
+<span style="color: #008080;"> 41</span>     <span style="color: #0000ff;">struct</span> StackNode *<span style="color: #000000;">next;
+</span><span style="color: #008080;"> 42</span> }StackNode, *<span style="color: #000000;">LinkStack;
+</span><span style="color: #008080;"> 43</span> 
+<span style="color: #008080;"> 44</span> <span style="color: #0000ff;">void</span> InitStack(LinkStack &amp;<span style="color: #000000;">S)
+</span><span style="color: #008080;"> 45</span> {<span style="color: #008000;">//</span><span style="color: #008000;"> 构造一个空栈S，栈顶指针置空</span>
+<span style="color: #008080;"> 46</span>     S =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 47</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 48</span> 
+<span style="color: #008080;"> 49</span> <span style="color: #0000ff;">void</span> Push(LinkStack &amp;S, <span style="color: #0000ff;">char</span><span style="color: #000000;"> data[])
+</span><span style="color: #008080;"> 50</span> {<span style="color: #008000;">//</span><span style="color: #008000;"> 在栈顶插入元素data</span>
+<span style="color: #008080;"> 51</span>     StackNode *<span style="color: #000000;">p;
+</span><span style="color: #008080;"> 52</span> 
+<span style="color: #008080;"> 53</span>     p = (StackNode *)<span style="color: #0000ff;">malloc</span>(<span style="color: #0000ff;">sizeof</span>(StackNode));  <span style="color: #008000;">//</span><span style="color: #008000;"> 生成新的结点</span>
+<span style="color: #008080;"> 54</span>     strcpy(p-&gt;data, data);  <span style="color: #008000;">//</span><span style="color: #008000;"> 将新结点的数据域置为data</span>
+<span style="color: #008080;"> 55</span>     p-&gt;next = S;    <span style="color: #008000;">//</span><span style="color: #008000;"> 将新结点插入栈顶</span>
+<span style="color: #008080;"> 56</span>     S = p;    <span style="color: #008000;">//</span><span style="color: #008000;"> 修改栈顶指针为p</span>
+<span style="color: #008080;"> 57</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 58</span> 
+<span style="color: #008080;"> 59</span> <span style="color: #0000ff;">char</span> *Pop(LinkStack &amp;<span style="color: #000000;">S)
+</span><span style="color: #008080;"> 60</span> {<span style="color: #008000;">//</span><span style="color: #008000;"> 删除S的栈顶元素， 用data返回其值</span>
+<span style="color: #008080;"> 61</span>     <span style="color: #0000ff;">char</span><span style="color: #000000;"> data[MAXSIZE];
+</span><span style="color: #008080;"> 62</span>     <span style="color: #0000ff;">if</span>(S == NULL) printf(<span style="color: #800000;">"</span><span style="color: #800000;">错误！！！\n栈为空， 无法执行删除命令...</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 63</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 64</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 65</span>         StackNode *<span style="color: #000000;">p;
+</span><span style="color: #008080;"> 66</span> 
+<span style="color: #008080;"> 67</span>         strcpy(data, S-&gt;data);  <span style="color: #008000;">//</span><span style="color: #008000;"> 将栈顶元素赋给data</span>
+<span style="color: #008080;"> 68</span>         p = S;   <span style="color: #008000;">//</span><span style="color: #008000;"> 用p临时保存栈顶元素的空间，以备释放</span>
+<span style="color: #008080;"> 69</span>         S = S-&gt;next;   <span style="color: #008000;">//</span><span style="color: #008000;">修改栈顶指针 </span>
+<span style="color: #008080;"> 70</span>         <span style="color: #0000ff;">free</span>(p);    <span style="color: #008000;">//</span><span style="color: #008000;"> 释放原栈顶元素的空间</span>
+<span style="color: #008080;"> 71</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> data;
+</span><span style="color: #008080;"> 72</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 73</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 74</span> 
+<span style="color: #008080;"> 75</span> <span style="color: #0000ff;">char</span> *GetTop(LinkStack &amp;<span style="color: #000000;">S)
+</span><span style="color: #008080;"> 76</span> {<span style="color: #008000;">//</span><span style="color: #008000;"> 获取栈顶元素</span>
+<span style="color: #008080;"> 77</span>     <span style="color: #0000ff;">if</span>(S !=<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;"> 78</span>         <span style="color: #0000ff;">return</span> S-&gt;<span style="color: #000000;">data;
+</span><span style="color: #008080;"> 79</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 80</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 81</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">错误！！！\n栈顶为空</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 82</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">0</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 83</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 84</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 85</span> 
+<span style="color: #008080;"> 86</span> <span style="color: #0000ff;">float</span> str_to_float(<span style="color: #0000ff;">char</span> *<span style="color: #000000;">str)
+</span><span style="color: #008080;"> 87</span> {<span style="color: #008000;">//</span><span style="color: #008000;"> 将字符串数据转换成浮点型数据</span>
+<span style="color: #008080;"> 88</span>     <span style="color: #0000ff;">float</span> num = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 89</span>     <span style="color: #0000ff;">int</span> state_1 = <span style="color: #800080;">0</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 用于判断是否读取到小数点的状态值, 0代表还没有读取到</span>
+<span style="color: #008080;"> 90</span>     <span style="color: #0000ff;">int</span> state_2 = <span style="color: #800080;">0</span>; <span style="color: #008000;">//</span><span style="color: #008000;">用于判断是否读取到负号的状态值， 0代表还没有读取到</span>
+<span style="color: #008080;"> 91</span>     <span style="color: #0000ff;">while</span>(( *str != <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span> &amp;&amp; *str &gt;= <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span> &amp;&amp; *str &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span>) || *str == <span style="color: #800000;">'</span><span style="color: #800000;">.</span><span style="color: #800000;">'</span> || (*str == <span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span> &amp;&amp; *(str + <span style="color: #800080;">1</span>) != <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">))
+</span><span style="color: #008080;"> 92</span>     {<span style="color: #008000;">//</span><span style="color: #008000;"> 注意判断小数点和负号</span>
+<span style="color: #008080;"> 93</span>         <span style="color: #0000ff;">if</span>(*str == <span style="color: #800000;">'</span><span style="color: #800000;">.</span><span style="color: #800000;">'</span>) state_1 = <span style="color: #800080;">1</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 当读取到小数点的时候， 状态值state_1赋值为1</span>
+<span style="color: #008080;"> 94</span>         <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(*str == <span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span>) state_2 = <span style="color: #800080;">1</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 当读取到负号的时候， 状态值state_2赋值为1</span>
+<span style="color: #008080;"> 95</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 96</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 97</span>             <span style="color: #0000ff;">if</span>(state_1 == <span style="color: #800080;">0</span>) num = num * <span style="color: #800080;">10</span> + (*str - <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 98</span>             <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 99</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">100</span>                 num += (*str - <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>) * pow(<span style="color: #800080;">0.1</span><span style="color: #000000;">, state_1);
+</span><span style="color: #008080;">101</span>                 state_1++<span style="color: #000000;">;
+</span><span style="color: #008080;">102</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">103</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">104</span>         str++<span style="color: #000000;">;
+</span><span style="color: #008080;">105</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">106</span>     <span style="color: #0000ff;">if</span>(*str != <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">return</span><span style="color: #000000;"> inf;
+</span><span style="color: #008080;">107</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(state_2 == <span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">108</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">109</span>         <span style="color: #0000ff;">return</span> num * -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">110</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">111</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">return</span><span style="color: #000000;"> num;
+</span><span style="color: #008080;">112</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">113</span> 
+<span style="color: #008080;">114</span> <span style="color: #0000ff;">char</span> *float_to_str(<span style="color: #0000ff;">float</span><span style="color: #000000;"> num)
+</span><span style="color: #008080;">115</span> {<span style="color: #008000;">//</span><span style="color: #008000;"> 将浮点型数据装换成字符串数据，保留浮点型数据小数点后4位的值</span>
+<span style="color: #008080;">116</span>     <span style="color: #0000ff;">char</span><span style="color: #000000;"> str[MAXSIZE];
+</span><span style="color: #008080;">117</span>     sprintf(str, <span style="color: #800000;">"</span><span style="color: #800000;">%.4f</span><span style="color: #800000;">"</span>, num);  <span style="color: #008000;">//</span><span style="color: #008000;"> 保留小数点后4位</span>
+<span style="color: #008080;">118</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> str;
+</span><span style="color: #008080;">119</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">120</span> 
+<span style="color: #008080;">121</span> 
+<span style="color: #008080;">122</span> <span style="color: #0000ff;">float</span> Operate(<span style="color: #0000ff;">char</span> a[], <span style="color: #0000ff;">char</span> theta[], <span style="color: #0000ff;">char</span><span style="color: #000000;"> b[])
+</span><span style="color: #008080;">123</span> {<span style="color: #008000;">//</span><span style="color: #008000;">执行运算</span>
+<span style="color: #008080;">124</span>     <span style="color: #0000ff;">float</span> a_num =<span style="color: #000000;"> str_to_float(a);
+</span><span style="color: #008080;">125</span>     <span style="color: #0000ff;">float</span> b_num =<span style="color: #000000;"> str_to_float(b);
+</span><span style="color: #008080;">126</span> 
+<span style="color: #008080;">127</span>     <span style="color: #0000ff;">if</span>(theta[<span style="color: #800080;">0</span>] == <span style="color: #800000;">'</span><span style="color: #800000;">+</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">return</span> a_num +<span style="color: #000000;"> b_num;
+</span><span style="color: #008080;">128</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(theta[<span style="color: #800080;">0</span>] == <span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">return</span> a_num -<span style="color: #000000;"> b_num;
+</span><span style="color: #008080;">129</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(theta[<span style="color: #800080;">0</span>] == <span style="color: #800000;">'</span><span style="color: #800000;">*</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">return</span> a_num *<span style="color: #000000;"> b_num;
+</span><span style="color: #008080;">130</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(theta[<span style="color: #800080;">0</span>] == <span style="color: #800000;">'</span><span style="color: #800000;">/</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">return</span> a_num /<span style="color: #000000;"> b_num;
+</span><span style="color: #008080;">131</span>     <span style="color: #0000ff;">else</span> printf(<span style="color: #800000;">"</span><span style="color: #800000;">错误！！！\n无该运算符</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">132</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">133</span> 
+<span style="color: #008080;">134</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> EvaluateExpression()
+</span><span style="color: #008080;">135</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">136</span>     StackNode *OPND, *<span style="color: #000000;">OPTR;
+</span><span style="color: #008080;">137</span>     <span style="color: #0000ff;">char</span><span style="color: #000000;"> str[MAXSIZE];
+</span><span style="color: #008080;">138</span>     <span style="color: #0000ff;">char</span><span style="color: #000000;"> theta[MAXSIZE];
+</span><span style="color: #008080;">139</span>     <span style="color: #0000ff;">char</span><span style="color: #000000;"> a[MAXSIZE];
+</span><span style="color: #008080;">140</span>     <span style="color: #0000ff;">char</span><span style="color: #000000;"> b[MAXSIZE];
+</span><span style="color: #008080;">141</span> 
+<span style="color: #008080;">142</span>     InitStack(OPND);  <span style="color: #008000;">//</span><span style="color: #008000;"> 初始化栈 OPND</span>
+<span style="color: #008080;">143</span>     InitStack(OPTR);  <span style="color: #008000;">//</span><span style="color: #008000;"> 初始化栈 OPTR</span>
+<span style="color: #008080;">144</span>     Push(OPTR, <span style="color: #800000;">"</span><span style="color: #800000;">#</span><span style="color: #800000;">"</span>);  <span style="color: #008000;">//</span><span style="color: #008000;"> 将 "#" 压入栈OPTR</span>
+<span style="color: #008080;">145</span> 
+<span style="color: #008080;">146</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">请输入算术表达式（支持负数，浮点型数据），每个值用空格隔开输入，并以#结束\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">147</span>     scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%s</span><span style="color: #800000;">"</span><span style="color: #000000;">, str);
+</span><span style="color: #008080;">148</span>     <span style="color: #0000ff;">while</span>(str[<span style="color: #800080;">0</span>] != <span style="color: #800000;">'</span><span style="color: #800000;">#</span><span style="color: #800000;">'</span> || GetTop(OPTR)[<span style="color: #800080;">0</span>] != <span style="color: #800000;">'</span><span style="color: #800000;">#</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+</span><span style="color: #008080;">149</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">150</span>         <span style="color: #0000ff;">if</span>(str_to_float(str) !=<span style="color: #000000;"> inf)
+</span><span style="color: #008080;">151</span>         { <span style="color: #008000;">//</span><span style="color: #008000;"> 如果str不是运算符，则压入OPND栈，读取下一个字符串str</span>
+<span style="color: #008080;">152</span>             Push(OPND, str);  <span style="color: #008000;">//</span><span style="color: #008000;"> 将字符串str压入OPTR栈</span>
+<span style="color: #008080;">153</span>             scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%s</span><span style="color: #800000;">"</span>, str);  <span style="color: #008000;">//</span><span style="color: #008000;"> 读入下一个字符串str</span>
+<span style="color: #008080;">154</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">155</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">156</span>         { <span style="color: #008000;">//</span><span style="color: #008000;"> 如果字符串str是运算符，使用 Precede() 函数获取OPTR栈顶元素的运算符和字符串str的运算符的优先级</span>
+<span style="color: #008080;">157</span>             <span style="color: #0000ff;">switch</span> (Precede(GetTop(OPTR), str))  <span style="color: #008000;">//</span><span style="color: #008000;"> 使用 Precede() 函数获取相应优先级</span>
+<span style="color: #008080;">158</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">159</span>             <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">&lt;</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">160</span>                 Push(OPTR, str);  <span style="color: #008000;">//</span><span style="color: #008000;"> 将字符串str压入OPTR栈</span>
+<span style="color: #008080;">161</span>                 scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%s</span><span style="color: #800000;">"</span>, str);  <span style="color: #008000;">//</span><span style="color: #008000;"> 读入下一个字符串str</span>
+<span style="color: #008080;">162</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">163</span>             <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">&gt;</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">164</span>                 strcpy(theta, Pop(OPTR));  <span style="color: #008000;">//</span><span style="color: #008000;"> 弹出OPTR栈顶的运算符字符串并赋值给变量 theta</span>
+<span style="color: #008080;">165</span>                 strcpy(b, Pop(OPND));   <span style="color: #008000;">//</span><span style="color: #008000;"> 弹出OPND栈顶的数值字符串并赋值给变量 b</span>
+<span style="color: #008080;">166</span>                 strcpy(a, Pop(OPND));   <span style="color: #008000;">//</span><span style="color: #008000;"> 弹出OPND栈顶的数值字符串并赋值给变量 a</span>
+<span style="color: #008080;">167</span>                 <span style="color: #0000ff;">char</span><span style="color: #000000;"> temp_str[MAXSIZE];
+</span><span style="color: #008080;">168</span>                 strcpy(temp_str, float_to_str(Operate(a, theta, b))); <span style="color: #008000;">//</span><span style="color: #008000;"> 根据相应的三个字符串进行运算，把结果赋给temp_str</span>
+<span style="color: #008080;">169</span>                 Push(OPND, temp_str);  <span style="color: #008000;">//</span><span style="color: #008000;"> 将运算结果 temp_str 压入OPND栈</span>
+<span style="color: #008080;">170</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">171</span>             <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">=</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">172</span>                 Pop(OPTR);  <span style="color: #008000;">//</span><span style="color: #008000;"> 弹出OPTR栈顶的运算符字符串</span>
+<span style="color: #008080;">173</span>                 scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%s</span><span style="color: #800000;">"</span>, str);  <span style="color: #008000;">//</span><span style="color: #008000;"> 读入下一个字符串str</span>
+<span style="color: #008080;">174</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">175</span>             <span style="color: #0000ff;">default</span><span style="color: #000000;">:
+</span><span style="color: #008080;">176</span>                 printf(<span style="color: #800000;">"</span><span style="color: #800000;">错误！！！\n该优先级不存在！！！</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">177</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">178</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">179</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">180</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, GetTop(OPND));
+</span><span style="color: #008080;">181</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">182</span> 
+<span style="color: #008080;">183</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;">184</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">185</span> <span style="color: #000000;">    EvaluateExpression();
+</span><span style="color: #008080;">186</span> 
+<span style="color: #008080;">187</span>     system(<span style="color: #800000;">"</span><span style="color: #800000;">pause</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">188</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">189</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>运行结果：</p>
+<p><img src="./images/C语言之四则运算表达式求值(链栈)—支持浮点型数据，负数， 整型数据运算1.png" alt="" width="483" height="48" /></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

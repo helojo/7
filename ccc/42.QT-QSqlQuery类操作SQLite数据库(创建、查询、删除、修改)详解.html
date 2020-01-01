@@ -1,0 +1,229 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解</center></div><div class='banquan'>原文出处:本文由博客园博主NQian提供。<br/>
+原文连接:https://www.cnblogs.com/lifexy/p/10921958.html</div><br>
+    <p><span style="font-size: 15px;">Qt 提供了 QtSql 模块来提供平台独立的基于 SQL 的数据库操作。这里我们所说的&ldquo;平台</span><br /><span style="font-size: 15px;">
+独立&rdquo;，既包括操作系统平台，也包括各个数据库平台,Qt支持以下几种数据库:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解0.png" alt="" /></span></p>
+<ul>
+<li><span style="font-size: 15px;">QT<span style="color: #0000ff;">自带SQLITE数据库</span>,不需要再安装 </span></li>
+<li><span style="font-size: 15px;">QTDS在Qt4.7起已经<span style="color: #0000ff;">被移除</span></span></li>
+
+
+
+
+</ul>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><span style="font-size: 18px; background-color: #ffff99; color: #008000;"><strong>1.QtSql</strong></span></p>
+<p><span style="font-size: 15px;">要使用QtSql 模块的话,需要在.pro文件中添加这么一句：</span></p>
+<div class="cnblogs_code">
+<pre>QT += sql&nbsp;</pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>2.QSqlDatabase</strong></span></p>
+<p><span style="font-size: 15px;"><strong><span style="color: #0000ff;">QSqlDatabase类</span></strong>提供了一个接口，用于通过连接访问数据。QSqlDatabase的一个实例表示连接。该连接通过受支持的数据库驱动程序之一提供对数据库的访问，该驱动程序派生自QSqlDriver。</span></p>
+<p><span style="color: #000080; background-color: #ccffcc; font-size: 16px;"><strong>2.1 创建一个数据库示例如下</strong></span></p>
+<div class="cnblogs_code">
+<pre>QSqlDatabase db = QSqlDatabase::addDatabase(<span style="color: #800000;">"</span><span style="color: #800000;">QSQLITE</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+db.setDatabaseName(</span><span style="color: #800000;">"</span><span style="color: #800000;">scooters.dat</span><span style="color: #800000;">"</span>);     <span style="color: #008000;">//</span><span style="color: #008000;">如果本目录下没有该文件,则会在本目录下生成,否则连接该文件</span>
+ <span style="color: #0000ff;">if</span> (!<span style="color: #000000;">db.open()) {                     
+        QMessageBox::warning(</span><span style="color: #800080;">0</span>, QObject::tr(<span style="color: #800000;">"</span><span style="color: #800000;">Database Error</span><span style="color: #800000;">"</span><span style="color: #000000;">),
+                             db.lastError().text());
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+ }</span></pre>
+</div>
+<p align="left"><span style="font-size: 15px;">编译运行后,可以看到已经创建了该文件:</span></p>
+<p align="left"><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解1.png" alt="" /></span></p>
+<p align="left"><span style="font-size: 15px;">创建成功后,该文件<strong><span style="color: #0000ff;">默认为空的</span></strong>,然后就可以使用QSqlQuery类来操作该数据库, QSqlQuery类使用的是SQL语句，如果只需要使用高层次的数据</span><br /><span style="font-size: 15px;">
+库接口（不关心 SQL 语法），我们可以选择 QSqlTableModel 和</span><br /><span style="font-size: 15px;">
+QSqlRelationalTableModel<span style="color: #ff0000;">(在后续章节介绍)</span>。本章我们介绍
+<strong><span style="color: #0000ff;">QSqlQuery 类</span></strong>,来如何使用SQL语法.</span></p>
+<p align="left">&nbsp;</p>
+<p align="left"><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>3.QSqlQuery</strong><strong>类介绍</strong></span></p>
+<p><span style="font-size: 15px;">通过<span style="color: #0000ff;">exec()成员函数</span>来执行DML(数据操作语言)语句，如SELECT、INSERT、UPDATE和DELETE，以及DDL(数据定义语言)语句等.</span></p>
+<p><span style="font-size: 15px;">比如:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">QSqlQuery query;
+query.exec(</span><span style="color: #800000;">"</span><span style="color: #800000;">DROP TABLE students</span><span style="color: #800000;">"</span>);    <span style="color: #008000;">//</span><span style="color: #008000;">删除名为students的表</span></pre>
+</div>
+<p><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>4.接下来,我们讲讲如何导入数据</strong></span></p>
+<p><strong><span style="font-size: 15px; color: #800000;">创建表:</span></strong></p>
+<div class="cnblogs_code">
+<pre>query.exec(<span style="color: #800000;">"</span><span style="color: #800000;">CREATE TABLE students (</span><span style="color: #800000;">"</span>
+                   <span style="color: #800000;">"</span><span style="color: #800000;">id INTEGER PRIMARY KEY AUTOINCREMENT, </span><span style="color: #800000;">"</span>
+                   <span style="color: #800000;">"</span><span style="color: #800000;">name VARCHAR(40) NOT NULL, </span><span style="color: #800000;">"</span>
+                   <span style="color: #800000;">"</span><span style="color: #800000;"> score INTEGER NOT NULL, </span><span style="color: #800000;">"</span>
+                   <span style="color: #800000;">"</span><span style="color: #800000;">class VARCHAR(40) NOT NULL)</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+                </span><span style="color: #008000;">//</span><span style="color: #008000;">创建一个students表,标题分别为id、name、score、class</span></pre>
+</div>
+<p><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>" PRIMARY KEY AUTOINCREMENT,":</strong></span>表示该列为整数递增,如果为空时则自动填入1,然后在下面的每一行都会自动+1, PRIMARY KEY则表示该列作为列表的主键,通过它可以轻易地获取某一行数据</span></p>
+<p><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>" INTEGER ":</strong></span>表示该列为带符号的整数</span></p>
+<p align="left"><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>" VARCHAR(40) ":</strong></span>表示该列为可变长字符串,默认只能存储英文和数字或者utf-8,最多存储40个字节.</span></p>
+<p align="left"><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>"NOT NULL "：</strong></span>表示该列的内容不为空</span></p>
+<p align="left">&nbsp;</p>
+<p align="left"><span style="color: #800000; font-size: 15px;"><strong>导入数据:</strong></span></p>
+<div class="cnblogs_code">
+<pre>query.exec(<span style="color: #800000;">"</span><span style="color: #800000;">INSERT INTO students (name, score,class) </span><span style="color: #800000;">"</span>
+               <span style="color: #800000;">"</span><span style="color: #800000;">VALUES ('小张', 85, '初2-1班')</span><span style="color: #800000;">"</span><span style="color: #000000;">);  
+              </span><span style="color: #008000;">//</span><span style="color: #008000;">向students表里的(name, score,class)标题下插入一项数据'小张', 85, '初2-1班'</span></pre>
+</div>
+<p><span style="font-size: 15px;">添加后如下图所示:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解2.png" alt="" /></span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>5.批量导入库</strong></span></p>
+<p><span style="font-size: 15px;">如果我们有大串数据需要导入时,也可以使用<span style="color: #ff0000;">prepare()</span>来绑值,然后再通过<span style="color: #ff0000;">bindValue()</span>向绑值加入数据</span></p>
+<p><span style="font-size: 15px;">示例代码如下所示:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">QStringList names;
+names</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小A</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小B</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小C</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小D</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小E</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小F</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小G</span><span style="color: #800000;">"</span>
+           &lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小H</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小I</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小G</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小K</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小L</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小M</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">小N</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+
+QStringList clases;
+clases</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">初1-1班</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">初1-2班</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">初1-3班</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">初2-1班</span><span style="color: #800000;">"</span>
+         &lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">初2-2班</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">初2-3班</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">初3-1班</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">初3-2班</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">初3-3班</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+
+QSqlDatabase db </span>= QSqlDatabase::addDatabase(<span style="color: #800000;">"</span><span style="color: #800000;">QSQLITE</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+db.setDatabaseName(</span><span style="color: #800000;">"</span><span style="color: #800000;">students.dat</span><span style="color: #800000;">"</span>);     <span style="color: #008000;">//</span><span style="color: #008000;">在本目录下生成</span><span style="color: #000000;">
+QSqlQuery query;
+query.exec(</span><span style="color: #800000;">"</span><span style="color: #800000;">DROP TABLE students</span><span style="color: #800000;">"</span>);        <span style="color: #008000;">//</span><span style="color: #008000;">先清空一下表</span><span style="color: #000000;">
+query.exec(</span><span style="color: #800000;">"</span><span style="color: #800000;">CREATE TABLE students (</span><span style="color: #800000;">"</span>
+                   <span style="color: #800000;">"</span><span style="color: #800000;">id INTEGER PRIMARY KEY AUTOINCREMENT, </span><span style="color: #800000;">"</span>
+                   <span style="color: #800000;">"</span><span style="color: #800000;">name VARCHAR(40) NOT NULL, </span><span style="color: #800000;">"</span>
+                   <span style="color: #800000;">"</span><span style="color: #800000;"> score INTEGER NOT NULL, </span><span style="color: #800000;">"</span>
+                   <span style="color: #800000;">"</span><span style="color: #800000;">class VARCHAR(40) NOT NULL)</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+                </span><span style="color: #008000;">//</span><span style="color: #008000;">创建一个students表</span>
+<span style="color: #000000;">
+    query.prepare(</span><span style="color: #800000;">"</span><span style="color: #800000;">INSERT INTO students (name, score,class) </span><span style="color: #800000;">"</span>
+                  <span style="color: #800000;">"</span><span style="color: #800000;">VALUES (:name, :score, :class)</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+                    </span><span style="color: #008000;">//</span><span style="color: #008000;">为每一列标题添加绑定值</span>
+
+    <span style="color: #0000ff;">foreach</span> (QString name, names)       <span style="color: #008000;">//</span><span style="color: #008000;">从names表里获取每个名字</span><span style="color: #000000;">
+    {
+        query.bindValue(</span><span style="color: #800000;">"</span><span style="color: #800000;">:name</span><span style="color: #800000;">"</span>, name);                      <span style="color: #008000;">//</span><span style="color: #008000;">向绑定值里加入名字</span><span style="color: #000000;">
+        query.bindValue(</span><span style="color: #800000;">"</span><span style="color: #800000;">:score</span><span style="color: #800000;">"</span>, (qrand() % <span style="color: #800080;">101</span>));      <span style="color: #008000;">//</span><span style="color: #008000;">成绩</span><span style="color: #000000;">
+        query.bindValue(</span><span style="color: #800000;">"</span><span style="color: #800000;">:class</span><span style="color: #800000;">"</span>, clases[qrand()%clases.length()] );    <span style="color: #008000;">//</span><span style="color: #008000;">班级</span><span style="color: #000000;">
+        query.exec();               </span><span style="color: #008000;">//</span><span style="color: #008000;">加入库中</span><span style="color: #000000;">
+     }</span></pre>
+</div>
+<p><span style="font-size: 15px;">运行后,通过SQLite工具打开students.dat,如下图所示:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解3.png" alt="" /></span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>6.查询表内容</strong></span></p>
+<p><span style="font-size: 15px;">我们对<span style="color: #ff0000;">上图生成的students.dat文件</span>进行查询内容时,则需要使用<span style="color: #ff0000;"><strong>WHERE</strong>&nbsp;</span>关键字实现.</span></p>
+<p><span style="color: #800000;"><strong><span style="font-size: 15px;">示例-查询成绩值为60~80之间的学生:</span></strong></span></p>
+<div class="cnblogs_code">
+<pre>    query.exec(<span style="color: #800000;">"</span><span style="color: #800000;">SELECT * FROM students WHERE score &gt;= 60 AND score &lt;= 80;</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">while</span><span style="color: #000000;">(query.next())
+    {</span><span style="color: #000000;">
+        QString id </span>= query.value(<span style="color: #800080;">0</span><span style="color: #000000;">).toString();
+        QString name </span>= query.value(<span style="color: #800080;">1</span><span style="color: #000000;">).toString();
+        QString score </span>= query.value(<span style="color: #800080;">2</span><span style="color: #000000;">).toString();
+        QString classs </span>= query.value(<span style="color: #800080;">3</span><span style="color: #000000;">).toString();
+
+        qDebug()</span>&lt;&lt;id&lt;&lt;name&lt;&lt;score&lt;&lt;<span style="color: #000000;">classs;
+    }</span></pre>
+</div>
+<p><span style="font-size: 15px;">运行打印:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解4.png" alt="" /></span></p>
+<p><span style="color: #800000;"><strong><span style="font-size: 15px;">当然还有其它语句,比如:</span></strong></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #800000;">"</span><span style="color: #800000;">SELECT * FROM students WHERE score &gt;= 80 OR class == '初3-3班';</span><span style="color: #800000;">"</span>
+       <span style="color: #008000;">//</span><span style="color: #008000;">判断成绩大于等于80,或者班级为初3-3班的</span></pre>
+</div>
+<p><span style="font-size: 15px;">打印如下图所示:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解5.png" alt="" /></span></p>
+<div class="cnblogs_code">
+<pre> <span style="color: #800000;">"</span><span style="color: #800000;">SELECT * FROM students WHERE class GLOB '*3-3*';</span><span style="color: #800000;">"</span>
+            <span style="color: #008000;">//</span><span style="color: #008000;"> GLOB表示通配符,匹配班级带有"3-3"的名字</span></pre>
+</div>
+<p><span style="font-size: 15px;">打印如下图所示:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解6.png" alt="" /></span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;"><strong><span style="color: #ff0000;">PS：</span></strong>如果想查询所有内容,则改为&nbsp;<span style="color: #0000ff;">query.exec("SELECT * FROM students ");</span></span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>7.删表内容</strong></span></p>
+<p><span style="font-size: 15px;">删表内容有3个语句: </span></p>
+<ul>
+<li><span style="font-size: 15px;"><strong><span style="color: #ff0000;">DROP:&nbsp;</span> </strong>&nbsp; &nbsp; &nbsp; &nbsp; 用来删除整表,并且连表结构也会删除,删除后则只能使用CREATE TABLE来重新创建表</span></li>
+<li><span style="font-size: 15px;"><strong><span style="color: #ff0000;">TRUNCATE:&nbsp;</span> </strong>&nbsp;在SQLite中没有该语句,在MySQL中有该语句,用来清楚表内数据,但是表结构不会删除.</span></li>
+<li><span style="font-size: 15px;"><strong><span style="color: #ff0000;">DELETE:&nbsp; &nbsp;</span>&nbsp; &nbsp;</strong>删除部分记录,并且表结构不会删除,删除的速度比上面两个语句慢,可以配合WHERE来删除指定的某行</span></li>
+</ul>
+<p><span style="color: #800000;"><strong><span style="font-size: 15px;">示例1</span></strong></span></p>
+<div class="cnblogs_code">
+<pre>query.exec(<span style="color: #800000;">"</span><span style="color: #800000;">DELETE FROM students</span><span style="color: #800000;">"</span>);           <span style="color: #008000;">//</span><span style="color: #008000;">删除students表里所有内容</span></pre>
+</div>
+<p>删除后如下图所示:</p>
+<p><span style="font-size: 15px;"><img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解7.png" alt="" /></span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><strong><span style="font-size: 15px; color: #800000;">示例2-删除id=3的一行</span></strong></p>
+<div class="cnblogs_code">
+<pre>query.exec(<span style="color: #800000;">"</span><span style="color: #800000;">DELETE FROM students WHERE  id = 3</span><span style="color: #800000;">"</span>);</pre>
+</div>
+<p><span style="font-size: 15px;">删除前:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解8.png" alt="" /></span></p>
+<p><span style="font-size: 15px;">删除后:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解9.png" alt="" /></span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>8.改表内容</strong></span></p>
+<p>改表内容一般用下面两个语句:</p>
+<ul>
+<li><span style="font-size: 15px;"><strong><span style="color: #ff0000;">UPDATE&nbsp;:&nbsp;</span></strong> &nbsp; &nbsp; 用来修改表中内容,可以通过WHERE语句来指定修改</span></li>
+<li><span style="font-size: 15px;"><strong><span style="color: #ff0000;">ALTER&nbsp; TABLE:&nbsp;</span> </strong>用来重命名表,或者在已有的表中添加新的一列</span></li>
+</ul>
+<p><span style="color: #000080; background-color: #ccffcc; font-size: 16px;"><strong>8.1 ALTER&nbsp;示例</strong></span></p>
+<p><span style="font-size: 15px;"><strong><span style="color: #800000;">示例1</span></strong></span></p>
+<div class="cnblogs_code">
+<pre>query.exec(<span style="color: #800000;">"</span><span style="color: #800000;">ALTER TABLE students RENAME TO new_students</span><span style="color: #800000;">"</span>);      <span style="color: #008000;">//</span><span style="color: #008000;">将students重命名为new_students</span></pre>
+</div>
+<p><span style="font-size: 15px;">运行后如下图所示:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解10.png" alt="" width="444" height="268" /></span></p>
+<p>&nbsp;</p>
+<p><span style="color: #800000;"><strong><span style="font-size: 15px;">&nbsp;示例2</span></strong></span></p>
+<div class="cnblogs_code">
+<pre>query.exec(<span style="color: #800000;">"</span><span style="color: #800000;">ALTER TABLE  new_students ADD COLUMN 结果 VARCHAR(10)</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008000;">//</span><span style="color: #008000;">向 new_students表里添加新的一列,标题为结果,内容格式为VARCHAR</span></pre>
+</div>
+<p><span style="font-size: 15px;">运行后如下图所示:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解11.png" alt="" width="352" height="382" /></span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><span style="color: #000080; background-color: #ccffcc; font-size: 16px;"><strong>8.2 UPDATE&nbsp;示例</strong></span></p>
+<p><span style="font-size: 15px; color: #800000;"><strong>示例1-不使用WHERE,直接修改某列</strong></span></p>
+<div class="cnblogs_code">
+<pre>query.exec(<span style="color: #800000;">"</span><span style="color: #800000;">UPDATE  new_students  SET score = 100 , name = '小A'</span><span style="color: #800000;">"</span><span style="color: #000000;">);       
+                  </span><span style="color: #008000;">//</span><span style="color: #008000;">修改score和name所在的列内容</span></pre>
+</div>
+<p><span style="font-size: 15px;">修改后如下图所示:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解12.png" alt="" width="280" height="314" /></span></p>
+<p>&nbsp;</p>
+<p><span style="color: #800000;"><strong><span style="font-size: 15px;">示例2-使用WHERE,判断小于60的设为不合格,否则设为合格</span></strong></span></p>
+<div class="cnblogs_code">
+<pre>query.exec(<span style="color: #800000;">"</span><span style="color: #800000;">UPDATE  new_students  SET 结果='不合格'  WHERE  score&lt;60 </span><span style="color: #800000;">"</span><span style="color: #000000;">);
+query.exec(</span><span style="color: #800000;">"</span><span style="color: #800000;">UPDATE  new_students  SET 结果='合格'  WHERE  score&gt;=60 </span><span style="color: #800000;">"</span>);</pre>
+</div>
+<p><span style="font-size: 15px;">修改前如下图所示:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解13.png" alt="" width="316" height="327" /></span></p>
+<p><span style="font-size: 15px;">修改后:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/42.QT-QSqlQuery类操作SQLite数据库(创建、查询、删除、修改)详解14.png" alt="" width="318" height="302" /></span></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

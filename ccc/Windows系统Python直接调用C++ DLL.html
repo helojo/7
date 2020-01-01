@@ -1,0 +1,85 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Windows系统Python直接调用C++ DLL' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Windows系统Python直接调用C++ DLL</center></div><div class='banquan'>原文出处:本文由博客园博主西北望射天狼提供。<br/>
+原文连接:https://www.cnblogs.com/gujf2016/p/11282352.html</div><br>
+    <p>环境：Window 10，VS 2019， Python 2.7.12, 64bit</p>
+<p>1，打开 VS 2019，新建C++ Windows 动态链接库工程 Example，加入下列文件，如果Python是64位的则在VS中 Solution platforms 选择 x64 编译成64位的 DLL；</p>
+<p>Example.h</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">#pragma</span> once
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #000000;">#ifndef CPP_EXPORTS
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">#define</span> CPP_EXPORTS
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #000000;">#ifdef CPP_EXPORTS
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">#define</span> CPP_API _declspec(dllexport)
+<span style="color: #008080;"> 9</span> <span style="color: #0000ff;">#else</span> 
+<span style="color: #008080;">10</span> <span style="color: #0000ff;">#define</span> CPP_API _declspec(dllimport)
+<span style="color: #008080;">11</span> <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span> #include &lt;iostream&gt;
+<span style="color: #008080;">14</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;">15</span> 
+<span style="color: #008080;">16</span> <span style="color: #000000;">#ifdef __cplusplus
+</span><span style="color: #008080;">17</span> <span style="color: #0000ff;">extern</span> <span style="color: #800000;">"</span><span style="color: #800000;">C</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">18</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">19</span> <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span>     CPP_API <span style="color: #0000ff;">int</span><span style="color: #000000;"> __cdecl getInt();
+</span><span style="color: #008080;">22</span>     CPP_API <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> __cdecl getString();
+</span><span style="color: #008080;">23</span>     CPP_API <span style="color: #0000ff;">void</span> __cdecl setString(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> str);
+</span><span style="color: #008080;">24</span> 
+<span style="color: #008080;">25</span> <span style="color: #000000;">#ifdef __cplusplus
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">27</span> <span style="color: #0000ff;">#endif</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>Example.cpp</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">pch.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 2</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">Example.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> CPP_API <span style="color: #0000ff;">int</span><span style="color: #000000;"> __cdecl getInt()
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">5</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 8</span> 
+<span style="color: #008080;"> 9</span> CPP_API <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> __cdecl getString()
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">hello</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">13</span> 
+<span style="color: #008080;">14</span> CPP_API <span style="color: #0000ff;">void</span> __cdecl setString(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> str)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">16</span>     cout &lt;&lt; str &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">17</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>编译，得到 Example.dll</p>
+<p>&nbsp;</p>
+<p>2, 打开 Command，cd 到&nbsp;Example.dll 所在目录，输入 Python2,进入python环境</p>
+<p>&gt;&gt;&gt; from ctypes import *<br />&gt;&gt;&gt; dll = CDLL("Example.dll")<br />&gt;&gt;&gt; print dll.getInt()<br />5</p>
+<p>&gt;&gt;&gt; getStr = dll.getString<br />&gt;&gt;&gt; getStr.restype = c_char_p<br />&gt;&gt;&gt; pChar = getStr()<br />&gt;&gt;&gt; print c_char_p(pChar).value<br />hello</p>
+<p>&gt;&gt;&gt; setStr = dll.setString<br />&gt;&gt;&gt; setStr.argtypes = [c_char_p]<br />&gt;&gt;&gt; pStr = create_string_buffer("hello")<br />&gt;&gt;&gt; setStr(pStr)<br />hello<br />-1043503984</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

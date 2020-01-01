@@ -1,0 +1,358 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修STM32实现Airplay音乐播放器' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>STM32实现Airplay音乐播放器</center></div><div class='banquan'>原文出处:本文由博客园博主amanda2018提供。<br/>
+原文连接:https://www.cnblogs.com/wiznet/p/11328219.html</div><br>
+    <p>AirPlay是苹果公司推出的一套无线音乐解决方案,我们手里的iPhone、iPad甚至是Apple Watch等设备还有电脑上的iTunes都支持AirPlay,但是支持AirPlay功能的音响设备都是比较贵的，荷包扁扁的我自然是感觉买那么贵的音响实在是不合算。前两天突发奇想，如果STM32可以支持AirPlay的功能，那么不就可以让我享受一把无线音乐的自由自在了吗？于是马上登陆github搜了一下，发现还真有解决方案不过基本上所有的方案都是在linux或者windows上运行的，精挑细选之后选择了<a href="https://github.com/juhovh/shairplay">https://github.com/juhovh/shairplay</a>这个AirPlay开源项目，主要是该代码是用C语言实现移植到stm32比较方便。</p>
+<p>在开始之前我们有必要先了解一下AirPlay, AirPlay是苹果公司收购airtunes后升级airtunes的协议库，在airtunes增加了视频,照片的传输,完整的变为airplay非开源功能，实现随时随地的家庭音乐无线流媒体传输。AirPlay可以将iPhone 、iPad、iPod touch 等iOS 设备上的包括图片、音频、视频及镜像传输到支持AirPlay的设备中播放，AirPlay的实现过程中包含多个协议,其中有的协议是完全标准的, 有一部分协议进行了一些修改,有的则是完全私有的。</p>
+<p>&nbsp;&nbsp;&nbsp; &bull; Multicast DNS用于发布服务, 启动后, 在iOS的控制中心菜单中就能看到对应的设备；</p>
+<p>&nbsp;&nbsp;&nbsp; &bull; HTTP / RTSP / RTP&nbsp; 用于流媒体服务, 传输音视频数据, 进行播放控制等；</p>
+<p>&nbsp;&nbsp;&nbsp; &bull; NTP 时间同步；</p>
+<p>&nbsp;&nbsp;&nbsp; &bull; FairPlay DRM加密&nbsp; 完全私有的加密协议。</p>
+<p>我们需要准备一部iphone手机并安装网易云音乐，W5500EVB开发板(stm32f103+W5500)，PCM5102A音频模块。iPhone手机用来作为客户端搜索设备及发送音频数据，W5500EVB是WIZnet的开发板具有以太网功能用来作为服务器接收音频数据，开发板的操作可以参考www.w5500.com中的例程。PCM5102A音频模块是将解码后的音频数据进行播放。经过分析后我们要实现Airplay音频播放主要是实现以下三个方面：</p>
+<p>1、 iPhone在网络中发现 W5500设备并建立连接</p>
+<p>2、 W5500EVB接收并解码音频数据</p>
+<p>3、 W5500EVB通过I2S接口将音频传送到PCM5102A音频模块</p>
+<h2>1、发现设备并建立连接</h2>
+<p>Airplay发现设备是基于mdns协议实现，iPhone与W5500EVB需要连入同一网络且W5500EVB要加入组播组224.0.0.251才可以接收mdns报文。W5500EVB收到iphone发出的querry查询报文后回复response报文，报文的内容可以参考文档《Unofficial AirPlay Protocol Specification》(<a href="http://nto.github.io/AirPlay.html">http://nto.github.io/AirPlay.html</a>)，下方为MDNS设备发现代码：</p>
+<p align="left">1uint8 dns_query(uint8 s, uint8 * name,uint8* rname)</p>
+<p align="left">&nbsp;2 {</p>
+<p align="left">&nbsp;3 &nbsp;&nbsp;&nbsp;&nbsp;uint8 ip[4];</p>
+<p align="left">&nbsp;4 &nbsp;&nbsp;&nbsp;&nbsp;uint16 len, port;</p>
+<p align="left">&nbsp;5 &nbsp;&nbsp;&nbsp;&nbsp;switch (getSn_SR(s)) {</p>
+<p align="left">&nbsp;6 &nbsp;&nbsp;&nbsp;&nbsp;case SOCK_UDP:</p>
+<p align="left">&nbsp;7 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if ((len = getSn_RX_RSR(s)) &gt; 0) {</p>
+<p align="left">&nbsp;8 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (len &gt; MAX_DNS_BUF_SIZE) {</p>
+<p align="left">&nbsp;9 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;len = MAX_DNS_BUF_SIZE;</p>
+<p align="left">10 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">11 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;len = recvfrom(s, BUFPUB, len, ip, &amp;port);</p>
+<p align="left">12 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;len=dns_makequery(0,name,rname,BUFPUB,MAX_DNS_BUF_SIZE);</p>
+<p align="left">13 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sendto(s, BUFPUB, len, DIP,DPORT);</p>
+<p align="left">14 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;len=dns_makeresponse(0,name,rname,BUFPUB,MAX_DNS_BUF_SIZE);</p>
+<p align="left">15 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sendto(s, BUFPUB, len, DIP,DPORT);</p>
+<p align="left">16 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">17 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+<p align="left">18 &nbsp;&nbsp;&nbsp;&nbsp;case SOCK_CLOSED:</p>
+<p align="left">19 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;setDIPR(s,DIP);/* 设置目标IP 224.0.0.251*/</p>
+<p align="left">20 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;setDHAR(s,DHAR);/*设置目标MAC 01:00:5e:00:00:FB*/</p>
+<p align="left">21 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;setDPORT(s,DPORT);/*设置目标端口5353*/</p>
+<p align="left">22 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;socket(s,Sn_MR_UDP, 5353,Sn_MR_MULTI);/*打开SOCKET加入组播组*/</p>
+<p align="left">23 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+<p align="left">24 &nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">25 &nbsp;&nbsp;&nbsp;&nbsp;return DNS_RET_PROGRESS;</p>
+<p>26 }</p>
+<p>代码中12行的dns_makequery()函数用来拼接查询报文，代码14行dns_makeresponse()函数用来拼接响应报文，我们将代码编译下载到W5500EVB中运行，打开iPhone的选项列表点击音乐选项会显示如下图所示的界面，点击右上方标志搜索同一网络下的设备。界面如下图所示：</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/STM32实现Airplay音乐播放器0.png" alt="" /></p>
+<p align="center">图1-1 iphone选项列表</p>
+<p>此时iPhone向224.0.0.251组播组发送querry查询报文，W5500EVB收到查询报文后向224.0.0.251组播组发送response响应报文。W5500EVB发送的response响应报文中该报文中包含RAOP服务，该服务用于音频流的投影。 RAOP从本质上来说是实时流协议，只不过增加了身份验证请求-应答的步骤，RAOP服务用两个信道实现流媒体：一个是用实时流协议的控制信道；另一个是数据信道用来发送数据。RAOP服务名称格式：MAC地址@设备名._raop._tcp.local。通过抓包工具抓取响应报文我们可以看到RAOP服务的相关信息。</p>
+<p style="text-align: center;"><img src="./images/STM32实现Airplay音乐播放器1.png" alt="" />&nbsp;</p>
+<p align="center">图1-2 RAOP服务报文</p>
+<p>Service字段是服务名称。Protocol服务的类别：_airplay是视频服务(未用到)，_raop是音频服务。Name说明数据传输的协议，可以通过TCP或者UDP传输。Port声明了RTSP命令交互的端口号为5005，客户端可以通过端口号与服务端建立连接。下图中wiznet就是iPhone发现的支持AirPlay的设备(W5500EVB)。</p>
+<p style="text-align: center;"><img src="./images/STM32实现Airplay音乐播放器2.png" alt="" /></p>
+<p align="center">图1-3 iPhone发现设备</p>
+<p>&nbsp;</p>
+<p>iPhone成功发现W500&nbsp; EVB设备后就需要连接设备，此时我们点击列表中显示的设备，连接成功后对应设备的后面会显示对勾，如下图所示：</p>
+<p align="center"><img src="./images/STM32实现Airplay音乐播放器3.png" alt="" />&nbsp;</p>
+<p align="center">图1-4 iphone连接设备</p>
+<p>上文介绍的iPhone发现设备设备的过程中指定了RTSP是通过TCP进行通信且端口号为5005，所以我们要创建一个端口号为5005的TCP服务器来接收数据包，对RTSP数据包的解析是通过rtsp_parase_request()函数进行的如下方代码20行所示。</p>
+<p>1 void do_tcp_server(SOCKET s,uint16 localport)</p>
+<p align="left">&nbsp;2 {</p>
+<p align="left">&nbsp;3 &nbsp;&nbsp;&nbsp;&nbsp;uint16 len;</p>
+<p align="left">&nbsp;4 &nbsp;&nbsp;&nbsp;&nbsp;uint8 send_buffer[1024];</p>
+<p align="left">&nbsp;5 &nbsp;&nbsp;&nbsp;&nbsp;switch (getSn_SR(s)) {</p>
+<p align="left">&nbsp;6 &nbsp;&nbsp;&nbsp;&nbsp;case SOCK_INIT:</p>
+<p align="left">&nbsp;7 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;listen(s);</p>
+<p align="left">&nbsp;8 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+<p align="left">&nbsp;9 &nbsp;&nbsp;&nbsp;&nbsp;case SOCK_ESTABLISHED:</p>
+<p align="left">10 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (getSn_IR(s) &amp; Sn_IR_CON) {</p>
+<p align="left">11 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;setSn_IR(s, Sn_IR_CON);</p>
+<p align="left">12 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">13 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;len=getSn_RX_RSR(s);</p>
+<p align="left">14 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (len&gt;0) {</p>
+<p align="left">15 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;memset(buffer,0,sizeof(buffer));</p>
+<p align="left">16 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;querry_flag=1;</p>
+<p align="left">17 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;recv(s,buffer,len);</p>
+<p align="left">18 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;memset(send_buffer,0,sizeof(send_buffer));</p>
+<p align="left">19 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/*解析RTSP数据包并拼接响应数据*/</p>
+<p align="left">20 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rtsp_parase_request((char*)buffer,(char*)send_buffer,s,len);</p>
+<p align="left">21 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/*发送响应数据包*/</p>
+<p align="left">22 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (0==send(s,send_buffer,strlen(send_buffer))) {</p>
+<p align="left">23 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;send(s,send_buffer,strlen(send_buffer));</p>
+<p align="left">24 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">25 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">26</p>
+<p align="left">27 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+<p align="left">28 &nbsp;&nbsp;&nbsp;&nbsp;case SOCK_CLOSE_WAIT:</p>
+<p align="left">29 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;disconnect(s);</p>
+<p align="left">30 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;querry_flag=0;</p>
+<p align="left">31 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+<p align="left">32 &nbsp;&nbsp;&nbsp;&nbsp;case SOCK_CLOSED:</p>
+<p align="left">33 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;querry_flag=0;</p>
+<p align="left">34 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;socket(s,Sn_MR_TCP,localport,Sn_MR_ND);</p>
+<p align="left">35 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+<p align="left">36 &nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p>37 }</p>
+<p>&nbsp;&nbsp;&nbsp; 由于苹果的AirPlay协议为了防止其他未经苹果允许的设备的接入，对传输的数据用非对称性RSA加密算法进行加密，非对称性的意思就是加密和解密用的不是同一份密钥，RSA加密算法的密钥分为公钥和私钥，两者内容不同，用途也不同。公钥用于加密，一般交给客户端使用；私钥用于解密，一般由服务器管理。iPhone中存有公钥用来对iPhone输出的数据流进行加密，接收端设备利用私钥对接收的数据（音频）流进行解密。W5500EVB是作为服务器接收数据所以我们只需要知道私钥就可以解析数据，我们可以直接百度网上已有大神破译出的私钥。RSA加密算法的实现可以参考开源项目https://github.com/juhovh/shairplay工程中的RSA加密解密相关函数。</p>
+<p>iPhone会先发送OPTIONS请求来确定W5500EVB支持的方法，W5500EVB回复支持的全部方法包含ANNOUNCE, SETUP, RECORD, PAUSE, FLUSH, TEARDOWN, OPTIONS, GET_PARAMETER, SET_PARAMETER等，方法具体含义可参考RTSP协议相关文档。</p>
+<p>iphone OPTIONS 请求报文：</p>
+<p align="left"><span style="background-color: #ff9900;">OPTIONS * RTSP/1.0</span></p>
+<p align="left"><span style="background-color: #ff9900;">CSeq: 0</span></p>
+<p align="left"><span style="background-color: #ff9900;">DACP-ID: 4CB06073C86450D8</span></p>
+<p align="left"><span style="background-color: #ff9900;">Active-Remote: 2937221397</span></p>
+<p align="left"><span style="background-color: #ff9900;">User-Agent: AirPlay/373.9.1</span></p>
+<p align="center">图1-5 OPTIONS请求报文</p>
+<p>W5500EVB响应报文：</p>
+<p align="left"><span style="background-color: #ccffff;">RTSP/1.0 200 OK</span></p>
+<p align="left"><span style="background-color: #ccffff;">CSeq: 0</span></p>
+<p align="left"><span style="background-color: #ccffff;">Apple-Jack-Status: connected; type=analog</span></p>
+<p><span style="background-color: #ccffff;">Public:ANNOUNCE,SETUP,RECORD,PAUSE, FLUSH, TEARDOWN, OPTIONS, GET_PARAMETER,SET_PARAMETER</span></p>
+<p align="center">图1-6 OPTIONS响应报文</p>
+<p>iphone收到W5500EVB的响应后，会向W5500EVB发送包含Apple-Challenge的OPTIONS数据包，Apple-Challenge后的参数是随机生成且经过了RSA算法加密，W550EVB要将Apple-Challenge中的参数先进行base64解码，解码后的数据尾部添加W5500EVB的IP地址和MAC地址然后通过RSA私钥加密后用base64编码，W5500EVB将加密处理后的数据作为Apple-Response的参数发送给iPhone，iPhone该数据进行验证，数据正确则进行下一步，数据不正确则断开连接。下图为包含Apple-Challenge的OPTIONS 数据包：</p>
+<p align="left"><span style="background-color: #ffcc00;">OPTIONS * RTSP/1.0</span></p>
+<p align="left"><span style="background-color: #ffcc00;">Apple-Challenge: UJPWMzMloBFr98cQQHX3OQ==</span></p>
+<p align="left"><span style="background-color: #ffcc00;">CSeq: 2</span></p>
+<p align="left"><span style="background-color: #ffcc00;">DACP-ID: 4CB06073C86450D8</span></p>
+<p align="left"><span style="background-color: #ffcc00;">Active-Remote: 2937221397</span></p>
+<p><span style="background-color: #ffcc00;">User-Agent: AirPlay/373.9.1</span></p>
+<p align="center">图1-7 Apple-Challenge报文</p>
+<p>&nbsp;</p>
+<p>接收到OPTIONS数据包后，截取Apple-Challenge相关数据，并进行解密代码如下：</p>
+<p align="left">1if(strstr(rcv_buffer,"Apple-Challenge:")!=NULL)</p>
+<p align="left">&nbsp;2 {</p>
+<p align="left">&nbsp;3 &nbsp;&nbsp;&nbsp;&nbsp;rsakey_t *rsakey;</p>
+<p align="left">&nbsp;4 &nbsp;&nbsp;&nbsp;&nbsp;rsakey = rsakey_init_pem(pemstr);</p>
+<p align="left">&nbsp;5 &nbsp;&nbsp;&nbsp;&nbsp;if (!rsakey) {</p>
+<p align="left">&nbsp;6 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;printf("Initializing RSA failed\n");</p>
+<p align="left">&nbsp;7 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return;</p>
+<p align="left">&nbsp;8 &nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">&nbsp;9 &nbsp;&nbsp;&nbsp;&nbsp;memset(response,0x00,1024);</p>
+<p align="left">10 &nbsp;&nbsp;&nbsp;&nbsp;/*获取Apple-Challenge参数*/</p>
+<p align="left">11 &nbsp;&nbsp;&nbsp;&nbsp;mid(rcv_buffer,"Apple-Challenge: ","\r\n",CHALLENGE);</p>
+<p align="left">12 &nbsp;&nbsp;&nbsp;&nbsp;/*获取加密Apple-Response*/</p>
+<p align="left">13 &nbsp;&nbsp;&nbsp;&nbsp;rsakey_sign(rsakey, response, sizeof(response), CHALLENGE,ipaddr, sizeof(ipaddr), hwaddr, sizeof(hwaddr));</p>
+<p align="left">14 &nbsp;&nbsp;&nbsp;&nbsp;mid(rcv_buffer,"CSeq: ","\r\n",CHALLENGE);</p>
+<p align="left">15 &nbsp;&nbsp;&nbsp;&nbsp;sprintf(send_buffer,"RTSP/1.0 200 OK\r\nCSeq: %s\r\nApple-Jack-Status:connected; type=analog\r\nApple-Response: %s\r\nPublic: ANNOUNCE, SETUP,RECORD,PAUSE, FLUSH, TEARDOWN, OPTIONS,SET_PARAMETER\r\n\r\n",CHALLENGE,response);</p>
+<p>16 }</p>
+<p>通过11行处的mid()函数来获取Apple-Challenge后的参数然后14行处的rsakey_sign()函数对获取数据进行加密解密，15行处完成对RTSP响应报文的拼接。拼接报文如下图所示：</p>
+<p align="left">&nbsp;</p>
+<p align="left"><span style="background-color: #ccffff;">RTSP/1.0 200 OK</span></p>
+<p align="left"><span style="background-color: #ccffff;">CSeq: 2</span></p>
+<p align="left"><span style="background-color: #ccffff;">Apple-Jack-Status: connected; type=analog</span></p>
+<p align="left"><span style="background-color: #ccffff;">Apple-Response:Dw5Jrbs1mhjks3YErCo1tSOUV8/G8pOOShS3dUocjWzDGQR6DfqiSEovks+G4nHmCw9BccjlpVHzzRUINYZenWhUy8zlGsVGNwuO4okfi86PjGp5VAS6RPeYbW/CpAPgrzpDsVCblSGt8kQbn+sWuku9WMfa4gYU82DgfmL3laphZlidEIZd8D6FwzAth4pbRdtL3N8GuM2kWGRSpT6FL4VGk326a58g0kUNqNDxHp0fTa4ijk8VORzkyKO9ByFeysmZqGDBurLuSvDoAs0c1zR9aHAIXfJkWd0Ii3WviC2F0+vEODcRgOh7gOvy/i5+OOTiUfvHiDFIqlhVCRnZ2g</span></p>
+<p><span style="background-color: #ccffff;">Public:ANNOUNCE,SETUP,RECORD,PAUSE,FLUSH,TEARDOWN,OPTIONS,SET_PARAMETER</span></p>
+<p align="center">图1-8 Apple-Response报文</p>
+<p>&nbsp;</p>
+<p>iPhone收到W5500EVB的response后，对Apple-Response后的内容后进行解析校验，校验结果正确则设备连接成功可以继续发送数据否则断开连接。</p>
+<h2>2、音频数据接收与解码</h2>
+<p>iPhone与W5500EVB建立连接成功后，就开始通过UDP协议发送音频数据但是iPhone通过airplay传输的音数据都是加密过的，对于接收端来说，需要正确解密后才能对音视频数据进行处理。音频数据采用AES CBC128算法进行加密,该算法解密时需输入参数rsaaeskey、aeskiv，这两个参数通过解析iPhone发送ANNOUNCE请求来获取， ANNOUNCE在传输的时候遵循了SDP协议。SDP协议用来描述媒体信息，下图是ANNOUNCE请求报文</p>
+<p align="left"><span style="background-color: #ffcc00;">ANNOUNCE rtsp://192.168.1.150/1561243076001349804 RTSP/1.0</span></p>
+<p align="left"><span style="background-color: #ffcc00;">Content-Length: 652</span></p>
+<p align="left"><span style="background-color: #ffcc00;">Content-Type: application/sdp</span></p>
+<p align="left"><span style="background-color: #ffcc00;">CSeq: 3</span></p>
+<p align="left"><span style="background-color: #ffcc00;">DACP-ID: 4CB06073C86450D8</span></p>
+<p align="left"><span style="background-color: #ffcc00;">Active-Remote: 2937221397</span></p>
+<p align="left"><span style="background-color: #ffcc00;">User-Agent: AirPlay/373.9.1</span></p>
+<p align="left"><span style="background-color: #ffcc00;">&nbsp;</span></p>
+<p align="left"><span style="background-color: #ffcc00;">v=0</span></p>
+<p align="left"><span style="background-color: #ffcc00;">o=AirTunes 1561243076001349804 0 IN IP4 192.168.1.100</span></p>
+<p align="left"><span style="background-color: #ffcc00;">s=AirTunes</span></p>
+<p align="left"><span style="background-color: #ffcc00;">i=Wenlong... iPhone</span></p>
+<p align="left"><span style="background-color: #ffcc00;">c=IN IP4 192.168.1.100</span></p>
+<p align="left"><span style="background-color: #ffcc00;">t=0 0</span></p>
+<p align="left"><span style="background-color: #ffcc00;">m=audio 0 RTP/AVP 96</span></p>
+<p align="left"><span style="background-color: #ffcc00;">a=rtpmap:96 AppleLossless</span></p>
+<p align="left"><span style="background-color: #ffcc00;">a=fmtp:96 352 0 16 40 10 14 2 255 0 0 44100</span></p>
+<p align="left"><span style="background-color: #ffcc00;">a=rsaaeskey:bx0eKFGbphzETu16PLtXyP8s2CDKHpjIclJCmChdw6b12YSEvzDR3jlQwTWQdRRRrr99cek6JzdE0pgv0TzAF++FK8g63la8H9ioEcLFq84zWT/7atIlPNFC7RELlQG5ff/yTXHJ7LkzxQF12DvzQzIPd8GMx5ik/rxnLObZ+GQAbB2xtW/By2JT5gapEMBsx8+t+0sZXNwA3GXrjcjF+h6+oAD37A3U04rR/iK+Pvzglvy/13ZOrXL1VJpTkE1O+TIflAzfl0BkBbtfd3lX/+Te+Og8+gXXe516Dg4/v1Veddj4HQYZ/vrxE/qYFGDZIFZUdmpBtmtVMqAYwt1n5w==</span></p>
+<p align="left"><span style="background-color: #ffcc00;">a=aesiv:UohAefAQLdnT4BIBimuhfg==</span></p>
+<p align="left"><span style="background-color: #ffcc00;">a=min-latency:11025</span></p>
+<p><span style="background-color: #ffcc00;">a=max-latency:88200</span></p>
+<p align="center">图2-1 ANNOUNCE报文</p>
+<p>W5500EVB解析收到ANNOUNCE请求包获取rsaaeskey,aesiv并解码。</p>
+<p>1 void raop_announce(char *recv_buffer)</p>
+<p align="left">&nbsp;2 {</p>
+<p align="left">&nbsp;3 &nbsp;&nbsp;&nbsp;&nbsp;mid(recv_buffer,"Active-Remote: ","\r\n",remotestr);</p>
+<p align="left">&nbsp;4 &nbsp;&nbsp;&nbsp;&nbsp;mid(recv_buffer,"rtpmap:","\r\n",rtpmapstr );</p>
+<p align="left">&nbsp;5 &nbsp;&nbsp;&nbsp;&nbsp;mid(recv_buffer,"fmtp:","\r\n",fmtpstr);</p>
+<p align="left">&nbsp;6 &nbsp;&nbsp;&nbsp;&nbsp;mid(recv_buffer,"rsaaeskey:","\r\n",rsaaeskeystr);</p>
+<p align="left">&nbsp;7 &nbsp;&nbsp;&nbsp;&nbsp;mid(recv_buffer,"aesiv:","\r\n",aesivstr);</p>
+<p align="left">&nbsp;8 &nbsp;&nbsp;&nbsp;&nbsp;/*解码aeskey*/</p>
+<p align="left">&nbsp;9 &nbsp;&nbsp;&nbsp;&nbsp;rsakey_decrypt(rsakey, aeskey, sizeof(aeskey), rsaaeskeystr);</p>
+<p align="left">10 &nbsp;&nbsp;&nbsp;&nbsp;/*解码aesiv*/</p>
+<p align="left">11 &nbsp;&nbsp;&nbsp;&nbsp;rsakey_decode(rsakey, aesiv, sizeof(aesiv), aesivstr);</p>
+<p align="left">12 &nbsp;&nbsp;&nbsp;&nbsp;/*init alac*/</p>
+<p align="left">13 &nbsp;&nbsp;&nbsp;&nbsp;raop_buffer_init(&amp;alac,fmtpstr);</p>
+<p align="left">14 &nbsp;&nbsp;&nbsp;&nbsp;return;</p>
+<p>15 }</p>
+<p>iPhone会继续向W5500EVB发送SETUP数据包,数据包中包含timing_port 与control_port。timing_port 用来传输 AirPlay 的时间同步包，同时也可以主动向iPhone请求当前的时间戳来校准流的时间戳。control_port是用来发送 resendTransmit Request 的端口，也就是当接收端发现收到的音乐流数据包中有丢失帧的时候，可以通过 control port 发送 resendTransmit 的 request 给iPhone，iPhone收到后会将帧在 response 中补发回来。</p>
+<p align="left"><span style="background-color: #ffcc00;">SETUP rtsp://192.168.1.150/1561243076001349804 RTSP/1.0</span></p>
+<p align="left"><span style="background-color: #ffcc00;">Transport: RTP/AVP/UDP;unicast;mode=record;timing_port=55703;control_port=56616</span></p>
+<p align="left"><span style="background-color: #ffcc00;">CSeq: 4</span></p>
+<p align="left"><span style="background-color: #ffcc00;">DACP-ID: 4CB06073C86450D8</span></p>
+<p align="left"><span style="background-color: #ffcc00;">Active-Remote: 2937221397</span></p>
+<p><span style="background-color: #ffcc00;">User-Agent: AirPlay/373.9.1</span></p>
+<p align="center">图2-2 SETUP报文</p>
+<p>W5500EVB回复的响应报文中的server_port, server port 用来传输音频流数据包</p>
+<p align="left"><span style="background-color: #ccffff;">RTSP/1.0 200 OK</span></p>
+<p align="left"><span style="background-color: #ccffff;">CSeq: 4</span></p>
+<p align="left"><span style="background-color: #ccffff;">Apple-Jack-Status: connected; type=analog</span></p>
+<p align="left"><span style="background-color: #ccffff;">Transport: RTP/AVP/UDP;unicast;mode=record;timing_port=56461;events;control_port=51196;server_port=55641</span></p>
+<p><span style="background-color: #ccffff;">Session:DEADBEEF</span></p>
+<p align="center">图2-3 SETUP响应报文</p>
+<p>&nbsp;</p>
+<p>&nbsp; &nbsp;SETUP数据包确定音频流传输方式与传输端口号后，iPhone就开始发送音频数据到W5500EVB指定的server_port 55641端口，W5500EVB接收音频数据，通过解密过程后，我们会得到AAC编码的音频数据，播放器播放AAC数据还需要对其进行解码，话不多说，直接通过部分代码来说明音频解密过程。</p>
+<p align="left">1 int&nbsp; decode_audio_data(unsigned char *data, unsigned short</p>
+<p align="left">&nbsp;2 datalen, int use_seqnum)</p>
+<p align="left">&nbsp;3 {</p>
+<p align="left">&nbsp;4 &nbsp;&nbsp;&nbsp;&nbsp;unsigned short seqnum;</p>
+<p align="left">&nbsp;5 &nbsp;&nbsp;&nbsp;&nbsp;raop_buffer_entry_t entry;</p>
+<p align="left">&nbsp;6 &nbsp;&nbsp;&nbsp;&nbsp;int encryptedlen;</p>
+<p align="left">&nbsp;7 &nbsp;&nbsp;&nbsp;&nbsp;AES_CTX aes_ctx;</p>
+<p align="left">&nbsp;8 &nbsp;&nbsp;&nbsp;&nbsp;int outputlen;</p>
+<p align="left">&nbsp;9 &nbsp;&nbsp;&nbsp;&nbsp;/* Check packet data length is valid */</p>
+<p align="left">10 &nbsp;&nbsp;&nbsp;&nbsp;if (datalen &lt; 12 || datalen &gt; 1472) {</p>
+<p align="left">11 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return -1;</p>
+<p align="left">12 &nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">13 &nbsp;&nbsp;&nbsp;&nbsp;/* Get correct seqnum for the packet */</p>
+<p align="left">14 &nbsp;&nbsp;&nbsp;&nbsp;if (use_seqnum) {</p>
+<p align="left">15 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;seqnum = (data[2] &lt;&lt; 8) | data[3];</p>
+<p align="left">16 &nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">17 &nbsp;&nbsp;&nbsp;&nbsp;/* Update the raop_buffer entry header */</p>
+<p align="left">18 &nbsp;&nbsp;&nbsp;&nbsp;entry.flags = data[0];</p>
+<p align="left">19 &nbsp;&nbsp;&nbsp;&nbsp;entry.type = data[1];</p>
+<p align="left">20 &nbsp;&nbsp;&nbsp;&nbsp;entry.seqnum = seqnum;</p>
+<p align="left">21 &nbsp;&nbsp;&nbsp;&nbsp;entry.timestamp = (data[4] &lt;&lt; 24) | (data[5] &lt;&lt; 16) |</p>
+<p align="left">22 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(data[6] &lt;&lt; 8) | data[7];</p>
+<p align="left">23 &nbsp;&nbsp;&nbsp;&nbsp;entry.ssrc = (data[8] &lt;&lt; 24) | (data[9] &lt;&lt; 16) |</p>
+<p align="left">24 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(data[10] &lt;&lt; 8) | data[11];</p>
+<p align="left">25 &nbsp;&nbsp;&nbsp;&nbsp;entry.available = 1;</p>
+<p align="left">26 &nbsp;&nbsp;&nbsp;&nbsp;/* Decrypt audio data */</p>
+<p align="left">27 &nbsp;&nbsp;&nbsp;&nbsp;encryptedlen = (datalen-12)/16*16;</p>
+<p align="left">28 &nbsp;&nbsp;&nbsp;&nbsp;AES_set_key(&amp;aes_ctx, aeskey, aesiv, AES_MODE_128);</p>
+<p align="left">29 &nbsp;&nbsp;&nbsp;&nbsp;AES_convert_key(&amp;aes_ctx);</p>
+<p align="left">30 &nbsp;&nbsp;&nbsp;&nbsp;memset(packetbuf,0,sizeof(data));</p>
+<p align="left">31 &nbsp;&nbsp;&nbsp;&nbsp;AES_cbc_decrypt(&amp;aes_ctx, &amp;data[12], (uint8*)packetbuf,</p>
+<p align="left">32 &nbsp;&nbsp;&nbsp;&nbsp;encryptedlen);</p>
+<p align="left">33 &nbsp;&nbsp;&nbsp;&nbsp;memcpy(packetbuf+encryptedlen, &amp;data[12+encryptedlen],</p>
+<p align="left">34 &nbsp;&nbsp;&nbsp;&nbsp;datalen-12-encryptedlen);</p>
+<p align="left">35 &nbsp;&nbsp;&nbsp;&nbsp;/* Decode ALAC audio data */</p>
+<p align="left">36 &nbsp;&nbsp;&nbsp;&nbsp;outputlen = audio_buffer_size;</p>
+<p align="left">37 &nbsp;&nbsp;&nbsp;&nbsp;alac_decode_frame(&amp;alac, (uint8*)packetbuf ,audiobuf,</p>
+<p align="left">38 &nbsp;&nbsp;&nbsp;&nbsp;&amp;outputlen);</p>
+<p align="left">39 &nbsp;&nbsp;&nbsp;&nbsp;entry.audio_buffer_len = outputlen;</p>
+<p align="left">40 &nbsp;&nbsp;&nbsp;&nbsp;return outputlen;</p>
+<p>41 }</p>
+<p>&nbsp;&nbsp;&nbsp; 在程序中W5500EVB通过UDP端口每收到数据包先会判断数据包的长度是否小于12因为RTP的包头为12个字节，小于12字节就会直接丢弃掉，大于12字节且小于1472(UDP包的最大长度)就会通过31行AES_cbc_decrypt（）函数的对数据解密然后把解密后的数据通过alac_decode_frame()函数转换为PCM5102A模块可播放的数据并将数据存储在audiobuf中等待发送给音频模块，返回可播放数据长度outputlen，该值在我们初始化I2S的DMA功能时会用到。</p>
+<h2 align="left">3、音频数据的播放</h2>
+<p>&nbsp;&nbsp;&nbsp;&nbsp; 音频播放采用的是PCM5102A的DAC模块，该模块是通过I2S接口进行通信，直接将解码后的数据发送到PCM5102A模块即可。为了能与PCM512A模块正常通信要初始化W5500EVB的IIS接口，项目中中使用到的是I2S3接口，需要注意的是I2S3接口的时钟脚PB3，该引脚默认为JTAG的JTDO脚，初始化时需要禁止JTAG以使PB3能够作为I2S的时钟脚，初始化代码如下所示：</p>
+<pre><code>&nbsp;1 void I2S_Config(void)</code></pre>
+<p align="left">&nbsp;2 {</p>
+<p align="left">&nbsp;3 &nbsp;&nbsp;&nbsp;&nbsp;I2S_InitTypeDef I2S_InitStructure;</p>
+<p align="left">&nbsp;4 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_InitTypeDef GPIO_InitStruct;</p>
+<p align="left">&nbsp;5</p>
+<p align="left">&nbsp;6 &nbsp;&nbsp;&nbsp;&nbsp;/*Init GPIO */</p>
+<p align="left">&nbsp;7 &nbsp;&nbsp;&nbsp;&nbsp;RCC_APB1PeriphClockCmd(RCC_APB1Periph_SPI3, ENABLE);</p>
+<p align="left">&nbsp;8 &nbsp;&nbsp;&nbsp;&nbsp;//SPI</p>
+<p align="left">&nbsp;9 &nbsp;&nbsp;&nbsp;&nbsp;RCC_APB2PeriphClockCmd(</p>
+<p align="left">10 &nbsp;&nbsp;&nbsp;&nbsp;RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOB|RCC_APB2Periph_</p>
+<p align="left">11 &nbsp;&nbsp;&nbsp;&nbsp;GPIOC|RCC_APB2Periph_AFIO, ENABLE);</p>
+<p align="left">12 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable,ENABLE);</p>
+<p align="left">13 &nbsp;&nbsp;&nbsp;&nbsp;/*GPIO_Pin7 --&gt; I2S_MCK*/</p>
+<p align="left">14 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_InitStruct.GPIO_Pin = GPIO_Pin_7;</p>
+<p align="left">15 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;</p>
+<p align="left">16 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;</p>
+<p align="left">17 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_Init(GPIOC, &amp;GPIO_InitStruct);</p>
+<p align="left">18 &nbsp;&nbsp;&nbsp;&nbsp;/*GPIO_Pin_15 --&gt;I2S3_WS*/</p>
+<p align="left">19 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_InitStruct.GPIO_Pin = GPIO_Pin_15;</p>
+<p align="left">20 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;</p>
+<p align="left">21 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;</p>
+<p align="left">22 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_Init(GPIOA, &amp;GPIO_InitStruct);</p>
+<p align="left">23 &nbsp;&nbsp;&nbsp;&nbsp;/*GPIO_Pin_3 --&gt;I2S3_CK</p>
+<p align="left">24&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; GPIO_Pin_5 --&gt;I2S3_SD</p>
+<p align="left">25&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; */</p>
+<p align="left">26 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_InitStruct.GPIO_Pin = GPIO_Pin_3|GPIO_Pin_5;</p>
+<p align="left">27 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AF_PP;</p>
+<p align="left">28 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;</p>
+<p align="left">29 &nbsp;&nbsp;&nbsp;&nbsp;GPIO_Init(GPIOB, &amp;GPIO_InitStruct);</p>
+<p align="left">30 &nbsp;&nbsp;&nbsp;&nbsp;/*Init IIS*/</p>
+<p align="left">31 &nbsp;&nbsp;&nbsp;&nbsp;SPI_I2S_DeInit(SPI3);</p>
+<p align="left">32 &nbsp;&nbsp;&nbsp;&nbsp;I2S_InitStructure.I2S_Mode = I2S_Mode_MasterTx;</p>
+<p align="left">33 &nbsp;&nbsp;&nbsp;&nbsp;I2S_InitStructure.I2S_Standard = I2S_Standard_Phillips;</p>
+<p align="left">34 &nbsp;&nbsp;&nbsp;&nbsp;I2S_InitStructure.I2S_DataFormat = I2S_DataFormat_16b;</p>
+<p align="left">35 &nbsp;&nbsp;&nbsp;&nbsp;I2S_InitStructure.I2S_MCLKOutput=I2S_MCLKOutput_Disable;</p>
+<p align="left">36 &nbsp;&nbsp;&nbsp;&nbsp;I2S_InitStructure.I2S_AudioFreq = I2S_AudioFreq_44k;</p>
+<p align="left">37 &nbsp;&nbsp;&nbsp;&nbsp;/*I2S clock steady state is low level */</p>
+<p align="left">38 &nbsp;&nbsp;&nbsp;&nbsp;I2S_InitStructure.I2S_CPOL = I2S_CPOL_Low;</p>
+<p align="left">39 &nbsp;&nbsp;&nbsp;&nbsp;I2S_Init(SPI3, &amp;I2S_InitStructure);</p>
+<p align="left">40 &nbsp;&nbsp;&nbsp;&nbsp;I2S_Cmd(SPI3, ENABLE);</p>
+<p>41 }</p>
+<p>&nbsp;&nbsp;&nbsp; 代码12行处通过调用GPIO_PinRemapConfig()函数禁用JTAG, 32行处模式配置为主设备发送I2S_Mode_MasterTx，通信标准设置为I2S Philips标准I2S_Standard_Phillips，数据格式为标准16位格式I2S_DataFormat_16b，采样频率设置为44kHz I2S_AudioFreq_44k, I2S时钟线空闲状态的为低电平。</p>
+<p>&nbsp;&nbsp; 为了提高数据的传输速度与效率，要打开IIS的DMA发送功能，每次发送SPI_I2S_DMAReq_Tx 请求后会将指定的buf0内的数据发送到SPI3的DR数据寄存器。我该函数是buf0即为存储音频数据的audiobuf, 因为我们的数据是按照16bit传送audiobuf内的数据为uint8型所以 num值为audiobuf内的有效数据长度/2。</p>
+<p>1 void I2S2_TX_DMA_Init(u8* buf0,u16 num)</p>
+<p align="left">&nbsp;2 {</p>
+<p align="left">&nbsp;3 &nbsp;&nbsp;NVIC_InitTypeDef&nbsp;&nbsp; NVIC_InitStructure;</p>
+<p align="left">&nbsp;4 &nbsp;&nbsp;DMA_InitTypeDef&nbsp; DMA_InitStructure;</p>
+<p align="left">&nbsp;5 &nbsp;&nbsp;RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA2, ENABLE);</p>
+<p align="left">&nbsp;6 &nbsp;&nbsp;DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)(&amp;SPI3-&gt;DR);</p>
+<p align="left">&nbsp;7 &nbsp;&nbsp;DMA_InitStructure.DMA_MemoryBaseAddr = (u32)buf0;</p>
+<p align="left">&nbsp;8 &nbsp;&nbsp;DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;</p>
+<p align="left">&nbsp;9 &nbsp;&nbsp;DMA_InitStructure.DMA_BufferSize = num;</p>
+<p align="left">10 &nbsp;&nbsp;DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;</p>
+<p align="left">11&nbsp;&nbsp; DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;</p>
+<p align="left">12&nbsp;&nbsp; DMA_InitStructure.DMA_PeripheralDataSize=DMA_PeripheralDataSize_HalfWord;</p>
+<p align="left">13 &nbsp;&nbsp;DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_HalfWord;</p>
+<p align="left">14 &nbsp;&nbsp;DMA_InitStructure.DMA_Mode = DMA_Mode_Circular&nbsp;&nbsp; ;</p>
+<p align="left">15 &nbsp;&nbsp;DMA_InitStructure.DMA_Priority = DMA_Priority_High;</p>
+<p align="left">16 &nbsp;&nbsp;DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;</p>
+<p align="left">17 &nbsp;&nbsp;DMA_Init(DMA2_Channel2, &amp;DMA_InitStructure);</p>
+<p align="left">18 &nbsp;&nbsp;DMA_Cmd(DMA2_Channel2, ENABLE);</p>
+<p align="left">19 &nbsp;&nbsp;SPI_I2S_DMACmd(SPI3,SPI_I2S_DMAReq_Tx,ENABLE);</p>
+<p align="left">20 }</p>
+<p>&nbsp;&nbsp;&nbsp; 音频流的处理过程为通过UDP接收音频数据包，然后对收到的数据包进行解码，并将解码后的数据存储到audiobuf,通过I2S3的DMA功能将数据发送到PCM5102A模块，代码如下所示：</p>
+<p align="left">1 void do_raop(uint8 s)</p>
+<p align="left">&nbsp;2 {</p>
+<p align="left">&nbsp;3 &nbsp;&nbsp;&nbsp;&nbsp;int outputlen;</p>
+<p align="left">&nbsp;4 &nbsp;&nbsp;&nbsp;&nbsp;uint8 ip[4];</p>
+<p align="left">&nbsp;5 &nbsp;&nbsp;&nbsp;&nbsp;uint16 len, port;</p>
+<p align="left">&nbsp;6 &nbsp;&nbsp;&nbsp;&nbsp;switch (getSn_SR(s)) {</p>
+<p align="left">&nbsp;7 &nbsp;&nbsp;&nbsp;&nbsp;case SOCK_UDP:</p>
+<p align="left">&nbsp;8 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if ((len = getSn_RX_RSR(s)) &gt; 0) {</p>
+<p align="left">&nbsp;9 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/*接收音频数据*/</p>
+<p align="left">10 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;recvfrom(s,buffer,len,ip,&amp;port);</p>
+<p align="left">11 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/*解码收到的音频数据*/</p>
+<p align="left">12 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;outputlen=decode_audio_data(buffer, len ,1);</p>
+<p align="left">13 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;/*配置DMA*/</p>
+<p align="left">14 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;I2S2_TX_DMA_Init((uint8*)audiobuf,outputlen/2);</p>
+<p align="left">15 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">16 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+<p align="left">17 &nbsp;&nbsp;&nbsp;&nbsp;case SOCK_CLOSED:</p>
+<p align="left">18 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;socket(s, Sn_MR_UDP,55641,0);</p>
+<p align="left">19 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;</p>
+<p align="left">20 &nbsp;&nbsp;&nbsp;&nbsp;}</p>
+<p align="left">21 }</p>
+<p align="left">代码完成后就要进行硬件连接，由于W5500EVB的SPI2口用来与W5500进行通信所以我们只能选择I2S3接口，I2S，W5500EVB与PCM5102A模块连接示意图如下所示：</p>
+<p align="center"><img src="./images/STM32实现Airplay音乐播放器4.png" alt="" />&nbsp;</p>
+<p align="center">图3-1硬件连接图</p>
+<p align="center">&nbsp;</p>
+<p align="left">将编译好的程序下载到W5500EVB,将耳机插入PCM5102A模块，用iPhone手机搜索并连接W5500EVB设备，点击播放音乐就可以用耳机听音乐了。</p>
+<p align="left">本文的项目中只是简单的实现了通过AirPlay播放音乐，由于时间匆忙项目功能还可以继续优化例如对各个音乐播放器的兼容性问题，QQ音乐、网易音乐等实现都不太一样本文项目中用的是网易云音乐；音乐播放过程中的音量设置问题，；音乐播放过程中的噪音问题,由于手上只有带STM32F103 的W5500EVB开发板，f103芯片在运行加密解密时会比较慢RAM空间也比较小等。大家如果想要做的话建议选用处理速度快一些的芯片。</p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

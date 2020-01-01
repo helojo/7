@@ -1,0 +1,379 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修OpenCC的编译与多语言使用' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>OpenCC的编译与多语言使用</center></div><div class='banquan'>原文出处:本文由博客园博主alpha_panda提供。<br/>
+原文连接:https://www.cnblogs.com/yssjun/p/10447017.html</div><br>
+    <p>OpenCC全称Open Chinese Convert，是一个Github上面的开源项目，主要用于简繁体汉字的转换，支持语义级别的翻译。本文就来简单介绍一下该库的编译以及python、C++和JAVA分别如何调用DLL进行转换。并记录一些使用过程中踩过的坑。</p>
+<h3>1.编译DLL</h3>
+<p>我们首先编译得到opencc的dll动态库。</p>
+<h4>CMake Command line</h4>
+<p>当前工作目录生成VS工程文件</p>
+<p>cmake -G "Visual Studio 14 2015" -D CMAKE_INSTALL_PREFIX="D:/Projects/Cnblogs/Alpha Panda/OpenCC" ../opencc-ver.1.0.5</p>
+<p>编译工程文件</p>
+<p>cmake --build ./ --config RelWithDebInfo --target install</p>
+<p>使用命令行build工程文件。</p>
+<h4>CMake - Gui</h4>
+<p>下载最新版本CMake，配置工程代码generator，本文使用的Visual Studio 14 2015。</p>
+<p>Configure操作过程中需要正确的设置安装路径，这个安装路径决定了dll会去哪个目录下去读取简繁转换的配置文件。</p>
+<p>CMake中的变量CMAKE_INSTALL_PREFIX控制安装路径，其默认值</p>
+<ul>
+<li>UNIX:/usr/local</li>
+<li>Windows:<span class="pre">c:/Program&nbsp;<span class="pre">Files/${PROJECT_NAME}</span></span></li>
+</ul>
+<p>这里设置为：D:/Projects/Cnblogs/Alpha Panda/OpenCC</p>
+<p>接着经过generate生成VS工程文件。</p>
+<h4>Visual Studio</h4>
+<p>使用CMake command line或者cmake-gui得到VS工程文件。</p>
+<p>打开VS工程，这里我们只编译工程libopencc得到dll文件。为了后续便于使用attach功能调试dll文件，最好将工程配置为RelWithDebInfo。</p>
+<p>工程libopencc的属性配置寻找一个宏变量：PKGDATADIR(PKGDATADIR="D:/Projects/Cnblogs/Alpha Panda/OpenCC/share//opencc/")</p>
+<p>这个宏变量是源代码根目录下面的CMakeLists.txt中设置的，感兴趣的话可以简单了解一下这个变量的设置过程：</p>
+<div class="cnblogs_code">
+<pre>CMAKE_INSTALL_PREFIX = D:/Projects/Cnblogs/Alpha Panda/<span style="color: #000000;">OpenCC
+set (DIR_PREFIX ${CMAKE_INSTALL_PREFIX})
+set (DIR_SHARE ${DIR_PREFIX}</span>/share/<span style="color: #000000;">)
+set (DIR_SHARE_OPENCC ${DIR_SHARE}</span>/opencc/<span style="color: #000000;">)
+</span>-DPKGDATADIR=<span style="color: #800000;">"</span><span style="color: #800000;">${DIR_SHARE_OPENCC}</span><span style="color: #800000;">"</span></pre>
+</div>
+<p>简繁转换的配置文件必须要放到这个目录下。</p>
+<h3>2.使用python</h3>
+<p>利用上面编译得到的libopencc的DLL文件，通过python调用来进行字体的转换：(下面的代码改编自&nbsp;<a href="https://pypi.org/project/OpenCC/#description" target="_blank">OpenCC 0.2</a>)<span style="color: #008000;"><br /></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">#&nbsp;-*- coding:utf-8 -*-<br /><br />import</span><span style="color: #000000;"> os
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> sys
+</span><span style="color: #0000ff;">from</span> ctypes.util <span style="color: #0000ff;">import</span><span style="color: #000000;"> find_library
+</span><span style="color: #0000ff;">from</span> ctypes <span style="color: #0000ff;">import</span><span style="color: #000000;"> CDLL, cast, c_char_p, c_size_t, c_void_p
+
+</span><span style="color: #800080;">__all__</span> = [<span style="color: #800000;">'</span><span style="color: #800000;">CONFIGS</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">convert</span><span style="color: #800000;">'</span><span style="color: #000000;">]
+
+</span><span style="color: #0000ff;">if</span> sys.version_info[0] == 3<span style="color: #000000;">:
+    text_type </span>=<span style="color: #000000;"> str
+</span><span style="color: #0000ff;">else</span><span style="color: #000000;">:
+    text_type </span>=<span style="color: #000000;"> unicode
+
+_libcfile </span>= find_library(<span style="color: #800000;">'</span><span style="color: #800000;">c</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">or</span> <span style="color: #800000;">'</span><span style="color: #800000;">libc.so.6</span><span style="color: #800000;">'</span><span style="color: #000000;">
+libc </span>= CDLL(_libcfile, use_errno=<span style="color: #000000;">True)
+_libopenccfile </span>= os.getenv(<span style="color: #800000;">'</span><span style="color: #800000;">LIBOPENCC</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">or</span> find_library(<span style="color: #800000;">'</span><span style="color: #800000;">opencc</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+</span><span style="color: #0000ff;">if</span><span style="color: #000000;"> _libopenccfile:
+    libopencc </span>= CDLL(_libopenccfile, use_errno=<span style="color: #000000;">True)
+</span><span style="color: #0000ff;">else</span><span style="color: #000000;">:
+    </span><span style="color: #008000;">#</span><span style="color: #008000;">libopencc = CDLL('libopencc.so.1', use_errno=True)</span>
+    <span style="color: #008000;">#</span><span style="color: #008000;"> _libopenccfile = find_library(r'G:\opencc\build\src\Release\opencc')</span>
+    <span style="color: #008000;">#</span><span style="color: #008000;"> 貌似不能使用相对路径？</span>
+    cur_dir =<span style="color: #000000;"> os.getcwd()
+    lib_path </span>= os.path.join(cur_dir, <span style="color: #800000;">'</span><span style="color: #800000;">T2S_translation_lib</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">opencc</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+    lib_path </span>= <span style="color: #800000;">'</span><span style="color: #800000;">./share/opencc</span><span style="color: #800000;">'</span><span style="color: #000000;">
+    libopencc </span>= CDLL(lib_path, use_errno=<span style="color: #000000;">True)
+
+libc.free.argtypes </span>=<span style="color: #000000;"> [c_void_p]
+
+libopencc.opencc_open.restype </span>=<span style="color: #000000;"> c_void_p
+libopencc.opencc_convert_utf8.argtypes </span>=<span style="color: #000000;"> [c_void_p, c_char_p, c_size_t]
+libopencc.opencc_convert_utf8.restype </span>=<span style="color: #000000;"> c_void_p
+libopencc.opencc_close.argtypes </span>=<span style="color: #000000;"> [c_void_p]<br />libopencc.opencc_convert_utf8_free.argstypes = c_char_p
+
+CONFIGS </span>=<span style="color: #000000;"> [
+    </span><span style="color: #800000;">'</span><span style="color: #800000;">hk2s.json</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">s2hk.json</span><span style="color: #800000;">'</span><span style="color: #000000;">,
+    </span><span style="color: #800000;">'</span><span style="color: #800000;">s2t.json</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">s2tw.json</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">s2twp.json</span><span style="color: #800000;">'</span><span style="color: #000000;">,
+    </span><span style="color: #800000;">'</span><span style="color: #800000;">t2s.json</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">tw2s.json</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">tw2sp.json</span><span style="color: #800000;">'</span><span style="color: #000000;">,
+    </span><span style="color: #800000;">'</span><span style="color: #800000;">t2tw.json</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">t2hk.json</span><span style="color: #800000;">'</span><span style="color: #000000;">,
+]
+
+</span><span style="color: #0000ff;">class</span><span style="color: #000000;"> OpenCC(object):
+
+    </span><span style="color: #0000ff;">def</span> <span style="color: #800080;">__init__</span>(self, config=<span style="color: #800000;">'</span><span style="color: #800000;">t2s.json</span><span style="color: #800000;">'</span><span style="color: #000000;">):
+        self._od </span>= libopencc.opencc_open(c_char_p(config.encode(<span style="color: #800000;">'</span><span style="color: #800000;">utf-8</span><span style="color: #800000;">'</span><span style="color: #000000;">)))
+
+    </span><span style="color: #0000ff;">def</span><span style="color: #000000;"> convert(self, text):
+        </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> isinstance(text, text_type):
+            </span><span style="color: #008000;">#</span><span style="color: #008000;"> use bytes</span>
+            text = text.encode(<span style="color: #800000;">'</span><span style="color: #800000;">utf-8</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+        retv_i </span>=<span style="color: #000000;"> libopencc.opencc_convert_utf8(self._od, text, len(text))
+        </span><span style="color: #0000ff;">if</span> retv_i == -1<span style="color: #000000;">:
+            </span><span style="color: #0000ff;">raise</span> Exception(<span style="color: #800000;">'</span><span style="color: #800000;">OpenCC Convert Error</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+        retv_c </span>=<span style="color: #000000;"> cast(retv_i, c_char_p)
+        value </span>=<span style="color: #000000;"> retv_c.value
+        </span><span style="color: #008000;">#</span><span style="color: #008000;"> 此处有问题？</span>
+        <span style="color: #008000;">#</span><span style="color: #008000;"> libc.free(retv_c)</span>
+        libopencc.opencc_convert_utf8_free(retv_i)        <br /><span style="color: #0000ff;">        return</span><span style="color: #000000;"> value
+
+    </span><span style="color: #0000ff;">def</span> <span style="color: #800080;">__del__</span><span style="color: #000000;">(self):
+        libopencc.opencc_close(self._od)
+
+</span><span style="color: #0000ff;">def</span> convert(text, config=<span style="color: #800000;">'</span><span style="color: #800000;">t2s.json</span><span style="color: #800000;">'</span><span style="color: #000000;">):
+    cc </span>=<span style="color: #000000;"> OpenCC(config)
+    </span><span style="color: #0000ff;">return</span> cc.convert(text)</pre>
+</div>
+<p>&nbsp;上面的这段代码可以当做离线工具来进行文件的转换，并没有线上运行时被调用验证过，可能存在内存泄露，仅供参考。</p>
+<p>关于python如何调用DLL文件，可以参考我的另一篇文章：<a href="https://www.cnblogs.com/yssjun/p/9960479.html" target="_blank">Python使用Ctypes与C/C++ DLL文件通信过程介绍及实例分析</a></p>
+<p>使用示例：</p>
+<div class="cnblogs_code">
+<pre>origin_text = u<span style="color: #800000;">'</span><span style="color: #800000;">(理发 vs 发财)，(闹钟 vs 一见钟情)，后来</span><span style="color: #800000;">'</span>.encode(<span style="color: #800000;">'</span><span style="color: #800000;">utf-8</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+s2t_1 </span>= convert(origin_text, <span style="color: #800000;">'</span><span style="color: #800000;">s2t.json</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+t2s_1 </span>= convert(s2t_1, <span style="color: #800000;">'</span><span style="color: #800000;">t2s.json</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+</span><span style="color: #0000ff;">print</span> t2s_1.decode(<span style="color: #800000;">'</span><span style="color: #800000;">utf-8</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+</span><span style="color: #0000ff;">print</span> s2t_1.decode(<span style="color: #800000;">'</span><span style="color: #800000;">utf-8</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+</span><span style="color: #0000ff;">print</span> origin_text ==<span style="color: #000000;"> t2s_1
+</span>============================================
+&gt;&gt;&gt;<span style="color: #000000;">(理发 vs 发财)，(闹钟 vs 一见钟情)，后来
+</span>&gt;&gt;&gt;<span style="color: #000000;">(理髮 vs 發財)，(鬧鐘 vs 一見鍾情)，後來
+</span>&gt;&gt;&gt;True</pre>
+</div>
+<h3>3.使用C++</h3>
+<p>&nbsp;下面我们来使用C++来演示一下如何使用OpenCC进行繁简字体的转换。</p>
+<p>由于opencc传入的翻译文本编发方式为utf-8。因此需要对待翻译文本进行编码转换。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">string</span> GBKToUTF8(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> strGBK)
+{
+    </span><span style="color: #0000ff;">int</span> len = MultiByteToWideChar(CP_ACP, <span style="color: #800080;">0</span>, strGBK, -<span style="color: #800080;">1</span>, NULL, <span style="color: #800080;">0</span><span style="color: #000000;">);
+    wchar_t</span>* wstr = <span style="color: #0000ff;">new</span> wchar_t[len + <span style="color: #800080;">1</span><span style="color: #000000;">];
+    memset(wstr, </span><span style="color: #800080;">0</span>, len + <span style="color: #800080;">1</span><span style="color: #000000;">);
+    MultiByteToWideChar(CP_ACP, </span><span style="color: #800080;">0</span>, strGBK, -<span style="color: #800080;">1</span><span style="color: #000000;">, wstr, len);
+    len </span>= WideCharToMultiByte(CP_UTF8, <span style="color: #800080;">0</span>, wstr, -<span style="color: #800080;">1</span>, NULL, <span style="color: #800080;">0</span><span style="color: #000000;">, NULL, NULL);
+    </span><span style="color: #0000ff;">char</span>* str = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>[len + <span style="color: #800080;">1</span><span style="color: #000000;">];
+    memset(str, </span><span style="color: #800080;">0</span>, len + <span style="color: #800080;">1</span><span style="color: #000000;">);
+    WideCharToMultiByte(CP_UTF8, </span><span style="color: #800080;">0</span>, wstr, -<span style="color: #800080;">1</span><span style="color: #000000;">, str, len, NULL, NULL);
+    </span><span style="color: #0000ff;">string</span> strTemp =<span style="color: #000000;"> str;
+    </span><span style="color: #0000ff;">if</span> (wstr) <span style="color: #0000ff;">delete</span><span style="color: #000000;">[] wstr;
+    </span><span style="color: #0000ff;">if</span> (str) <span style="color: #0000ff;">delete</span><span style="color: #000000;">[] str;
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> strTemp;
+}
+
+</span><span style="color: #0000ff;">string</span> UTF8ToGBK(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> strUTF8)
+{
+    </span><span style="color: #0000ff;">int</span> len = MultiByteToWideChar(CP_UTF8, <span style="color: #800080;">0</span>, strUTF8, -<span style="color: #800080;">1</span>, NULL, <span style="color: #800080;">0</span><span style="color: #000000;">);
+    wchar_t</span>* wszGBK = <span style="color: #0000ff;">new</span> wchar_t[len + <span style="color: #800080;">1</span><span style="color: #000000;">];
+    memset(wszGBK, </span><span style="color: #800080;">0</span>, len * <span style="color: #800080;">2</span> + <span style="color: #800080;">2</span><span style="color: #000000;">);
+    MultiByteToWideChar(CP_UTF8, </span><span style="color: #800080;">0</span>, strUTF8, -<span style="color: #800080;">1</span><span style="color: #000000;">, wszGBK, len);
+    len </span>= WideCharToMultiByte(CP_ACP, <span style="color: #800080;">0</span>, wszGBK, -<span style="color: #800080;">1</span>, NULL, <span style="color: #800080;">0</span><span style="color: #000000;">, NULL, NULL);
+    </span><span style="color: #0000ff;">char</span>* szGBK = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>[len + <span style="color: #800080;">1</span><span style="color: #000000;">];
+    memset(szGBK, </span><span style="color: #800080;">0</span>, len + <span style="color: #800080;">1</span><span style="color: #000000;">);
+    WideCharToMultiByte(CP_ACP, </span><span style="color: #800080;">0</span>, wszGBK, -<span style="color: #800080;">1</span><span style="color: #000000;">, szGBK, len, NULL, NULL);
+    </span><span style="color: #0000ff;">string</span><span style="color: #000000;"> strTemp(szGBK);
+    </span><span style="color: #0000ff;">if</span> (wszGBK) <span style="color: #0000ff;">delete</span><span style="color: #000000;">[] wszGBK;
+    </span><span style="color: #0000ff;">if</span> (szGBK) <span style="color: #0000ff;">delete</span><span style="color: #000000;">[] szGBK;
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> strTemp;
+}</span></pre>
+</div>
+<p>这是在windows平台上两个非常有用的UTF8和GBK编码互转函数。</p>
+<p>方便起见我们直接在opencc中添加一个新的工程，命名为Translation。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">#include &lt;cstdio&gt;<br />#include&nbsp;&lt;cstdlib&gt;<br />#include </span>&lt;iostream&gt;<span style="color: #000000;">
+#include </span>&lt;<span style="color: #0000ff;">string</span>&gt;<span style="color: #000000;">
+#include </span>&lt;windows.h&gt;<span style="color: #000000;">
+#include </span>&lt;fstream&gt;<span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">../OpenCC-ver.1.0.5/src/opencc.h</span><span style="color: #800000;">"</span>
+<span style="color: #008000;">//</span><span style="color: #008000;">using namespace std;</span>
+<span style="color: #0000ff;">using</span><span style="color: #000000;"> std::cout;
+</span><span style="color: #0000ff;">using</span><span style="color: #000000;"> std::endl;
+</span><span style="color: #0000ff;">using</span> std::<span style="color: #0000ff;">string</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">#define</span> OPENCC_API_EXPORT __declspec(dllimport)<span style="color: #000000;">
+
+OPENCC_API_EXPORT </span><span style="color: #0000ff;">char</span>* opencc_convert_utf8(opencc_t opencc, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> input, size_t length);
+OPENCC_API_EXPORT </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> opencc_close(opencc_t opencc);
+OPENCC_API_EXPORT opencc_t opencc_open(</span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> configfilename);<br />OPENCC_API_EXPORT <span style="color: #0000ff;">void</span> opencc_convert_utf8_free(<span style="color: #0000ff;">char*</span> str);
+
+</span><span style="color: #0000ff;">#pragma</span> comment(lib, "../Build/src/RelWithDebInfo/opencc.lib")<br /><span style="color: #0000ff;">string</span> GBKToUTF8(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> strGBK);
+</span><span style="color: #0000ff;">string</span> UTF8ToGBK(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> strUTF8);
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main() {
+    </span><span style="color: #0000ff;">char</span>* trans_conf = <span style="color: #800000;">"</span><span style="color: #800000;">s2t.json</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">char</span>* trans_res =<span style="color: #000000;"> nullptr;
+    </span><span style="color: #0000ff;">string</span><span style="color: #000000;"> gbk_str, utf8_str, res;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> read from file and write translation results to file</span>
+<span style="color: #000000;">    std::ifstream infile;
+    std::ofstream outfile;
+    infile.open(</span><span style="color: #800000;">"</span><span style="color: #800000;">infile.txt</span><span style="color: #800000;">"</span>, std::ifstream::<span style="color: #0000ff;">in</span><span style="color: #000000;">);
+    outfile.open(</span><span style="color: #800000;">"</span><span style="color: #800000;">outfile.txt</span><span style="color: #800000;">"</span>, std::ifstream::<span style="color: #0000ff;">out</span><span style="color: #000000;">);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> open the config file</span>
+    opencc_t conf_file =<span style="color: #000000;"> opencc_open(trans_conf);
+    </span><span style="color: #0000ff;">while</span><span style="color: #000000;"> (infile.good()) {
+        infile </span>&gt;&gt;<span style="color: #000000;"> gbk_str;
+        utf8_str </span>=<span style="color: #000000;"> GBKToUTF8(gbk_str.c_str());
+        std::cout </span>&lt;&lt; gbk_str &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+        trans_res </span>=<span style="color: #000000;"> opencc_convert_utf8(conf_file, utf8_str.c_str(), utf8_str.length());
+        cout </span>&lt;&lt; UTF8ToGBK(trans_res) &lt;&lt;<span style="color: #000000;"> endl;
+        outfile </span>&lt;&lt; trans_res &lt;&lt;<span style="color: #000000;"> endl;<br />        opencc_convert_utf8_free(trans_res);
+        <span style="color: #339966;">// </span></span><span style="color: #339966;">delete[]</span><span style="color: #000000;"><span style="color: #339966;"> trans_res;</span>
+        trans_res </span>=<span style="color: #000000;"> nullptr;
+    }
+    infile.close();
+    outfile.close();
+    opencc_close(conf_file);
+    conf_file </span>=<span style="color: #000000;"> nullptr;
+    system(</span><span style="color: #800000;">"</span><span style="color: #800000;">pause</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>&nbsp;上面的这段C++代码可以从infile.txt中读取简体中文，然后将翻译结果写入到outfile.txt文件中。</p>
+<h3>3.使用JAVA</h3>
+<p>这里给出一个使用JNA调用DLL的方案：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">package</span><span style="color: #000000;"> com.tvjody;
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.UnsupportedEncodingException;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.Writer;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.nio.charset.StandardCharsets;
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> com.sun.jna.Library;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> com.sun.jna.Native;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> com.sun.jna.Platform;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> com.sun.jna.Pointer;
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.BufferedReader;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.FileInputStream;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.FileNotFoundException;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.IOException;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.InputStreamReader;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.OutputStreamWriter;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.PrintWriter;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.Reader;
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> java.io.FileOutputStream;
+
+</span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> JNA_CALL {
+
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">interface</span> openccDLL <span style="color: #0000ff;">extends</span><span style="color: #000000;"> Library{
+        openccDLL Instance </span>=<span style="color: #000000;"> (openccDLL) Native.load(
+                (Platform.isWindows() </span>? "opencc" : "libc.so.6"<span style="color: #000000;">),
+                openccDLL.</span><span style="color: #0000ff;">class</span><span style="color: #000000;">);
+        
+</span><span style="color: #008000;">//</span><span style="color: #008000;">        void* opencc_open(const char* configfilename);</span>
+<span style="color: #000000;">        Pointer opencc_open(String configfilename);
+        
+</span><span style="color: #008000;">//</span><span style="color: #008000;">        int opencc_close(void* opencc);</span>
+        <span style="color: #0000ff;">int</span><span style="color: #000000;"> opencc_close(Pointer opencc);
+        
+</span><span style="color: #008000;">//</span><span style="color: #008000;">        void opencc_convert_utf8_free(char* str);</span>
+        <span style="color: #0000ff;">void</span><span style="color: #000000;"> opencc_convert_utf8_free(String str);
+        
+</span><span style="color: #008000;">//</span><span style="color: #008000;">        char* opencc_convert_utf8(opencc_t opencc, const char* input, size_t length)</span>
+        String opencc_convert_utf8(Pointer opencc, String input, <span style="color: #0000ff;">int</span><span style="color: #000000;"> length);
+    }
+    
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> writeToFile(String utf8_str) <span style="color: #0000ff;">throws</span><span style="color: #000000;"> IOException {
+        Writer out </span>= <span style="color: #0000ff;">new</span> OutputStreamWriter(<span style="color: #0000ff;">new</span> FileOutputStream("out.txt"<span style="color: #000000;">), StandardCharsets.UTF_8);
+        out.write(utf8_str);
+        out.close();
+    }
+    
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> String readFromFile() <span style="color: #0000ff;">throws</span><span style="color: #000000;"> IOException {
+        String res </span>= ""<span style="color: #000000;">;
+        Reader in </span>= <span style="color: #0000ff;">new</span> InputStreamReader(<span style="color: #0000ff;">new</span> FileInputStream("in.txt"<span style="color: #000000;">), StandardCharsets.UTF_8);
+        </span><span style="color: #0000ff;">try</span>(BufferedReader read_buf = <span style="color: #0000ff;">new</span><span style="color: #000000;"> BufferedReader(in)){
+            String line;
+            </span><span style="color: #0000ff;">while</span>((line = read_buf.readLine()) != <span style="color: #0000ff;">null</span><span style="color: #000000;">) {
+                res </span>+=<span style="color: #000000;"> line;
+            }
+            read_buf.close();
+        }
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> res;
+    }
+
+    </span><span style="color: #0000ff;">public</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> main(String[] args) <span style="color: #0000ff;">throws</span><span style="color: #000000;"> UnsupportedEncodingException, FileNotFoundException {
+        System.setProperty(</span>"jna.library.path", "D:\\Projects\\Open_Source\\OpwnCC\\Build(x64)\\src\\RelWithDebInfo"<span style="color: #000000;">);
+        Pointer conf_file </span>= openccDLL.Instance.opencc_open("s2t.json"<span style="color: #000000;">);
+        </span><span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+            String res_utf8 </span>=<span style="color: #000000;"> readFromFile();
+            System.out.println(</span>"From： " +<span style="color: #000000;"> res_utf8);
+            </span><span style="color: #0000ff;">byte</span>[] ptext = res_utf8.getBytes("UTF-8"<span style="color: #000000;">);
+</span><span style="color: #008000;">//</span><span style="color: #008000;">            String utf8_str = new String(res_utf8.getBytes("GBK"), "UTF-8");</span>
+            String trans_res =<span style="color: #000000;"> openccDLL.Instance.opencc_convert_utf8(conf_file, res_utf8, ptext.length);
+            System.out.println(</span>"To：" +<span style="color: #000000;"> trans_res);
+</span><span style="color: #008000;">//</span><span style="color: #008000;">            String trans_gbk = new String(trans_res.getBytes("UTF-8"), "GBK");</span>
+<span style="color: #000000;">            writeToFile(trans_res);
+            openccDLL.Instance.opencc_convert_utf8_free(trans_res);
+        } </span><span style="color: #0000ff;">catch</span><span style="color: #000000;"> (IOException e) {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;"> TODO Auto-generated catch block</span>
+<span style="color: #000000;">            e.printStackTrace();
+        }
+        openccDLL.Instance.opencc_close(conf_file);
+    }
+}</span></pre>
+</div>
+<p>json配置文件的路径有DLL决定，除了上面手动设置dll文件的路径之外，还可以将dll文件放置到bin目录下。上面使用的是jna-5.2.0。</p>
+<h3>4.填坑指南</h3>
+<p>实际上使用时会遇到N多的问题，这里仅列出一些注意事项，其实下面的有些问题具有一些普遍性，较为有价值。</p>
+<h4>DLL读取配置文件路径　</h4>
+<p>工程中读取json配置文件的路径是用宏变量定义，而Cmake的变量MAKE_INSTALL_PREFIX决定了工程中配置文件的宏变量，也决定了DLL被调用时读取配置文件的路径。路径中最好使用&lsquo;/&rsquo;，而不是&lsquo;\&rsquo;。</p>
+<h4>OCD文件的生成</h4>
+<p>进行简繁体文字转换的过程需要读取json和对应的ocd文件，ocd文件是由工程Dictionaries生成的，该工程又依赖与opencc_dict的opencc.exe程序。</p>
+<p>实际使用时发现最新的1.0.5版本好像有一个错误，需要将上面的一个函数声明，改为下面的函数声明，否者会有一个链接错误。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span> ConvertDictionary(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span> inputFileName, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span> outputFileName, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span> formatFrom, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span><span style="color: #000000;"> formatTo);
+OPENCC_EXPORT </span><span style="color: #0000ff;">void</span> ConvertDictionary(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span> inputFileName, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span> outputFileName, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span> formatFrom, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span> formatTo);</pre>
+</div>
+<p>此外，data目录下生成的所有ocd文件需要和json配置文件放到同一个目录下，32位和64位的ocd文件也不要混用。</p>
+<h4>32位or64位</h4>
+<p>在使用java调用dll的时候要特别的注意，如果是64位的JDK，一定要编译64位的dll和所有的ocd文件。否者下面的这个错误会一直缠着你：</p>
+<blockquote>
+<p>java.lang.UnsatisfiedLinkError: %1 不是有效的 Win32 应用程序</p>
+</blockquote>
+<p>从两方面简述一下如何正确的生成64位的opencc工程文件。</p>
+<p>使用cmake-gui configure直接指定64位的编译器，选择Visual Studio 14 2015 Win64，而不是Visual Studio 14 2015。</p>
+<p>如果当前的工程为32位的工程，可以在VS中通过configuration manager来手动配置为x64位。将32位工程手动改为64位工程可能会有许多的坑，比如：</p>
+<blockquote>
+<p>fatal error LNK1112: module machine type 'x64' conflicts with target machine type 'X86'</p>
+</blockquote>
+<p>下面列举出一些解决方案：</p>
+<blockquote><ol>
+<li>Check your properties options in your linker settings at: Properties &gt; Configuration Properties &gt; Linker &gt; Advanced &gt; Target Machine. Select MachineX64 if you are targeting a 64 bit build, or MachineX86 if you are making a 32 bit build.</li>
+<li>Select Build &gt; Configuration Manager from the main menu in visual studio. Make sure your project has the correct platform specified. It is possible for the IDE to be set to build x64 but an individual project in the solution can be set to target win32. So yeah, visual studio leaves a lot of rope to hang yourself, but that's life.</li>
+<li>Check your library files that they really are of the type of platform are targeting. This can be used by using dumpbin.exe which is in your visual studio VC\bin directory. use the -headers option to dump all your functions. Look for the machine entry for each function. it should include x64 if it's a 64 bit build.</li>
+<li>In visual studio, select Tools &gt; Options from the main menu. select Projects and Solutions &gt; VC++ Directories. Select x64 from the Platform dropdown. Make sure that the first entry is: $(VCInstallDir)\bin\x86_amd64 followed by $(VCInstallDir)\bin.</li>
+<li>
+<p>Check in Visual Studio:Project Properties -&gt; Configuration Properties -&gt; Linker -&gt; Command line."Additional Options" should NOT contain /machine:X86.I have such key, generated by CMake output: CMake generated x86 project, then I added x64 platform via Configuration Manager in Visual Studio 2010 - everything was create fine for new platform except linker command line, specified /machine:X86 separately.</p>
+</li>
+</ol></blockquote>
+<h4>编码问题</h4>
+<p>由于opencc内部处理字符串均使用的是utf-8编码，因此需要进行编解码的处理才能正确的调用DLL中的接口。</p>
+<p>广义上来说，所谓乱码问题就是解码方式和编码方式不同导致的。这是一个很大的话题，这里不深入讨论，有兴趣可以参考我另一篇博文<a href="https://www.cnblogs.com/yssjun/p/9782400.html" target="_blank">python编码问题分析</a>，应该能对你有所启发。</p>
+<p>在win10上使用cmake生成VS工程。编译的时候会遇到一个有趣的问题就是中文环境下utf-8文件中的部分汉字标点，竟然会有乱码，如下：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('c9c0ef6d-cc47-45de-9138-229982845945')"><img id="code_img_closed_c9c0ef6d-cc47-45de-9138-229982845945" class="code_img_closed" src="./images/OpenCC的编译与多语言使用0.png" alt="" /><img id="code_img_opened_c9c0ef6d-cc47-45de-9138-229982845945" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('c9c0ef6d-cc47-45de-9138-229982845945',event)" src="./images/OpenCC的编译与多语言使用1.png" alt="" />
+<div id="cnblogs_code_open_c9c0ef6d-cc47-45de-9138-229982845945" class="cnblogs_code_hide">
+<pre><code><span style="color: #800080;">1</span>&gt;D:\Projects\Open_Source\OpwnCC\OpenCC-ver.<span style="color: #800080;">1.0</span>.<span style="color: #800080;">5</span>\src\PhraseExtract.cpp(<span style="color: #800080;">32</span>): error C3688: invalid literal suffix <span style="color: #800000;">'</span><span style="color: #800000;">銆</span><span style="color: #800000;">'</span>; literal <span style="color: #0000ff;">operator</span> or literal <span style="color: #0000ff;">operator</span> template <span style="color: #800000;">'</span><span style="color: #800000;">operator ""銆</span><span style="color: #800000;">'</span><span style="color: #000000;"> not found
+</span><span style="color: #800080;">1</span>&gt;D:\Projects\Open_Source\OpwnCC\OpenCC-ver.<span style="color: #800080;">1.0</span>.<span style="color: #800080;">5</span>\src\PhraseExtract.cpp(<span style="color: #800080;">32</span>): error C3688: invalid literal suffix <span style="color: #800000;">'</span><span style="color: #800000;">锛</span><span style="color: #800000;">'</span>; literal <span style="color: #0000ff;">operator</span> or literal <span style="color: #0000ff;">operator</span> template <span style="color: #800000;">'</span><span style="color: #800000;">operator ""锛</span><span style="color: #800000;">'</span><span style="color: #000000;"> not found
+</span><span style="color: #800080;">1</span>&gt;D:\Projects\Open_Source\OpwnCC\OpenCC-ver.<span style="color: #800080;">1.0</span>.<span style="color: #800080;">5</span>\src\PhraseExtract.cpp(<span style="color: #800080;">32</span>): error C3688: invalid literal suffix <span style="color: #800000;">'</span><span style="color: #800000;">鈥</span><span style="color: #800000;">'</span>; literal <span style="color: #0000ff;">operator</span> or literal <span style="color: #0000ff;">operator</span> template <span style="color: #800000;">'</span><span style="color: #800000;">operator ""鈥</span><span style="color: #800000;">'</span><span style="color: #000000;"> not found
+</span><span style="color: #800080;">1</span>&gt;D:\Projects\Open_Source\OpwnCC\OpenCC-ver.<span style="color: #800080;">1.0</span>.<span style="color: #800080;">5</span>\src\PhraseExtract.cpp(<span style="color: #800080;">32</span>): error C2001: newline <span style="color: #0000ff;">in</span><span style="color: #000000;"> constant
+</span><span style="color: #800080;">1</span>&gt;D:\Projects\Open_Source\OpwnCC\OpenCC-ver.<span style="color: #800080;">1.0</span>.<span style="color: #800080;">5</span>\src\PhraseExtract.cpp(<span style="color: #800080;">33</span>): error C3688: invalid literal suffix <span style="color: #800000;">'</span><span style="color: #800000;">鈥</span><span style="color: #800000;">'</span>; literal <span style="color: #0000ff;">operator</span> or literal <span style="color: #0000ff;">operator</span> template <span style="color: #800000;">'</span><span style="color: #800000;">operator ""鈥</span><span style="color: #800000;">'</span><span style="color: #000000;"> not found
+</span><span style="color: #800080;">1</span>&gt;D:\Projects\Open_Source\OpwnCC\OpenCC-ver.<span style="color: #800080;">1.0</span>.<span style="color: #800080;">5</span>\src\PhraseExtract.cpp(<span style="color: #800080;">33</span>): error C3688: invalid literal suffix <span style="color: #800000;">'</span><span style="color: #800000;">锛</span><span style="color: #800000;">'</span>; literal <span style="color: #0000ff;">operator</span> or literal <span style="color: #0000ff;">operator</span> template <span style="color: #800000;">'</span><span style="color: #800000;">operator ""锛</span><span style="color: #800000;">'</span><span style="color: #000000;"> not found
+</span><span style="color: #800080;">1</span>&gt;D:\Projects\Open_Source\OpwnCC\OpenCC-ver.<span style="color: #800080;">1.0</span>.<span style="color: #800080;">5</span>\src\PhraseExtract.cpp(<span style="color: #800080;">33</span>): error C3688: invalid literal suffix <span style="color: #800000;">'</span><span style="color: #800000;">銆</span><span style="color: #800000;">'</span>; literal <span style="color: #0000ff;">operator</span> or literal <span style="color: #0000ff;">operator</span> template <span style="color: #800000;">'</span><span style="color: #800000;">operator ""銆</span><span style="color: #800000;">'</span> not found</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>文本编码对应关系(Visual Studio 2015 VS Notepad++)：<br />file-&gt;Advance Save Options:</p>
+<div class="cnblogs_code">
+<pre>Chinese Simplified (GB2312) - Codepage <span style="color: #800080;">936</span> &lt;==&gt;<span style="color: #000000;"> GBK
+Unicode (UTF</span>-<span style="color: #800080;">8</span> with signature) - Codepage <span style="color: #800080;">65001</span> &lt;==&gt; Encoding <span style="color: #0000ff;">in</span> UTF-<span style="color: #800080;">8</span><span style="color: #000000;"> BOM
+Unicode (UTF</span>-<span style="color: #800080;">8</span> without signature) - Codepage <span style="color: #800080;">65001</span> &lt;==&gt; Encoding <span style="color: #0000ff;">in</span> UTF-<span style="color: #800080;">8</span></pre>
+</div>
+<p>将上面文件的编码方式从Unicode (UTF-8 without signature) - Codepage 65001改为<em style="font-family: 'Courier New'; font-size: 12px;">&nbsp;</em>Chinese Simplified (GB2312) - Codepage 936即可。</p>
+<p>python的编码转换比较简单，C++的转换接口上面已经列出，至于java，建议将java文件和数据文件的编码方式均改为utf-8，使用String utf8_str = new String(gbk_str.getBytes("UTF-8"), "UTF-8")这种转码方式可能带来一些奇怪的问题。</p>
+<h4>DLL与EXE局部堆问题</h4>
+<p>有一点需要注意，要确保正确释放DLL中使用new在堆中分配的内存空间，这里必须要使用DLL中提供的释放堆空间的函数，而不要在主程序中直接使用delete或者delete[].</p>
+<p>简单的解释就是EXE和DLL分别有各自的局部堆，new和delete分别用于分配和释放各自局部堆上的空间，使用EXE中的delete来释放DLL中new的局部堆内存可能会导致错误，这个和具体的编译器有关。</p>
+<p>上面的C++代码在EXE中delete DLL分配的空间，是一种未定义行为。</p>
+<h4>DLL调试技巧</h4>
+<p>实际使用尤其是使用不同语言对opencc.dll进行调用的时候会碰到很多问题，这时最好的办法就是使用VS的Attach To Process对DLL进行断点跟进。</p>
+<p>对于python调用DLL，可以先打开一个python shell或者IDLE环境并在其中调用一下DLL，之后在VS中attach到对应的python进程，不要直接attach到sublime等IDE程序，因为IDE中运行的python程序而不是IDE本身直接调用DLL文件。</p>
+<p>对于java而言，同样不能使用vs直接attach到Eclipse等IDE上。这里有一个技巧，就是在调用到DLL接口前的java代码加上一个断点，然后会在VS进程列表中看到一个javaw.exe程序，attach到这个程序后，接着运行java程序就会进入DLL中的断点了。</p>
+<h3>小结</h3>
+<p>如果能够耐心的浏览一遍，相信会发现这是一篇采坑复盘。能够从头开始独立的一步一步解决掉遇到的每一个问题，相信一定会别有一番滋味。希望本篇博文能在需要的时候对你有所帮助。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

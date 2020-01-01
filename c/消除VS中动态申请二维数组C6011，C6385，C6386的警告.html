@@ -1,0 +1,150 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修消除VS中动态申请二维数组C6011，C6385，C6386的警告' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>消除VS中动态申请二维数组C6011，C6385，C6386的警告</center></div><div class='banquan'>原文出处:本文由博客园博主wowpH提供。<br/>
+原文连接:https://www.cnblogs.com/wowpH/p/vs_6011_6385_6386.html</div><br>
+    <p>动态申请二维数组，无非就是通过指针来实现。@wowpH<br />
+过程分三步：1、申请内存，2、使用数组，3、释放内存。<br />
+代码如下：</p>
+<pre><code><code>/********************************************************************
+    description: 动态申请二维数组
+    author: wowpH
+    csdnid: pfdvnah
+    date  : 2019-11-9 15:38:25
+    from  : https://blog.csdn.net/pfdvnah/article/details/102987174
+********************************************************************/
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+int main(void) {
+    int row, col;
+    printf(&quot;输入行数和列数：&quot;);
+    scanf_s(&quot;%d %d&quot;, &amp;row, &amp;col);
+    
+    int** matrix = NULL;// 初始化为NULL
+    
+    // 动态申请内存
+    matrix = (int**)malloc(row * sizeof(int*));
+    for (int i = 0; i &lt; row; ++i) {
+        matrix[i] = (int*)malloc(col * sizeof(int));
+    }
+    
+    // 给二维数组赋值
+    for (int i = 0; i &lt; row; ++i) {
+        for (int j = 0; j &lt; col; ++j) {
+            matrix[i][j] = i * col + j;
+        }
+    }
+
+    // 输出二维数组
+    for (int i = 0; i &lt; row; ++i) {
+        for (int j = 0; j &lt; col; ++j) {
+            printf(&quot;%2d&quot;, matrix[i][j]);
+            putchar((j &lt; col - 1) ? &#39; &#39; : &#39;\n&#39;);
+        }
+    }
+    
+    // 释放内存
+    for (int i = 0; i &lt; row; ++i) {
+        free(matrix[i]);
+    }
+    free(matrix);
+    return 0;
+}</code></code></pre>
+<p>这是最中规中矩的VS代码了。但是这段代码会出现 5 个警告（分 3 类）：</p>
+<pre><code><code>严重性 代码  说明                                                                                  行
+警告  C6011   取消对 NULL 指针“matrix[i]”的引用。                                                      16
+警告  C6386   写入到“matrix”时缓冲区溢出: 可写大小为“row*sizeof(int *)”个字节，但可能写入了“8”个字节。        11
+警告  C6386   写入到“matrix[i]”时缓冲区溢出: 可写大小为“col*sizeof(int)”个字节，但可能写入了“8”个字节。   16
+警告  C6385   从“matrix[i]”中读取的数据无效: 可读大小为“col*sizeof(int)”个字节，但可能读取了“8”个字节。   22
+警告  C6385   从“matrix”中读取的数据无效: 可读大小为“row*sizeof(int *)”个字节，但可能读取了“8”个字节。        28</code></code></pre>
+<hr />
+<p>如何去掉这些警告呢？</p>
+<p>安全的写法如下所示：</p>
+<pre><code><code>/********************************************************************
+    description: 动态申请二维数组
+    author: wowpH
+    csdnid: pfdvnah
+    date  : 2019-11-9 15:38:25
+    from  : https://blog.csdn.net/pfdvnah/article/details/102987174
+********************************************************************/
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+int main(void) {
+    int row, col;
+    printf(&quot;输入行数和列数：&quot;);
+    scanf_s(&quot;%d %d&quot;, &amp;row, &amp;col);
+    
+    int** matrix = NULL;// 初始化为NULL
+
+    // 消除C6085和C6086警告
+    if (row &lt;= 0 || col &lt;= 0) {
+        printf(&quot;行数或列数不合法！\n&quot;);
+        exit(-1);
+    }
+
+    // 动态申请内存
+    matrix = (int**)malloc(row * sizeof(int*));
+    
+    // 消除C6011警告
+    if (NULL == matrix) {
+        printf(&quot;无法动态申请内存！\n&quot;);
+        exit(-1);
+    }
+
+    for (int i = 0; i &lt; row; ++i) {
+        matrix[i] = (int*)malloc(col * sizeof(int));
+
+        // 消除C6011警告
+        if (NULL == matrix[i]) {
+            printf(&quot;无法动态申请内存！\n&quot;);
+            exit(-1);
+        }
+    }
+
+    // 给二维数组赋值
+    for (int i = 0; i &lt; row; ++i) {
+        for (int j = 0; j &lt; col; ++j) {
+            matrix[i][j] = i * col + j;
+        }
+    }
+
+    // 输出二维数组
+    for (int i = 0; i &lt; row; ++i) {
+        for (int j = 0; j &lt; col; ++j) {
+            printf(&quot;%2d&quot;, matrix[i][j]);
+            putchar((j &lt; col - 1) ? &#39; &#39; : &#39;\n&#39;);
+        }
+    }
+    
+    // 释放内存
+    for (int i = 0; i &lt; row; ++i) {
+        free(matrix[i]);
+    }
+    free(matrix);
+    return 0;
+}</code></code></pre>
+<hr />
+<p><a href="https://blog.csdn.net/pfdvnah/article/details/102987174">原文链接</a>：https://blog.csdn.net/pfdvnah/article/details/102987174</p>
+<hr />
+<center><font face="Consolas" size="2">- End - wowpH - pfdvnah -</font></center>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

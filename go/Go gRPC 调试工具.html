@@ -1,0 +1,100 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go gRPC 调试工具' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go gRPC 调试工具</center></div><div class='banquan'>原文出处:本文由博客园博主it-world提供。<br/>
+原文连接:https://www.cnblogs.com/it-3327/p/11827620.html</div><br>
+    <p>概述<br /><br />最近这段时间工作挺忙的，发现已经 3 周没更文了...<br /><br />感谢你们还在，今天给大家分享一款 gRPC 的调试工具。<br /><br />进入正题。<br /><br />当我们在写 HTTP 接口的时候，使用的是 Postman 进行接口调试，那么在写 gRPC 接口的时候，有没有类似于 Postman 的调试工具呢？<br /><br /><img src="./images/Go gRPC 调试工具0.png" alt="" width="300" height="300" /><br />当然是有的 ~ <br /><br />咱们一起看下 grpcui，源码地址：<br /><br />https://github.com/fullstorydev/grpcui<br /><br />看下官方描述：<br /><br />&nbsp;&nbsp;&nbsp; grpcui is a command-line tool that lets you interact with gRPC servers via a browser. It's sort of like Postman, but for gRPC APIs instead of REST.<br /><br />下面带大家一起用用...<br /><br />写一个 gRPC API<br /><br />我原来写过 Demo，可以直接用原来写的 listen 项目。<br /><br />端口：9901<br /><br />.proto 文件：<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>   syntax = "proto3"; // 指定 proto 版本    
+    package listen;     // 指定包名    
+    // 定义服务    
+    service Listen {    
+        // 定义方法    
+        rpc ListenData(Request) returns (Response) {}    
+    }    
+    // Request 请求结构    
+    message Request {    
+        string name = 1;    
+    }    
+    // Response 响应结构    
+    message Response {    
+        string message = 1;    
+    }
+
+很简单，这个大家一看就知道了。
+
+    Service name 为 listen.Listen
+
+    Method name 为 ListenData
+
+再看下 ListenData 方法：
+
+    func (l *ListenController) ListenData(ctx context.Context, in *listen.Request) (*listen.Response, error) {    
+        return &amp;listen.Response{Message : fmt.Sprintf("[%s]", in.Name)}, nil    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p>这里我还准备了一分学习图和资料，如下：</p>
+<p><img src="./images/Go gRPC 调试工具1.png" alt="" /></p>
+<p>链接：<a href="https://pan.baidu.com/s/1v5gm7n0L7TGyejCmQrMh2g" target="_blank">https://pan.baidu.com/s/1v5gm7n0L7TGyejCmQrMh2g</a>&nbsp;提取码：x2p5<br /><br />免费分享，但是X度限制严重，如若链接失效点击链接或搜索加群 群号<a href="https://jq.qq.com/?_wv=1027&amp;k=5Qtjg0V" target="_blank">518475424</a>。</p>
+<p><br />这表示，将 Name 直接返回。<br /><br />源码地址：<br /><br />https://github.com/xinliangnote/go-jaeger-demo/tree/master/listen<br /><br />启动服务</p>
+<div class="cnblogs_Highlighter">
+<pre><code>cd listen &amp;&amp; go run main.go
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />服务启动成功后，等待使用。<br /><br />grpcui 使用<br />安装<br /><br />根据官方 README.md 文档安装即可。<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>    go get github.com/fullstorydev/grpcui    
+    go install github.com/fullstorydev/grpcui/cmd/grpcui
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br />这时，在 $GOPATH/bin 目录下，生成一个 grpcui 可执行文件。<br /><br />执行个命令，验证下：<br /><br />grpcui -help<br /><br />输出：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>    Usage:    
+        grpcui [flags] [address]    
+    ......    
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />表示安装成功了。<br /><br />运行<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>    grpcui -plaintext 127.0.0.1:9901    
+    Failed to compute set of methods to expose: server does not support the reflection API
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />这种情况下，加个反射就可以了，在 listen 的 main.go 新增如下代码即可：<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>reflection.Register(s)
+
+在运行一次试试：
+
+    grpcui -plaintext 127.0.0.1:9901    
+    gRPC Web UI available at http://127.0.0.1:63027/
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />表示运行成功了。<br /><br />在浏览器中访问：http://127.0.0.1:63027/<br /><img src="./images/Go gRPC 调试工具2.png" alt="" width="639" height="645" /><br /><br />到这，我们看到 Service name、Method name 都出来了，传输参数直接在页面上进行操作即可。<br /><br />当发起 Request "Tom"，也能获得 Response &ldquo;Tom&rdquo;。<br /><br />当然，如果这个服务下面有多个 Service name，多个 Method name 也都会显示出来的，去试试吧。<br /><br /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,179 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修FZU2018级算法第一次作业 1.1fibonacci （矩阵快速幂）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>FZU2018级算法第一次作业 1.1fibonacci （矩阵快速幂）</center></div><div class='banquan'>原文出处:本文由博客园博主FZU某菜鸡提供。<br/>
+原文连接:https://www.cnblogs.com/FZUzyz/p/11490946.html</div><br>
+    <p>题目</p>
+<p>　　Winder最近在学习fibonacci 数列的相关知识。我们都知道fibonacci数列的递推公式是F（n）=F（n-1）+F（n-2）（n&gt;=2 且n 为整数）。 Winder想知道的是当我们将这个递推式改为F（n）=A<em>F（n-1）+B</em>F（n-2）（n&gt;=2且n为整数）时我们得到的是怎样的数列。但是，Winder很懒，所以只能由你来帮他来完成这件事。 注意，这里我们依然令F（0）=F（1）=1。</p>
+<p>★数据输入</p>
+<p>　　输入第一行三个正整数N，A 和B（N&lt;=10；1&lt;=A、B&lt;=100 且均为整数）。 接下来有N 行，每行一个自然数n（n&lt;=100000000）。</p>
+<p>★数据输出</p>
+<p>　　输出一行一个整数F（n），由于结果可能会很大，Winder要求输出结果对2013取模。</p>
+<table border="0">
+<tbody>
+<tr>
+<td>输入示例</td>
+<td>输出示例</td>
+</tr>
+<tr>
+<td>
+<p>5 4 5</p>
+<p>2</p>
+<p>4</p>
+<p>8</p>
+<p>16</p>
+<p>32</p>
+</td>
+<td>
+<p>9</p>
+<p>209</p>
+<p>1377</p>
+<p>182</p>
+<p>9</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<p>题解：</p>
+<p>　　一道很经典的矩阵快速幂裸题。</p>
+<p>　　首先讲解快速幂，当我们需要求$a^{b}$对mod取模时，可以将b转化为2进制，就可以将b转换为若干个二次幂之和。例如，我们在计算2的12次方时，12的二进制为1100，1100中的两个1的位权分别为4和8，因此$2^{12}$次方便可以转换为$2^{4}*2^{8}$。由此，我们先将答案ans赋值为1，只需要计算a的1，2，4，8.....次方，然后看一下b在该位的数值是否为1即可，如果为1，将ans乘上即可。</p>
+<p>快速幂的代码如下</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">ll fastpow(ll a,ll b)
+{
+    ll ans</span>=<span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span><span style="color: #000000;">(b)
+    {
+        </span><span style="color: #0000ff;">if</span>(b&amp;<span style="color: #800080;">1</span>) ans=ans*a%<span style="color: #000000;">mod;
+        a</span>=a*a%<span style="color: #000000;">mod;
+        b</span>&gt;&gt;=<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> ans;
+}</span></pre>
+</div>
+<p>　　接下来回到本题，由于n的数字较大，加上取模速度较慢，本题递归递推会超时。因此需要寻找复杂度小于O(n)的算法。</p>
+<p>　　由于</p>
+<p>$<br />\left(<br />\begin{matrix}<br />a &amp; b \\<br />1 &amp; 0&nbsp;<br />\end{matrix}<br />\right)*<br />\binom{f(n)}{f(n-1)}=\binom{f(n+1)}{f(n)}<br />$我们可以构造矩阵，可以得到</p>
+<p>$$<br />\left(<br />\begin{matrix}<br />a &amp; b \\<br />1 &amp; 0 <br />\end{matrix}<br />\right) \tag{2}^{n-1}*<br />\binom{f(1)}{f(0)}=\binom{f(n)}{f(n-1)}<br />$$</p>
+<p>由此，我们只需要计算矩阵</p>
+<p>$$<br />\left(<br />\begin{matrix}<br />a &amp; b \\<br />1 &amp; 0 <br />\end{matrix}<br />\right)<br />$$</p>
+<p><em id="__mceDel"><em id="__mceDel">的n-1次方即可，对于这个矩阵的n-1次方，使用快速幂求出所求矩阵，便可以在$\log n$的时间内计算出f(n)的值。</em></em></p>
+<div class="cnblogs_code">
+<pre><em id="__mceDel"><span style="color: #000000;">#include&lt;iostream&gt;<br />#include</span>&lt;cstdio&gt;<span style="color: #000000;">
+#include</span>&lt;algorithm&gt;<span style="color: #000000;">
+#include</span>&lt;cmath&gt;<span style="color: #000000;">
+#include</span>&lt;cstdlib&gt;<span style="color: #000000;">
+#include</span>&lt;cstring&gt;<span style="color: #000000;">
+#include</span>&lt;<span style="color: #0000ff;">string</span>&gt;<span style="color: #000000;">
+#include</span>&lt;vector&gt;<span style="color: #000000;">
+#include</span>&lt;queue&gt;<span style="color: #000000;">
+#include</span>&lt;<span style="color: #0000ff;">set</span>&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+typedef </span><span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> ll;
+typedef </span><span style="color: #0000ff;">long</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> ld;
+typedef unsigned </span><span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> ull;
+typedef pair </span>&lt;<span style="color: #0000ff;">int</span>,<span style="color: #0000ff;">int</span>&gt;<span style="color: #000000;"> pii;
+</span><span style="color: #0000ff;">#define</span> rep(i,x,y) for(int i=x;i&lt;y;i++)
+<span style="color: #0000ff;">#define</span> rept(i,x,y) for(int i=x;i&lt;=y;i++)
+<span style="color: #0000ff;">#define</span> per(i,x,y) for(int i=x;i&gt;=y;i--)
+<span style="color: #0000ff;">#define</span> pb push_back
+<span style="color: #0000ff;">#define</span> fi first
+<span style="color: #0000ff;">#define</span> se second
+<span style="color: #0000ff;">#define</span> mes(a,b) memset(a,b,sizeof a)
+<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> inf=<span style="color: #800080;">0x3f3f3f3f</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> mod=<span style="color: #800080;">2013</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">class</span><span style="color: #000000;"> matrix
+{
+    </span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+        </span><span style="color: #0000ff;">int</span> arrcy[<span style="color: #800080;">6</span>][<span style="color: #800080;">6</span><span style="color: #000000;">];//arrcy为矩阵，下表从0开始
+        </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> row,column;//row为矩阵的行，column为矩阵的列</span><span style="color: #000000;">
+        friend matrix </span><span style="color: #0000ff;">operator</span> *<span style="color: #000000;">(matrix s1,matrix s2)
+        {
+            </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> i,j;
+            matrix s3;
+            </span><span style="color: #0000ff;">for</span> (i=<span style="color: #800080;">0</span>;i&lt;s1.row;i++<span style="color: #000000;">)
+            {
+                </span><span style="color: #0000ff;">for</span> (j=<span style="color: #800080;">0</span>;j&lt;s2.column;j++<span style="color: #000000;">)
+                {
+                    </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> k=<span style="color: #800080;">0</span>;k&lt;s1.column;k++<span style="color: #000000;">)
+                    {
+                        s3.arrcy[i][j]</span>+=s1.arrcy[i][k]*<span style="color: #000000;">s2.arrcy[k][j];
+                        s3.arrcy[i][j]</span>%=<span style="color: #000000;">mod;
+                    }
+                }
+            }
+            s3.row</span>=<span style="color: #000000;">s1.row;
+            s3.column</span>=<span style="color: #000000;">s2.column;
+            </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> s3;
+        }
+};
+matrix quick_pow(matrix s1,</span><span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long </span><span style="color: #000000;">n)//矩阵快速幂函数，s1为矩阵，n为幂次
+{
+    matrix mul</span>=<span style="color: #000000;">s1,ans;<br />//将ans构造为单位矩阵
+    ans.row</span>=ans.column=<span style="color: #000000;">s1.row;
+    memset(ans.arrcy,</span><span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;"> ans.arrcy);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;ans.row;i++<span style="color: #000000;">)
+        ans.arrcy[i][i]</span>=<span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span><span style="color: #000000;">(n)
+    {
+        </span><span style="color: #0000ff;">if</span>(n&amp;<span style="color: #800080;">1</span>) ans=ans*<span style="color: #000000;">mul;
+        mul</span>=mul*<span style="color: #000000;">mul;
+        n</span>/=<span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> ans;
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    ios::sync_with_stdio(</span><span style="color: #0000ff;">false</span><span style="color: #000000;">);
+    cin.tie(</span><span style="color: #800080;">0</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> n,a,b;
+    cin</span>&gt;&gt;n&gt;&gt;a&gt;&gt;<span style="color: #000000;">b;
+    matrix mul;
+    mul.row</span>=mul.column=<span style="color: #800080;">2</span><span style="color: #000000;">;
+    mul.arrcy[</span><span style="color: #800080;">0</span>][<span style="color: #800080;">0</span>]=<span style="color: #000000;">a;
+    mul.arrcy[</span><span style="color: #800080;">0</span>][<span style="color: #800080;">1</span>]=<span style="color: #000000;">b;
+    mul.arrcy[</span><span style="color: #800080;">1</span>][<span style="color: #800080;">0</span>]=<span style="color: #800080;">1</span><span style="color: #000000;">;
+    mul.arrcy[</span><span style="color: #800080;">1</span>][<span style="color: #800080;">1</span>]=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    matrix r;
+    r.row</span>=<span style="color: #800080;">2</span><span style="color: #000000;">;
+    r.column</span>=<span style="color: #800080;">1</span><span style="color: #000000;">;
+    r.arrcy[</span><span style="color: #800080;">0</span>][<span style="color: #800080;">0</span>]=r.arrcy[<span style="color: #800080;">1</span>][<span style="color: #800080;">0</span>]=<span style="color: #800080;">1</span><span style="color: #000000;">;
+    rep(i,</span><span style="color: #800080;">0</span><span style="color: #000000;">,n)
+    {
+        </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> x;
+        cin</span>&gt;&gt;<span style="color: #000000;">x;
+        </span><span style="color: #0000ff;">if</span>(!<span style="color: #000000;">x)//当x=1时，x-1&lt;0无法使用快速幂，答案为0，特判即可
+        {
+            cout</span>&lt;&lt;<span style="color: #800080;">1</span>&lt;&lt;<span style="color: #000000;">endl;
+            </span><span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+        }
+        matrix mm</span>=quick_pow(mul,x-<span style="color: #800080;">1</span><span style="color: #000000;">);
+        mm</span>=mm*<span style="color: #000000;">r;
+        cout</span>&lt;&lt;mm.arrcy[<span style="color: #800080;">0</span>][<span style="color: #800080;">0</span>]&lt;&lt;<span style="color: #000000;">endl;
+    }
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></em></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

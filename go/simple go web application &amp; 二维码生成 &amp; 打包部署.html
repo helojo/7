@@ -1,0 +1,239 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修simple go web application &amp; 二维码生成 &amp; 打包部署' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>simple go web application &amp; 二维码生成 &amp; 打包部署</center></div><div class='banquan'>原文出处:本文由博客园博主funnyZpC提供。<br/>
+原文连接:https://www.cnblogs.com/funnyzpc/p/10801476.html</div><br>
+    <h3 id="go语言简易web应用-二维码生成及解码-打包部署">go语言简易web应用 &amp; 二维码生成及解码 &amp; 打包部署</h3>
+<p>转载请注明出处: <a href="https://www.cnblogs.com/funnyzpc/p/10801476.html" class="uri">https://www.cnblogs.com/funnyzpc/p/10801476.html</a></p>
+<h4 id="前言闲扯">前言(闲扯)</h4>
+<pre><code><code>(20190503)我知道今天会有其他活动，因此我提前买了杯咖啡，
+(20190504)我知道深夜会完不成博客,  因此我加班到了这个点。
+首先需要做的事情，Demo 准备并调试
+还需要做的事情，构建github项目
+以及要做的事情，README文档编写
+最后要做的事情，生成一篇博客</code></pre>
+<h4 id="简单web应用">简单WEB应用</h4>
+<p>话说一个简单的WEB应用需要多少行依赖，多少行代码，运行需要多大的package,需要多大的运行环境？</p>
+<ul>
+<li>对于java：
+<ul>
+<li>我需要构建下面这些包(5MB+)</li>
+</ul>
+<pre><code><code>      01） aopalliance-1.0.jar                aop的工具包                 `
+      02） commons-logging-1.1.3.jar          commons的日志管理
+      03） spring-aop-3.2.8.RELEASE.jar       Spring的切面编程
+      04） spring-beans-3.2.8.RELEASE.jar     SpringIoC(依赖注入)的基础实现
+      05） spring-context-3.2.8.RELEASE.jar   Spring提供在基础IoC功能上的扩展服务
+      06） spring-core-3.2.8.RELEASE.jar      Spring的核心包
+      07） spring-expression-3.2.8.RELEASE.jar  Spring表达式语言
+      08） spring-web-3.2.8.RELEASE.jar         SpringWeb下的工具包
+      09） spring-webmvc-3.2.8.RELEASE.jar      SpringMVC工具包
+      10） jstl-1.1.2.jar                       JSP标准标签库</code></pre>
+<ul>
+<li>需要编写以下代码(14行+)</li>
+</ul>
+<pre><code><code>      package com.test.controller;
+      import org.springframework.stereotype.Controller;
+      import org.springframework.ui.Model;
+      import org.springframework.web.bind.annotation.RequestMapping;
+      import org.springframework.web.bind.annotation.RequestMethod;
+
+      @Controller
+      @RequestMapping(value=&quot;/hello&quot;)
+      public class HelloController {
+          @RequestMapping(value=&quot;/world&quot;,method=RequestMethod.GET)
+          public String hello(Model model){
+              model.addAttribute(&quot;msg&quot;, &quot;你好spring mvc&quot;);
+              return &quot;index&quot;;
+          }
+      }</code></pre>
+<ul>
+<li>打包(jar or war 5MB+)</li>
+<li>部署和环境(jdk 100MB+ , tomcat 5MB+ total：105MB+)</li>
+</ul></li>
+<li>对于Go
+<ul>
+<li>需要代码(15行+)</li>
+</ul>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    &quot;log&quot;
+    &quot;net/http&quot;
+)
+
+func main() {
+    http.HandleFunc(&quot;/&quot;, index)
+    log.Println(&quot;请访问:&quot;, &quot;http://127.0.0.1:2222&quot;)
+    http.ListenAndServe(&quot;:2222&quot;, nil)
+}
+
+func index(w http.ResponseWriter, r *http.Request) {
+    fmt.Printf(&quot;[%s|%s] -&gt; http://%s%s \n&quot;, r.Method, r.Proto, r.Host, r.RequestURI)
+    dateTime := time.Now().Format(&quot;2006-01-02 15:04:05&quot;)
+}</code></pre>
+<ul>
+<li>打包(&lt;6MB,upx加壳&lt;2MB)</li>
+<li>部署和环境(&lt;6MB or &lt;2MB)</li>
+</ul></li>
+</ul>
+<p>结论：一个java web应用部署不小于100MB，而一个go web应用最少只需要2MB，你真的没听错他真的很小而且迅速，唯一不能比的是<br />
+java的生态 太庞大了，这是java之所以存在的优势，不过这终将成为历史。</p>
+<p>(以上 go 代码在这里：<a href="https://github.com/funnyzpc/go-project-example/blob/master/src/qrCodes/simpleServer.go">simpleServer.go</a>)</p>
+<h4 id="二维码生成及解码">二维码生成及解码</h4>
+<p>二维码简称(QR CODE),中文全名叫快速响应码，他的基础基础包含：向量运算、字符编码、图形识别等，需要具体了解的可涉猎此<br />
+<a href="https://www.cnblogs.com/alantu2018/p/8504373.html">二维码原理</a>，这里不再从算法底层开始写起(毕竟大多数人都不会哈)，<br />
+主要用到了开源都两个依赖(编码和解码)</p>
+<ul>
+<li><p>二维码生成</p>
+<p>这里用到了<a href="https://github.com/skip2/go-qrcode">go-qrcode</a></p></li>
+<li>Demo主要逻辑(已调试通过)</li>
+</ul>
+<pre><code><code>   // 写二维码
+   func writeQrCode() {
+       // 写二维码
+       err := qrcode.WriteFile(&quot;https://funnyzpc.cnblogs.com&quot;, qrcode.Medium, 256, &quot;D:/tmp/cnblogs.png&quot;)
+       if err != nil {
+           fmt.Println(err)
+       }
+   }</code></pre>
+<ul>
+<li><p>二维码解码</p>
+<p>这里用到了<a href="https://github.com/tuotoo/qrcode">qrcode</a></p>
+<ul>
+<li>Demo主要逻辑</li>
+</ul>
+<pre><code><code>func ReadQrCode(){
+    //获取上传的第一个文件
+    file, _, _ := os.Open(&quot;本地文件路径&quot;)
+    // 读取文件
+    qrmatrix, err := rQrCode.Decode(file)
+    defer file.Close()
+    if err != nil {
+        fmt.Println(err.Error())
+        return
+    }
+    log.Println(&quot;获取到二维码内容：&quot;, qrmatrix.Content)
+}</code></pre></li>
+</ul>
+<h4 id="二维码解析web服务">二维码解析+WEB服务</h4>
+<p>一个产品的终态必将是一些列技术的组合，比如搭建一个在线的二维码解析应用。</p>
+<ul>
+<li><p>参考代码</p>
+<pre><code><code>  func main() {
+      http.HandleFunc(&quot;/&quot;, IndexAction)
+      http.HandleFunc(&quot;/qrCode&quot;, ReadQrCode)
+      log.Println(&quot;请打开页面: http://127.0.0.1:2345&quot;)
+      http.ListenAndServe(&quot;:2345&quot;, nil)
+  }
+
+  // 主页
+  func IndexAction(writer http.ResponseWriter, request *http.Request) {
+      t, err := template.ParseFiles(&quot;template/page/index.html&quot;)
+      if err != nil {
+          log.Println(err)
+      }
+      t.Execute(writer, nil)
+  }
+
+  type QrCode struct {
+      QrContent string
+  }
+
+  // 读取二维码
+  func ReadQrCode(writer http.ResponseWriter, request *http.Request) {
+      //判断请求方式
+      if request.Method == &quot;POST&quot; {
+          //设置内存大小
+          request.ParseMultipartForm(64 &lt;&lt; 20)
+          //获取上传的第一个文件
+          file, _, _ := request.FormFile(&quot;qrFile&quot;)
+          // 读取文件
+          qrmatrix, err := rQrCode.Decode(file)
+          defer file.Close()
+          if err != nil {
+              fmt.Println(err.Error())
+              return
+          }
+          log.Println(&quot;获取到二维码内容：&quot;, qrmatrix.Content)
+
+          t, err := template.ParseFiles(&quot;template/page/qrCode.html&quot;)
+          if err != nil {
+              log.Println(err)
+          }
+          t.Execute(writer, QrCode{QrContent: qrmatrix.Content})
+      } else {
+          //解析模板文件
+          t, _ := template.ParseFiles(&quot;template/page/qrCode.html&quot;)
+          //输出文件数据
+          t.Execute(writer, nil)
+      }
+  }
+
+
+  // 读二维码
+  func readQrCode() {
+      file, error := os.Open(&quot;D:/tmp/cnblogs.png&quot;)
+      if error != nil {
+          fmt.Println(error.Error())
+          return
+      }
+      defer file.Close()
+      qrmatrix, err := rQrCode.Decode(file)
+      if err != nil {
+          fmt.Println(err.Error())
+          return
+      }
+      fmt.Println(qrmatrix.Content)
+  }</code></pre></li>
+<li><p>最终效果图</p>
+<ul>
+<li><p>主页<br />
+<img src="./images/simple go web application &amp; 二维码生成 &amp; 打包部署0.png" /></p></li>
+<li><p>结果<br />
+<img src="./images/simple go web application &amp; 二维码生成 &amp; 打包部署1.png" /></p></li>
+</ul></li>
+</ul>
+<h4 id="打包部署">打包部署</h4>
+<p>对于部署，在前面java和go的对比中已经提到过，go 应用不存在虚拟机，他的代码是直接从文本编译成二进制包(包含运行环境) 最终也必然是轻巧无依赖的，<br />
+另外，需要说的是go 的 打包本身是不加壳的，源包会比较大，一般部署时会做两个处理。</p>
+<ul>
+<li><p>使用 <code>-ldflags</code> 去掉符号 去掉调试 压缩体积</p></li>
+<li><p>同时使用upx加壳 <code>upx --backup --brute [PACKAGE_FILE_NAME]</code> 以进一步压缩体积(压缩至1/3),加密软件包，这样利于传输发布同时还能保持原生包的功效哦～</p></li>
+</ul>
+<p>这里我简要给出一般的打包命令：</p>
+<pre><code><code>linux `GOOS=linux GOARCH=amd64 go build -ldflags &quot;-w -s&quot; ./main.go`
+window `GOOS=windows GOARCH=amd64 go build -ldflags &quot;-w -s&quot; ./main.go`
+mac `GOOS=darwin GOARCH=amd64 go build -ldflags &quot;-w -s&quot; ./main.go`</code></pre>
+<p>引用加壳命令：</p>
+<pre><code><code>upx --backup --brute [main.exe(windows) or main(linux、mac)]
+</code></pre>
+<p>最后上线部署：</p>
+<pre><code><code>    linux: ./[PACKAGE_FILE] &amp;
+    mac: ./[PACKAGE_FILE] &amp;
+    windows: 双击[PACKAGE_FILE.exe],或将[PACKAGE_FILE.exe]配置为服务</code></pre>
+<h4 id="最后">最后</h4>
+<p>以上所有代码均在我的github项目中，若所言有误恳请指正～</p>
+<p>项目地址：<a href="https://github.com/funnyzpc/go-project-example/tree/master/src/qrCodes">qrCodes</a></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

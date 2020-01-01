@@ -1,0 +1,71 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] go等待读取最后一行的数据内容' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] go等待读取最后一行的数据内容</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/11946395.html</div><br>
+    <p>这段代码是参照慕课网的视频教程，主要是f.Seek(0, os.SEEK_END)移动到末尾，但是里面有个小问题，当打开的文件被重新清空内容的清空下，就再也不能到读取数据了，比如在开启读取后 echo ''&gt;1.log 这样就再也读不到了，tail包是解决了这个问题的</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">bufio</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">io</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">os</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">strings</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func main() {
+    readChannel :</span>= <span style="color: #0000ff;">make</span>(chan <span style="color: #0000ff;">string</span><span style="color: #000000;">)
+    go readFile(readChannel)
+    </span><span style="color: #0000ff;">for</span> r :=<span style="color: #000000;"> range readChannel {
+        </span><span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(r)
+    }
+}
+func readFile(readChannel chan </span><span style="color: #0000ff;">string</span><span style="color: #000000;">) {
+    f, err :</span>= os.Open(<span style="color: #800000;">"</span><span style="color: #800000;">1.txt</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        panic(</span><span style="color: #0000ff;">fmt</span>.Sprintf(<span style="color: #800000;">"</span><span style="color: #800000;">open file error:%s</span><span style="color: #800000;">"</span><span style="color: #000000;">, err.Error()))
+    }
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">移动到文件末尾</span>
+    f.Seek(<span style="color: #800080;">0</span><span style="color: #000000;">, os.SEEK_END)
+    reader :</span>=<span style="color: #000000;"> bufio.NewReader(f)
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+        line, err :</span>= reader.ReadBytes(<span style="color: #800000;">'</span><span style="color: #800000;">\n</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+        </span><span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(err)
+        </span><span style="color: #0000ff;">if</span> err ==<span style="color: #000000;"> io.EOF {
+            </span><span style="color: #0000ff;">time</span>.Sleep(<span style="color: #0000ff;">time</span><span style="color: #000000;">.Second)
+            continue
+        } </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+            panic(</span><span style="color: #800000;">"</span><span style="color: #800000;">ReadBytes error:</span><span style="color: #800000;">"</span> +<span style="color: #000000;"> err.Error())
+        }
+
+        lineStr :</span>= strings.TrimSpace(<span style="color: #0000ff;">string</span><span style="color: #000000;">(line))
+        readChannel </span>&lt;-<span style="color: #000000;"> lineStr
+    }
+}</span></pre>
+</div>
+<p>使用tail包测试时，有re-open文件</p>
+<p><img src="./images/[Go] go等待读取最后一行的数据内容0.png" alt="" /></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,90 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang的io.copy使用' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang的io.copy使用</center></div><div class='banquan'>原文出处:本文由博客园博主随彦心MO提供。<br/>
+原文连接:https://www.cnblogs.com/smartrui/p/12110576.html</div><br>
+    <h3 id="nethttp-下载">net/http 下载</h3>
+<p>在golang中，如果我们要下载一个文件，最简单的就是先用http.get()方法创建一个远程的请求后，后面可使用ioutil.WriteFile()等将请求内容直接写到文件中。</p>
+<pre><code><code>func DownFile() {
+    url :=&quot;http://wx.qlogo.cn/Vaz7vE1/64&quot;
+    resp ,err := http.Get(url)
+    if err != nil {
+        fmt.Fprint(os.Stderr ,&quot;get url error&quot; , err)
+    }
+
+    defer resp.Body.Close()
+
+    data ,err := ioutil.ReadAll(resp.Body)
+    if err != nil {
+        panic(err)
+    }
+
+     _ =ioutil.WriteFile(&quot;/tmp/icon_wx.png&quot;, data, 0755)
+}</code></pre>
+<p>但是你会发现，上面的操作方式会有一个小问题，那就是下载小文件还行，如果是大的文件的话，可能会出现内存不足的问题，因为它是需要先把请求内容全部读取到内存中，然后再写入到文件中的。</p>
+<p>那如果要下载大文件或者复制大文件，应该怎么办呢？ 其实，Golang中就提供了 <code>io.copy</code>方法，它就是在文件指针之间直接复制的，不用全读入内存，可解决这样的问题。</p>
+<h3 id="io.copy">io.copy</h3>
+<p>我们先看下原型声明</p>
+<pre><code><code>func Copy(dst Writer, src Reader) (written int64, err error) {
+    return copyBuffer(dst, src, nil)
+}
+
+func copyBuffer(dst Writer, src Reader, buf []byte) (written int64, err error) {
+    ....
+    if buf == nil {
+        size := 32 * 1024
+        if l, ok := src.(*LimitedReader); ok &amp;&amp; int64(size) &gt; l.N {
+            if l.N &lt; 1 {
+                size = 1
+            } else {
+                size = int(l.N)
+            }
+        }
+        buf = make([]byte, size)
+    }</code></pre>
+<p>它是将源复制到目标，并且是按默认的缓冲区32k循环操作的，不会将内容一次性全写入内存中,这样就能解决大文件的问题。</p>
+<p>我们再用 <code>io.copy</code> 来实现一下吧。</p>
+<pre><code><code>func DownFile() {
+    url :=&quot;http://wx.qlogo.cn/Vaz7vE1/64&quot;
+    resp ,err := http.Get(url)
+    if err != nil {
+        fmt.Fprint(os.Stderr ,&quot;get url error&quot; , err)
+    }
+
+
+    defer resp.Body.Close()
+    
+    out, err := os.Create(&quot;/tmp/icon_wx_2.png&quot;)
+    wt :=bufio.NewWriter(out)
+    
+    defer out.Close()
+    
+    n, err :=io.Copy(wt, resp.Body)
+    fmt.Println(&quot;write&quot; , n)
+    if err != nil {
+        panic(err)
+    }
+    wt.Flush()
+}</code></pre>
+<p>同理，如果我们要复制大文件也可以用 <code>io.copy</code> 这个，防止产生内存溢出。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

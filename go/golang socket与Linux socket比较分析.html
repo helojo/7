@@ -1,0 +1,332 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang socket与Linux socket比较分析' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang socket与Linux socket比较分析</center></div><div class='banquan'>原文出处:本文由博客园博主ustc_kunkun提供。<br/>
+原文连接:https://www.cnblogs.com/ustc-kunkun/p/11990285.html</div><br>
+    <p>&nbsp; &nbsp; &nbsp; &nbsp;在posix标准推出后，socket在各大主流OS平台上都得到了很好的支持。而Golang是自带runtime的跨平台编程语言，Go中提供给开发者的socket API是建立在操作系统原生socket接口之上的。但golang 中的socket接口在行为特点与操作系统原生接口有一些不同。本文将对结合一个简单的hello/hi的网络聊天程序加以分析。</p>
+<p style="text-align: left;">&nbsp; &nbsp; <span style="font-size: 18pt;"><strong>一、socket简介</strong></span></p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;首先进程之间可以进行通信的前提是进程可以被唯一标识，在本地通信时可以使用PID唯一标识，而在网络中这种方法不可行，我们可以通过IP地址+协议+端口号来唯一标识一个进程，然后利用socket进行通信。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;socket是位于应用层和传输层中的抽象层，它是不属于七层架构中的:</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="./images/golang socket与Linux socket比较分析0.png" alt="" width="362" height="276" /></p>
+<p>&nbsp; &nbsp; &nbsp;而socket通信流程如下:</p>
+<p>1.服务端创建socket</p>
+<p>2.服务端绑定socket和端口号</p>
+<p>3.服务端监听该端口号</p>
+<p>4.服务端启动accept()用来接收来自客户端的连接请求，此时如果有连接则继续执行，否则将阻塞在这里。</p>
+<p>5.客户端创建socket</p>
+<p>6.客户端通过IP地址和端口号连接服务端，即tcp中的三次握手</p>
+<p>7.如果连接成功，客户端可以向服务端发送数据</p>
+<p>8.服务端读取客户端发来的数据</p>
+<p>9.任何一端均可主动断开连接</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="./images/golang socket与Linux socket比较分析1.png" alt="" width="440" height="271" /></p>
+<p style="text-align: left;"><span style="font-size: 18pt;"><strong>&nbsp;二、socket编程</strong></span></p>
+<p>&nbsp; &nbsp; 有了抽象的socket后，当使用TCP或UDP协议进行web编程时，可以通过以下的方式进行</p>
+<p>服务端伪代码:</p>
+<div class="cnblogs_code">
+<pre><code>listenfd =<span> socket(&hellip;&hellip;)
+bind(listenfd, ServerIp:Port, &hellip;&hellip;)
+listen(listenfd, &hellip;&hellip;)
+while(true<span>) {
+  conn =<span> accept(listenfd, &hellip;&hellip;)
+  receive(conn, &hellip;&hellip;)
+  send(conn, &hellip;&hellip;)
+}</span></span></span></pre>
+</div>
+<p>客户端伪代码:</p>
+<div class="cnblogs_code">
+<pre><code>clientfd =<span> socket(&hellip;&hellip;)
+connect(clientfd, serverIp:Port, &hellip;&hellip;)
+send(clientfd, data)
+receive(clientfd, &hellip;&hellip;)
+close(clientfd)</span></pre>
+</div>
+<p>&nbsp; &nbsp; &nbsp; 上述伪代码中，listenfd就是为了实现服务端监听创建的socket描述符，而bind方法就是服务端进程占用端口，避免其它端口被其它进程使用，listen方法开始对端口进行监听。下面的while循环用来处理客户端源源不断的请求，accept方法返回一个conn，用来区分各个客户端的连接的，之后的接受和发送动作都是基于这个conn来实现的。其实accept就是和客户端的connect一起完成了TCP的三次握手。<br /><br /></p>
+<h1>三、golang中的socket</h1>
+<p>&nbsp; &nbsp; &nbsp; golang中提供了一些网络编程的API,包括Dial,Listen,Accept,Read,Write,Close等.</p>
+<p>3.1 Listen()</p>
+<p>&nbsp; &nbsp; &nbsp;首先使用服务端net.Listen()方法创建套接字，绑定端口和监听端口。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #000000;">func Listen(network, address string) (Listener, error) {
+</span><span style="color: #008080;">2</span> <span style="color: #000000;">    var lc ListenConfig
+</span><span style="color: #008080;">3</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> lc.Listen(context.Background(), network, address)
+</span><span style="color: #008080;">4</span> }</pre>
+</div>
+<p>&nbsp; &nbsp; &nbsp; 以上是golang提供的Listen函数源码，其中network表示网络协议，如tcp,tcp4,tcp6,udp,udp4,udp6等。address为绑定的地址，返回的Listener实际上是一个套接字描述符，error中保存错误信息。</p>
+<p>&nbsp; &nbsp; &nbsp;而在Linuxsocket中使用socket,bind和listen函数来完成同样功能</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;"> socket(协议域，套接字类型，协议)</span>
+<span style="color: #0000ff;">int</span> socket(<span style="color: #0000ff;">int</span> domain, <span style="color: #0000ff;">int</span> type, <span style="color: #0000ff;">int</span><span style="color: #000000;"> protocol);
+
+</span><span style="color: #0000ff;">int</span> bind(<span style="color: #0000ff;">int</span> sockfd, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">struct</span> sockaddr *<span style="color: #000000;">addr, socklen_t addrlen);
+
+</span><span style="color: #0000ff;">int</span> listen(<span style="color: #0000ff;">int</span> sockfd, <span style="color: #0000ff;">int</span> backlog);</pre>
+</div>
+<p>3.2 Dial()</p>
+<p>&nbsp; &nbsp;当客户端想要发起某个连接时，就会使用net.Dial()方法来发起连接</p>
+<div class="cnblogs_code">
+<pre><code>func Dial(network, address <span style="color: #0000ff;">string</span><span style="color: #000000;">) (Conn, error) {
+    </span><span style="color: #0000ff;">var</span><span style="color: #000000;"> d Dialer
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> d.Dial(network, address)
+}</span></pre>
+</div>
+<p>&nbsp; &nbsp; &nbsp;其中network表示网络协议，address为要建立连接的地址，返回的Conn实际是标识每一个客户端的，在golang中定义了一个Conn的接口:</p>
+<div class="cnblogs_code">
+<pre><code>type Conn <span style="color: #0000ff;">interface</span><span style="color: #000000;"> {
+    Read(b []</span><span style="color: #0000ff;">byte</span>) (n <span style="color: #0000ff;">int</span><span style="color: #000000;">, err error)
+    Write(b []</span><span style="color: #0000ff;">byte</span>) (n <span style="color: #0000ff;">int</span><span style="color: #000000;">, err error)
+    Close() error
+    LocalAddr() Addr
+    RemoteAddr() Addr
+    SetDeadline(t time.Time) error
+    SetReadDeadline(t time.Time) error
+    SetWriteDeadline(t time.Time) error
+}<br /><br /></span></pre>
+<div>
+<div>type&nbsp;conn&nbsp;struct&nbsp;{</div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;fd&nbsp;*netFD</div>
+<div>}</div>
+</div>
+</div>
+<p>&nbsp; &nbsp; &nbsp;其中netFD是golang网络库里最核心的数据结构，贯穿了golang网络库所有的API,对底层的socket进行封装，屏蔽了不同操作系统的网络实现，这样通过返回的Conn，我们就可以使用golang提供的socket底层函数了。</p>
+<p>&nbsp; 在Linuxsocket中使用connect函数来创建连接</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">int</span> connect(<span style="color: #0000ff;">int</span> sockfd, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">struct</span> sockaddr *addr, socklen_t addrlen);</pre>
+</div>
+<p>3.3 Accept()</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;当服务端调用net.Listen()后会开始监听指定地址，而客户端调用net.Dial()后发起连接请求，然后服务端调用net.Accept()接收请求，这里端与端的连接就建立好了，实际上到这一步也就完成了TCP中的三次握手。</p>
+<div class="cnblogs_code">
+<pre><code>Accept() (Conn, error)</pre>
+</div>
+<p>&nbsp; &nbsp; &nbsp; golang的socket实际上是非阻塞的,但golang本身对socket做了一定处理，使其看起来是阻塞的。</p>
+<p>&nbsp; &nbsp; &nbsp; 在Linuxsocket中使用accept函数来实现同样功能</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">//sockfd是<strong>服务器</strong>套接字描述符，sockaddr返回客户端协议地址，socklen_t是协议地址长度。<br />int</span> accept(<span style="color: #0000ff;">int</span> sockfd, <span style="color: #0000ff;">struct</span> sockaddr *addr, socklen_t *addrlen);</pre>
+</div>
+<p>3.4 Write()</p>
+<p>&nbsp; &nbsp; &nbsp; 端与端的连接已经建立了，接下来开始进行读写操作，conn.Write()向socket写数据</p>
+<div class="cnblogs_code">
+<div>&nbsp; &nbsp;Write(b&nbsp;[]byte)&nbsp;(n&nbsp;int,&nbsp;err&nbsp;error)</div>
+<pre><code>func (c *conn) Write(b []<span style="color: #0000ff;">byte</span>) (<span style="color: #0000ff;">int</span><span style="color: #000000;">, error) {
+    </span><span style="color: #0000ff;">if</span> !<span style="color: #000000;">c.ok() {
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">, syscall.EINVAL
+    }
+    n, err :</span>=<span style="color: #000000;"> c.fd.Write(b)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        err </span>= &amp;OpError{Op: <span style="color: #800000;">"</span><span style="color: #800000;">write</span><span style="color: #800000;">"</span><span style="color: #000000;">, Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> n, err
+}</span></pre>
+</div>
+<p>&nbsp; &nbsp; 其中写入的数据是一个二进制字节流，n返回的数据的长度，err保存错误信息</p>
+<p>&nbsp; &nbsp; Linuxsocket中对应的则是send函数</p>
+<div class="cnblogs_code">
+<pre><code>ssize_t send(<span style="color: #0000ff;">int</span> sockfd, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">void</span> *buf, size_t len, <span style="color: #0000ff;">int</span> flags);</pre>
+</div>
+<p>3.5 Read()</p>
+<p>&nbsp; &nbsp; &nbsp;客户端发送完数据以后，服务端可以接收数据，golang中调用conn.Read()读取数据，源码如下:</p>
+<div class="cnblogs_code">
+<pre><code>Read(b []<span style="color: #0000ff;">byte</span>) (n <span style="color: #0000ff;">int</span>, err error)</pre>
+<div>
+<div>func&nbsp;(c&nbsp;*conn)&nbsp;Read(b&nbsp;[]byte)&nbsp;(int,&nbsp;error)&nbsp;{</div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;!c.ok()&nbsp;{</div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;0,&nbsp;syscall.EINVAL</div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;}</div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;n,&nbsp;err&nbsp;:=&nbsp;c.fd.Read(b)</div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;if&nbsp;err&nbsp;!=&nbsp;nil&nbsp;&amp;&amp;&nbsp;err&nbsp;!=&nbsp;io.EOF&nbsp;{</div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;err&nbsp;=&nbsp;&amp;OpError{Op:&nbsp;"read",&nbsp;Net:&nbsp;c.fd.net,&nbsp;Source:&nbsp;c.fd.laddr,&nbsp;Addr:&nbsp;c.fd.raddr,&nbsp;Err:&nbsp;err}</div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;}</div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;return&nbsp;n,&nbsp;err</div>
+<div>}</div>
+</div>
+</div>
+<p>&nbsp; &nbsp; &nbsp; 其参数与Write()中的含义一样，在Linuxsocket中使用recv函数完成此功能</p>
+<div class="cnblogs_code">
+<pre><code>ssize_t recv(<span style="color: #0000ff;">int</span> sockfd, <span style="color: #0000ff;">void</span> *buf, size_t len, <span style="color: #0000ff;">int</span> flags);</pre>
+</div>
+<p>3.6 Close()</p>
+<p>&nbsp; &nbsp; &nbsp;当服务端或者客户端想要关闭套接字时，调用Close()方法关闭连接。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">Close() error<br />
+func (c </span>*<span style="color: #000000;">conn) Close() error {
+    </span><span style="color: #0000ff;">if</span> !<span style="color: #000000;">c.ok() {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> syscall.EINVAL
+    }
+    err :</span>=<span style="color: #000000;"> c.fd.Close()
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        err </span>= &amp;OpError{Op: <span style="color: #800000;">"</span><span style="color: #800000;">close</span><span style="color: #800000;">"</span><span style="color: #000000;">, Net: c.fd.net, Source: c.fd.laddr, Addr: c.fd.raddr, Err: err}
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> err
+}</span></pre>
+</div>
+<p>&nbsp; &nbsp; 在Linuxsocket中使用close函数</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">int</span> close(<span style="color: #0000ff;">int</span> socketfd)</pre>
+</div>
+<h1>四、golang实现Hello/hi网络聊天程序</h1>
+<p>4.1 server.go</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">net</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">strings</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+</span><span style="color: #008000;">//</span><span style="color: #008000;">UserMap保存的是当前聊天室所有用户id的集合</span>
+<span style="color: #0000ff;">var</span> UserMap map[<span style="color: #0000ff;">string</span>]net.Conn = make(map[<span style="color: #0000ff;">string</span><span style="color: #000000;">]net.Conn)
+func main() {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">监听本地所有ip的8000端口</span>
+    listen_socket, err := net.Listen(<span style="color: #800000;">"</span><span style="color: #800000;">tcp</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">127.0.0.1:8000</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">服务启动失败</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">关闭监听的端口</span>
+<span style="color: #000000;">    defer listen_socket.Close()
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">等待用户加入聊天室</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">用于conn接收链接</span>
+        conn, err :=<span style="color: #000000;"> listen_socket.Accept()
+        </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+            fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">连接失败</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+        }
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">打印加入聊天室的公网IP地址</span>
+        fmt.Println(conn.RemoteAddr(), <span style="color: #800000;">"</span><span style="color: #800000;">连接成功</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">定义一个goroutine，这里主要是为了并发运行</span>
+<span style="color: #000000;">        go DataProcessing(conn)
+    }
+}
+func DataProcessing(conn net.Conn) {
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">定义一个长度为255的切片</span>
+        data := make([]<span style="color: #0000ff;">byte</span>, <span style="color: #800080;">255</span><span style="color: #000000;">)
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">读取客户端传来的数据，msg_length保存长度，err保存错误信息</span>
+        msg_length, err :=<span style="color: #000000;"> conn.Read(data)
+        </span><span style="color: #0000ff;">if</span> msg_length == <span style="color: #800080;">0</span> || err !=<span style="color: #000000;"> nil {
+            </span><span style="color: #0000ff;">continue</span><span style="color: #000000;">
+        }
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">解析协议,通过分隔符"|"获取需要的数据,msg_str[0]存放操作类别
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">msg_str[1]存放用户名，msg_str[2]如果有就存放发送的消息</span>
+        msg_str := strings.Split(<span style="color: #0000ff;">string</span>(data[<span style="color: #800080;">0</span>:msg_length]), <span style="color: #800000;">"</span><span style="color: #800000;">|</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+        </span><span style="color: #0000ff;">switch</span> msg_str[<span style="color: #800080;">0</span><span style="color: #000000;">] {
+        </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">"</span><span style="color: #800000;">nick</span><span style="color: #800000;">"</span><span style="color: #000000;">:
+            fmt.Println(conn.RemoteAddr(), </span><span style="color: #800000;">"</span><span style="color: #800000;">的用户名是</span><span style="color: #800000;">"</span>, msg_str[<span style="color: #800080;">1</span><span style="color: #000000;">])
+            </span><span style="color: #0000ff;">for</span> user, message :=<span style="color: #000000;"> range UserMap {
+                </span><span style="color: #008000;">//</span><span style="color: #008000;">向除自己之外的用户发送加入聊天室的消息</span>
+                <span style="color: #0000ff;">if</span> user != msg_str[<span style="color: #800080;">1</span><span style="color: #000000;">] {
+                    message.Write([]</span><span style="color: #0000ff;">byte</span>(<span style="color: #800000;">"</span><span style="color: #800000;">用户</span><span style="color: #800000;">"</span> + msg_str[<span style="color: #800080;">1</span>] + <span style="color: #800000;">"</span><span style="color: #800000;">加入聊天室</span><span style="color: #800000;">"</span><span style="color: #000000;">))
+                }
+            }
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">将该用户加入用户id的集合</span>
+            UserMap[msg_str[<span style="color: #800080;">1</span>]] =<span style="color: #000000;"> conn
+        </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">"</span><span style="color: #800000;">send</span><span style="color: #800000;">"</span><span style="color: #000000;">:
+            </span><span style="color: #0000ff;">for</span> user, message :=<span style="color: #000000;"> range UserMap {
+                </span><span style="color: #0000ff;">if</span> user != msg_str[<span style="color: #800080;">1</span><span style="color: #000000;">] {
+                    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">Send </span><span style="color: #800000;">"</span>+msg_str[<span style="color: #800080;">2</span>]+<span style="color: #800000;">"</span><span style="color: #800000;"> to </span><span style="color: #800000;">"</span><span style="color: #000000;">, user)
+                    </span><span style="color: #008000;">//</span><span style="color: #008000;">向除自己之外的用户发送聊天消息</span>
+                    message.Write([]<span style="color: #0000ff;">byte</span>(<span style="color: #800000;">"</span><span style="color: #800000;">       用户</span><span style="color: #800000;">"</span> + msg_str[<span style="color: #800080;">1</span>] + <span style="color: #800000;">"</span><span style="color: #800000;">: </span><span style="color: #800000;">"</span> + msg_str[<span style="color: #800080;">2</span><span style="color: #000000;">]))
+                }
+            }
+        </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">"</span><span style="color: #800000;">quit</span><span style="color: #800000;">"</span><span style="color: #000000;">:
+            </span><span style="color: #0000ff;">for</span> user, message :=<span style="color: #000000;"> range UserMap {
+                </span><span style="color: #0000ff;">if</span> user != msg_str[<span style="color: #800080;">1</span><span style="color: #000000;">] {
+                    </span><span style="color: #008000;">//</span><span style="color: #008000;">向除自己之外的用户发送退出聊天室的消失</span>
+                    message.Write([]<span style="color: #0000ff;">byte</span>(<span style="color: #800000;">"</span><span style="color: #800000;">用户</span><span style="color: #800000;">"</span> + msg_str[<span style="color: #800080;">1</span>] + <span style="color: #800000;">"</span><span style="color: #800000;">退出聊天室</span><span style="color: #800000;">"</span><span style="color: #000000;">))
+                }
+            }
+            fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">用户 </span><span style="color: #800000;">"</span> + msg_str[<span style="color: #800080;">1</span>] + <span style="color: #800000;">"</span><span style="color: #800000;">退出聊天室</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">将该用户名从用户id的集合中删除</span>
+            delete(UserMap, msg_str[<span style="color: #800080;">1</span><span style="color: #000000;">])
+        }
+    }
+}</span></pre>
+</div>
+<p>5.2 client.go</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">bufio</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">net</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">os</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+</span><span style="color: #0000ff;">var</span> nick <span style="color: #0000ff;">string</span> = <span style="color: #800000;">""</span><span style="color: #000000;">
+func main() {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">拨号操作</span>
+    conn, err := net.Dial(<span style="color: #800000;">"</span><span style="color: #800000;">tcp</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">127.0.0.1:8000</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">连接失败</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }
+    defer conn.Close()
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">连接服务成功 \n</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">创建用户名</span>
+    fmt.Printf(<span style="color: #800000;">"</span><span style="color: #800000;">在进入聊天室之前给自己取个名字吧:</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    fmt.Scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%s</span><span style="color: #800000;">"</span>, &amp;<span style="color: #000000;">nick)
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">用户</span><span style="color: #800000;">"</span> + nick + <span style="color: #800000;">"</span><span style="color: #800000;">欢迎进入聊天室</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">向服务器发送数据</span>
+    conn.Write([]<span style="color: #0000ff;">byte</span>(<span style="color: #800000;">"</span><span style="color: #800000;">nick|</span><span style="color: #800000;">"</span> +<span style="color: #000000;"> nick))
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">定义一个goroutine，这里主要是为了并发运行</span>
+<span style="color: #000000;">    go SendMessage(conn)
+    </span><span style="color: #0000ff;">var</span> msg <span style="color: #0000ff;">string</span>
+    <span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+        msg </span>= <span style="color: #800000;">""</span>
+        <span style="color: #008000;">//</span><span style="color: #008000;">由于golangz的fmt包输入字符串不能读取空格，所以此处重写了一个Scanf函数</span>
+        Scanf(&amp;<span style="color: #000000;">msg)
+        </span><span style="color: #0000ff;">if</span> msg == <span style="color: #800000;">"</span><span style="color: #800000;">quit</span><span style="color: #800000;">"</span><span style="color: #000000;"> {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">这里的quit，send，以及上面的nick是为了识别客户端做的是设置用户名，发消息还是退出</span>
+            conn.Write([]<span style="color: #0000ff;">byte</span>(<span style="color: #800000;">"</span><span style="color: #800000;">quit|</span><span style="color: #800000;">"</span> +<span style="color: #000000;"> nick))
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">
+        }
+        </span><span style="color: #0000ff;">if</span> msg != <span style="color: #800000;">""</span><span style="color: #000000;"> {
+            conn.Write([]</span><span style="color: #0000ff;">byte</span>(<span style="color: #800000;">"</span><span style="color: #800000;">send|</span><span style="color: #800000;">"</span> + nick + <span style="color: #800000;">"</span><span style="color: #800000;">|</span><span style="color: #800000;">"</span> +<span style="color: #000000;"> msg))
+        }
+    }
+}
+func SendMessage(conn net.Conn) {
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">定义一个长度为255的切片</span>
+        data := make([]<span style="color: #0000ff;">byte</span>, <span style="color: #800080;">255</span><span style="color: #000000;">)
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">读取服务器传来的数据，msg_length保存长度，err保存错误信息</span>
+        msg_length, err :=<span style="color: #000000;"> conn.Read(data)
+        </span><span style="color: #0000ff;">if</span> msg_length == <span style="color: #800080;">0</span> || err !=<span style="color: #000000;"> nil {
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">
+        }
+        fmt.Println(</span><span style="color: #0000ff;">string</span>(data[<span style="color: #800080;">0</span><span style="color: #000000;">:msg_length]))
+    }
+}
+</span><span style="color: #008000;">//</span><span style="color: #008000;">重写的Scanf函数</span>
+func Scanf(a *<span style="color: #0000ff;">string</span><span style="color: #000000;">) {
+    reader :</span>=<span style="color: #000000;"> bufio.NewReader(os.Stdin)
+    data, _, _ :</span>=<span style="color: #000000;"> reader.ReadLine()
+    </span>*a = <span style="color: #0000ff;">string</span><span style="color: #000000;">(data)
+}<br /></span></pre>
+</div>
+<p>&nbsp; &nbsp; &nbsp; golang中使用goroutine实现并发</p>
+<p>5.3 运行截图</p>
+<p>多人聊天截图(左上角为服务端)</p>
+<p><img src="./images/golang socket与Linux socket比较分析2.png" alt="" width="634" height="416" /></p>
+<p>用户退出聊天室(左上角为服务端)</p>
+<p><img src="./images/golang socket与Linux socket比较分析3.png" alt="" width="617" height="442" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;参考资料:</p>
+<p>&nbsp; &nbsp; &nbsp;<a href="https://tonybai.com/2015/11/17/tcp-programming-in-golang/">https://tonybai.com/2015/11/17/tcp-programming-in-golang/</a></p>
+<p>&nbsp; &nbsp; &nbsp;<a href="https://www.jianshu.com/p/325ac02fc31c">https://www.jianshu.com/p/325ac02fc31c</a></p>
+<p>&nbsp; &nbsp; &nbsp;<a href="https://blog.csdn.net/dyd961121/article/details/81252920">https://blog.csdn.net/dyd961121/article/details/81252920</a></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

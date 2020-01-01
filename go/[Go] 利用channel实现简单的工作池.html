@@ -1,0 +1,101 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] 利用channel实现简单的工作池' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] 利用channel实现简单的工作池</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/11918442.html</div><br>
+    <p>先启动固定数量的goroutine,每个goroutine都在从channel中获取数据,如果这个channel为空,就阻塞等待在那里<br />channel中传递一个Car类型,这个类型主要负责具体做的任务<br />也就是channel就是运输通道,在这个通道上传递Car这样一个汽车,来一辆车就处理这辆车的工作,没有车过来那这些工人就在那等着</p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">log</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">sync</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+type Pool struct {
+    workerNum </span><span style="color: #0000ff;">int</span><span style="color: #000000;">
+    road      chan </span>*<span style="color: #000000;">Car
+    wg        </span><span style="color: #0000ff;">sync</span><span style="color: #000000;">.WaitGroup
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">初始化这个对象</span>
+func NewPool(wn <span style="color: #0000ff;">int</span>) *<span style="color: #000000;">Pool {
+    return </span>&amp;Pool{workerNum: wn, road: <span style="color: #0000ff;">make</span>(chan *<span style="color: #000000;">Car)}
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">往channel添加具体任务</span>
+func (p *Pool) AddCar(f *<span style="color: #000000;">Car) {
+    p.road </span>&lt;-<span style="color: #000000;"> f
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">goroutine去工作</span>
+func (p *Pool) work(workId <span style="color: #0000ff;">int</span><span style="color: #000000;">) {
+    </span><span style="color: #0000ff;">for</span> f :=<span style="color: #000000;"> range p.road {
+        log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">workId:</span><span style="color: #800000;">"</span>, workId, <span style="color: #800000;">"</span><span style="color: #800000;">start</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+        f.</span><span style="color: #0000ff;">do</span><span style="color: #000000;">()
+        log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">workId:</span><span style="color: #800000;">"</span>, workId, <span style="color: #800000;">"</span><span style="color: #800000;">done</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }
+    p.wg.Done()
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">创建goroutine等着接工作</span>
+func (p *<span style="color: #000000;">Pool) Run() {
+    </span><span style="color: #0000ff;">for</span> i := <span style="color: #800080;">0</span>; i &lt; p.workerNum; i++<span style="color: #000000;"> {
+        go p.work(i)
+        p.wg.Add(</span><span style="color: #800080;">1</span><span style="color: #000000;">)
+    }
+    p.wg.Wait()
+}
+
+func (p </span>*<span style="color: #000000;">Pool) colse() {
+    close(p.road)
+}
+
+func main() {
+    pool :</span>= NewPool(<span style="color: #800080;">5</span><span style="color: #000000;">)
+    go func() {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">模拟要做10件事</span>
+        <span style="color: #0000ff;">for</span> i := <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">10</span>; i++<span style="color: #000000;"> {
+            car :</span>=<span style="color: #000000;"> Car{
+                param: i,
+            }
+            pool.AddCar(</span>&amp;<span style="color: #000000;">car)
+        }
+        pool.colse()
+    }()
+    pool.Run()
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">具体做的事通过这个来传递</span><span style="color: #008000;">*/</span><span style="color: #000000;">
+type Car struct {
+    param </span><span style="color: #0000ff;">int</span><span style="color: #000000;">
+}
+
+func (c </span>*Car) <span style="color: #0000ff;">do</span><span style="color: #000000;">() error {
+    log.Println(</span><span style="color: #0000ff;">time</span><span style="color: #000000;">.Now(), c.param)
+    return nil
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,66 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修结构体的传参理解成员的存储方式' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>结构体的传参理解成员的存储方式</center></div><div class='banquan'>原文出处:本文由博客园博主等待阳光静静看着脸提供。<br/>
+原文连接:https://www.cnblogs.com/path130/p/11114877.html</div><br>
+    <div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 结构体的成员变量在内存中存储的方式，决定于设定的内存对齐方式是几字节：gcc编译默认使用4字节对齐：<br /><br /> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> test_buf
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> a;
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">char</span><span style="color: #000000;"> c;
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">char</span> buf[<span style="color: #800080;">8</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">char</span> *<span style="color: #000000;">str;
+</span><span style="color: #008080;"> 9</span>     
+<span style="color: #008080;">10</span> <span style="color: #000000;">}buf_t;
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">void</span> test_send_srtbuf(<span style="color: #0000ff;">void</span> *<span style="color: #000000;">arg)
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">14</span>     <span style="color: #008000;">//</span><span style="color: #008000;">buf_t *revbuf = (buf_t *)arg;</span>
+<span style="color: #008080;">15</span>     buf_t *revbuf =<span style="color: #000000;"> arg;
+</span><span style="color: #008080;">16</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">revbuf-&gt;a=%d,revbuf-&gt;c=%c,revbuf-&gt;buf=%s,revbuf-&gt;str=%s\n</span><span style="color: #800000;">"</span>,revbuf-&gt;a,revbuf-&gt;c,revbuf-&gt;buf,revbuf-&gt;<span style="color: #000000;">str);
+</span><span style="color: #008080;">17</span>     <span style="color: #008000;">//</span><span style="color: #008000;">char *testbuf = arg;
+</span><span style="color: #008080;">18</span>     <span style="color: #008000;">//</span><span style="color: #008000;">printf("testbuf=%s,testbuf大小为：%d\n",testbuf,sizeof(testbuf));</span>
+<span style="color: #008080;">19</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">21</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">23</span>     <span style="color: #0000ff;">int</span> len = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">24</span>     <span style="color: #0000ff;">char</span> revbuf[<span style="color: #800080;">30</span>] = {<span style="color: #800080;">0</span><span style="color: #000000;">};
+</span><span style="color: #008080;">25</span>     buf_t buf=<span style="color: #000000;">{
+</span><span style="color: #008080;">26</span>         .a = <span style="color: #800080;">25</span><span style="color: #000000;">,
+</span><span style="color: #008080;">27</span>         .c = <span style="color: #800000;">'</span><span style="color: #800000;">b</span><span style="color: #800000;">'</span><span style="color: #000000;">,
+</span><span style="color: #008080;">28</span>         .buf=<span style="color: #800000;">"</span><span style="color: #800000;">hello wr</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+</span><span style="color: #008080;">29</span>         .str = <span style="color: #800000;">"</span><span style="color: #800000;">w143bd</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">    };
+</span><span style="color: #008080;">31</span>     len = <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(buf);
+</span><span style="color: #008080;">32</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">len =%d.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,len);
+</span><span style="color: #008080;">33</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">buf.a=%d ,buf.c=%c, buf.buf=%s, buf.str=%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,buf.a,buf.c,buf.buf,buf.str);
+</span><span style="color: #008080;">34</span>     test_send_srtbuf(&amp;<span style="color: #000000;">buf);
+</span><span style="color: #008080;">35</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">36</span> }<br />上面程序的运行结果：</code></pre>
+<img src="./images/结构体的传参理解成员的存储方式0.png" alt="" />
+<pre><code>调用test_send_strbuf时，参数被解析为了void类型，解析时为了防止数据错乱，将它强制类型转换为结构体类型，赋值给了另一个变量，就可以访问成员的值。</code></pre>
+
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

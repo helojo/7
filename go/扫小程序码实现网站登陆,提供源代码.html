@@ -1,0 +1,277 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修扫小程序码实现网站登陆,提供源代码' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>扫小程序码实现网站登陆,提供源代码</center></div><div class='banquan'>原文出处:本文由博客园博主winlion提供。<br/>
+原文连接:https://www.cnblogs.com/techidea8/p/11394981.html</div><br>
+    <p>使用扫小程序码登陆网站<br />
+网络上关于实现本本功能的文章很多，但是给出案列的几乎没有，今天笔者实现用小程序码实现网站登陆，体验地址如下<br />
+<a href="https://idea.techidea8.com/open/login.shtml" class="uri">https://idea.techidea8.com/open/login.shtml</a></p>
+<h1 id="思路">思路</h1>
+<p><img src="./images/扫小程序码实现网站登陆,提供源代码0.png" alt="核心流程" /></p>
+<h1 id="关键流程">关键流程</h1>
+<h2 id="建立场景sceneid和websocket的绑定关系">建立场景sceneid和websocket的绑定关系</h2>
+<h3 id="获得sceneid">获得sceneid</h3>
+<p>场景ID可以前端生成，也可以后端生成，只需要保证sceneid的同一时间唯一性即可。<br />
+前端生成可以采用随机数加时间戳的形式,也可以用uuid算法</p>
+<pre><code><code>//时间戳
+var sceneid =&quot;scend-&quot; +  new Data().getTime() + Math.ceil(Math.random()*888888+1000000);</code></pre>
+<h3 id="建立websocket">建立websocket</h3>
+<pre><code><code>var ws = new WebSocket(&quot;ws://192.168.0.106/websocket?clientid=&quot;+sceneid )
+ws.onopen=function(env){
+    console.log(env)
+} 
+ws.onmessage=function(env){
+    var data = env.data;
+    //这个data 就是后端发来的用户数据
+} 
+</code></pre>
+<h3 id="后端建立websocket">后端建立websocket</h3>
+<p>后端采用go语言<code>github.com/gorilla/websocket</code>包建立websocket.因为golang 非常适合高并发场景。</p>
+<pre class="golang"><code>func (ctrl *PushCtrl) websocket(w http.ResponseWriter, req *http.Request) {
+
+    //fmt.Printf(&quot;%+v&quot;,request.Header)
+    //todo 检验接入是否合法
+    //checkToken(userId int64,token string)
+    query := req.URL.Query()
+    clientid := query.Get(&quot;clientid&quot;)
+
+    conn, err := (&amp;websocket.Upgrader{
+        CheckOrigin: func(r *http.Request) bool {
+            return true
+        },
+    }).Upgrade(w, req, nil)
+
+    if err != nil {
+        log.Println(err.Error())
+        return
+    }
+
+    clientMap.Store(clientid, conn)
+    go func(clientId string, conn *websocket.Conn) {
+        //处理出错信息
+        defer func() {
+            conn.Close()
+            clientMap.Delete(clientid)
+        }()
+        for {
+            _, _, err := conn.ReadMessage()
+            if err != nil {
+                log.Println(err.Error())
+                return
+            }
+        }
+    }(clientid, conn)
+}</code></pre>
+<p>我们采用sync.map建立sceneid和websocket的对应关系</p>
+<pre class="golang"><code>clientMap.Save(sceneid,conn)</code></pre>
+<p>对于因为异常断开的con我们需要移除</p>
+<pre class="golang"><code>clientMap.Delete(sceneid)</code></pre>
+<h2 id="获得小程序二维码">获得小程序二维码</h2>
+<h3 id="获得小程序的accesstoken">获得小程序的accesstoken</h3>
+<p>小程序access 请求接口如下<br />
+``<br />
+该接口日使用频率有限制，因此我们需要将这些数据缓存起来,缓存方案很多，有redis,也有内存，我们这里直接用一个变量即可存储</p>
+<pre class="golang"><code>accesstoken :=&quot;&quot;
+func GetAccessToken() string{
+    return accesstoken 
+}
+func RefreshAccessToken()string{
+    url = &quot;&quot;
+    resp := httpget(url)
+    //resp 是一个包含accesstoken的json字符串,我们解析这个json即可
+    accesstoken = decodeaccesstokenfromjson(resp)
+    return accesstoken 
+}</code></pre>
+<p>我们还需要一个滴答计数器用来刷新accesstoken,accesstoken 的有效期是7200秒，我们4000秒刷新一次accesstoken 即可</p>
+<pre><code><code>func refreshAccessToken(){
+    ticker := time.NewTicker(time.Second *4000)
+    for{
+        select {
+            case &lt;-ticker.C:
+                RefreshAccessToken()
+        }
+    }
+}</code></pre>
+<p>在init.go 中的init方法中启动协程</p>
+<pre><code><code>go refreshAccessToken()</code></pre>
+<h3 id="小程序二维码编程技巧">小程序二维码编程技巧</h3>
+<p>小程序二维码请求接口如下<br />
+<code>https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=ACCESSTOKEN</code></p>
+<p>由于该链接会返回俩种结果</p>
+<h4 id="错误返回json">错误返回Json</h4>
+<pre class="json"><code>{
+&quot;errcode&quot;:400001,
+&quot;errmsg&quot;:&quot;什么什么原因&quot;
+}</code></pre>
+<h4 id="正确返回j图片buffer">正确返回j图片buffer</h4>
+<p>这是一个二进制码流，因此我们需要对返回结果进行标准化处理<br />
+我们建议一种标准化结果</p>
+<pre class="json"><code>{
+code:0,
+data:&quot;&quot;,
+msg:&quot;结果说明&quot;
+}</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th>参数</th>
+<th>说明</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>code</td>
+<td>标识成功或者失败,200为成功,400为失败</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>data</td>
+<td>图片的base64格式编码</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>msg</td>
+<td>结果说明,或者出错提示</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>代码示例如下</p>
+<pre class="golang"><code>url := fmt.Sprintf(&quot;https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=%s&quot;, token)
+ret, err := util.PostJSON(url, arg)
+if err != nil {
+        util.FailMsg(w, err.Error())
+        return
+}
+
+jsonstr := string(ret)
+if strings.Contains(jsonstr, &quot;errmsg&quot;) {
+    util.FailMsg(w, jsonstr)
+    return
+} else {
+    base64data := base64.StdEncoding.EncodeToString(ret)
+    util.RespOk(w, &quot;data:image/png;base64,&quot;+base64data)
+}</code></pre>
+<p>其中util是笔者封装的常用工具包<br />
+<img src="./images/扫小程序码实现网站登陆,提供源代码1.png" alt="常用工具包" /><br />
+前端请求成功后获得data,可以利用<code>$(&quot;#qrcode&quot;).attr(&quot;src&quot;,res.data)</code>刷新图片二维码</p>
+<pre><code><code>function refreshqrcode(){
+    clientId = &quot;scene-&quot;+new Date().getTime();
+    var api = restgo.buildapi(&quot;miniapp/getwxacodeunlimit&quot;)
+    restgo.post(api,{&quot;scene&quot;:clientId}).then(res=&gt;{
+        if(res.code==200){
+            $(&quot;#qrcode&quot;).attr(&quot;src&quot;,res.data)
+        }else{
+            alert(res.msg)    
+        }
+        intiwebsocket()
+    },res=&gt;{
+        alert(res.msg)
+    })
+}</code></pre>
+<h2 id="小程序处理关键点">小程序处理关键点</h2>
+<h3 id="采用好的框架">采用好的框架</h3>
+<p>我们编程过程才用了uniapp，这个框架不错,完全是vue的语法，<br />
+一套代码可以生成<code>H5</code>/<code>小程序</code>/<code>android</code>/<code>ios</code><br />
+我们采用了vue的watch特性,通过监听userid来确定是否发送信息</p>
+<pre><code><code>watch:{
+     userid:function(a,b){
+            
+            if(a==0){
+                return 
+            }
+            
+            this.loaddata()
+            //如果clientid是空的说明不是扫码进来的    
+            if(!this.clientid){
+                return 
+            }
+//如果是扫码进来的,那么我们还需要推送消息到服务器后端
+server.PublishMsg(this.clientid,this.userid,this.role,this.avatarUrl,this.nickName).then(res=&gt;{
+                tip.error(res.msg)
+            },res=&gt;{
+                tip.error(res.msg)
+            })
+            
+     }
+  }</code></pre>
+<h3 id="获取sceneid">获取sceneid</h3>
+<p>我们通过onload方法获得sceneid</p>
+<pre><code><code>onLoad(arg) {
+        if(!!arg &amp;&amp; !!arg.scene){
+                    this.clientid = decodeURIComponent(arg.scene)
+        }
+                
+    },</code></pre>
+<h3 id="核心代码如下">核心代码如下</h3>
+<p>通过<code>gotUserInfo</code>获得用户头像、昵称等,通过<code>uni.login</code>获得code</p>
+<pre><code><code>gotUserInfo :function(e) {
+             //获得用户头像、昵称、
+              uni.login(
+              {
+                  success:(res) =&gt;{
+                            //通过wx.login获得code
+                            userInfo.code = res.code
+                                                //统一传递到后端      
+                        this.authwithcode(userInfo)
+                  }
+              }
+              )
+            }
+          },
+        authwithcode:function(userInfo){
+                        //code获得openid在后端做,做了后继续去查User表
+            server.AuthWithCode(userInfo).then(res=&gt;{
+                    //如果这个openid绑定了用户                                                                   
+                    if(res.data.id&gt;0){
+                        //这里res.data 就是user对象,可以继续操作
+                        return ;
+                    }
+                    //如果没有那么注册
+                    server.RegisterWithOpenId(res.data.mini_openid,userInfo.avatarUrl,userInfo.nickName)#.then(res=&gt;{
+                        //注册成功则返回
+                        //这里res.data 就是user对象可以继续操作
+                        
+                    },res=&gt;{
+                        tip.error(res.msg)
+                    })
+                },res=&gt;{
+                    tip.error(res.msg||&quot;&quot;);
+                })
+            }
+        },  </code></pre>
+<h2 id="体验地址">体验地址</h2>
+<p>本文所有应用体验地址如下<br />
+<a href="https://idea.techidea8.com/open/idea.shtml?id=5">互联网行业解决方案吧https://idea.techidea8.com/open/idea.shtml?id=5</a></p>
+<h2 id="关于代码">关于代码</h2>
+<h3 id="代码获得地址">代码获得地址</h3>
+<p><a href="https://idea.techidea8.com/open/idea.shtml?id=5">小程序码登陆</a></p>
+<h3 id="代码配置">代码配置</h3>
+<p>请认真阅读readme.md</p>
+<h2 id="推荐阅读">推荐阅读</h2>
+<p><a href="https://www.techidea8.com/archives/46">扫微信二维码实现网站登陆提供体验地址和源代码</a></p>
+<p><a href="https://www.techidea8.com/archives/34">开源项目golang go语言后台管理框架restgo-admin</a></p>
+<p><a href="https://www.techidea8.com/archives/22">支持手势触摸,可左右滑动的日历插件</a></p>
+<p><a href="https://www.techidea8.com/archives/31">你必须知道的18个互联网业务模型</a></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

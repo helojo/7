@@ -1,0 +1,444 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修49.Qt-网络编程之QTCPSocket和QTCPServer(实现简易网络调试助手)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>49.Qt-网络编程之QTCPSocket和QTCPServer(实现简易网络调试助手)</center></div><div class='banquan'>原文出处:本文由博客园博主NQian提供。<br/>
+原文连接:https://www.cnblogs.com/lifexy/p/11317662.html</div><br>
+    <p><span style="font-size: 16px; color: #ff0000;">8.9更新说明</span></p>
+<p><span style="color: #000000;">如下图所示,支持十六进制收发,下载地址已经更新.源码下载地址:<span style="text-decoration: underline; color: #0000ff;"><a href="https://download.csdn.net/download/qq_37997682/11504836" target="_blank"><span style="color: #0000ff; text-decoration: underline;">https://download.csdn.net/download/qq_37997682/11504836</span></a></span></span></p>
+<p><span style="font-size: 15px; color: #ff0000;"><img src="./images/49.Qt-网络编程之QTCPSocket和QTCPServer(实现简易网络调试助手)0.png" alt="" width="785" height="345" /></span></p>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">在上章&nbsp;<span style="text-decoration: underline;"><span style="color: #0000ff; text-decoration: underline;"><strong><a id="post_title_link_11315263" href="https://www.cnblogs.com/lifexy/p/11315263.html"><span style="color: #0000ff; text-decoration: underline;">48.QT-网络通信讲解1</span></a>,</strong></span></span>我们学习了网络通信基础后,本章便来实战一篇.</span></p>
+<p><span style="font-size: 15px;"><span style="font-size: 16px; color: #ff0000;"><strong>PS:</strong></span>支持客户端和服务器,提供源码,并且服务器支持多客户端连入,并且可以指定与个别客户端发送数据,也可以给所有连入的客户端发送数据.</span></p>
+<p><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>1.</strong><strong>效果图所下所示:</strong></span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/49.Qt-网络编程之QTCPSocket和QTCPServer(实现简易网络调试助手)1.png" alt="" width="549" height="410" /></span></p>
+<p><span style="font-size: 15px;">如下图所示,当服务器状态下,如果有客户端连入,会提示客户端信息:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/49.Qt-网络编程之QTCPSocket和QTCPServer(实现简易网络调试助手)2.png" alt="" width="548" height="412" /></span></p>
+<p><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>2.</strong><strong>效果操作</strong></span></p>
+<p><span style="font-size: 15px;">客户端操作:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/49.Qt-网络编程之QTCPSocket和QTCPServer(实现简易网络调试助手)3.png" alt="" width="639" height="385" /></span></p>
+<p><span style="font-size: 15px;">服务器操作:</span></p>
+<p><img src="./images/49.Qt-网络编程之QTCPSocket和QTCPServer(实现简易网络调试助手)4.png" alt="" width="691" height="533" /></p>
+<p><span style="font-size: 15px;">从上面操作可以看出,服务器支持多客户端连入,并且可以指定与个别客户端发送数据,也可以给所有连入的客户端发送数据.</span></p>
+<p><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>3.</strong><strong>首先创建UI</strong></span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/49.Qt-网络编程之QTCPSocket和QTCPServer(实现简易网络调试助手)5.png" alt="" width="456" height="320" /></span></p>
+<p><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>4.</strong><strong>注意事项</strong></span></p>
+<p><span style="font-size: 15px;">不管是服务器还是客户端,都可以通过<span style="color: #ff0000;">peerAddress()和peerPort()</span>来获取目标地址和目标端口</span></p>
+<p><span style="font-size: 15px; color: #800000;"><strong>4.1</strong><strong>服务器监听时</strong></span></p>
+<p><span style="font-size: 15px;">比如服务器,则可以通过QTcpSocket的peerAddress()则可以获取连入的客户端地址</span></p>
+<p><span style="font-size: 15px;">也可以通过children()来获取所有连入的客户端<span style="color: #ff0000;">(需要注意的是也会获取到服务器本身的tcp地址和端口)</span>,示例如下:</span></p>
+<div class="cnblogs_code">
+<pre>QList&lt;QTcpSocket *&gt; m_tcps = m_server.findChildren&lt;QTcpSocket *&gt;<span style="color: #000000;">();
+</span><span style="color: #0000ff;">foreach</span> (QTcpSocket *<span style="color: #000000;">tcp, m_tcps)
+{</span><span style="color: #000000;">
+        qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Address:</span><span style="color: #800000;">"</span> &lt;&lt; tcp-&gt;<span style="color: #000000;">peerAddress ();
+        qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Port:</span><span style="color: #800000;">"</span> &lt;&lt; tcp-&gt;<span style="color: #000000;">peerPort  ();</span><span style="color: #000000;">
+}</span></pre>
+</div>
+<p><span style="font-size: 15px;">如果我们只向连入的客户端某个端口发送数据时,就可以通过上面的方式筛选出来.</span></p>
+<p><span style="font-size: 15px;">这样做的话如果觉得很麻烦,也可以将之前连接上的客户端存到QList里再进行筛选.</span></p>
+<p><span style="color: #800000;"><strong><span style="font-size: 15px;">4.2 QTcpSocket步骤</span></strong></span></p>
+<ul>
+<li><span style="font-size: 15px;">首先通过<span style="color: #ff0000;">connectToHost()</span>来连接服务器.</span></li>
+<li><span style="font-size: 15px;">然后调用<span style="color: #ff0000;">waitForConnected()</span>来判断是否连接服务器超时</span></li>
+<li><span style="font-size: 15px;">当我们接收到服务器数据的时候,则会发出<span style="color: #ff0000;">readyRead()</span>信号,然后再进行read ()读取发来的数据</span></li>
+<li><span style="font-size: 15px;">发送数据时,则调用write()函数进行发送,当<span style="color: #ff0000;">bytesWritten()</span>信号函数触发时,便可以获取成功发送的数据长度.</span></li>
+</ul>
+<p><span style="font-size: 15px;"><span style="color: #ff0000;"><strong>注意:</strong></span>如果read到的数据长度量不是自己想要的,此时我们便可以通过bytesAvailable()来读取接收到的数据长度量.当达到多少时,再进行read ()读取.</span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><span style="color: #800000;"><strong><span style="font-size: 15px;">4.3 QTcpServer步骤</span></strong></span></p>
+<ul>
+<li><span style="font-size: 15px;">首先通过<span style="color: #ff0000;">listen(QHostAddress::AnyIPv4, port)</span>来监听所有来自IPV4的客户端</span></li>
+<li><span style="font-size: 15px;">当有新的客户端连接服务器的时候,会自动触发<span style="color: #ff0000;">newConnection()</span>信号函数,然后我们可以通过通过QTcpSocket * nextPendingConnection()成员函数来获取当前连接上的新的客户端类.然后再对QTcpSocket来进行信号槽绑定</span></li>
+<li><span style="font-size: 15px;">当客户端发来数据的时候,则可以通过我们定义的<span style="color: #ff0000;">onServerDataReady()</span>来读取数据</span></li>
+<li><span style="font-size: 15px;">当我们向某个连接的客户端发送数据时,则通过<span style="color: #ff0000;">m_server.findChildren()</span>来筛选出来,然后write即可.</span></li>
+</ul>
+<p>&nbsp;</p>
+<p><span style="background-color: #ffff99; color: #008000; font-size: 18px;"><strong>5.代码介绍</strong></span></p>
+<p><span style="color: #800000;"><strong><span style="font-size: 15px;">5.1&nbsp; 头文件介绍</span></strong></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">#ifndef WIDGET_H
+</span><span style="color: #0000ff;">#define</span> WIDGET_H<span style="color: #000000;">
+
+#include </span>&lt;QWidget&gt;<span style="color: #000000;">
+#include </span>&lt;QTcpSocket&gt;<span style="color: #000000;">
+#include </span>&lt;QTcpServer&gt;<span style="color: #000000;">
+#include </span>&lt;QMessageBox&gt;
+
+<span style="color: #0000ff;">namespace</span><span style="color: #000000;"> Ui {
+</span><span style="color: #0000ff;">class</span><span style="color: #000000;"> Widget;
+}
+
+</span><span style="color: #0000ff;">class</span> Widget : <span style="color: #0000ff;">public</span><span style="color: #000000;"> QWidget
+{
+    Q_OBJECT
+
+    QTcpSocket m_client;
+    QTcpServer m_server;
+    QString targetAddr;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> targetPort;
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">explicit</span> Widget(QWidget *parent = <span style="color: #800080;">0</span><span style="color: #000000;">);
+    </span>~<span style="color: #000000;">Widget();
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;"> slots:
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> on_btn_switch_clicked();
+    </span><span style="color: #0000ff;">void</span> on_tcpMode_currentIndexChanged(<span style="color: #0000ff;">int</span><span style="color: #000000;"> index);
+    </span><span style="color: #0000ff;">void</span> on_btn_send_clicked();             <span style="color: #008000;">//</span><span style="color: #008000;">发送按钮</span>
+    <span style="color: #0000ff;">void</span> on_betn_clear_clicked();           <span style="color: #008000;">//</span><span style="color: #008000;">清空按钮
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">客户端槽函数</span>
+    <span style="color: #0000ff;">void</span><span style="color: #000000;"> onClientConnected();
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> onClientDisconnected();
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> onClientDataReady();
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> onClientBytesWritten(qint64 bytes);
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> onClientErr(QAbstractSocket::SocketError socketError);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">服务器槽函数</span>
+    <span style="color: #0000ff;">void</span><span style="color: #000000;"> onServerNewConnection();
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> onServerConnected();
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> onServerDisconnected();
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> onServerDataReady();
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> onServerBytesWritten(qint64 bytes);
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">void</span> startConnect(<span style="color: #0000ff;">bool</span><span style="color: #000000;"> ison);
+
+    </span><span style="color: #0000ff;">void</span> initClientSignals();   <span style="color: #008000;">//</span><span style="color: #008000;">初始化客户端信号槽</span>
+    <span style="color: #0000ff;">bool</span> startClient();         <span style="color: #008000;">//</span><span style="color: #008000;">启动客户端</span>
+
+    <span style="color: #0000ff;">void</span> initServerSignals();   <span style="color: #008000;">//</span><span style="color: #008000;">初始化客户端信号槽</span>
+    <span style="color: #0000ff;">bool</span> startServer();     <span style="color: #008000;">//</span><span style="color: #008000;">启动服务器</span>
+<span style="color: #000000;">
+    Ui::Widget </span>*<span style="color: #000000;">ui;
+};
+
+</span><span style="color: #0000ff;">#endif</span> <span style="color: #008000;">//</span><span style="color: #008000;"> WIDGET_H</span></pre>
+</div>
+<p><span style="color: #800000;"><strong><span style="font-size: 15px;">5.2&nbsp; widget.cpp介绍</span></strong></span></p>
+<p><span style="font-size: 15px;">该cpp主要是用来处理界面操作的函数</span></p>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">widget.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">ui_widget.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+Widget::Widget(QWidget </span>*<span style="color: #000000;">parent) :
+    QWidget(parent),
+    ui(</span><span style="color: #0000ff;">new</span><span style="color: #000000;"> Ui::Widget)
+{
+    ui</span>-&gt;setupUi(<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+    startConnect(</span><span style="color: #0000ff;">false</span><span style="color: #000000;">);
+    on_tcpMode_currentIndexChanged(</span><span style="color: #800080;">0</span><span style="color: #000000;">);
+    initClientSignals();        </span><span style="color: #008000;">//</span><span style="color: #008000;">初始化客户端信号槽</span><span style="color: #000000;">
+    initServerSignals();        </span><span style="color: #008000;">//</span><span style="color: #008000;">初始化服务器信号槽
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">限制只能数字输入</span><span style="color: #000000;">
+    QRegExp regx(</span><span style="color: #800000;">"</span><span style="color: #800000;">[0-9]+$</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    QValidator </span>*validator = <span style="color: #0000ff;">new</span> QRegExpValidator(regx, <span style="color: #0000ff;">this</span><span style="color: #000000;"> );
+    ui</span>-&gt;ipAddr1-&gt;<span style="color: #000000;">setValidator( validator );
+    ui</span>-&gt;ipAddr2-&gt;<span style="color: #000000;">setValidator( validator );
+    ui</span>-&gt;ipAddr3-&gt;<span style="color: #000000;">setValidator( validator );
+    ui</span>-&gt;ipAddr4-&gt;<span style="color: #000000;">setValidator( validator );
+    ui</span>-&gt;ipPort-&gt;<span style="color: #000000;">setValidator( validator );
+}
+</span><span style="color: #0000ff;">void</span> Widget::on_tcpMode_currentIndexChanged(<span style="color: #0000ff;">int</span><span style="color: #000000;"> index)
+{
+    </span><span style="color: #0000ff;">if</span>(index==<span style="color: #800080;">0</span>)        <span style="color: #008000;">//</span><span style="color: #008000;">clent</span><span style="color: #000000;">
+    {
+        ui</span>-&gt;ipPortLabel-&gt;setText(<span style="color: #800000;">"</span><span style="color: #800000;">服务器端口号:</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        ui</span>-&gt;ipAddLabel-&gt;<span style="color: #000000;">show();
+        ui</span>-&gt;ipAdds-&gt;<span style="color: #000000;">show();
+        ui</span>-&gt;targetLabel-&gt;<span style="color: #000000;">hide();
+        ui</span>-&gt;targetObject-&gt;<span style="color: #000000;">hide();
+    }
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+    {
+        ui</span>-&gt;ipAddLabel-&gt;<span style="color: #000000;">hide();
+        ui</span>-&gt;ipAdds-&gt;<span style="color: #000000;">hide();
+        ui</span>-&gt;ipPortLabel-&gt;setText(<span style="color: #800000;">"</span><span style="color: #800000;">本地端口号:</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+}
+
+</span><span style="color: #0000ff;">void</span> Widget::on_btn_switch_clicked()        <span style="color: #008000;">//</span><span style="color: #008000;">切换连接开关</span><span style="color: #000000;">
+{
+    </span><span style="color: #0000ff;">bool</span><span style="color: #000000;"> ret;
+    </span><span style="color: #0000ff;">if</span>(ui-&gt;btn_switch-&gt;text()==<span style="color: #800000;">"</span><span style="color: #800000;">打开连接</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">if</span>(ui-&gt;tcpMode-&gt;currentIndex()==<span style="color: #800080;">0</span>)  <span style="color: #008000;">//</span><span style="color: #008000;">启动客户端</span><span style="color: #000000;">
+           ret</span>=<span style="color: #000000;">startClient() ;
+        </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+            ret</span>=<span style="color: #000000;">startServer();
+        </span><span style="color: #0000ff;">if</span><span style="color: #000000;">(ret)
+            startConnect(</span><span style="color: #0000ff;">true</span><span style="color: #000000;">);
+    }
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+    {
+        </span><span style="color: #0000ff;">if</span>(ui-&gt;tcpMode-&gt;currentIndex()==<span style="color: #800080;">0</span>)  <span style="color: #008000;">//</span><span style="color: #008000;">启动客户端</span><span style="color: #000000;">
+          m_client.close();
+        </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+        {
+            </span><span style="color: #0000ff;">if</span><span style="color: #000000;">( m_server.isListening() )
+            {
+                QList</span>&lt;QTcpSocket *&gt; m_tcps = m_server.findChildren&lt;QTcpSocket *&gt;<span style="color: #000000;">();
+                </span><span style="color: #0000ff;">foreach</span> (QTcpSocket *<span style="color: #000000;">tcp, m_tcps)
+                {
+                    tcp</span>-&gt;<span style="color: #000000;">close();
+                }
+                m_server.close();
+            }
+        }
+        startConnect(</span><span style="color: #0000ff;">false</span><span style="color: #000000;">);
+    }
+}
+
+
+</span><span style="color: #0000ff;">void</span> Widget::startConnect(<span style="color: #0000ff;">bool</span><span style="color: #000000;"> ison)
+{
+    </span><span style="color: #0000ff;">if</span>(!<span style="color: #000000;">ison)
+    {
+        ui</span>-&gt;btn_switch-&gt;setStyleSheet(<span style="color: #800000;">"</span><span style="color: #800000;">color:blue;border: 1px solid blue</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        ui</span>-&gt;btn_switch-&gt;setText(<span style="color: #800000;">"</span><span style="color: #800000;">打开连接</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">使能</span><span style="color: #000000;">
+        ui</span>-&gt;ipAddr1-&gt;setEnabled(<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+        ui</span>-&gt;ipAddr2-&gt;setEnabled(<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+        ui</span>-&gt;ipAddr3-&gt;setEnabled(<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+        ui</span>-&gt;ipAddr4-&gt;setEnabled(<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+        ui</span>-&gt;tcpMode-&gt;setEnabled(<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+        ui</span>-&gt;ipPort-&gt;setEnabled(<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+        ui</span>-&gt;localPort-&gt;setText(<span style="color: #800000;">""</span><span style="color: #000000;">);
+    }
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+    {
+        ui</span>-&gt;btn_switch-&gt;setStyleSheet(<span style="color: #800000;">"</span><span style="color: #800000;">color:red;border: 1px solid red</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        ui</span>-&gt;btn_switch-&gt;setText(<span style="color: #800000;">"</span><span style="color: #800000;">关闭连接</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">失能</span><span style="color: #000000;">
+        ui</span>-&gt;ipAddr1-&gt;setEnabled(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+        ui</span>-&gt;ipAddr2-&gt;setEnabled(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+        ui</span>-&gt;ipAddr3-&gt;setEnabled(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+        ui</span>-&gt;ipAddr4-&gt;setEnabled(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+        ui</span>-&gt;tcpMode-&gt;setEnabled(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+        ui</span>-&gt;ipPort-&gt;setEnabled(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+        targetAddr</span>=<span style="color: #800000;">""</span><span style="color: #000000;">;
+        targetPort</span>=<span style="color: #800080;">0</span><span style="color: #000000;">;
+        ui</span>-&gt;sendLenLabel-&gt;setText(<span style="color: #800000;">"</span><span style="color: #800000;">0</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::on_betn_clear_clicked()
+{
+   ui</span>-&gt;recvEdit-&gt;<span style="color: #000000;">clear();
+   targetAddr</span>=<span style="color: #800000;">""</span><span style="color: #000000;">;
+   targetPort</span>=<span style="color: #800080;">0</span><span style="color: #000000;">;
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::on_btn_send_clicked()
+{
+    </span><span style="color: #0000ff;">if</span>(ui-&gt;btn_switch-&gt;text()!=<span style="color: #800000;">"</span><span style="color: #800000;">打开连接</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">if</span>(ui-&gt;tcpMode-&gt;currentIndex()==<span style="color: #800080;">0</span>)  <span style="color: #008000;">//</span><span style="color: #008000;">客户端</span><span style="color: #000000;">
+        {
+            m_client.write(ui</span>-&gt;sendEdit-&gt;toPlainText().toLocal8Bit(),ui-&gt;sendEdit-&gt;<span style="color: #000000;">toPlainText().toLocal8Bit().length());
+        }
+        </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+        {
+            </span><span style="color: #0000ff;">if</span>(ui-&gt;targetObject-&gt;currentText()!=<span style="color: #800000;">"</span><span style="color: #800000;">所有对象</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+            {
+                QList</span>&lt;QTcpSocket *&gt; m_tcps = m_server.findChildren&lt;QTcpSocket *&gt;<span style="color: #000000;">();
+                </span><span style="color: #0000ff;">foreach</span> (QTcpSocket *<span style="color: #000000;">tcp, m_tcps)
+                {
+                    </span><span style="color: #0000ff;">if</span>(ui-&gt;targetObject-&gt;currentText() == tcp-&gt;<span style="color: #000000;">objectName())
+                    {
+                        tcp</span>-&gt;write(ui-&gt;sendEdit-&gt;toPlainText().toLocal8Bit(),ui-&gt;sendEdit-&gt;<span style="color: #000000;">toPlainText().toLocal8Bit().length());
+                        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                    }
+                }
+            }
+            </span><span style="color: #0000ff;">else</span>            <span style="color: #008000;">//</span><span style="color: #008000;">所有连接上的客户端都发送一遍</span><span style="color: #000000;">
+            {
+                QList</span>&lt;QTcpSocket *&gt; m_tcps = m_server.findChildren&lt;QTcpSocket *&gt;<span style="color: #000000;">();
+                </span><span style="color: #0000ff;">foreach</span> (QTcpSocket *<span style="color: #000000;">tcp, m_tcps)
+                {
+                    tcp</span>-&gt;write(ui-&gt;sendEdit-&gt;toPlainText().toLocal8Bit(),ui-&gt;sendEdit-&gt;<span style="color: #000000;">toPlainText().toLocal8Bit().length());
+                }
+            }
+        }
+    }
+}
+
+Widget::</span>~<span style="color: #000000;">Widget()
+{
+    QList</span>&lt;QTcpSocket *&gt; m_tcps = m_server.findChildren&lt;QTcpSocket *&gt;<span style="color: #000000;">();
+    </span><span style="color: #0000ff;">foreach</span> (QTcpSocket *<span style="color: #000000;">tcp, m_tcps)
+    {
+        tcp</span>-&gt;<span style="color: #000000;">close();
+    }
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;">(m_client.isOpen())
+    {
+        m_client.close();
+         qDebug()</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">m_client close</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">delete</span><span style="color: #000000;"> ui;
+}</span></pre>
+</div>
+<p align="left"><span style="color: #800000;"><strong><span style="font-size: 15px;">5.3 clentHandler.cpp介绍</span></strong></span></p>
+<p><span style="font-size: 15px;">该cpp主要用来处理客户端操作相关的文件.</span></p>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">widget.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">ui_widget.h</span><span style="color: #800000;">"</span>
+
+<span style="color: #0000ff;">void</span> Widget::initClientSignals()  <span style="color: #008000;">//</span><span style="color: #008000;">初始化客户端信号槽</span><span style="color: #000000;">
+{
+    connect(</span>&amp;m_client, SIGNAL(connected()), <span style="color: #0000ff;">this</span><span style="color: #000000;">, SLOT(onClientConnected()));
+    connect(</span>&amp;m_client, SIGNAL(disconnected()), <span style="color: #0000ff;">this</span><span style="color: #000000;">, SLOT(onClientDisconnected()));
+    connect(</span>&amp;m_client, SIGNAL(readyRead()), <span style="color: #0000ff;">this</span><span style="color: #000000;">, SLOT(onClientDataReady()));
+    connect(</span>&amp;m_client, SIGNAL(bytesWritten(qint64)), <span style="color: #0000ff;">this</span><span style="color: #000000;">, SLOT(onClientBytesWritten(qint64)));
+    connect(</span>&amp;m_client, SIGNAL(error(QAbstractSocket::SocketError )), <span style="color: #0000ff;">this</span><span style="color: #000000;">, SLOT(onClientErr(QAbstractSocket::SocketError)));
+}
+</span><span style="color: #0000ff;">bool</span> Widget::startClient()         <span style="color: #008000;">//</span><span style="color: #008000;">启动客户端</span><span style="color: #000000;">
+{
+    QString ip </span>= QString(<span style="color: #800000;">"</span><span style="color: #800000;">%1.%2.%3.%4</span><span style="color: #800000;">"</span>).arg(ui-&gt;ipAddr1-&gt;text()).arg(ui-&gt;ipAddr2-&gt;text()).arg(ui-&gt;ipAddr3-&gt;text()).arg(ui-&gt;ipAddr4-&gt;<span style="color: #000000;">text());
+    qDebug()</span>&lt;&lt;<span style="color: #000000;">ip;
+    m_client.connectToHost(ip, ui</span>-&gt;ipPort-&gt;<span style="color: #000000;">text().toInt());
+    </span><span style="color: #0000ff;">if</span>(m_client.waitForConnected(<span style="color: #800080;">800</span><span style="color: #000000;">))
+    {
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+    {
+        QMessageBox::information(</span><span style="color: #0000ff;">this</span>,<span style="color: #800000;">"</span><span style="color: #800000;">提示</span><span style="color: #800000;">"</span>,QString(<span style="color: #800000;">"</span><span style="color: #800000;">连接超时</span><span style="color: #800000;">"</span><span style="color: #000000;">),QMessageBox::Ok);
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+    }
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::onClientConnected()
+{
+    startConnect(</span><span style="color: #0000ff;">true</span><span style="color: #000000;">);
+    QMessageBox::information(</span><span style="color: #0000ff;">this</span>,<span style="color: #800000;">"</span><span style="color: #800000;">提示</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">连接成功</span><span style="color: #800000;">"</span><span style="color: #000000;">,QMessageBox::Ok);
+    ui</span>-&gt;localPort-&gt;setText(QString(<span style="color: #800000;">"</span><span style="color: #800000;">%1</span><span style="color: #800000;">"</span>).arg(m_client.localPort())); <span style="color: #008000;">//</span><span style="color: #008000;">显示本地端口号</span><span style="color: #000000;">
+}
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::onClientDisconnected()
+{
+    startConnect(</span><span style="color: #0000ff;">false</span><span style="color: #000000;">);
+    QMessageBox::information(</span><span style="color: #0000ff;">this</span>,<span style="color: #800000;">"</span><span style="color: #800000;">提示</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">断开完成</span><span style="color: #800000;">"</span><span style="color: #000000;">,QMessageBox::Ok);
+}
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::onClientDataReady()
+{
+    </span><span style="color: #0000ff;">if</span>(m_client.peerAddress().toString()!=targetAddr || m_client.peerPort()!=<span style="color: #000000;">targetPort  )
+    {
+        targetAddr </span>=<span style="color: #000000;"> m_client.peerAddress().toString();
+        targetPort </span>=<span style="color: #000000;"> m_client.peerPort();
+        ui</span>-&gt;recvEdit-&gt;insertPlainText(<span style="color: #800000;">"</span><span style="color: #800000;">[接受来自</span><span style="color: #800000;">"</span>+ targetAddr+<span style="color: #800000;">"</span><span style="color: #800000;">:</span><span style="color: #800000;">"</span>+QString(<span style="color: #800000;">"</span><span style="color: #800000;">%1</span><span style="color: #800000;">"</span>).arg(targetPort)+<span style="color: #800000;">"</span><span style="color: #800000;">]:\r\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+    ui</span>-&gt;recvEdit-&gt;<span style="color: #000000;">moveCursor(QTextCursor::End);
+    ui</span>-&gt;recvEdit-&gt;insertPlainText(QString::fromLocal8Bit(m_client.readAll())+<span style="color: #800000;">"</span><span style="color: #800000;">\r\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+}
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::onClientBytesWritten(qint64 bytes)
+{
+    qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">onBytesWritten:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> bytes;
+    ui</span>-&gt;sendLenLabel-&gt;setText(QString(<span style="color: #800000;">"</span><span style="color: #800000;">%1</span><span style="color: #800000;">"</span>).arg(ui-&gt;sendLenLabel-&gt;text().toInt()+<span style="color: #000000;">bytes));
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;">  Widget::onClientErr(QAbstractSocket::SocketError socketError)
+{
+    qDebug()</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">onClientErr:</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">socketError;
+    m_client.close();
+    startConnect(</span><span style="color: #0000ff;">false</span><span style="color: #000000;">);
+    QMessageBox::information(</span><span style="color: #0000ff;">this</span>,<span style="color: #800000;">"</span><span style="color: #800000;">提示</span><span style="color: #800000;">"</span>,QString(<span style="color: #800000;">"</span><span style="color: #800000;">连接失败:%1</span><span style="color: #800000;">"</span>).arg((<span style="color: #0000ff;">int</span><span style="color: #000000;">)socketError),QMessageBox::Ok);
+}</span></pre>
+</div>
+<p align="left"><span style="color: #800000;"><strong><span style="font-size: 15px;">5.4 serverHandler.cpp介绍</span></strong></span></p>
+<p><span style="font-size: 15px;">该cpp主要用来处理服务器操作相关的文件</span></p>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">widget.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">ui_widget.h</span><span style="color: #800000;">"</span>
+
+<span style="color: #0000ff;">void</span> Widget::initServerSignals()   <span style="color: #008000;">//</span><span style="color: #008000;">初始化信号槽</span><span style="color: #000000;">
+{
+    connect(</span>&amp;m_server, SIGNAL(newConnection()), <span style="color: #0000ff;">this</span><span style="color: #000000;">, SLOT(onServerNewConnection()));
+}
+</span><span style="color: #0000ff;">bool</span> Widget::startServer()         <span style="color: #008000;">//</span><span style="color: #008000;">启动服务器</span><span style="color: #000000;">
+{
+    </span><span style="color: #0000ff;">if</span>(m_server.listen(QHostAddress::AnyIPv4,ui-&gt;ipPort-&gt;text().toInt()))       <span style="color: #008000;">//</span><span style="color: #008000;">只监听IPV4的所有客户端</span><span style="color: #000000;">
+    {
+        ui</span>-&gt;targetLabel-&gt;<span style="color: #000000;">show();
+        ui</span>-&gt;targetObject-&gt;<span style="color: #000000;">show();
+        ui</span>-&gt;localPort-&gt;setText(QString(<span style="color: #800000;">"</span><span style="color: #800000;">%1</span><span style="color: #800000;">"</span><span style="color: #000000;">).arg(m_server.serverPort()));
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span>
+       <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+}
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::onServerNewConnection()
+{
+    qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">onNewConnection</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    QTcpSocket</span>* tcp = m_server.nextPendingConnection();     <span style="color: #008000;">//</span><span style="color: #008000;">获取新的客户端信息</span><span style="color: #000000;">
+    QString info</span>=tcp-&gt;peerAddress().toString()+<span style="color: #800000;">"</span><span style="color: #800000;">:</span><span style="color: #800000;">"</span>+QString(<span style="color: #800000;">"</span><span style="color: #800000;">%1</span><span style="color: #800000;">"</span>).arg(tcp-&gt;<span style="color: #000000;">peerPort());
+    ui</span>-&gt;targetObject-&gt;<span style="color: #000000;">addItem(info);
+    QMessageBox::information(</span><span style="color: #0000ff;">this</span>,<span style="color: #800000;">"</span><span style="color: #800000;">提示</span><span style="color: #800000;">"</span>,QString(<span style="color: #800000;">"</span><span style="color: #800000;">新的客户端连入:%1</span><span style="color: #800000;">"</span><span style="color: #000000;">).arg(info),QMessageBox::Ok);
+    tcp</span>-&gt;setObjectName(info);       <span style="color: #008000;">//</span><span style="color: #008000;">设置名称,方便查找</span><span style="color: #000000;">
+    connect(tcp, SIGNAL(connected()), </span><span style="color: #0000ff;">this</span><span style="color: #000000;">, SLOT(onServerConnected()));
+    connect(tcp, SIGNAL(disconnected()), </span><span style="color: #0000ff;">this</span><span style="color: #000000;">, SLOT(onServerDisconnected()));
+    connect(tcp, SIGNAL(readyRead()), </span><span style="color: #0000ff;">this</span><span style="color: #000000;">, SLOT(onServerDataReady()));
+    connect(tcp, SIGNAL(bytesWritten(qint64)), </span><span style="color: #0000ff;">this</span><span style="color: #000000;">, SLOT(onServerBytesWritten(qint64)));
+}
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::onServerConnected()
+{
+
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::onServerDisconnected()
+{
+    QTcpSocket</span>* tcp = dynamic_cast&lt;QTcpSocket*&gt;<span style="color: #000000;">(sender());
+    </span><span style="color: #0000ff;">if</span>( tcp != NULL )       <span style="color: #008000;">//</span><span style="color: #008000;">从连接对象中移除掉</span><span style="color: #000000;">
+    {
+        qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">onServerDisconnected</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+        qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Local Address:</span><span style="color: #800000;">"</span> &lt;&lt; tcp-&gt;<span style="color: #000000;">peerAddress();
+        qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Local Port:</span><span style="color: #800000;">"</span> &lt;&lt; tcp-&gt;<span style="color: #000000;">peerPort();
+        QString info</span>=tcp-&gt;peerAddress().toString()+<span style="color: #800000;">"</span><span style="color: #800000;">:</span><span style="color: #800000;">"</span>+QString(<span style="color: #800000;">"</span><span style="color: #800000;">%1</span><span style="color: #800000;">"</span>).arg(tcp-&gt;<span style="color: #000000;">peerPort());
+        QMessageBox::information(</span><span style="color: #0000ff;">this</span>,<span style="color: #800000;">"</span><span style="color: #800000;">提示</span><span style="color: #800000;">"</span>,QString(<span style="color: #800000;">"</span><span style="color: #800000;">客户端断开连接:%1</span><span style="color: #800000;">"</span><span style="color: #000000;">).arg(info),QMessageBox::Ok);
+
+        </span><span style="color: #0000ff;">int</span> index = ui-&gt; targetObject -&gt;<span style="color: #000000;">findText(info);
+        </span><span style="color: #0000ff;">if</span>(index&gt;=<span style="color: #800080;">0</span><span style="color: #000000;">)
+        ui</span>-&gt;targetObject-&gt;<span style="color: #000000;">removeItem(index);
+    }
+}
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::onServerDataReady()
+{
+    QTcpSocket</span>* tcp = dynamic_cast&lt;QTcpSocket*&gt;<span style="color: #000000;">(sender());
+    </span><span style="color: #0000ff;">if</span>(tcp-&gt;peerAddress().toString()!=targetAddr || tcp-&gt;peerPort()!=<span style="color: #000000;">targetPort  )
+    {
+        targetAddr </span>= tcp-&gt;<span style="color: #000000;">peerAddress().toString();
+        targetPort </span>= tcp-&gt;<span style="color: #000000;">peerPort();
+        ui</span>-&gt;recvEdit-&gt;insertPlainText(<span style="color: #800000;">"</span><span style="color: #800000;">[接受来自</span><span style="color: #800000;">"</span>+ targetAddr+<span style="color: #800000;">"</span><span style="color: #800000;">:</span><span style="color: #800000;">"</span>+QString(<span style="color: #800000;">"</span><span style="color: #800000;">%1</span><span style="color: #800000;">"</span>).arg(targetPort)+<span style="color: #800000;">"</span><span style="color: #800000;">]:\r\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+    ui</span>-&gt;recvEdit-&gt;<span style="color: #000000;">moveCursor(QTextCursor::End);
+    ui</span>-&gt;recvEdit-&gt;insertPlainText(QString::fromLocal8Bit(tcp-&gt;readAll())+<span style="color: #800000;">"</span><span style="color: #800000;">\r\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+}
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> Widget::onServerBytesWritten(qint64 bytes)
+{
+    qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">onBytesWritten:</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> bytes;
+    ui</span>-&gt;sendLenLabel-&gt;setText(QString(<span style="color: #800000;">"</span><span style="color: #800000;">%1</span><span style="color: #800000;">"</span>).arg(ui-&gt;sendLenLabel-&gt;text().toInt()+<span style="color: #000000;">bytes));
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

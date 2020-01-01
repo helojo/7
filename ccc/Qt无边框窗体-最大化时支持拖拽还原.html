@@ -1,0 +1,249 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Qt无边框窗体-最大化时支持拖拽还原' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Qt无边框窗体-最大化时支持拖拽还原</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11415829.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一概述">一、概述</a></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三demo制作">三、demo制作</a><ul>
+        <li><a href="#设计窗体">1、设计窗体</a></li>
+        <li><a href="#双击放大">2、双击放大</a></li>
+        </ul></li>
+        <li><a href="#四拖拽">四、拖拽</a></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11415829.html">Qt无边框窗体-最大化时支持拖拽还原</a></p>
+<h2 id="一概述">一、概述</h2>
+<p>用Qt进行开发界面时，既想要实现友好的用户交互又想界面漂亮，那么自定义界面就必不可少。其中有一个操作就是是我们每一个Qter开发者都要会的，而且是经常进行的。</p>
+<p>Qt::FramelessWindowHint这个属性想必大家都使用过，有些同学可能对这个属性很了解，也用的是炉火纯青，今天我们也来说说这个属性。</p>
+<p>关于这个无边框属性网上也有一些文章，有些谈论的是bug，当然了这是针对不同os而言，也有些是跟其他第三方库混合使用时的问题。可是问题归问题，想要实现自定义的优秀界面这个属性也是必不可少的。</p>
+<p>今天我们就来实现一个无边框窗体最大化时，支持拖拽标题栏进行还原的功能。</p>
+<blockquote>
+<p>无边框窗体支持缩放、移动这些不属于本篇文章的内容，本篇文章主要讲解怎么实现最大化时拖拽标题栏进行还原窗体，本篇文章的代码依赖于博主之前封装的一个拖拽代理类。</p>
+</blockquote>
+<h2 id="二效果展示">二、效果展示</h2>
+<p>如效果图所示，做了一个简单的事例，双击标题栏窗体最大化，这个时候如果进行标题栏拖拽，当鼠标按下并移动一段距离时窗体恢复normal状态。</p>
+<blockquote>
+<p>恢复normal状态下的窗体仍然支持放大和缩小，有接口可以设置。</p>
+</blockquote>
+<center>
+    <img src="./images/Qt无边框窗体-最大化时支持拖拽还原0.png" />
+</center>
+<h2 id="三demo制作">三、demo制作</h2>
+<p>demo的制作过程还是比较简单的，分为如下几步</p>
+<h3 id="设计窗体">1、设计窗体</h3>
+<p>通过desinger设计器我们拖拽了一个大致窗体内容，为了更好的展示效果，标题栏加上了icon和背景色</p>
+<center>
+    <img src="./images/Qt无边框窗体-最大化时支持拖拽还原1.png" />
+</center>
+<h3 id="双击放大">2、双击放大</h3>
+<p>鼠标双击标题栏放大这个功能实现起来方法也比较多，这里博主选择了代码量最少并且实现起来最简单的方式，直接把标题栏的事件循环安装到了主窗体上。</p>
+<pre><code>ui.widget-&gt;installEventFilter(this);</code></pre>
+<p>接下来我们就需要重写主窗口的eventFilter函数即可</p>
+<pre><code>bool DragWidget::eventFilter(QObject * watched, QEvent * event)
+{
+    if (watched == ui.widget)
+    {
+        if (event-&gt;type() == QEvent::MouseButtonDblClick)
+        {
+            if (isMaximized())
+            {
+                showNormal();
+                m_handler.setWidgetResizable(true);
+                m_handler.setWidgetMovable(true);
+            }
+            else
+            {
+                showMaximized();
+                m_handler.setWidgetResizable(false);
+                m_handler.setWidgetMovable(false);
+            }
+        }
+    }
+
+    return QWidget::eventFilter(watched, event);
+}</code></pre>
+<p>细心的同学就会发现代码里有一个m_handler变量，这个类就是博主之前自己封装的一个拖拽代理，通过接口可以设置被代理的窗体，并设置需要代理哪些行为。</p>
+<p>本篇文章中所演示的事例代码，我们代理了主窗口上标题栏部分的移动事件和整个窗体的缩放事件，设置代码如下所示</p>
+<pre><code>m_handler.activateOn(this);
+m_handler.useLocalMoveabled(true);
+m_handler.addLocalWidget(ui.widget);
+m_handler.setMaximumMove(true, true);</code></pre>
+<blockquote>
+<p>拖拽代理类内容比较多，本篇文章暂不讲解。</p>
+</blockquote>
+<h2 id="四拖拽">四、拖拽</h2>
+<p>为了更好的理解本篇文章，这里需要把拖拽代理类的头文件放出来，这样更有利于大家理解。</p>
+<p>接口都比较简单，代码中也有注释，大家自行阅读。</p>
+<pre><code>class WidgetResizeHandler : public QObject
+{
+
+public:
+    explicit WidgetResizeHandler(QObject* parent = 0);
+    ~WidgetResizeHandler();
+
+public:
+    void activateOn(QWidget * topLevelWidget);//添加topLevelWidget事件代理
+    void removeFrom(QWidget * topLevelWidget);//移除topLevelWidget事件代理
+
+    Qt::CursorShape CursorShape(QWidget * widget);
+
+    //窗口移动 default：true
+    void setWidgetMovable(bool movable);
+    bool isWidgetMovable();
+
+    //大小可变 default：true
+    void setWidgetResizable(bool resizable);
+    bool isWidgetResizable();
+
+    // 橡胶式窗口移动 default：false
+    void useRubberBandOnMove(bool use);
+    bool isUsingRubberBandOnMove();
+
+    //橡胶式修改大小 default：false
+    void useRubberBandOnResize(bool use);
+    bool isUsingRubberBandOnResisze();
+
+    void setBorderWidth(int newBorderWidth);
+    int borderWidth();
+
+    //局部可移动
+    void useLocalMoveabled(bool use);
+    void addLocalWidget(QWidget *);
+
+    //最大化时支持拖拽 参数2表示是否可放大缩小
+    void setMaximumMove(bool move, bool resize = false);
+
+protected:
+    virtual bool eventFilter(QObject * obj, QEvent * event) Q_DECL_OVERRIDE;
+
+private:
+    WidgetResizeHandlerImpl * d_ptr;
+};
+</code></pre>
+<p>值得注意的是最后一个setMaximumMove接口，他就是我们今天的猪脚-是否支持最大化时拖拽。当我们设置了这个接口后，窗体最大化时也就能进行拖拽，并还原到之前的normal状态。</p>
+<p>文章第三小节讲解demo时，说过主窗体已经被代理拖拽类进行了事件代理，那么主窗体的所有事件首先都会传递给这个代理类，这里我们需要重点关注下鼠标按下时移动事件。</p>
+<pre><code>void WidgetData::handleMouseMoveEvent(QMouseEvent* event)
+{
+    if (mLeftButtonPressed)
+    {
+        if (d_ptr-&gt;mWidgetResizable &amp;&amp; mPressedMousePos.onEdges)
+        {
+            resizeWidget(event-&gt;globalPos());
+        }
+        else if (d_ptr-&gt;mWidgetMovable)
+        {
+            moveWidget(event-&gt;globalPos());
+        }
+        else if (d_ptr-&gt;mMaxMovable)
+        {
+            if (mWidget-&gt;isMaximized() &amp;&amp; TryMoveWidget(event))
+            {
+                d_ptr-&gt;mWidgetMovable = true;
+                //d_ptr-&gt;mWidgetResizable = true;
+            }
+        }
+    }
+    else if (d_ptr-&gt;mWidgetResizable)
+    {
+        updateCursorShape(event-&gt;globalPos());
+    }
+}</code></pre>
+<p>这段代码包含有其他缩放窗体和正常移动的逻辑，最大化时支持移动的逻辑应该不难找木九十TryMoveWidget这个函数，该函数中我们进行了充分的逻辑判断，一旦触发了窗体移动，那么我们把mWidgetMovable变量置为true，下一次鼠标按下移动事件就会触发正常的拖拽逻辑。</p>
+<p>仔细思考上边一段话，其中有2个关键信息</p>
+<ol>
+<li>触发窗体移动，并还原到之前的normal状态</li>
+<li>进行了第一步后，需要把mWidgetMovable变量置为true，之后走正常的窗体移动流程</li>
+</ol>
+<p><strong>窗体移动</strong></p>
+<p>尝试移动窗体，当鼠标当前位置距离鼠标按下时的距离大于20px时，进行窗体还原操作，并返回true，代表窗体已经被重置到normal态。</p>
+<pre><code>bool WidgetData::TryMoveWidget(QMouseEvent* event)
+{
+    QPoint distance = event-&gt;globalPos() - mDragPos;
+    int length = distance.manhattanLength();
+    if (length &gt; 20)
+    {
+        QRect rect = mWidget-&gt;normalGeometry();
+        int desX = mDragPos.x() * rect.width() / mWidget-&gt;geometry().width();
+        int desY = mDragPos.y();
+        rect.moveTopLeft(event-&gt;globalPos() - QPoint(desX, desY));
+
+        mWidget-&gt;showNormal();
+        mWidget-&gt;setGeometry(rect);
+
+        mDragPos = QPoint(desX, desY);
+        mIsMaxMove = true;
+
+        return true;
+    }
+
+    return false;
+}</code></pre>
+<p>上述代码中的mIsMaxMove标识是为了在一次窗体还原操作后，释放鼠标时可以正常的设置缩放标识而设。</p>
+<p>有了上述代码之后，窗体就能还原到最大化之前的大小，并且为之也移动到了鼠标相应的位置，关于这个新位置的计算这里需要说明下。</p>
+<p><strong>x坐标</strong></p>
+<p>x轴坐标使用了比例计算方式。窗体全屏时鼠标按下的位置在窗体上的位置在窗体还原后依然保持不变，这样计算比较简单而且不会出错，保证窗体还原后，鼠标会一直在标题栏内。</p>
+<blockquote>
+<p>如果需要优化x轴坐标的计算方法，只需要重新计算上述代码中的desX值即可。</p>
+</blockquote>
+<p><strong>y坐标</strong></p>
+<p>y轴坐标这里没有做特殊处理。因为窗体还原时，标题栏的高度是没有发生变化的，因此这里不需要做特殊处理。</p>
+<p><strong>讲到这里，本篇文章的主要内容基本完成，关于代理拖拽类，不属于本篇文章内容，因此就不做过多解释。</strong></p>
+<h2 id="五相关文章">五、相关文章</h2>
+<p><strong>值得一看的优秀文章：</strong></p>
+<ol>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/6707798.html">财联社-产品展示</a></strong></li>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/10836505.html">广联达-产品展示</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95527107">Qt定制控件列表</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95526527">牛逼哄哄的Qt库</a></strong></li>
+</ol>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

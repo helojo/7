@@ -1,0 +1,116 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修初级线段树小结' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>初级线段树小结</center></div><div class='banquan'>原文出处:本文由博客园博主lucky_light提供。<br/>
+原文连接:https://www.cnblogs.com/lucky-light/p/11387434.html</div><br>
+    <p>　　线段树是一种高效的维护区间的数据结构， 他是通过树的特点，进行了区间的二分法， 通过不断地分治、递归，完成了区间数据的高效管理与维护！</p>
+<p>　　为了区间的方便书写， 我们常常把线段树的区间取为 <strong>2 的幂</strong>， 方便进行区间的二分， 与形成一个<strong>完美二叉树</strong>（与完全二叉树有些许的区别， 完全二叉树可以在最后一层中缺少若干节点。）</p>
+<p>　　</p>
+<p>&nbsp;</p>
+<p>　　线段树常常会有一下几种操作， 包括</p>
+<p>　　1.线段树的初始化；（注意初始化过程当中的规模确定，确定线段树的大小）</p>
+<p>　　2. 修改某个节点的数值；（修改过程中，需要不断地对区间进行维护）</p>
+<p>　　3. 求某段区间的最小值　　（这里说的是维护最小值的线段树，当然递归的话， 你也可以维护最大值！）</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>　　关于以上三种操作的实现：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">/*</span><span style="color: #008000;">
+    在此处我们建立的是维护最小值的线段树, 维护的是其他的话吗，仅仅只需要改一些初始化以及更新的细节点
+</span><span style="color: #008000;">*/</span><span style="color: #000000;">
+#include </span>&lt;iostream&gt;<span style="color: #000000;">
+#include </span>&lt;cstdio&gt;<span style="color: #000000;">
+#include </span>&lt;cstdlib&gt;<span style="color: #000000;">
+#include </span>&lt;cstring&gt;<span style="color: #000000;">
+#include </span>&lt;cmath&gt;<span style="color: #000000;">
+#include </span>&lt;<span style="color: #0000ff;">string</span>&gt;<span style="color: #000000;">
+#include </span>&lt;cctype&gt;<span style="color: #000000;">
+#include </span>&lt;algorithm&gt;<span style="color: #000000;">
+#include </span>&lt;vector&gt;<span style="color: #000000;">
+#include </span>&lt;queue&gt;<span style="color: #000000;">
+#include </span>&lt;list&gt;<span style="color: #000000;">
+#include </span>&lt;map&gt;<span style="color: #000000;">
+#include </span>&lt;stack&gt;<span style="color: #000000;">
+#include </span>&lt;<span style="color: #0000ff;">set</span>&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+
+</span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> INF = 1e8;            <span style="color: #008000;">//</span><span style="color: #008000;"> 因为是维护最小值的线段树， 我们初始化当然是最大值</span>
+<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> MAX = <span style="color: #800080;">1</span> &lt;&lt; <span style="color: #800080;">17</span>;        <span style="color: #008000;">//</span><span style="color: #008000;"> segment tree 最多有这么多节点</span>
+<span style="color: #0000ff;">int</span> date[MAX*<span style="color: #800080;">2</span> - <span style="color: #800080;">1</span>];            <span style="color: #008000;">//</span><span style="color: #008000;">  但是还要加一倍减一 ， 是因为它上面还有node</span>
+<span style="color: #0000ff;">int</span> n;                          <span style="color: #008000;">//</span><span style="color: #008000;">全局变量， 用来表示线段树的规模；
+</span><span style="color: #008000;">//</span><span style="color: #008000;">初始化</span>
+<span style="color: #0000ff;">void</span> Initial(<span style="color: #0000ff;">int</span> n_){           <span style="color: #008000;">//</span><span style="color: #008000;">n_ 是你原本需要数据的规模</span>
+    n = <span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span>(n &lt; n_)   n &lt;&lt;= <span style="color: #800080;">1</span>;       <span style="color: #008000;">//</span><span style="color: #008000;"> 为了方便， 把线段树的底层规模设置成为了 2 的幂次 ，由n_扩大到了 n !</span>
+    printf(<span style="color: #800000;">"</span><span style="color: #800000;">N : %d \n</span><span style="color: #800000;">"</span><span style="color: #000000;">, n);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">2</span> * n - <span style="color: #800080;">1</span>; i++)  date[i] =<span style="color: #000000;"> INF;
+}
+</span><span style="color: #008000;">//</span><span style="color: #008000;">将下标索引k的元素更新为 a; 这里的 K 索引下标是叶子点从0开始输入的数据</span>
+<span style="color: #0000ff;">void</span> Update(<span style="color: #0000ff;">int</span> k, <span style="color: #0000ff;">int</span><span style="color: #000000;"> a){
+    k </span>+= n - <span style="color: #800080;">1</span>;                 <span style="color: #008000;">//</span><span style="color: #008000;">直接定位到叶子节点的位置， 进行更新</span>
+    date[k] =<span style="color: #000000;"> a;
+    </span><span style="color: #0000ff;">while</span>(k &gt; <span style="color: #800080;">0</span><span style="color: #000000;">){
+        k </span>= (k - <span style="color: #800080;">1</span>) / <span style="color: #800080;">2</span>;        <span style="color: #008000;">//</span><span style="color: #008000;">定位父节点</span>
+        date[k] = min(date[<span style="color: #800080;">2</span>*k+<span style="color: #800080;">1</span>], date[<span style="color: #800080;">2</span>*k+<span style="color: #800080;">2</span><span style="color: #000000;">]);
+    }
+}
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> 求的是区间 [a , b) 当中的维护值， [ l ,r )似的是他在该区间的结果；
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> k 是节点的编号， 当然 [l, r) 正是这个节点对应的区间
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> 注意点， a , b 的区间不是 在线段树上面的区间； 而是你输入数据的区间</span>
+<span style="color: #0000ff;">int</span> Query(<span style="color: #0000ff;">int</span> a, <span style="color: #0000ff;">int</span> b, <span style="color: #0000ff;">int</span> k, <span style="color: #0000ff;">int</span> l, <span style="color: #0000ff;">int</span><span style="color: #000000;"> r){
+    </span><span style="color: #0000ff;">if</span>(r &lt;= a||l &gt;= b)  <span style="color: #0000ff;">return</span> INF;     <span style="color: #008000;">//</span><span style="color: #008000;">区间根本不存在交集的情况</span>
+    <span style="color: #0000ff;">if</span>(a &lt;= l&amp;&amp;b &gt;= r)  <span style="color: #0000ff;">return</span><span style="color: #000000;"> date[k];
+    </span><span style="color: #0000ff;">else</span>{   <span style="color: #008000;">//</span><span style="color: #008000;">那就是仅仅只有部分交点的情况</span>
+        <span style="color: #0000ff;">int</span> x = Query(a, b, <span style="color: #800080;">2</span> * k + <span style="color: #800080;">1</span>, l, (l + r) / <span style="color: #800080;">2</span>); <span style="color: #008000;">//</span><span style="color: #008000;">左节点</span>
+        <span style="color: #0000ff;">int</span> y = Query(a, b, <span style="color: #800080;">2</span> * k + <span style="color: #800080;">2</span>, (l + r) / <span style="color: #800080;">2</span>, r); <span style="color: #008000;">//</span><span style="color: #008000;">右节点</span>
+        <span style="color: #0000ff;">return</span><span style="color: #000000;"> min(x, y);
+    }
+}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">THE START:\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    Initial(</span><span style="color: #800080;">16</span><span style="color: #000000;">);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">THE INITIAL IF FINISHED\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">16</span>; i++<span style="color: #000000;">){
+        Update(i, </span><span style="color: #800080;">16</span> -<span style="color: #000000;"> i);
+    }
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">16</span>; i++<span style="color: #000000;">){
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d </span><span style="color: #800000;">"</span>, <span style="color: #800080;">16</span> -<span style="color: #000000;"> i);
+    }
+    cout</span>&lt;&lt;<span style="color: #000000;">endl;
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span>, Query(<span style="color: #800080;">0</span>, <span style="color: #800080;">16</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">16</span><span style="color: #000000;">));
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span>, Query(<span style="color: #800080;">0</span>, <span style="color: #800080;">10</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">16</span><span style="color: #000000;">));
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span>, Query(<span style="color: #800080;">12</span>, <span style="color: #800080;">16</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">16</span><span style="color: #000000;">));
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>　　操作时候的注意事项：</p>
+<p>　　1. 随我们我们是 2<sup>n</sup>&nbsp;个元素， 但是我们的线段树区间要求的是 2<sup>n+1</sup> - 1 个； 这个是因为我们的基础元素所处的是叶子,　　他们需要父节点进行记录数值。　　父节点是维护的数据！</p>
+<p>　　2. 注意我们的数组是由零开始， 和由 1 开始不同， 他们父节点和左右儿子的所以下表关系有着些许的变化</p>
+<p>　　EG :　　由零开始： Parent : x&nbsp; ---&gt;&nbsp; LeftSon : x / 2 + 1 ； RightSon ： x / 2 + 2;</p>
+<p>　　　　　　由一开始： Parent : x&nbsp; ---&gt;&nbsp;&nbsp;LeftSon : x / 2 + 0 ； RightSon ： x / 2 + 1;</p>
+<p>　　3. 更新的操作是基于叶子节点的操作， 因为要直接定位到叶子节点的位置；</p>
+<p>　　4. 我们进行区间的操作的时候， 可以从下标， 来进行推导区间， 但是太繁琐（仅代表个人观点）， 不是直接将区间的范围放入函数的参数当中！　　注意在外部调用时候，需要的是 Query(a, b, 0, 0, n);</p>
+<p>　　5. 在初始化时候要注意， 他是 n &lt;&lt;= 1;&nbsp; 不要写成了 n&lt;&lt;1; 这个亚子的话是死循环！</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

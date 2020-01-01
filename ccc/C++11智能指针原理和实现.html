@@ -1,0 +1,454 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++11智能指针原理和实现' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++11智能指针原理和实现</center></div><div class='banquan'>原文出处:本文由博客园博主KeepHopes提供。<br/>
+原文连接:https://www.cnblogs.com/yuwanxian/p/11042058.html</div><br>
+    <h2>一、智能指针起因</h2>
+<p>　　在C++中，动态内存的管理是由程序员自己申请和释放的，用一对运算符完成：new和delete。</p>
+<p>　　new：在动态内存中为对象分配一块空间并返回一个指向该对象的指针；</p>
+<p>　　delete：指向一个动态独享的指针，销毁对象，并释放与之关联的内存。</p>
+<p>　　使用堆内存是非常频繁的操作，容易造成堆内存泄露、二次释放等问题，为了更加容易和更加安全的使用动态内存，C++11中引入了智能指针的概念，方便管理堆内存，使得自动、异常安全的对象生存期管理可行。智能指针主要思想是RAII思想，&ldquo;使用对象管理资源&rdquo;，在类的构造函数中获取资源，在类的析构函数中释放资源。智能指针的行为类似常规指针，重要的区别是它负责自动释放所指向的对象。</p>
+<p>　　RAII是Resource Acquisition Is Initialization的简称，即资源获取就是初始化：</p>
+<p>　　1.定义一个类来封装资源的分配与释放；</p>
+<p>　　2.构造函数中完成资源的分配及初始化；</p>
+<p>　　3.析构函数中完成资源的清理，可以保证资源的正确初始化和释放；</p>
+<p>　　4.如果对象是用声明的方式在栈上创建局部对象，那么RAII机制就会正常工作，当离开作用域对象会自动销毁而调用析构函数释放资源。</p>
+<h2>二、智能指针类型</h2>
+<p>　　智能指针在C++11版本之后提供，包含在头文件&lt;memory&gt;中，标准命名std空间下，有auto_ptr、shared_ptr、weak_ptr、unique_ptr四种，其中auto_ptr已被弃用。</p>
+<p>　　<span style="color: #0000ff;"><a title="cpp/memory/auto ptr" href="https://zh.cppreference.com/w/cpp/memory/auto_ptr"><span class="t-lines" style="color: #0000ff;">auto_ptr</span></a></span>：拥有严格对象所有权语义的智能指针；</p>
+<p>　　<span style="color: #0000ff;"><a title="cpp/memory/shared ptr" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr"><span class="t-lines" style="color: #0000ff;">shared_ptr</span></a></span>：拥有共享对象所有权语义的智能指针；</p>
+<p>　　<span style="color: #0000ff;"><a title="cpp/memory/weak ptr" href="https://zh.cppreference.com/w/cpp/memory/weak_ptr"><span class="t-lines" style="color: #0000ff;">weak_ptr</span></a></span>：到&nbsp;<span class="t-lc">shared_ptr&nbsp;所管理对象的弱引用；</span></p>
+<p>　　<span style="color: #0000ff;"><a title="cpp/memory/unique ptr" href="https://zh.cppreference.com/w/cpp/memory/unique_ptr"><span class="t-lines" style="color: #0000ff;">unique_ptr</span></a></span>：拥有独有对象所有权语义的智能指针。</p>
+<h3>2.1&nbsp;auto_ptr</h3>
+<p>　　auto_ptr是通过由&nbsp;new 表达式获得的对象，并在auto_ptr自身被销毁时删除该对象的智能指针，它可用于为动态分配的对象提供异常安全、传递动态分配对象的所有权给函数和从函数返回动态分配的对象，是一个轻量级的智能指针，适合用来管理生命周期比较短或者不会被远距离传递的动态对象，最好是局限于某个函数内部或者是某个类的内部。</p>
+<p><span class="kw1">　　<strong>声明：</strong></span></p>
+<p><span class="kw1">　　template<span class="sy1">&lt;&nbsp;<span class="kw1">class&nbsp;T&nbsp;<span class="sy1">&gt;&nbsp;<span class="kw1">class&nbsp;auto_ptr<span class="sy4">;</span></span></span></span></span></span></p>
+<p><span class="kw1"><span class="sy1"><span class="kw1"><span class="sy1"><span class="kw1"><span class="sy4"><span class="kw1">　　template<span class="sy1">&lt;&gt;&nbsp;<span class="kw1">class&nbsp;auto_ptr<span class="sy1">&lt;<span class="kw4">void<span class="sy1">&gt;<span class="sy4">;&nbsp; // 对类型void特化</span></span></span></span></span></span></span></span></span></span></span></span></span>　　</p>
+<p>　　<strong>成员函数：</strong></p>
+<p>　　(1) <span style="color: #0000ff;"><a title="cpp/memory/auto ptr/get" href="https://zh.cppreference.com/w/cpp/memory/auto_ptr/get"><span class="t-lines" style="color: #0000ff;">get</span></a></span>： 获得内部对象的指针；</p>
+<p>　　(2)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/auto ptr/release" href="https://zh.cppreference.com/w/cpp/memory/auto_ptr/release"><span class="t-lines" style="color: #0000ff;">release</span></a></span>：释放被管理对象的所有权，将内部指针置为空，返回内部对象的指针，此指针需要手动释放；</p>
+<p>　　(3) <span style="color: #0000ff;"><a title="cpp/memory/auto ptr/reset" href="https://zh.cppreference.com/w/cpp/memory/auto_ptr/reset"><span class="t-lines" style="color: #0000ff;">reset</span></a></span>：销毁内部对象并接受新的对象的所有权；</p>
+<p>　　(4) <span style="color: #0000ff;"><a title="cpp/memory/auto ptr/operator=" href="https://zh.cppreference.com/w/cpp/memory/auto_ptr/operator%3D"><span class="t-lines" style="color: #0000ff;">operator=</span></a></span>：从另一auto_ptr转移所有权；</p>
+<p>　　(5) <span style="color: #0000ff;"><a title="cpp/memory/auto ptr/operator*" href="https://zh.cppreference.com/w/cpp/memory/auto_ptr/operator*"><span class="t-lines" style="color: #0000ff;">operator*</span></a></span>和<span style="color: #0000ff;"><a title="cpp/memory/auto ptr/operator*" href="https://zh.cppreference.com/w/cpp/memory/auto_ptr/operator*"><span class="t-lines" style="color: #0000ff;">operator-&gt;</span></a></span>：访问被管理对象。</p>
+<p>　　<strong>注意事项：</strong></p>
+<p>　　(1) 其构造函数被声明为explicit，因此不能使用赋值运算符对其赋值，即不能使用类似这样的形式 auto_ptr&lt;int&gt; p = new int；</p>
+<p>　　(2)&nbsp;auto_ptr 的对象所有权是独占性的，使用拷贝构造和赋值操作符时，会造成对象所有权的转移，被拷贝对象在拷贝过程中被修改；</p>
+<p>　　(3) 基于第二条，因此不能将auto_ptr放入到标准容器中或作为容器的成员；</p>
+<p>　　(4)&nbsp;auto_ptr不能指向数组，释放时无法确定是数组指针还是普通指针；</p>
+<p>　　(5) 不能把一个原生指针交给两个智能指针对象管理，对其它智能指针也是如此。</p>
+<p><span class="t-mark">　　</span>auto_ptr是最早期的智能指针，<span class="t-mark">在<strong>C++11 中已被弃用，</strong></span><span class="t-mark"><span class="t-mark-rev t-until-cxx17"><strong>C++17 中移除</strong>，建议使用unique_ptr代替auto_ptr。</span></span></p>
+<p><span class="t-mark"><span class="t-mark-rev t-until-cxx17">　　<strong>简单实现：</strong></span></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> template&lt;<span style="color: #0000ff;">class</span> T&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> AutoPointer
+</span><span style="color: #008080;"> 3</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 5</span>     AutoPointer(T*<span style="color: #000000;"> ptr)
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">      :mPointer(ptr){}
+</span><span style="color: #008080;"> 7</span> 
+<span style="color: #008080;"> 8</span>     AutoPointer(AutoPointer&lt;T&gt;&amp;<span style="color: #000000;"> other)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">10</span>         mPointer= other.mPointer;  <span style="color: #008000;">//</span><span style="color: #008000;">管理权进行转移</span>
+<span style="color: #008080;">11</span>         other.mPointer=<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">13</span> 
+<span style="color: #008080;">14</span>     AutoPointer&amp; <span style="color: #0000ff;">operator</span> = (AutoPointer&lt;T&gt;&amp;<span style="color: #000000;"> other)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">16</span>         <span style="color: #0000ff;">if</span>(<span style="color: #0000ff;">this</span> != &amp;<span style="color: #000000;">other)
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">18</span>             <span style="color: #0000ff;">delete</span><span style="color: #000000;"> mPointer;
+</span><span style="color: #008080;">19</span>             mPointer = other.mPointer;  <span style="color: #008000;">//</span><span style="color: #008000;">管理权进行转移</span>
+<span style="color: #008080;">20</span>             other.mPointer=<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span>         <span style="color: #0000ff;">return</span> *<span style="color: #0000ff;">this</span><span style="color: #000000;">;
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span> 
+<span style="color: #008080;">26</span>     ~<span style="color: #000000;">AutoPointer()
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">28</span>         <span style="color: #0000ff;">delete</span><span style="color: #000000;"> mPointer;
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">30</span> 
+<span style="color: #008080;">31</span>     T&amp; <span style="color: #0000ff;">operator</span> *<span style="color: #000000;"> ()
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">33</span>         <span style="color: #0000ff;">return</span> *<span style="color: #000000;">mPointer;
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">35</span> 
+<span style="color: #008080;">36</span>     T* <span style="color: #0000ff;">operator</span> -&gt;<span style="color: #000000;"> ()
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">38</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> mPointer;
+</span><span style="color: #008080;">39</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">40</span> 
+<span style="color: #008080;">41</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;">42</span> 
+<span style="color: #008080;">43</span>     T*<span style="color: #000000;"> mPointer;
+</span><span style="color: #008080;">44</span> };</pre>
+</div>
+<h3>2.2 shared_ptr</h3>
+<p>　　shared_ptr多个指针指向相同的对象，也叫共享指针。shared_ptr采用了引用计数的方式，更好地解决了赋值与拷贝的问题，每一个shared_ptr的拷贝都指向相同的内存，每拷贝一次内部的引用计数加1，每析构一次内部的引用计数减1，为0时自动删除所指向的堆内存。shared_ptr内部的引用计数是线程安全的，但是对象的读取时需要加锁。</p>
+<p style="margin-left: 30px;"><span class="kw1"><strong>声明：</strong></span></p>
+<p><span class="kw1">　　<span class="kw1">template<span class="sy1">&lt;&nbsp;<span class="kw1">class&nbsp;T&nbsp;<span class="sy1">&gt;&nbsp;<span class="kw1">class&nbsp;shared_ptr<span class="sy4">;</span></span></span></span></span></span></span>　</p>
+<p>　　<strong>成员函数：</strong></p>
+<p>　　(1)<span style="color: #0000ff;"> <a title="cpp/memory/shared ptr/get" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/get"><span class="t-lines" style="color: #0000ff;">get</span></a></span>： 获得内部对象的指针；</p>
+<p>　　(2) <span style="color: #0000ff;"><a title="cpp/memory/shared ptr/swap" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/swap"><span class="t-lines" style="color: #0000ff;">swap</span></a></span>：交换所管理的对象；</p>
+<p>　　(3) <span style="color: #0000ff;"><a title="cpp/memory/shared ptr/reset" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/reset"><span class="t-lines" style="color: #0000ff;">reset</span></a></span>：替换所管理的对象；</p>
+<p>　　(4) <span style="color: #0000ff;"><a title="cpp/memory/shared ptr/use count" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/use_count"><span class="t-lines" style="color: #0000ff;">use_count</span></a></span>：返回shared_ptr所指对象的引用计数；</p>
+<p>　　(5) <span style="color: #0000ff;"><a title="cpp/memory/shared ptr/operator*" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/operator*"><span class="t-lines" style="color: #0000ff;">operator*</span></a></span>和<span style="color: #0000ff;"><a title="cpp/memory/shared ptr/operator*" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/operator*"><span class="t-lines" style="color: #0000ff;">operator-&gt;</span></a></span>：解引用存储的对象指针；</p>
+<p>　　(6) <span style="color: #0000ff;"><a title="cpp/memory/shared ptr/operator=" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/operator%3D"><span class="t-lines" style="color: #0000ff;">operator=</span></a></span>：对shared_ptr赋值；</p>
+<p>　　(7)&nbsp;<span class="t-lines"><span style="color: #0000ff;"><a title="cpp/memory/shared ptr/operator bool" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/operator_bool"><span style="color: #0000ff;">operator bool</span></a></span>：检查是否有关联的管理对象；<br /></span></p>
+<p>　　(8)&nbsp;<span class="t-lines"><span style="color: #0000ff;"><a title="cpp/memory/shared ptr/owner before" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/owner_before"><span style="color: #0000ff;">owner_before</span></a></span>：提供基于拥有者的共享指针排序。</span></p>
+<p><span class="t-lines">　　交换：&nbsp;</span><span class="t-lines"><span class="t-lines"><span style="color: #0000ff;"><a title="cpp/memory/shared ptr/swap2" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/swap2"><span style="color: #0000ff;">std::swap</span></a></span><span class="t-dsc-small"><span style="color: #0000ff;"><a title="cpp/memory/shared ptr/swap2" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/swap2"><span style="color: #0000ff;">(std::shared_ptr)</span></a></span><span style="color: #0000ff;"><span style="color: #0000ff;">&nbsp;</span></span></span></span></span><span class="t-lines">特化的swap算法用于交换两个智能指针。</span></p>
+<p><span class="t-lines">　　初始化：通过构造函数传入指针初始化，也可以使用<span class="t-lc"><span style="color: #0000ff;"><a title="cpp/memory/shared ptr/make shared" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/make_shared"><span style="color: #0000ff;">std::make_shared</span></a></span>&nbsp;或&nbsp;<span class="t-lc"><span style="color: #0000ff;"><a title="cpp/memory/shared ptr/allocate shared" href="https://zh.cppreference.com/w/cpp/memory/shared_ptr/allocate_shared"><span style="color: #0000ff;">std::allocate_shared</span></a></span>&nbsp;函数初始化。</span></span></span></p>
+<p>　　<strong>注意事项：</strong></p>
+<p>　　(1) 不能将指针直接赋值给一个智能指针，一个是类，一个是指针。不能使用类似这样的形式 shared_ptr&lt;int&gt; p = new int；</p>
+<p>　　(2) 避免循环引用，这是shared_ptr的一个最大陷阱，导致内存泄漏，这一点在weak_ptr中将得到完善；</p>
+<p>　　(3)&nbsp;管理数组指针时，需要制定Deleter以使用delete[]操作符销毁内存，shared_ptr并没有针对数组的特化版本；</p>
+<p>　　(4) 不能把一个原生指针交给两个智能指针对象管理，对其它智能指针也是如此。</p>
+<p><strong>　　简单实现：</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> template &lt;typename T&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> SharedPointer
+</span><span style="color: #008080;"> 3</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 5</span>     
+<span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">class</span><span style="color: #000000;"> Implement
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 9</span>         Implement(T* p) : mPointer(p), mRefs(<span style="color: #800080;">1</span><span style="color: #000000;">){}
+</span><span style="color: #008080;">10</span>         ~Implement(){ <span style="color: #0000ff;">delete</span><span style="color: #000000;"> mPointer;}
+</span><span style="color: #008080;">11</span>         
+<span style="color: #008080;">12</span>         T* mPointer;  <span style="color: #008000;">//</span><span style="color: #008000;">实际指针</span>
+<span style="color: #008080;">13</span>         size_t mRefs;  <span style="color: #008000;">//</span><span style="color: #008000;"> 引用计数</span>
+<span style="color: #008080;">14</span> <span style="color: #000000;">    };
+</span><span style="color: #008080;">15</span>     
+<span style="color: #008080;">16</span>     Implement*<span style="color: #000000;"> mImplPtr;
+</span><span style="color: #008080;">17</span>     
+<span style="color: #008080;">18</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">19</span>     
+<span style="color: #008080;">20</span>     <span style="color: #0000ff;">explicit</span> SharedPointer(T*<span style="color: #000000;"> p)
+</span><span style="color: #008080;">21</span>       : mImplPtr(<span style="color: #0000ff;">new</span><span style="color: #000000;"> Implement(p)){}
+</span><span style="color: #008080;">22</span>         
+<span style="color: #008080;">23</span>     ~<span style="color: #000000;">SharedPointer()
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">25</span>         decrease();  <span style="color: #008000;">//</span><span style="color: #008000;"> 计数递减</span>
+<span style="color: #008080;">26</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">27</span>     
+<span style="color: #008080;">28</span>     SharedPointer(<span style="color: #0000ff;">const</span> SharedPointer&amp;<span style="color: #000000;"> other)
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">      : mImplPtr(other.mImplPtr)
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">31</span>         increase();  <span style="color: #008000;">//</span><span style="color: #008000;"> 计数递增</span>
+<span style="color: #008080;">32</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">33</span>     
+<span style="color: #008080;">34</span>     SharedPointer&amp; <span style="color: #0000ff;">operator</span> = (<span style="color: #0000ff;">const</span> SharedPointer&amp;<span style="color: #000000;"> other)
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">36</span>         <span style="color: #0000ff;">if</span>(mImplPtr != other.mImplPtr)  <span style="color: #008000;">//</span><span style="color: #008000;"> 避免自赋值</span>
+<span style="color: #008080;">37</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">            decrease();
+</span><span style="color: #008080;">39</span>             mImplPtr =<span style="color: #000000;"> other.mImplPtr;
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">            increase();
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">42</span>         
+<span style="color: #008080;">43</span>         <span style="color: #0000ff;">return</span> *<span style="color: #0000ff;">this</span><span style="color: #000000;">;
+</span><span style="color: #008080;">44</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">45</span>     
+<span style="color: #008080;">46</span>     T* <span style="color: #0000ff;">operator</span> -&gt; () <span style="color: #0000ff;">const</span>
+<span style="color: #008080;">47</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">48</span>         <span style="color: #0000ff;">return</span> mImplPtr-&gt;<span style="color: #000000;">mPointer;
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">50</span>     
+<span style="color: #008080;">51</span>     T&amp; <span style="color: #0000ff;">operator</span> * () <span style="color: #0000ff;">const</span>
+<span style="color: #008080;">52</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">53</span>         <span style="color: #0000ff;">return</span> *(mImplPtr-&gt;<span style="color: #000000;">mPointer);
+</span><span style="color: #008080;">54</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">55</span>     
+<span style="color: #008080;">56</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;">57</span>     
+<span style="color: #008080;">58</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> decrease()
+</span><span style="color: #008080;">59</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">60</span>         <span style="color: #0000ff;">if</span>(--(mImplPtr-&gt;mRefs) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">61</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">62</span>             <span style="color: #0000ff;">delete</span><span style="color: #000000;"> mImplPtr;
+</span><span style="color: #008080;">63</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">64</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">65</span>     
+<span style="color: #008080;">66</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> increase()
+</span><span style="color: #008080;">67</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">68</span>         ++(mImplPtr-&gt;<span style="color: #000000;">mRefs);
+</span><span style="color: #008080;">69</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">70</span> };</pre>
+</div>
+<h3>2.3 weak_ptr</h3>
+<p>　　weak_ptr是为了配合shared_ptr而引入的一种智能指针，用于专门解决shared_ptr循环引用的问题，因为它不具有普通指针的行为，没有重载operator * 和 -&gt;，它的最大作用在于协助shared_ptr工作，像旁观者那样观测资源的使用情况。weak_ptr可以从一个shared_ptr或者另一个weak_ptr对象构造，获得资源的观测权。但weak_ptr没有共享资源，它的构造不会引起指针引用计数的增加。weak_ptr可以使用一个非常重要的成员函数lock()，从被观测的shared_ptr获得一个可用的shared_ptr对象，从而操作资源。</p>
+<p><span class="kw1"><strong>　　声明：<span class="kw1"><br /></span></strong></span></p>
+<p><span class="kw1">　　<span class="kw1">template<span class="sy1">&lt;&nbsp;<span class="kw1">class&nbsp;T&nbsp;<span class="sy1">&gt;&nbsp;<span class="kw1">class weak_ptr<span class="sy4">;　</span></span></span></span></span></span></span></p>
+<p>　　<strong>成员函数：</strong></p>
+<p>　　(1)<span style="color: #0000ff;">&nbsp;<a title="cpp/memory/weak ptr/swap" href="https://zh.cppreference.com/w/cpp/memory/weak_ptr/swap"><span class="t-lines" style="color: #0000ff;">swap</span></a></span>：交换所管理的对象；</p>
+<p>　　(2)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/weak ptr/reset" href="https://zh.cppreference.com/w/cpp/memory/weak_ptr/reset"><span class="t-lines" style="color: #0000ff;">reset</span></a></span>：替换所管理的对象；</p>
+<p>　　(3)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/weak ptr/use count" href="https://zh.cppreference.com/w/cpp/memory/weak_ptr/use_count"><span class="t-lines" style="color: #0000ff;">use_count</span></a></span>：返回shared_ptr所指对象的引用计数；</p>
+<p>　　(4)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/weak ptr/operator=" href="https://zh.cppreference.com/w/cpp/memory/weak_ptr/operator%3D"><span class="t-lines" style="color: #0000ff;">operator=</span></a></span>：对shared_ptr赋值；</p>
+<p>　　(5)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/weak ptr/expired" href="https://zh.cppreference.com/w/cpp/memory/weak_ptr/expired"><span class="t-lines" style="color: #0000ff;">expired</span></a></span><span class="t-lines">：检查被引用的对象是否已删除；<br /></span></p>
+<p>　　(6)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/weak ptr/owner before" href="https://zh.cppreference.com/w/cpp/memory/weak_ptr/owner_before"><span class="t-lines" style="color: #0000ff;">owner_before</span></a></span><span class="t-lines">：提供基于拥有者的共享指针排序；</span></p>
+<p><span class="t-lines"><span class="t-lines">　　(7)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/weak ptr/lock" href="https://zh.cppreference.com/w/cpp/memory/weak_ptr/lock"><span style="color: #0000ff;">lock</span></a></span>：创建管理被引用的对象的shared_ptr。<br /></span></span></p>
+<p><span class="t-lines">　　<span class="t-lines">交换：</span></span><span class="t-lines" style="color: #0000ff;"><span class="t-lines"><a title="cpp/memory/weak ptr/swap2" href="https://zh.cppreference.com/w/cpp/memory/weak_ptr/swap2"><span style="color: #0000ff;">std::swap<span class="t-dsc-small">(std::weak_ptr)</span></span></a>&nbsp;</span></span><span class="t-lines"><span class="t-lines"><span class="t-lines"><span class="t-lines"><span class="t-dsc-small"><span class="t-lines">特化的swap算法用于交换两个智能指针。</span></span></span></span></span></span></p>
+<p>　　<strong>注意事项：</strong></p>
+<p>　　(1) 不能将指针直接赋值给一个智能指针，一个是类，一个是指针。不能使用类似这样的形式 shared_ptr&lt;int&gt; p = new int；</p>
+<p>　　(2) 不能把一个原生指针交给两个智能指针对象管理，对其它智能指针也是如此。</p>
+<p><strong>　　简单实现：</strong>weak_ptr的典型实现存储二个指针，即指向控制块的指针和作为构造来源的shared_ptr的存储指针。</p>
+<p>　　以下是VC的源码实现：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> template&lt;<span style="color: #0000ff;">class</span> _Ty&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> weak_ptr
+</span><span style="color: #008080;"> 3</span>     : <span style="color: #0000ff;">public</span> _Ptr_base&lt;_Ty&gt;
+<span style="color: #008080;"> 4</span> {    <span style="color: #008000;">//</span><span style="color: #008000;"> class for pointer to reference counted resource</span>
+<span style="color: #008080;"> 5</span>     typedef typename _Ptr_base&lt;_Ty&gt;<span style="color: #000000;">::_Elem _Elem;
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">    weak_ptr()
+</span><span style="color: #008080;"> 9</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> construct empty weak_ptr object</span>
+<span style="color: #008080;">10</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span>     template&lt;<span style="color: #0000ff;">class</span> _Ty2&gt;
+<span style="color: #008080;">13</span>     weak_ptr(<span style="color: #0000ff;">const</span> shared_ptr&lt;_Ty2&gt;&amp;<span style="color: #000000;"> _Other,
+</span><span style="color: #008080;">14</span>         typename enable_if&lt;is_convertible&lt;_Ty2 *, _Ty *&gt;<span style="color: #000000;">::value,
+</span><span style="color: #008080;">15</span>         <span style="color: #0000ff;">void</span> *&gt;::type * = <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">16</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> construct weak_ptr object for resource owned by _Other</span>
+<span style="color: #008080;">17</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">_Resetw(_Other);
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span> 
+<span style="color: #008080;">20</span>     weak_ptr(<span style="color: #0000ff;">const</span> weak_ptr&amp;<span style="color: #000000;"> _Other)
+</span><span style="color: #008080;">21</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> construct weak_ptr object for resource pointed to by _Other</span>
+<span style="color: #008080;">22</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">_Resetw(_Other);
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">24</span> 
+<span style="color: #008080;">25</span>     template&lt;<span style="color: #0000ff;">class</span> _Ty2&gt;
+<span style="color: #008080;">26</span>     weak_ptr(<span style="color: #0000ff;">const</span> weak_ptr&lt;_Ty2&gt;&amp;<span style="color: #000000;"> _Other,
+</span><span style="color: #008080;">27</span>         typename enable_if&lt;is_convertible&lt;_Ty2 *, _Ty *&gt;<span style="color: #000000;">::value,
+</span><span style="color: #008080;">28</span>         <span style="color: #0000ff;">void</span> *&gt;::type * = <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">29</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> construct weak_ptr object for resource pointed to by _Other</span>
+<span style="color: #008080;">30</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">_Resetw(_Other);
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span>     ~<span style="color: #000000;">weak_ptr()
+</span><span style="color: #008080;">34</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> release resource</span>
+<span style="color: #008080;">35</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">_Decwref();
+</span><span style="color: #008080;">36</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">37</span> 
+<span style="color: #008080;">38</span>     weak_ptr&amp; <span style="color: #0000ff;">operator</span>=(<span style="color: #0000ff;">const</span> weak_ptr&amp;<span style="color: #000000;"> _Right)
+</span><span style="color: #008080;">39</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> assign from _Right</span>
+<span style="color: #008080;">40</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">_Resetw(_Right);
+</span><span style="color: #008080;">41</span>         <span style="color: #0000ff;">return</span> (*<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">43</span> 
+<span style="color: #008080;">44</span>     template&lt;<span style="color: #0000ff;">class</span> _Ty2&gt;
+<span style="color: #008080;">45</span>     weak_ptr&amp; <span style="color: #0000ff;">operator</span>=(<span style="color: #0000ff;">const</span> weak_ptr&lt;_Ty2&gt;&amp;<span style="color: #000000;"> _Right)
+</span><span style="color: #008080;">46</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> assign from _Right</span>
+<span style="color: #008080;">47</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">_Resetw(_Right);
+</span><span style="color: #008080;">48</span>         <span style="color: #0000ff;">return</span> (*<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">50</span> 
+<span style="color: #008080;">51</span>     template&lt;<span style="color: #0000ff;">class</span> _Ty2&gt;
+<span style="color: #008080;">52</span>     weak_ptr&amp; <span style="color: #0000ff;">operator</span>=(shared_ptr&lt;_Ty2&gt;&amp;<span style="color: #000000;"> _Right)
+</span><span style="color: #008080;">53</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> assign from _Right</span>
+<span style="color: #008080;">54</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">_Resetw(_Right);
+</span><span style="color: #008080;">55</span>         <span style="color: #0000ff;">return</span> (*<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+</span><span style="color: #008080;">56</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">57</span> 
+<span style="color: #008080;">58</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> reset()
+</span><span style="color: #008080;">59</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> release resource, convert to null weak_ptr object</span>
+<span style="color: #008080;">60</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">_Resetw();
+</span><span style="color: #008080;">61</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">62</span> 
+<span style="color: #008080;">63</span>     <span style="color: #0000ff;">void</span> swap(weak_ptr&amp;<span style="color: #000000;"> _Other)
+</span><span style="color: #008080;">64</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> swap pointers</span>
+<span style="color: #008080;">65</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">_Swap(_Other);
+</span><span style="color: #008080;">66</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">67</span> 
+<span style="color: #008080;">68</span>     <span style="color: #0000ff;">bool</span> expired() <span style="color: #0000ff;">const</span>
+<span style="color: #008080;">69</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> return true if resource no longer exists</span>
+<span style="color: #008080;">70</span>         <span style="color: #0000ff;">return</span> (<span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">_Expired());
+</span><span style="color: #008080;">71</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">72</span> 
+<span style="color: #008080;">73</span>     shared_ptr&lt;_Ty&gt; <span style="color: #0000ff;">lock</span>() <span style="color: #0000ff;">const</span>
+<span style="color: #008080;">74</span>     {    <span style="color: #008000;">//</span><span style="color: #008000;"> convert to shared_ptr</span>
+<span style="color: #008080;">75</span>         <span style="color: #0000ff;">return</span> (shared_ptr&lt;_Elem&gt;(*<span style="color: #0000ff;">this</span>, <span style="color: #0000ff;">false</span><span style="color: #000000;">));
+</span><span style="color: #008080;">76</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">77</span> };</pre>
+</div>
+<p>&nbsp;</p>
+<h3>2.4 unique_ptr</h3>
+<p>　　unique_ptr实际上相当于一个安全性增强了的auto_ptr。unique_ptr是通过指针占有并管理另一对象，并在unique_ptr离开作用域时释放该对象的智能指针。unique_ptr的使用标志着控制权的转移，同一时刻只能有一个unique_ptr指向给定对象，通过禁止拷贝语义、只有移动语义来实现。相比与原始指针unique_ptr用于其RAII的特性，使得在出现异常的情况下，动态资源能得到释放。</p>
+<p><span class="kw1"><strong>　　声明：<span class="kw1"><br /></span></strong></span></p>
+<p><span class="kw1">　　<span class="kw1"><span class="kw1">template<span class="sy1">&lt;&nbsp;</span></span></span></span><span class="kw1">class&nbsp;T,&nbsp;</span><span class="kw1"><span class="kw1">class&nbsp;Deleter&nbsp;<span class="sy1">=&nbsp;<span class="kw745">std::<span class="me2">default_delete</span></span><span class="sy1">&lt;T<span class="sy1">&gt;&nbsp;</span></span></span></span></span><span class="kw1"><span class="kw1"><span class="sy1"><span class="sy1">&gt;&nbsp;</span></span></span></span><span class="kw1"><span class="kw1"><span class="sy1"><span class="sy1"><span class="kw1">class</span></span></span></span></span><span class="kw1"><span class="kw1"><span class="sy1"><span class="sy1"><span class="kw1">&nbsp;unique_ptr</span></span></span></span></span><span class="kw1"><span class="kw1"><span class="sy1"><span class="sy1"><span class="kw1"><span class="sy4">;</span></span></span></span></span><span class="kw1"><span class="sy1"><span class="kw1"><span class="sy1"><span class="kw1"><span class="sy4"><br /></span></span></span></span></span></span></span></p>
+<p><span class="kw1"><span class="kw1"><span class="sy1"><span class="sy1"><span class="kw1"><span class="sy4">　　<span class="kw1"><span class="kw1">template<span class="sy1">&lt;&nbsp;</span></span></span></span></span></span></span></span></span><span class="kw1">class&nbsp;T,&nbsp;</span><span class="kw1"><span class="kw1">class&nbsp;Deleter</span></span><span class="kw1"><span class="kw1"><span class="sy1"><span class="sy1"><span class="kw1"><span class="sy4"><span class="kw1"><span class="sy1"><span class="sy1">&gt;&nbsp;<span class="kw1">class&nbsp;</span></span></span></span></span></span></span></span></span></span><span class="kw1"><span class="kw1"><span class="sy1"><span class="sy1"><span class="kw1"><span class="sy4"><span class="kw1"><span class="sy1"><span class="sy1"><span class="kw1">unique_ptr</span></span></span></span></span></span></span></span></span></span><span class="kw1"><span class="kw1"><span class="sy1"><span class="sy1"><span class="kw1"><span class="sy4"><span class="kw1"><span class="sy1"><span class="sy1"><span class="kw1"><span class="sy1">&lt;T<span class="br0">[<span class="br0">], Deleter<span class="sy1">&gt;<span class="sy4">;&nbsp; // 管理数组指针</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p>　　<strong>成员函数：</strong></p>
+<p>　　(1)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/unique ptr/get" href="https://zh.cppreference.com/w/cpp/memory/unique_ptr/get"><span class="t-lines" style="color: #0000ff;">get</span></a></span>： 返回指向被管理对象的指针；</p>
+<p>　　(2)&nbsp;<span class="t-lines"><span style="color: #0000ff;"><a title="cpp/memory/unique ptr/get deleter" href="https://zh.cppreference.com/w/cpp/memory/unique_ptr/get_deleter"><span style="color: #0000ff;">get_deleter</span></a></span>：返回用于析构被管理对象7的删除器；</span></p>
+<p>　　(3)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/unique ptr/swap" href="https://zh.cppreference.com/w/cpp/memory/unique_ptr/swap"><span class="t-lines" style="color: #0000ff;">swap</span></a></span>：交换所管理的对象；</p>
+<p>　　(4)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/unique ptr/reset" href="https://zh.cppreference.com/w/cpp/memory/unique_ptr/reset"><span class="t-lines" style="color: #0000ff;">reset</span></a></span>：替换所管理的对象；</p>
+<p>　　(5)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/unique ptr/release" href="https://zh.cppreference.com/w/cpp/memory/unique_ptr/release"><span class="t-lines" style="color: #0000ff;">release</span></a></span>：返回一个指向被管理对象的指针，并释放所有权；</p>
+<p>　　(6)&nbsp;<span class="t-lines"><span style="color: #0000ff;"><a title="cpp/memory/unique ptr/operator bool" href="https://zh.cppreference.com/w/cpp/memory/unique_ptr/operator_bool"><span style="color: #0000ff;">operator bool</span></a></span>：检查是否有关联的被管理对象；<br /></span></p>
+<p>　　(7)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/unique ptr/operator=" href="https://zh.cppreference.com/w/cpp/memory/unique_ptr/operator%3D"><span class="t-lines" style="color: #0000ff;">operator=</span></a></span>：为unique_ptr赋值；</p>
+<p>　　(8)&nbsp;<span style="color: #0000ff;"><a title="cpp/memory/unique ptr/operator*" href="https://zh.cppreference.com/w/cpp/memory/unique_ptr/operator*"><span class="t-lines" style="color: #0000ff;">operator*</span></a></span>和<span style="color: #0000ff;"><a title="cpp/memory/unique ptr/operator*" href="https://zh.cppreference.com/w/cpp/memory/unique_ptr/operator*"><span class="t-lines" style="color: #0000ff;">operator-&gt;</span></a></span>：解引用存储的对象指针。</p>
+<p>　　<strong>注意事项：</strong></p>
+<p>　　(1) 不能将指针直接赋值给一个智能指针，一个是类，一个是指针。不能使用类似这样的形式 shared_ptr&lt;int&gt; p = new int；</p>
+<p>　　(2) 不能把一个原生指针交给两个智能指针对象管理，对其它智能指针也是如此。</p>
+<p><strong>　　简单实现：</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> <span style="color: #008000;">//</span><span style="color: #008000;">default deleter for unique_ptr</span>
+<span style="color: #008080;">  2</span> template&lt;typename T&gt;
+<span style="color: #008080;">  3</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> DefaultDeleter
+</span><span style="color: #008080;">  4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">  5</span>     <span style="color: #0000ff;">void</span> <span style="color: #0000ff;">operator</span> () (T *<span style="color: #000000;">p)
+</span><span style="color: #008080;">  6</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">  7</span>         <span style="color: #0000ff;">if</span><span style="color: #000000;">(p)
+</span><span style="color: #008080;">  8</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">  9</span>             <span style="color: #0000ff;">delete</span><span style="color: #000000;"> p;
+</span><span style="color: #008080;"> 10</span>             p =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 11</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 12</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 13</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 14</span> 
+<span style="color: #008080;"> 15</span> template&lt;typename T, typename Deleter = DefaultDeleter&lt;T&gt;&gt;
+<span style="color: #008080;"> 16</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> unique_ptr
+</span><span style="color: #008080;"> 17</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 18</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 19</span> 
+<span style="color: #008080;"> 20</span>     <span style="color: #008000;">// </span><span style="color: #008000;">construct </span>
+<span style="color: #008080;"> 21</span>     unique_ptr(T *pT =<span style="color: #000000;"> NULL);
+</span><span style="color: #008080;"> 22</span> 
+<span style="color: #008080;"> 23</span>     <span style="color: #008000;">// </span><span style="color: #008000;">destroy</span>
+<span style="color: #008080;"> 24</span>     ~<span style="color: #000000;">unique_ptr();
+</span><span style="color: #008080;"> 25</span> 
+<span style="color: #008080;"> 26</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 27</span> 
+<span style="color: #008080;"> 28</span>     <span style="color: #008000;">// </span><span style="color: #008000;">not allow copyable</span>
+<span style="color: #008080;"> 29</span>     unique_ptr(<span style="color: #0000ff;">const</span> unique_ptr &amp;<span style="color: #000000;">);
+</span><span style="color: #008080;"> 30</span> 
+<span style="color: #008080;"> 31</span>     unique_ptr&amp;<span style="color: #0000ff;">operator</span>=(<span style="color: #0000ff;">const</span> unique_ptr &amp;<span style="color: #000000;">);
+</span><span style="color: #008080;"> 32</span> 
+<span style="color: #008080;"> 33</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 34</span> 
+<span style="color: #008080;"> 35</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> reset </span>
+<span style="color: #008080;"> 36</span>     <span style="color: #0000ff;">void</span> reset(T *<span style="color: #000000;">p);
+</span><span style="color: #008080;"> 37</span> 
+<span style="color: #008080;"> 38</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> release the own of the pointer</span>
+<span style="color: #008080;"> 39</span>     T* <span style="color: #000000;">release();
+</span><span style="color: #008080;"> 40</span> 
+<span style="color: #008080;"> 41</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> get the pointer</span>
+<span style="color: #008080;"> 42</span>     T* <span style="color: #0000ff;">get</span><span style="color: #000000;">();
+</span><span style="color: #008080;"> 43</span> 
+<span style="color: #008080;"> 44</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> convert unique_ptr to bool</span>
+<span style="color: #008080;"> 45</span>     <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">bool</span>() <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 46</span> 
+<span style="color: #008080;"> 47</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> overload for operator *</span>
+<span style="color: #008080;"> 48</span>     T&amp; <span style="color: #0000ff;">operator </span>* <span style="color: #000000;">();
+</span><span style="color: #008080;"> 49</span> 
+<span style="color: #008080;"> 50</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> overload for operator -&gt;</span>
+<span style="color: #008080;"> 51</span>     T* <span style="color: #0000ff;">operator </span>-&gt; <span style="color: #000000;">();
+</span><span style="color: #008080;"> 52</span> 
+<span style="color: #008080;"> 53</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 54</span> 
+<span style="color: #008080;"> 55</span>     T *m_pT;  <span style="color: #008000;">//</span><span style="color: #008000;">pointer</span>
+<span style="color: #008080;"> 56</span>     
+<span style="color: #008080;"> 57</span>     Deleter m_deleter;  <span style="color: #008000;">//</span><span style="color: #008000;">deleter</span>
+<span style="color: #008080;"> 58</span>     
+<span style="color: #008080;"> 59</span>     <span style="color: #0000ff;">void</span> del();  <span style="color: #008000;">//</span><span style="color: #008000;">call deleter</span>
+<span style="color: #008080;"> 60</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 61</span> 
+<span style="color: #008080;"> 62</span> 
+<span style="color: #008080;"> 63</span> template&lt;typename T, typename Deleter&gt;
+<span style="color: #008080;"> 64</span>  unique_ptr&lt;T, Deleter&gt;::unique_ptr(T *<span style="color: #000000;">pT) :m_pT(pT)
+</span><span style="color: #008080;"> 65</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 66</span> 
+<span style="color: #008080;"> 67</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 68</span> 
+<span style="color: #008080;"> 69</span> template&lt;typename T, typename Deleter&gt;
+<span style="color: #008080;"> 70</span>  unique_ptr&lt;T, Deleter&gt;::~<span style="color: #000000;">unique_ptr()
+</span><span style="color: #008080;"> 71</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 72</span> <span style="color: #000000;">    del();
+</span><span style="color: #008080;"> 73</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 74</span> 
+<span style="color: #008080;"> 75</span> template&lt;typename T, typename Deleter&gt;
+<span style="color: #008080;"> 76</span>  <span style="color: #0000ff;">void</span> unique_ptr&lt;T, Deleter&gt;<span style="color: #000000;">::del()
+</span><span style="color: #008080;"> 77</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 78</span>     <span style="color: #0000ff;">if</span>(*<span style="color: #0000ff;">this</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 79</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 80</span> <span style="color: #000000;">        m_deleter(m_pT);
+</span><span style="color: #008080;"> 81</span>         m_pT =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 82</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 83</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 84</span> 
+<span style="color: #008080;"> 85</span> template&lt;typename T, typename Deleter&gt;
+<span style="color: #008080;"> 86</span>  T* unique_ptr&lt;T, Deleter&gt;::<span style="color: #0000ff;">get</span><span style="color: #000000;">()
+</span><span style="color: #008080;"> 87</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 88</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> m_pT;
+</span><span style="color: #008080;"> 89</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 90</span> 
+<span style="color: #008080;"> 91</span> template&lt;typename T, typename Deleter&gt;
+<span style="color: #008080;"> 92</span>  <span style="color: #0000ff;">void</span> unique_ptr&lt;T, Deleter&gt;::reset(T *<span style="color: #000000;">p)
+</span><span style="color: #008080;"> 93</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 94</span> <span style="color: #000000;">    del();
+</span><span style="color: #008080;"> 95</span>     m_pT =<span style="color: #000000;"> p;
+</span><span style="color: #008080;"> 96</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 97</span> 
+<span style="color: #008080;"> 98</span> template&lt;typename T, typename Deleter&gt;
+<span style="color: #008080;"> 99</span>  T* unique_ptr&lt;T, Deleter&gt;<span style="color: #000000;">::release()
+</span><span style="color: #008080;">100</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">101</span>     T *p =<span style="color: #000000;"> m_pT;
+</span><span style="color: #008080;">102</span>     m_pT =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">103</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> p;
+</span><span style="color: #008080;">104</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">105</span> 
+<span style="color: #008080;">106</span> template&lt;typename T, typename Deleter&gt;
+<span style="color: #008080;">107</span>  unique_ptr&lt;T, Deleter&gt;::<span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">bool</span>() <span style="color: #0000ff;">const</span>
+<span style="color: #008080;">108</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">109</span>     <span style="color: #0000ff;">return</span> NULL !=<span style="color: #000000;"> m_pT;
+</span><span style="color: #008080;">110</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">111</span> 
+<span style="color: #008080;">112</span> template&lt;typename T, typename Deleter&gt;
+<span style="color: #008080;">113</span>  T&amp; unique_ptr&lt;T, Deleter&gt;::<span style="color: #0000ff;">operator </span>* <span style="color: #000000;">()
+</span><span style="color: #008080;">114</span> <span style="color: #000000;">{ 
+</span><span style="color: #008080;">115</span>     <span style="color: #0000ff;">return</span> *<span style="color: #000000;">m_pT;
+</span><span style="color: #008080;">116</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">117</span> 
+<span style="color: #008080;">118</span> template&lt;typename T, typename Deleter&gt;
+<span style="color: #008080;">119</span>  T* unique_ptr&lt;T, Deleter&gt;::<span style="color: #0000ff;">operator </span>-&gt; <span style="color: #000000;">()
+</span><span style="color: #008080;">120</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">121</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> m_pT;
+</span><span style="color: #008080;">122</span> }</pre>
+</div>
+<h2>三、总结</h2>
+<p>　　智能指针就是模拟指针动作的类，一般智能指针都会重载 -&gt; 和 * 操作符。智能指针主要作用是管理动态内存的释放。</p>
+<p>　　1.不要使用std::auto_ptr；<del><br /></del></p>
+<p>　　2.当你需要一个独占资源所有权的指针，且不允许任何外界访问，请使用std::unique_ptr；</p>
+<p>　　3.当你需要一个共享资源所有权的指针，请使用std::shared_ptr；</p>
+<p>　　4.当你需要一个能访问资源，但不控制其生命周期的指针，请使用std::weak_ptr；</p>
+<p>　　5.不能把一个原生指针交给两个智能指针对象管理。</p>
+<p>&nbsp;</p>
+<p>参考：</p>
+<p><span style="color: #0000ff;"><a href="https://zh.cppreference.com/w/cpp/memory"><span style="color: #0000ff;">https://zh.cppreference.com/w/cpp/memory</span></a></span></p>
+<p><span style="color: #0000ff;"><a href="https://blog.csdn.net/zhangye3017/article/details/80429780"><span style="color: #0000ff;">https://blog.csdn.net/zhangye3017/article/details/80429780</span></a></span></p>
+<pre><code><span style="font-family: 'Microsoft YaHei'; font-size: 15px; background-color: #ccffff;">作者：KeepHopes
+出处：<a href="https://www.cnblogs.com/yuwanxian/p/11042058.html"><span style="background-color: #ccffff;">https://www.cnblogs.com/yuwanxian/p/11042058.html</span></a>
+关于作者：专注C++，对大数据、人工智能领域颇感兴趣，请多多赐教！
+本文为作者原创，版权归作者和博客园共有，转载或引用请注明出处，谢谢！</span></pre>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

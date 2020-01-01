@@ -1,0 +1,296 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go语言【项目】 websocket消息服务' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go语言【项目】 websocket消息服务</center></div><div class='banquan'>原文出处:本文由博客园博主Assassinの提供。<br/>
+原文连接:https://www.cnblogs.com/lianzhilei/p/11478190.html</div><br>
+    <h3><span style="font-size: 14px;">websocket消息服务</span></h3>
+<p>&nbsp;</p>
+<p>目的：搭建websocket服务，用浏览器与服务进行消息交互（写的第一个Go程序）</p>
+<p>&nbsp;</p>
+<p><strong>代码目录结构：</strong></p>
+<p><img src="./images/Go语言【项目】 websocket消息服务0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p><strong>前端html页面：</strong></p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('06ab25b0-ef39-4450-ae61-dab4167d10f7')"><img id="code_img_closed_06ab25b0-ef39-4450-ae61-dab4167d10f7" class="code_img_closed" src="./images/Go语言【项目】 websocket消息服务1.png" alt="" /><img id="code_img_opened_06ab25b0-ef39-4450-ae61-dab4167d10f7" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('06ab25b0-ef39-4450-ae61-dab4167d10f7',event)" src="./images/Go语言【项目】 websocket消息服务2.png" alt="" />
+<div id="cnblogs_code_open_06ab25b0-ef39-4450-ae61-dab4167d10f7" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> &lt;!DOCTYPE html&gt;
+<span style="color: #008080;"> 2</span> &lt;html&gt;
+<span style="color: #008080;"> 3</span> &lt;head&gt;
+<span style="color: #008080;"> 4</span>     &lt;meta charset=<span style="color: #800000;">"</span><span style="color: #800000;">utf-8</span><span style="color: #800000;">"</span>&gt;
+<span style="color: #008080;"> 5</span>     &lt;script&gt;
+<span style="color: #008080;"> 6</span>         window.addEventListener(<span style="color: #800000;">"</span><span style="color: #800000;">load</span><span style="color: #800000;">"</span><span style="color: #000000;">, function(evt) {
+</span><span style="color: #008080;"> 7</span>             <span style="color: #0000ff;">var</span> output = document.getElementById(<span style="color: #800000;">"</span><span style="color: #800000;">output</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 8</span>             <span style="color: #0000ff;">var</span> input = document.getElementById(<span style="color: #800000;">"</span><span style="color: #800000;">input</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 9</span>             <span style="color: #0000ff;">var</span><span style="color: #000000;"> ws;
+</span><span style="color: #008080;">10</span>             <span style="color: #0000ff;">var</span> print =<span style="color: #000000;"> function(message) {
+</span><span style="color: #008080;">11</span>                 <span style="color: #0000ff;">var</span> d = document.createElement(<span style="color: #800000;">"</span><span style="color: #800000;">div</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">12</span>                 d.innerHTML =<span style="color: #000000;"> message;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">                output.appendChild(d);
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">            };
+</span><span style="color: #008080;">15</span>             document.getElementById(<span style="color: #800000;">"</span><span style="color: #800000;">open</span><span style="color: #800000;">"</span>).onclick =<span style="color: #000000;"> function(evt) {
+</span><span style="color: #008080;">16</span>                 <span style="color: #0000ff;">if</span><span style="color: #000000;"> (ws) {
+</span><span style="color: #008080;">17</span>                     <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">19</span>                 ws = <span style="color: #0000ff;">new</span> WebSocket(<span style="color: #800000;">"</span><span style="color: #800000;">ws://127.0.0.1:7777/ws</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">20</span>                 ws.onopen =<span style="color: #000000;"> function(evt) {
+</span><span style="color: #008080;">21</span>                     print(<span style="color: #800000;">"</span><span style="color: #800000;">OPEN</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">23</span>                 ws.onclose =<span style="color: #000000;"> function(evt) {
+</span><span style="color: #008080;">24</span>                     print(<span style="color: #800000;">"</span><span style="color: #800000;">CLOSE</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">25</span>                     ws = <span style="color: #0000ff;">null</span><span style="color: #000000;">;
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">27</span>                 ws.onmessage =<span style="color: #000000;"> function(evt) {
+</span><span style="color: #008080;">28</span>                     print(<span style="color: #800000;">"</span><span style="color: #800000;">RESPONSE: </span><span style="color: #800000;">"</span> +<span style="color: #000000;"> evt.data);
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">30</span>                 ws.onerror =<span style="color: #000000;"> function(evt) {
+</span><span style="color: #008080;">31</span>                     print(<span style="color: #800000;">"</span><span style="color: #800000;">ERROR: </span><span style="color: #800000;">"</span> +<span style="color: #000000;"> evt.data);
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">33</span>                 <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">            };
+</span><span style="color: #008080;">35</span>             document.getElementById(<span style="color: #800000;">"</span><span style="color: #800000;">send</span><span style="color: #800000;">"</span>).onclick =<span style="color: #000000;"> function(evt) {
+</span><span style="color: #008080;">36</span>                 <span style="color: #0000ff;">if</span> (!<span style="color: #000000;">ws) {
+</span><span style="color: #008080;">37</span>                     <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">39</span>                 print(<span style="color: #800000;">"</span><span style="color: #800000;">SEND: </span><span style="color: #800000;">"</span> +<span style="color: #000000;"> input.value);
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">                ws.send(input.value);
+</span><span style="color: #008080;">41</span>                 <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">            };
+</span><span style="color: #008080;">43</span>             document.getElementById(<span style="color: #800000;">"</span><span style="color: #800000;">close</span><span style="color: #800000;">"</span>).onclick =<span style="color: #000000;"> function(evt) {
+</span><span style="color: #008080;">44</span>                 <span style="color: #0000ff;">if</span> (!<span style="color: #000000;">ws) {
+</span><span style="color: #008080;">45</span>                     <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">46</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">47</span> <span style="color: #000000;">                ws.close();
+</span><span style="color: #008080;">48</span>                 <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">            };
+</span><span style="color: #008080;">50</span> <span style="color: #000000;">        });
+</span><span style="color: #008080;">51</span>     &lt;/script&gt;
+<span style="color: #008080;">52</span> &lt;/head&gt;
+<span style="color: #008080;">53</span> &lt;body&gt;
+<span style="color: #008080;">54</span> &lt;table&gt;
+<span style="color: #008080;">55</span>     &lt;tr&gt;&lt;td valign=<span style="color: #800000;">"</span><span style="color: #800000;">top</span><span style="color: #800000;">"</span> width=<span style="color: #800000;">"</span><span style="color: #800000;">50%</span><span style="color: #800000;">"</span>&gt;
+<span style="color: #008080;">56</span>         &lt;p&gt;Click <span style="color: #800000;">"</span><span style="color: #800000;">Open</span><span style="color: #800000;">"</span><span style="color: #000000;"> to create a connection to the server,
+</span><span style="color: #008080;">57</span>             <span style="color: #800000;">"</span><span style="color: #800000;">Send</span><span style="color: #800000;">"</span> to send a message to the server and <span style="color: #800000;">"</span><span style="color: #800000;">Close</span><span style="color: #800000;">"</span><span style="color: #000000;"> to close the connection.
+</span><span style="color: #008080;">58</span> <span style="color: #000000;">            You can change the message and send multiple times.
+</span><span style="color: #008080;">59</span>         &lt;/p&gt;
+<span style="color: #008080;">60</span>             &lt;form&gt;
+<span style="color: #008080;">61</span>                 &lt;button id=<span style="color: #800000;">"</span><span style="color: #800000;">open</span><span style="color: #800000;">"</span>&gt;Open&lt;/button&gt;
+<span style="color: #008080;">62</span>                 &lt;button id=<span style="color: #800000;">"</span><span style="color: #800000;">close</span><span style="color: #800000;">"</span>&gt;Close&lt;/button&gt;
+<span style="color: #008080;">63</span>             &lt;input id=<span style="color: #800000;">"</span><span style="color: #800000;">input</span><span style="color: #800000;">"</span> type=<span style="color: #800000;">"</span><span style="color: #800000;">text</span><span style="color: #800000;">"</span> value=<span style="color: #800000;">"</span><span style="color: #800000;">Hello world!</span><span style="color: #800000;">"</span>&gt;
+<span style="color: #008080;">64</span>             &lt;button id=<span style="color: #800000;">"</span><span style="color: #800000;">send</span><span style="color: #800000;">"</span>&gt;Send&lt;/button&gt;
+<span style="color: #008080;">65</span>             &lt;/form&gt;
+<span style="color: #008080;">66</span>     &lt;/td&gt;&lt;td valign=<span style="color: #800000;">"</span><span style="color: #800000;">top</span><span style="color: #800000;">"</span> width=<span style="color: #800000;">"</span><span style="color: #800000;">50%</span><span style="color: #800000;">"</span>&gt;
+<span style="color: #008080;">67</span>         &lt;div id=<span style="color: #800000;">"</span><span style="color: #800000;">output</span><span style="color: #800000;">"</span>&gt;&lt;/div&gt;
+<span style="color: #008080;">68</span>     &lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+<span style="color: #008080;">69</span> &lt;/body&gt;
+<span style="color: #008080;">70</span> &lt;/html&gt;</pre>
+</div>
+<span class="cnblogs_code_collapse">client.html</span></div>
+<p>&nbsp;</p>
+<p><strong>server.go代码：</strong></p>
+<div class="cnblogs_Highlighter">
+<pre class="brush:go;gutter:true;">package main
+
+import (
+	"fmt"
+	"github.com/gorilla/websocket"
+	"go_websocket"
+	"net/http"
+)
+
+// http升级websocket协议的配置
+var wsUpgrader = websocket.Upgrader{
+	// 允许跨域CORS
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
+// 消息处理
+func wsHandler(resp http.ResponseWriter, req *http.Request) {
+	wsSocket, err := wsUpgrader.Upgrade(resp, req, nil)
+	if err != nil {
+		return
+	}
+	wsConn := go_websocket.WsConnectionInit(wsSocket)
+	wsConn.Run()
+
+	for {
+		wsmsg, err := wsConn.ReadMessage()
+		if err != nil {
+			goto error
+		}
+		err = wsConn.WriteMessage(wsmsg)
+		if err != nil {
+			goto error
+		}
+	}
+error:
+	fmt.Println("websocket is closed")
+	return
+}
+
+func main() {
+	fmt.Println("websocket start")
+	http.HandleFunc("/ws", wsHandler)
+	http.ListenAndServe("0.0.0.0:7777", nil)
+}
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><strong>connection.go代码：</strong></p>
+<div class="cnblogs_Highlighter">
+<pre class="brush:go;gutter:true;">package go_websocket
+
+import (
+	"errors"
+	"fmt"
+	"github.com/gorilla/websocket"
+	"sync"
+	"time"
+)
+
+// 客户端读写消息
+type WsMessage struct {
+	msgType int
+	data    []byte
+}
+
+// 客户端连接
+type wsConnection struct {
+	wsSocket *websocket.Conn
+	inChan   chan *WsMessage
+	outChan  chan *WsMessage
+
+	isClosed  bool
+	closeChan chan []byte
+	mutex     sync.Mutex
+}
+
+// 连接初始化
+func WsConnectionInit(wsSocket *websocket.Conn) (wsConn *wsConnection) {
+	wsConn = &amp;wsConnection{
+		wsSocket:  wsSocket,
+		inChan:    make(chan *WsMessage, 1000),
+		outChan:   make(chan *WsMessage, 1000),
+		closeChan: make(chan []byte, 1),
+	}
+	return wsConn
+}
+
+// 启动
+func (wsConn *wsConnection) Run() {
+	go wsConn.readLoop()
+	go wsConn.writeLoop()
+	go wsConn.heartbeat()
+}
+
+// 心跳检测
+func (wsConn *wsConnection) heartbeat() {
+	for {
+		time.Sleep(2 * time.Second)
+		wsmsg := &amp;WsMessage{msgType: websocket.TextMessage, data: []byte("heartbeat")}
+		err := wsConn.WriteMessage(wsmsg)
+		if err != nil {
+			fmt.Println("send heartbeat stop")
+			return
+		}
+	}
+}
+
+// 循环接收
+func (wsConn *wsConnection) readLoop() {
+	var ()
+
+	for {
+		msgType, data, err := wsConn.wsSocket.ReadMessage()
+		if err != nil {
+			goto error
+		}
+		select {
+		case wsConn.inChan &lt;- &amp;WsMessage{msgType: msgType, data: data}:
+		case &lt;-wsConn.closeChan:
+			goto closed
+		}
+	}
+error:
+	wsConn.Close()
+closed:
+	fmt.Println("readLoop closed")
+}
+
+// 循环发送
+func (wsConn *wsConnection) writeLoop() {
+	for {
+		select {
+		case wsmsg := &lt;-wsConn.outChan:
+			if err := wsConn.wsSocket.WriteMessage(wsmsg.msgType, wsmsg.data); err != nil {
+				goto error
+			}
+		case &lt;-wsConn.closeChan:
+			goto closed
+		}
+	}
+error:
+	wsConn.Close()
+closed:
+	fmt.Println("writeLoop close")
+}
+
+// 取消息，外部可调用
+func (wsConn *wsConnection) ReadMessage() (wsmsg *WsMessage, err error) {
+	select {
+	case wsmsg = &lt;-wsConn.inChan:
+		return wsmsg, nil
+	case &lt;-wsConn.closeChan:
+		return nil, errors.New("websocket is closed")
+	}
+}
+
+// 写消息，外部可调用
+func (wsConn *wsConnection) WriteMessage(wsmsg *WsMessage) (err error) {
+	select {
+	case wsConn.outChan &lt;- wsmsg:
+	case &lt;-wsConn.closeChan:
+		return errors.New("websocket is closed")
+	}
+	return nil
+}
+
+// 关闭wsSocket
+func (wsConn *wsConnection) Close() {
+	wsConn.wsSocket.Close()
+
+	// 加锁
+	wsConn.mutex.Lock()
+	if !wsConn.isClosed {
+		wsConn.isClosed = true
+		close(wsConn.closeChan)
+	}
+	wsConn.mutex.Unlock()
+}
+</pre>
+</div>
+<p>　　</p>
+<p>效果展示：</p>
+<p><img src="./images/Go语言【项目】 websocket消息服务3.png" alt="" width="993" height="538" /></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

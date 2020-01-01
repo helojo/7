@@ -1,0 +1,208 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修38.QT-QAxObject快速写入EXCEL示例' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>38.QT-QAxObject快速写入EXCEL示例</center></div><div class='banquan'>原文出处:本文由博客园博主NQian提供。<br/>
+原文连接:https://www.cnblogs.com/lifexy/p/10743316.html</div><br>
+    <p><span style="font-size: 15px;">参考链接:<span style="color: #0000ff;"><strong><a href="https://blog.csdn.net/czyt1988/article/details/52121360" target="_blank"><span style="color: #0000ff;"> https://blog.csdn.net/czyt1988/article/details/52121360</span></a></strong></span></span></p>
+<p><span style="text-decoration: underline;"><span style="color: #0000ff;"><a href="http://blog.sina.com.cn/s/blog_a6fb6cc90101gv2p.html" target="_blank"><span style="color: #0000ff;"><strong>http://blog.sina.com.cn/s/blog_a6fb6cc90101gv2p.html</strong></span></a></span></span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>1. QAxObject介绍</strong></span></p>
+<p><span style="font-size: 15px;">在QT中,有个自带的<span style="color: #ff0000;"><strong>QAxObject</strong></span>类,可以直接操作EXCEL</span></p>
+<p><span style="font-size: 15px;">除此之外,当我们操作某个文件夹下的EXCEL的时候,都会在该文件夹下出现一个隐藏文件<span style="color: #ff0000;"><strong>~$XX.xlsx</strong></span>,如下图所示:</span></p>
+<p><img src="./images/38.QT-QAxObject快速写入EXCEL示例0.png" alt="" /></p>
+<p><span style="font-size: 15px;">此时,如果我们再用QAxObject去操作这个文件时,该文件是<span style="color: #ff0000;"><strong>只读的</strong></span>,<span style="color: #ff0000;"><strong>无法保存成功的</strong></span>,所以我们使用QAxObject时,需要提前判断一次.</span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>2.示例</strong></span></p>
+<p><span style="font-size: 15px;">首先在项目下创建一个模板templatePath.xlsx文件</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/38.QT-QAxObject快速写入EXCEL示例1.png" alt="" width="630" height="325" /></span></p>
+<p><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>3.效果如下</strong></span></p>
+<p><img src="./images/38.QT-QAxObject快速写入EXCEL示例2.png" alt="" width="439" height="346" /></p>
+<p><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>4.写代码</strong></span></p>
+<div class="cnblogs_code">
+<pre>#include &lt;QApplication&gt;<span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">widget.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span>&lt;QtGui&gt;<span style="color: #000000;">
+#include </span>&lt;QAxObject&gt;<span style="color: #000000;">
+#include </span>&lt;QStandardPaths&gt;<span style="color: #000000;">
+#include </span>&lt;QFileDialog&gt;<span style="color: #000000;">
+#include </span>&lt;QFileDialog&gt;
+
+ 
+<span style="color: #008000;">/*</span><span style="color: #008000;">excel操作</span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">enum</span><span style="color: #000000;"> EXcel_ColumnType{
+    ColumnA </span>= <span style="color: #800080;">1</span><span style="color: #000000;">,
+    ColumnB </span>= <span style="color: #800080;">2</span><span style="color: #000000;">,
+    ColumnC </span>= <span style="color: #800080;">3</span><span style="color: #000000;">,
+    ColumnD </span>= <span style="color: #800080;">4</span><span style="color: #000000;">,
+    ColumnE </span>= <span style="color: #800080;">5</span><span style="color: #000000;">,
+    ColumnF </span>= <span style="color: #800080;">6</span><span style="color: #000000;">,
+    ColumnG </span>= <span style="color: #800080;">7</span><span style="color: #000000;">,
+    ColumnH </span>= <span style="color: #800080;">8</span><span style="color: #000000;">,
+    ColumnI </span>= <span style="color: #800080;">9</span><span style="color: #000000;">
+};
+
+ 
+QString saveas()
+{
+    QString file;
+    QString filter;
+ 
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">如果版本低于QT5,则需要将:
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">  QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">改为:QDesktopServices::storageLocation(QDesktopServices::DesktopLocation),</span><span style="color: #000000;">
+    file </span>=<span style="color: #000000;"> QFileDialog::getSaveFileName (
+     NULL,                               </span><span style="color: #008000;">//</span><span style="color: #008000;">父组件</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">另存为</span><span style="color: #800000;">"</span>,                              <span style="color: #008000;">//</span><span style="color: #008000;">标题</span><span style="color: #000000;">
+     QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),                 </span><span style="color: #008000;">//</span><span style="color: #008000;">设置路径, .表示当前路径,./表示更目录</span>
+     <span style="color: #800000;">"</span><span style="color: #800000;">Excel(*.xlsx)</span><span style="color: #800000;">"</span>,     <span style="color: #008000;">//</span><span style="color: #008000;">过滤器</span>
+     &amp;<span style="color: #000000;">filter  );
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> file;
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">设置EXCEL中单个内容的数据</span>
+<span style="color: #0000ff;">void</span>  Excel_SetCell(QAxObject *worksheet,EXcel_ColumnType column,<span style="color: #0000ff;">int</span><span style="color: #000000;"> row,QColor color,QString text)
+{
+  QAxObject </span>*cell = worksheet-&gt;querySubObject(<span style="color: #800000;">"</span><span style="color: #800000;">Cells(int,int)</span><span style="color: #800000;">"</span><span style="color: #000000;">, row, column);
+  cell</span>-&gt;setProperty(<span style="color: #800000;">"</span><span style="color: #800000;">Value</span><span style="color: #800000;">"</span><span style="color: #000000;">, text);
+  QAxObject </span>*font = cell-&gt;querySubObject(<span style="color: #800000;">"</span><span style="color: #800000;">Font</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+  font</span>-&gt;setProperty(<span style="color: #800000;">"</span><span style="color: #800000;">Color</span><span style="color: #800000;">"</span><span style="color: #000000;">, color);
+}
+
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">把QVariant转为QList&lt;QList&lt;QVariant&gt; &gt;,用于快速读出的</span>
+<span style="color: #0000ff;">void</span> castVariant2ListListVariant(<span style="color: #0000ff;">const</span> QVariant &amp;<span style="color: #0000ff;">var</span>, QList&lt;QList&lt;QVariant&gt; &gt; &amp;<span style="color: #000000;">res)
+{
+    QVariantList varRows </span>= <span style="color: #0000ff;">var</span><span style="color: #000000;">.toList();
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;">(varRows.isEmpty())
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> rowCount =<span style="color: #000000;"> varRows.size();
+    QVariantList rowData;
+
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;rowCount;++<span style="color: #000000;">i)
+    {
+        rowData </span>=<span style="color: #000000;"> varRows[i].toList();
+        res.push_back(rowData);
+    }
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">把QList&lt;QList&lt;QVariant&gt; &gt; 转为QVariant,用于快速写入的</span>
+<span style="color: #0000ff;">void</span> castListListVariant2Variant(<span style="color: #0000ff;">const</span> QList&lt;QList&lt;QVariant&gt; &gt; &amp;cells, QVariant &amp;<span style="color: #000000;">res)
+{
+    QVariantList vars;
+    </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> rows =<span style="color: #000000;"> cells.size();
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;rows;++<span style="color: #000000;">i)
+    {
+        vars.append(QVariant(cells[i]));
+    }
+    res </span>=<span style="color: #000000;"> QVariant(vars);
+}
+
+</span><span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+{
+    QApplication a(argc, argv);
+    QString templatePath </span>= <span style="color: #800000;">"</span><span style="color: #800000;">./template.xlsx</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    QFileInfo info(templatePath);
+
+    </span><span style="color: #0000ff;">if</span>(!<span style="color: #000000;">info.exists())
+    {
+            qDebug()</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">template.xlsx is NULL</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+    }
+
+    templatePath </span>= info.absoluteFilePath();                   <span style="color: #008000;">//</span><span style="color: #008000;">获取模板的绝地路径</span><span style="color: #000000;">
+    templatePath </span>= QDir::toNativeSeparators(templatePath);   <span style="color: #008000;">//</span><span style="color: #008000;">转换一下路径,让windows能够识别</span><span style="color: #000000;">
+
+    QString ExcelFile </span>= QDir::toNativeSeparators(saveas());  <span style="color: #008000;">//</span><span style="color: #008000;">打开文件保存对话框,找到要保存的位置</span>
+
+    <span style="color: #0000ff;">if</span>(ExcelFile==<span style="color: #800000;">""</span><span style="color: #000000;">)
+            </span><span style="color: #0000ff;">return</span>  <span style="color: #800080;">0</span><span style="color: #000000;">;
+
+    QFile::copy(templatePath, ExcelFile);                   </span><span style="color: #008000;">//</span><span style="color: #008000;">将模板文件复制到要保存的位置去</span>
+<span style="color: #000000;">
+    info.setFile(ExcelFile);
+    info.setFile(info.dir().path()</span>+<span style="color: #800000;">"</span><span style="color: #800000;">/~$</span><span style="color: #800000;">"</span>+<span style="color: #000000;">info.fileName());
+
+    </span><span style="color: #0000ff;">if</span>(info.exists())          <span style="color: #008000;">//</span><span style="color: #008000;">判断一下,有没有"~$XXX.xlsx"文件存在,是不是为只读</span><span style="color: #000000;">
+    {
+        qDebug()</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">报表属性为只读,请检查文件是否已打开!</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+         </span><span style="color: #0000ff;">return</span>   <span style="color: #800080;">0</span><span style="color: #000000;">;
+    }
+
+ 
+    QAxObject </span>*excel = <span style="color: #0000ff;">new</span> QAxObject();<span style="color: #008000;">//</span><span style="color: #008000;">建立excel操作对象</span><span style="color: #000000;">
+    excel</span>-&gt;setControl(<span style="color: #800000;">"</span><span style="color: #800000;">Excel.Application</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">连接Excel控件</span><span style="color: #000000;">
+    excel</span>-&gt;setProperty(<span style="color: #800000;">"</span><span style="color: #800000;">Visible</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">true</span>);<span style="color: #008000;">//</span><span style="color: #008000;">显示窗体看效果</span><span style="color: #000000;">
+    excel</span>-&gt;setProperty(<span style="color: #800000;">"</span><span style="color: #800000;">DisplayAlerts</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">false</span>);<span style="color: #008000;">//</span><span style="color: #008000;">显示警告看效果</span><span style="color: #000000;">
+    QAxObject </span>*workbooks = excel-&gt;querySubObject(<span style="color: #800000;">"</span><span style="color: #800000;">WorkBooks</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+
+    QAxObject</span>* workbook = workbooks-&gt;querySubObject(<span style="color: #800000;">"</span><span style="color: #800000;">Open(const QString&amp;)</span><span style="color: #800000;">"</span>,QDir::toNativeSeparators(ExcelFile) ); <span style="color: #008000;">//</span><span style="color: #008000;">打开</span>
+<span style="color: #000000;">
+    excel</span>-&gt;setProperty(<span style="color: #800000;">"</span><span style="color: #800000;">Caption</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">Qt Excel</span><span style="color: #800000;">"</span>);      <span style="color: #008000;">//</span><span style="color: #008000;">标题为Qt Excel</span><span style="color: #000000;">
+    QAxObject </span>*work_book = excel-&gt;querySubObject(<span style="color: #800000;">"</span><span style="color: #800000;">ActiveWorkBook</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+
+    QAxObject </span>*worksheet = work_book-&gt;querySubObject(<span style="color: #800000;">"</span><span style="color: #800000;">Sheets(int)</span><span style="color: #800000;">"</span>,<span style="color: #800080;">1</span>);     <span style="color: #008000;">//</span><span style="color: #008000;">获取表单1</span>
+<span style="color: #000000;">
+    Excel_SetCell(worksheet,ColumnB,</span><span style="color: #800080;">2</span>,QColor(<span style="color: #800080;">74</span>,<span style="color: #800080;">51</span>,<span style="color: #800080;">255</span>),<span style="color: #800000;">"</span><span style="color: #800000;">12345</span><span style="color: #800000;">"</span>);     <span style="color: #008000;">//</span><span style="color: #008000;">设置B2单元格内容为12345</span>
+<span style="color: #000000;">
+    Excel_SetCell(worksheet,ColumnB,</span><span style="color: #800080;">3</span>,QColor(<span style="color: #800080;">255</span>,<span style="color: #800080;">255</span>,<span style="color: #800080;">0</span>),<span style="color: #800000;">"</span><span style="color: #800000;">B3</span><span style="color: #800000;">"</span>);     <span style="color: #008000;">//</span><span style="color: #008000;">设置B3单元格内容</span>
+<span style="color: #000000;">
+    Excel_SetCell(worksheet,ColumnB,</span><span style="color: #800080;">4</span>,QColor(<span style="color: #800080;">255</span>,<span style="color: #800080;">0</span>,<span style="color: #800080;">0</span>),<span style="color: #800000;">"</span><span style="color: #800000;">B4</span><span style="color: #800000;">"</span>);     <span style="color: #008000;">//</span><span style="color: #008000;">设置B4单元格内容</span>
+
+ 
+
+    <span style="color: #008000;">/*</span><span style="color: #008000;">批量一次性设置A6~I106所在内容</span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    QAxObject </span>*user_range = worksheet-&gt;querySubObject(<span style="color: #800000;">"</span><span style="color: #800000;">Range(const QString&amp;)</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">A6:I106</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+
+    QList</span>&lt;QList&lt;QVariant&gt; &gt;<span style="color: #000000;"> datas;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;<span style="color: #800080;">101</span>;i++<span style="color: #000000;">)
+    {
+        QList</span>&lt;QVariant&gt;<span style="color: #000000;"> rows;
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>;j&lt;<span style="color: #800080;">10</span>;j++<span style="color: #000000;">)
+        {
+            rows.append(i</span>*<span style="color: #000000;">j);
+        }
+        datas.append(rows);
+    }
+
+    QVariant </span><span style="color: #0000ff;">var</span><span style="color: #000000;">;
+    castListListVariant2Variant(datas,</span><span style="color: #0000ff;">var</span><span style="color: #000000;">);
+
+    user_range</span>-&gt;setProperty(<span style="color: #800000;">"</span><span style="color: #800000;">Value</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">var</span><span style="color: #000000;">);
+
+ 
+    workbook</span>-&gt;dynamicCall(<span style="color: #800000;">"</span><span style="color: #800000;">Save()</span><span style="color: #800000;">"</span><span style="color: #000000;"> );
+<br />
+<span style="color: #008000;">    // workbook</span></span><span style="color: #008000;">-&gt;dynamicCall("Close()"); </span> <span style="color: #008000;">//</span><span style="color: #008000;">关闭文件</span><span style="color: #008000;">
+    // excel-&gt;dynamicCall("Quit()");//关闭excel</span>
+
+    <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="color: #800000;"><span style="font-size: 15px;">未完待续,下章学习Qtxlsx库操作EXCEL:&nbsp;</span><strong><span style="font-size: 15px;"><a href="https://www.cnblogs.com/lifexy/p/10743352.html" target="_blank"><span style="text-decoration: underline; color: #800000;"><span style="color: #0000ff; text-decoration: underline;">https://www.cnblogs.com/lifexy/p/10743352.html</span></span></a></span></strong></span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

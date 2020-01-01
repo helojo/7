@@ -1,0 +1,137 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修loj#6073. 「2017 山东一轮集训 Day5」距离(费用流)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>loj#6073. 「2017 山东一轮集训 Day5」距离(费用流)</center></div><div class='banquan'>原文出处:本文由博客园博主自为风月马前卒提供。<br/>
+原文连接:https://www.cnblogs.com/zwfymqz/p/10619039.html</div><br>
+    <h2 id="题意">题意</h2>
+<p><a href="https://loj.ac/problem/6073">题目链接</a></p>
+<h2 id="sol">Sol</h2>
+<p>我们可以把图行列拆开，同时对于行/列拆成很多个联通块，然后考虑每个点所在的行联通块/列联通块的贡献。</p>
+<p>可以这样建边</p>
+<p>从S向每个行联通块连联通块大小条边，每条边的容量为1，费用为<span class="math inline">\(i\)</span>(i表示这是第几条边)。</p>
+<p>从每个点所在的行联通块向列联通块连边，容量为1，费用为0</p>
+<p>从每个列联通块向T连联通块大小条边，每条边的容量为1，费用为<span class="math inline">\(i\)</span>(i表示这是第几条边)。</p>
+<p>这样跑最小费用最大流，每增光一次的费用就是答案。预处理后O(1)回答即可</p>
+<pre><code>#include&lt;bits/stdc++.h&gt; 
+#define Pair pair&lt;int, int&gt;
+#define MP(x, y) make_pair(x, y)
+#define fi first
+#define se second
+//#define int long long 
+#define LL long long 
+#define ull unsigned long long 
+#define Fin(x) {freopen(#x&quot;.in&quot;,&quot;r&quot;,stdin);}
+#define Fout(x) {freopen(#x&quot;.out&quot;,&quot;w&quot;,stdout);}
+using namespace std;
+const int MAXN = 5001, mod = 1e9 + 7, INF = 1e9 + 10;
+const double eps = 1e-9;
+template &lt;typename A, typename B&gt; inline bool chmin(A &amp;a, B b){if(a &gt; b) {a = b; return 1;} return 0;}
+template &lt;typename A, typename B&gt; inline bool chmax(A &amp;a, B b){if(a &lt; b) {a = b; return 1;} return 0;}
+template &lt;typename A, typename B&gt; inline LL add(A x, B y) {if(x + y &lt; 0) return x + y + mod; return x + y &gt;= mod ? x + y - mod : x + y;}
+template &lt;typename A, typename B&gt; inline void add2(A &amp;x, B y) {if(x + y &lt; 0) x = x + y + mod; else x = (x + y &gt;= mod ? x + y - mod : x + y);}
+template &lt;typename A, typename B&gt; inline LL mul(A x, B y) {return 1ll * x * y % mod;}
+template &lt;typename A, typename B&gt; inline void mul2(A &amp;x, B y) {x = (1ll * x * y % mod + mod) % mod;}
+template &lt;typename A&gt; inline void debug(A a){cout &lt;&lt; a &lt;&lt; &#39;\n&#39;;}
+template &lt;typename A&gt; inline LL sqr(A x){return 1ll * x * x;}
+template &lt;typename A, typename B&gt; inline LL fp(A a, B p, int md = mod) {int b = 1;while(p) {if(p &amp; 1) b = mul(b, a);a = mul(a, a); p &gt;&gt;= 1;}return b;}
+template &lt;typename A&gt; A inv(A x) {return fp(x, mod - 2);}
+inline int read() {
+    char c = getchar(); int x = 0, f = 1;
+    while(c &lt; &#39;0&#39; || c &gt; &#39;9&#39;) {if(c == &#39;-&#39;) f = -1; c = getchar();}
+    while(c &gt;= &#39;0&#39; &amp;&amp; c &lt;= &#39;9&#39;) x = x * 10 + c - &#39;0&#39;, c = getchar();
+    return x * f;
+}
+
+int N, S, T , TT;
+char s[51][51];
+int id[51][51][2], c1 = 1, c2 = 1, ans[MAXN * MAXN], tot1[20 * MAXN], tot2[20 * MAXN ], num1, num2;
+struct Edge {
+    int u, v, w, f, nxt;
+}E[2 * MAXN * MAXN];
+int head[MAXN  * 20 + 1], num;
+void add_edge(int x, int y, int w, int f) {
+    E[num] = (Edge){x, y, w, f, head[x]};
+    head[x] = num++;
+}
+void AddEdge(int x, int y, int w, int f) {
+    //printf(&quot;%d %d %d %d\n&quot;, x, y, w, f);
+    add_edge(x, y, w, f);
+    add_edge(y, x, -w, 0);
+}
+int dis[MAXN * 10], vis[MAXN * 10], pre[MAXN * 10];
+int SPFA() {
+    memset(dis, 0x3f, sizeof(dis));
+    memset(vis, 0, sizeof(vis));
+    queue&lt;int&gt; q; q.push(S); dis[S] = 0;
+    while(!q.empty()) {
+        int p = q.front(); q.pop(); vis[p] = 0;
+        for(int i = head[p]; ~i; i = E[i].nxt) {
+            int to = E[i].v, w = E[i].w;
+            if(dis[to] &gt; dis[p] + w &amp;&amp; E[i].f) {
+                dis[to] = dis[p] + w; pre[to] = i;
+                if(!vis[to]) vis[to] = 1, q.push(to);
+            }
+        }
+    }
+    return dis[TT];
+}
+int MCMF() {
+    int val = SPFA(), dec = INF;
+    for(int k = TT; k != S; k = E[pre[k]].u) chmin(dec, E[pre[k]].f);
+    for(int k = TT; k != S; k = E[pre[k]].u) E[pre[k]].f -= dec, E[pre[k] ^ 1].f += dec;
+    return dec * val;
+}
+signed main() {
+    //freopen(&quot;a.in&quot;, &quot;r&quot;, stdin);
+    memset(head, -1, sizeof(head));
+    N = read(); S = 0; T = N * N * 10, TT = T + 1; c2 = N * N * 3 + 1;
+    for(int i = 1; i &lt;= N; i++) scanf(&quot;%s&quot;, s[i] + 1);
+    for(int i = 1; i &lt;= N; i++) {
+        for(int j = 1; j &lt;= N; j++) {
+            if(s[i][j] == &#39;#&#39;) tot1[c1] = num1, num1 = 0, c1++; 
+            else id[i][j][0] = c1, num1++;
+            if(s[j][i] == &#39;#&#39;) tot2[c2] = num2, num2 = 0, c2++;
+            else id[j][i][1] = c2, num2++;
+        }
+        if(num1) tot1[c1++] = num1, num1 = 0;
+        if(num2) tot2[c2++] = num2, num2 = 0;
+    }
+    for(int i = 1; i &lt;= N; i++)
+        for(int j = 1; j &lt;= N; j++)
+            if(id[i][j][0] &amp;&amp; id[i][j][1])
+                AddEdge(id[i][j][0], id[i][j][1], 0, 1);
+    for(int i = 1; i &lt;= c1; i++) 
+        for(int j = 0; j &lt; tot1[i]; j++)
+            AddEdge(S, i, j, 1);
+    for(int i = N * N * 3 + 1; i &lt;= c2; i++)
+        for(int j = 0; j &lt; tot2[i]; j++)
+            AddEdge(i, T, j, 1);
+    for(int i = 1; i &lt;= 2 * N * N; i++)
+        AddEdge(T, TT, 0, 1);
+    for(int i = 1; i &lt;= N * N; i++)
+        ans[i] = ans[i - 1] + MCMF();
+    int Q = read();
+    while(Q--) cout &lt;&lt; ans[read()] &lt;&lt; &#39;\n&#39;;
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

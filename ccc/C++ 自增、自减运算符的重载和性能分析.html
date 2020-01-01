@@ -1,0 +1,156 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ 自增、自减运算符的重载和性能分析' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ 自增、自减运算符的重载和性能分析</center></div><div class='banquan'>原文出处:本文由博客园博主小林coding提供。<br/>
+原文连接:https://www.cnblogs.com/xiaolincoding/p/11986332.html</div><br>
+    <h2 id="运算符重载函数的格式">01 ++、--运算符重载函数的格式</h2>
+<p>自增运算符和自减运算符是有前置和后置之分的，如：</p>
+<pre><code>a++  // 后置自增运算符
+++a  // 前置自增运算符
+
+b--  // 后置自减运算符
+--b  // 前置自减运算符</code></pre>
+<p>为了区分所重载的是前置运算符还是后置运算符，C++规定：</p>
+<ul>
+<li>前置运算符作为<strong>一元</strong>运算符重载，重载为成员函数的格式如下：</li>
+</ul>
+<pre><code>T &amp; operator++(); // 前置自增运算符的重载函数，函数参数是空
+T &amp; operator--(); // 前置自减运算符的重载函数，函数参数是空</code></pre>
+<ul>
+<li>后置运算符作为<strong>二元</strong>运算符重载，多写一个<strong>没用</strong>的参数，重载为成员函数的个数如下：</li>
+</ul>
+<pre><code>T  operator++(int); // 后置自增运算符的重载函数，多一个没用的参数
+T  operator--(int); // 后置自减运算符的重载函数，多一个没用的参数</code></pre>
+<h2 id="讨论前置和后置运算符的返回值">02 讨论前置和后置运算符的返回值</h2>
+<p>前置和后置运算符重载函数如下：<br />
+前置运算符重载的成员函数 | 后置运算符重载的成员函数<br />
+---|---<br />
+T &amp; operator++(); | T operator++(int);<br />
+T &amp; operator--(); | T operator--(int);<br />
+注意到区别了吗？那么问题来了：</p>
+<ul>
+<li>为什么前置运算符返回的是引用 <code>&amp;</code> ？</li>
+<li>为什么后置运算符返回的是普通的对象（临时对象）？</li>
+</ul>
+<p>主要是因为为了保持原本 C++ 前置和后置运算符的特性：</p>
+<ul>
+<li>前置运算符的特性</li>
+</ul>
+<pre><code>int a = 0
+
+// (++a) = 5; 可以拆解成:
+// a = a + 1; 
+// a = 5;
+(++a) = 5; // 前置++</code></pre>
+<p>a 先自增 +1 后， a 的值就为 1 ，然后再参与 a=5 的运算，所以最后 a 的值是 5。</p>
+<p>这说明 (++a) 返回的是自增后 a 变量， a 变量在后续运算过程中，a 变量的值会被修改。所以前置运算符的重载函数的返回值必须是引用 <code>&amp;</code>。</p>
+<ul>
+<li>后置运算符的特性</li>
+</ul>
+<p>而后置运算符，是不能作为左值的，也就是 <code>(a++) = 5;</code> 是不成立的，所以后置运算符的重载函数的返回值就是普通的对象。</p>
+<h2 id="运算符重载函数的编写">03 ++、--运算符重载函数的编写</h2>
+<pre><code>int main()
+{
+    CDemo d(10);
+    cout &lt;&lt; d++ &lt;&lt; &quot;,&quot;; // 等价于 d.operator++(0);
+    cout &lt;&lt; d &lt;&lt; &quot;,&quot;; 
+    
+    cout &lt;&lt; ++d &lt;&lt; &quot;,&quot;; // 等价于 d.operator++();
+    cout &lt;&lt; d &lt;&lt; &quot;,&quot;;
+    
+    cout &lt;&lt; d-- &lt;&lt; &quot;,&quot;; // 等价于 d.operator--(0);
+    cout &lt;&lt; d &lt;&lt; &quot;,&quot;;
+    
+    cout &lt;&lt; --d &lt;&lt; &quot;,&quot;; // 等价于 d.operator--();
+    cout &lt;&lt; d &lt;&lt; endl;
+    
+    return 0;   
+}</code></pre>
+<p>输出结果：</p>
+<pre><code>10,11,12,12
+12,11,10,10</code></pre>
+<p>假设要实现如上的 main 函数输出的结果，该如何编写呢？</p>
+<p>首先我们先定义好 <code>CDemo</code> 类，同时也把自增、自减运算符重载函数定义好。</p>
+<pre><code>class CDemo
+{
+public:
+    CDemo(int i = 0):m_num(i) {} // 构造函数
+    
+    CDemo &amp; operator++();    // 前置自增运算符重载
+    CDemo  operator++(int);  // 后置自增运算符重载
+    
+    CDemo &amp; operator--();    // 前置自减运算符重载
+    CDemo operator--(int);   // 后置自减运算符重载
+
+private:
+    int m_num; // 成员变量
+};</code></pre>
+<p>接着继续实现<strong>前置</strong>自增、自减运算符重载函数：</p>
+<pre><code>// 前置++
+CDemo &amp; CDemo::operator++()
+{
+    ++m_num;
+    return *this;
+}
+
+// 前置--
+CDemo &amp; CDemo::operator--()
+{
+    --m_num;
+    return *this;
+}</code></pre>
+<p><strong>后置</strong>自增、自减运算符重载，就有点不同，例如后置++，是先参与运算，再进行自增，所以返回值是没自增前的对象，具体实现如下：</p>
+<pre><code>// 后置++
+CDemo CDemo::operator++(int)
+{
+    CDemo tmp(*this); // 记录修改前的对象
+    m_num--;
+    return tmp;       // 返回修改前的对象
+}
+
+// 后置--
+CDemo  CDemo::operator--(int)
+{ 
+    CDemo tmp(*this); // 记录修改前的对象
+    m_num++;
+    return tmp;       // 返回修改前的对象
+}</code></pre>
+<h2 id="前置和后置运算符的性能比较">04 前置和后置运算符的性能比较</h2>
+<p>从上面的例子，我们看到后置运算符的重载函数的执行步骤：</p>
+<ol>
+<li>先要产生一个临时对象来保存未自增或自减前的对象；</li>
+<li>接着成员变量自增或自减；</li>
+<li>最后返回修改前的对象；</li>
+</ol>
+<p>而前置运算符的重载函数的执行步骤：</p>
+<ol>
+<li>成员变量自增或自减；</li>
+<li>返回对象引用；</li>
+</ol>
+<p>可见，<strong>前置</strong>运算符的重载函数是比<strong>后置</strong>运算符的重载函数性能是更高的，开销相对比较少。</p>
+<p>当然对于普通变量类型，如int、double、long等，前置和后置是性能差距是不大的。重要是我们在对于对象和迭代器使用自增或自减时，<strong>最好用前置的运算符的方式，这样可以减少开销</strong>。</p>
+<hr />
+<blockquote>
+<p><img src="./images/C++ 自增、自减运算符的重载和性能分析0.png" /></p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

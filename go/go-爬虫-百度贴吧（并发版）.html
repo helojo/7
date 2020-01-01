@@ -1,0 +1,178 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go-爬虫-百度贴吧（并发版）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go-爬虫-百度贴吧（并发版）</center></div><div class='banquan'>原文出处:本文由博客园博主跌倒的小黄瓜提供。<br/>
+原文连接:https://www.cnblogs.com/ygjzs/p/12001352.html</div><br>
+    <h1 id="爬取百度贴吧的网页">爬取百度贴吧的网页</h1>
+<h2 id="非并发版">非并发版</h2>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    &quot;io&quot;
+    &quot;net/http&quot;
+    &quot;os&quot;
+    &quot;strconv&quot;
+)
+
+func HttpGet(url string) (result string, err error) {
+    //  var result string
+    resp, err1 := http.Get(url)
+    if err1 != nil {
+        err = err1
+        return
+    }
+    defer resp.Body.Close()
+
+    buf := make([]byte, 4096)
+    for {
+        n, err2 := resp.Body.Read(buf)
+        if n == 0 {
+            fmt.Println(&quot;读取网页完成&quot;)
+            break
+        }
+        if err2 != nil &amp;&amp; err2 != io.EOF {
+            err = err2
+            return
+        }
+        result += string(buf[:n])
+    }
+    return
+}
+
+func working(start, end int) {
+    fmt.Printf(&quot;正在爬取第%d到第%d页&quot;, start, end)
+    //爬取每一个网页
+    for i := start; i &lt;= end; i++ {
+        url := &quot;https://tieba.baidu.com/f?kw=vue&amp;ie=utf-8&amp;pn=&quot; + strconv.Itoa((i-1)*50)
+        result, err := HttpGet(url)
+        if err != nil {
+            fmt.Println(&quot;httpGet err&quot;, err)
+            continue
+        }
+        //      fmt.Println(&quot;result&quot;, result)
+        f, err := os.Create(&quot;第&quot; + strconv.Itoa(i) + &quot;页&quot; + &quot;.html&quot;)
+        if err != nil {
+            fmt.Println(&quot;HttpGet err&quot;, err)
+            continue
+        }
+        f.WriteString(result)
+        f.Close()
+    }
+}
+
+func main() {
+    var start, end int
+    fmt.Print(&quot;请输入起始页。。。&quot;)
+    fmt.Scan(&amp;start)
+    fmt.Print(&quot;请输入终止页。。。&quot;)
+    fmt.Scan(&amp;end)
+
+    working(start, end)
+}
+</code></pre>
+<h2 id="并发版">并发版</h2>
+<p><strong>这个只是在上面的基础上加了管道和开了协程</strong></p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    &quot;io&quot;
+    &quot;net/http&quot;
+    &quot;os&quot;
+    &quot;strconv&quot;
+)
+
+func HttpGet(url string) (result string, err error) {
+    //  var result string
+    resp, err1 := http.Get(url)
+    if err1 != nil {
+        err = err1
+        return
+    }
+    defer resp.Body.Close()
+
+    buf := make([]byte, 4096)
+    for {
+        n, err2 := resp.Body.Read(buf)
+        if n == 0 {
+            fmt.Println(&quot;读取网页完成\n&quot;)
+            break
+        }
+        if err2 != nil &amp;&amp; err2 != io.EOF {
+            err = err2
+            return
+        }
+        result += string(buf[:n])
+    }
+    return
+}
+
+func SpiderPage(index int, page chan int) {
+    fmt.Printf(&quot;正在爬取第%d到页\n&quot;, index)
+    //爬取每一个网页
+    //  for i := start; i &lt;= end; i++ {
+    url := &quot;https://tieba.baidu.com/f?kw=vue&amp;ie=utf-8&amp;pn=&quot; + strconv.Itoa((index-1)*50)
+    result, err := HttpGet(url)
+    if err != nil {
+        fmt.Println(&quot;httpGet err&quot;, err)
+        return
+    }
+    //      fmt.Println(&quot;result&quot;, result)
+    f, err := os.Create(&quot;第&quot; + strconv.Itoa(index) + &quot;页&quot; + &quot;.html&quot;)
+    if err != nil {
+        fmt.Println(&quot;HttpGet err&quot;, err)
+        return
+    }
+    f.WriteString(result)
+    f.Close()
+    //  }
+
+    page &lt;- index
+}
+
+func working2(start, end int) {
+    fmt.Printf(&quot;正在爬取第%d页到%d页\n&quot;, start, end)
+
+    page := make(chan int)
+
+    for i := start; i &lt;= end; i++ {
+        go SpiderPage(i, page)
+    }
+
+    for i := start; i &lt;= end; i++ {
+        fmt.Printf(&quot;第%d个页面爬取完成\n&quot;, &lt;-page)
+    }
+}
+
+func main() {
+    var start, end int
+    fmt.Print(&quot;请输入起始页。。。&quot;)
+    fmt.Scan(&amp;start)
+    fmt.Print(&quot;请输入终止页。。。&quot;)
+    fmt.Scan(&amp;end)
+
+    working2(start, end)
+}
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

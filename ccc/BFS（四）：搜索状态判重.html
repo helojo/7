@@ -1,0 +1,105 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修BFS（四）：搜索状态判重' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>BFS（四）：搜索状态判重</center></div><div class='banquan'>原文出处:本文由博客园博主aTeacher提供。<br/>
+原文连接:https://www.cnblogs.com/cs-whut/p/11162392.html</div><br>
+    <p>&nbsp; &nbsp; &nbsp; 在采用广度优先算法进行搜索时，一个需要重点注意的是在搜索过程中判重和去重。前面介绍的几个例子中，判重都较简单，如采用vis[]数组，若vis[i]==0，则i未访问过，i入队列；若vis[i]！=0，则i已访问过，不再重复访问。</p>
+<p>&nbsp; &nbsp; &nbsp; 但在有些实际应用中，判重不是简单一个设置就可完成的。例如，给出一个由1、2、3、4、5、6组成的6位数，相邻的两个数字可以交换位置，问最少经过多少次交换，可以到达另一个目标6位数。例如：对于123456，最少经过两次交换，可以变成231456。&nbsp;</p>
+<p>&nbsp; &nbsp; &nbsp; 在解决这个问题时，一定要注意判重。例如：由123456可以变成213456，而213456又可以变成123456，这样形成了循环。因此，若某个状态已出现过，当前再出现这个状态时，应判定重复出现，不能入队进行处理。</p>
+<p>&nbsp; &nbsp; &nbsp; 显然，这个问题中不能仿照以前的例子，定义一个vis[654322]数组，若某个状态231456出现就置vis[231456]=1。为什么呢？因为6个数字组成的不同状态最多6*5*4*3*2*1=720种，vis数组的元素个数是状态种数的900多倍，太浪费存储空间。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;在状态判重方法中，hash法是一种常用的方法。</p>
+<p><span style="font-size: 16px;"><strong>【例1】最少交换。</strong></span></p>
+<p><span style="font-size: 16px;">&nbsp; &nbsp; &nbsp;&nbsp;<span style="font-size: 14px;">给出一个由1、2、3、4、5、6组成的6位数，相邻的两个数字可以交换位置，问最少经过多少次交换，可以到达另一个目标6位数。例如：对于123456，最少经过两次交换，可以变成231456。</span></span></p>
+<p><span style="font-size: 16px;"><span style="font-size: 14px;">&nbsp; &nbsp; &nbsp; （1）编程思路。</span></span></p>
+<p><span style="font-size: 16px;"><span style="font-size: 14px;">&nbsp; &nbsp; &nbsp; &nbsp;用广度优先搜索完成。在搜索中，需要解决状态判重问题。状态判重常用hash法。具体做法是：找到一种办法，把数字1~6的排列映射为一个整数num（0&lt;=num&lt;=(6!-1)）。例如，排列<span style="font-family: 宋体;">&ldquo;</span>123456<span style="font-family: 宋体;">&rdquo;</span>映射为0、<span style="font-family: 宋体;">&ldquo;</span>213456<span style="font-family: 宋体;">&rdquo;</span>映射为1、<span style="font-family: 宋体;">&ldquo;</span>132456<span style="font-family: 宋体;">&rdquo;</span>映射为2、<span style="font-family: 宋体;">&ldquo;</span>231456<span style="font-family: 宋体;">&rdquo;</span>映射为3、&hellip;、<span style="font-family: 宋体;">&ldquo;</span>654312<span style="font-family: 宋体;">&rdquo;</span>映射为718、<span style="font-family: 宋体;">&ldquo;</span>654321<span style="font-family: 宋体;">&rdquo;</span>映射为719。</span></span>这样，每种状态就可以对应一个整数。反过来说，0~ (6!-1)之间的任一整数，也可以唯一对应一种状态。因此，可以定义一个数组hash[720]（初始值全部为0，代表未出现过），某个状态next出现了，先求出其对应的整数值num，然后置hash[num]=1。这样，判断状态next是否出现过，先求出next对应的整数值num，若hash[num]！=0，则表示状态next出现过。&nbsp;</p>
+<p>&nbsp; &nbsp; &nbsp; n! 与n个数字组成的全排列如何映射呢？我们以3个数字1、2、3组成的全排列来说明问题。</p>
+<p>&nbsp; &nbsp; &nbsp; 设排列中所有数字满足从小到大排列，则称为正序。不是正序的排列中一定存在某个数字k后面有若干个数字比k小，比k小的数字个数n称为k的逆序个数。</p>
+<p>&nbsp; &nbsp; &nbsp; 例如，123的各位逆序个数序列为：0，0，0。映射整数为：0=0*2！+0*1！+0*0！=0</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;132的各位逆序个数序列为：0，1，0。映射整数为：1=0*2！+1*1！+0*0！=1</p>
+<p>&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 213的各位逆序个数序列为：1，0，0。映射整数为：2=1*2！+0*1！+0*0！=2</p>
+<p>&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;231的各位逆序个数序列为：1，1，0。映射整数为：3=1*2！+1*1！+0*0！=3</p>
+<p>&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;312的各位逆序个数序列为：2，0，0。映射整数为：4=2*2！+0*1！+0*0！=4</p>
+<p>&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;321的各位逆序个数序列为：2，1，0。映射整数为：5=2*2！+1*1！+0*0！=5</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;对6位数 654312而言，各位逆序个数序列为：5,4,3,2,0,0，应映射为：5*5！+4*4！+3*3！+2*2！+0*1！+0*0！=600+96+18+4=718。</p>
+<p>&nbsp; &nbsp; &nbsp; 这实际上也很好理解，654312首位出现6，后面比它小的数字有1、2、3、4、5共5个，若首位出现6，则首位分别出现1、2、3、4和5的情况都出现过，才可能首位出现6，而对于6位数而言，首位出现1的情况有5！种，首位出现2的情况也是5！种，&hellip;，所以映射时首位5*5！。</p>
+<p>&nbsp; &nbsp; &nbsp; 同理，可以理解次位是：逆序个数*4！，&hellip;&hellip;。</p>
+<p>&nbsp; &nbsp; &nbsp; （2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">#include &lt;string.h&gt;</p>
+<p style="margin-left: 30px;">int fact[]={1,1,2,6,24,120};&nbsp; &nbsp;//&nbsp; 对应0！,1！,2！,3！,4！,5！</p>
+<p style="margin-left: 30px;">int hash(char *s)&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;// 把1..6的排列*s 映射为数字 0..(6!-1)</p>
+<p style="margin-left: 30px;">{&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int i, j, temp, num;&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;num = 0;&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;for (i = 0; i &lt;6-1; i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; temp = 0;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (j = i + 1; j &lt; 6; j++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (s[j] &lt; s[i])</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;temp++;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;num += fact[6-i-1] * temp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return num;</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int BFS(char src[],char dest[])</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int vis[720]={0},step[720],front,rear,s0,s1,ts,i;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; char q[720][7],cur[7],next[7],tmp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;front=rear=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; s1=hash(dest);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; strcpy(q[rear++],src);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; s0=hash(src);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vis[hash(src)]=1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; step[s0]=0;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;while (front&lt;rear)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; strcpy(cur,q[front++]);&nbsp; // 出队列</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; s0=hash(cur);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (s0==s1)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 达到目标状态</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return&nbsp; step[s0];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;6-1;i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; strcpy(next,cur);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; tmp=next[i]; next[i]=next[i+1];next[i+1]=tmp;&nbsp; // 交换位置i和i+1中的数字</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;ts=hash(next);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (vis[ts]==0)&nbsp;&nbsp; // 状态未出现过</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vis[ts]=1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; step[ts]=step[s0]+1;&nbsp; // 记录步数</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; strcpy(q[rear++],next);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;char src[7],dest[7];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;while(scanf("%s%s",src,dest)!=EOF)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; printf("%d\n",BFS(src,dest));</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

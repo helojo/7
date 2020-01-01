@@ -1,0 +1,348 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go语言——没有对象的面向对象编程' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go语言——没有对象的面向对象编程</center></div><div class='banquan'>原文出处:本文由博客园博主欣欣念念提供。<br/>
+原文连接:https://www.cnblogs.com/xxnn/p/10875693.html</div><br>
+    <h3 id="本文译自steve-francia在oscon-2014的一个ppt原作请前往httpsspf13.compresentationgo-for-object-oriented-programmers">本文译自Steve Francia在OSCON 2014的一个PPT，原作请前往：<a href="https://spf13.com/presentation/go-for-object-oriented-programmers/" class="uri">https://spf13.com/presentation/go-for-object-oriented-programmers/</a></h3>
+<hr />
+<blockquote>
+<p>对我来说，最吸引我的不是Go拥有的特征，而是那些被故意遗漏的特征。 —— txxxxd</p>
+</blockquote>
+<blockquote>
+<p>为什么你要创造一种从理论上来说，并不令人兴奋的语言？<br />
+因为它非常有用。 —— Rob Pike</p>
+</blockquote>
+<h1 id="go中的对象">Go中的“对象”</h1>
+<p>要探讨Go语言中的对象，我们先搞清楚一个问题：</p>
+<h3 id="go语言有对象吗">Go语言有对象吗？</h3>
+<p>从语法上来说，</p>
+<ul>
+<li>Go中没有类（Classes）</li>
+<li>Go中没有“对象”（Objects）</li>
+</ul>
+<h1 id="到底什么是对象">到底什么是对象？</h1>
+<blockquote>
+<p>对象是一种抽象的数据类型，拥有状态（数据）和行为（代码）。 —— Steve Francia</p>
+</blockquote>
+<p>在Go语言中，我们这样声明一个类型：</p>
+<h5 id="类型声明struct">类型声明（Struct）</h5>
+<pre><code><code>type Rect struct {
+    width  int
+    height int
+}</code></pre>
+<h5 id="然后我们可以给这个struct声明一个方法">然后我们可以给这个Struct声明一个方法</h5>
+<pre><code><code>func (r *Rect) Area() int {
+    return r.width * r.height
+}</code></pre>
+<h5 id="用起来就像这样">用起来就像这样</h5>
+<pre><code><code>func main() {
+    r := Rect{width: 10, height: 5}
+    fmt.Println(&quot;area: &quot;, r.Area())
+}</code></pre>
+<p>我们不光可以声明结构体类型，我们可以声明任何类型。比如一个切片：</p>
+<h5 id="类型声明slice">类型声明（Slice）</h5>
+<pre><code><code>type Rects []*Rect</code></pre>
+<h5 id="同样也可以给这个类型声明一个方法">同样也可以给这个类型声明一个方法</h5>
+<pre><code><code>func (rs Rects) Area() int {
+    var a int
+    for _, r := range rs {
+        a += r.Area()
+    }
+    return a
+}</code></pre>
+<h5 id="用起来">用起来</h5>
+<pre><code><code>func main() {
+    r := &amp;Rect{width: 10, height: 5}
+    x := &amp;Rect{width: 7, height: 10}
+    rs := Rects{r, x}
+    fmt.Println(&quot;r&#39;s area: &quot;, r.Area())
+    fmt.Println(&quot;x&#39;s area: &quot;, x.Area())
+    fmt.Println(&quot;total area: &quot;, rs.Area())
+}</code></pre>
+<p><a href="https://play.golang.org/p/G1OWXPGvc3" class="uri">https://play.golang.org/p/G1OWXPGvc3</a></p>
+<p>我们甚至可以声明一个函数类型</p>
+<h5 id="类型声明func">类型声明（Func）</h5>
+<pre><code><code>type Foo func() int</code></pre>
+<h5 id="同样的给这个函数类型声明一个方法">同样的，给这个（函数）类型声明一个方法</h5>
+<pre><code><code>func (f Foo) Add(x int) int {
+    return f() + x
+}</code></pre>
+<h5 id="然后用起来">然后用起来</h5>
+<pre><code><code>func main() {
+    var x Foo
+
+    x = func() int { return 1 }
+
+    fmt.Println(x())
+    fmt.Println(x.Add(3))
+}</code></pre>
+<p><a href="https://play.golang.org/p/YGrdCG3SlI" class="uri">https://play.golang.org/p/YGrdCG3SlI</a></p>
+<p>通过上边的例子，这样看来，其实</p>
+<h3 id="go有对象">Go有“对象”</h3>
+<p>那么我们来看看</p>
+<h1 id="面向对象的go">“面向对象”的Go</h1>
+<blockquote>
+<p>如果一种语言包含对象的基本功能：标识、属性和特性，则通常认为它是基于对象的。<br />
+如果一种语言是基于对象的，并且具有多态性和继承性，那么它被认为是面向对象的。 —— Wikipedia</p>
+</blockquote>
+<p>第一条，我们在上边的例子看到了，go中的type declaration其实满足了Go语言是基于对象的。那么，</p>
+<h3 id="go是基于对象的它是面向对象的吗">Go是基于对象的，它是面向对象的吗？</h3>
+<p>我们来看看关于第二条，继承性和多态性</p>
+<h3 id="继承">继承</h3>
+<ul>
+<li>提供对象的复用</li>
+<li>类是按层级创建的</li>
+<li>继承允许一个类中的结构和方法向下传递这种层级</li>
+</ul>
+<h3 id="go中实现继承的方式">Go中实现继承的方式</h3>
+<ul>
+<li>Go明确地避免了继承</li>
+<li>Go严格地遵循了符合继承原则的组合方式</li>
+<li>Go中通过嵌入类型来实现组合</li>
+</ul>
+<h3 id="组合">组合</h3>
+<ul>
+<li>提供对象的复用</li>
+<li>通过包含其他的对象来声明一个对象</li>
+<li>组合使一个类中的结构和方法<strong>被拉进</strong>其他类中</li>
+</ul>
+<blockquote>
+<p>继承把“知识”向下传递，组合把“知识”向上拉升 —— Steve Francia</p>
+</blockquote>
+<h5 id="嵌入类型">嵌入类型</h5>
+<pre><code><code>type Person struct {
+    Name string
+    Address
+}
+
+type Address struct {
+    Number string
+    Street string
+    City   string
+    State  string
+    Zip    string
+}</code></pre>
+<h5 id="给被嵌入的类型声明一个方法">给被嵌入的类型声明一个方法</h5>
+<pre><code><code>func (a *Address) String() string {
+    return a.Number + &quot; &quot; + a.Street + &quot;\n&quot; + a.City + &quot;, &quot; + a.State + &quot; &quot; + a.Zip + &quot;\n&quot;
+}</code></pre>
+<h5 id="使用组合字面量声明一个struct">使用组合字面量声明一个Struct</h5>
+<pre><code><code>func main() {
+    p := Person{
+        Name: &quot;Steve&quot;,
+        Address: Address{
+            Number: &quot;13&quot;,
+            Street: &quot;Main&quot;,
+            City:   &quot;Gotham&quot;,
+            State:  &quot;NY&quot;,
+            Zip:    &quot;01313&quot;,
+        },
+    }
+}</code></pre>
+<h5 id="跑起来试试">跑起来试试</h5>
+<pre><code><code>func main() {
+    p := Person{
+        Name: &quot;Steve&quot;,
+        Address: Address{
+            Number: &quot;13&quot;,
+            Street: &quot;Main&quot;,
+            City:   &quot;Gotham&quot;,
+            State:  &quot;NY&quot;,
+            Zip:    &quot;01313&quot;,
+        },
+    }
+    fmt.Println(p.String())
+}</code></pre>
+<p><a href="https://play.golang.org/p/9beVY9jNlW" class="uri">https://play.golang.org/p/9beVY9jNlW</a></p>
+<h3 id="升级">升级</h3>
+<ul>
+<li>升级会检查一个内部类型是否能满足需要，并“升级”它</li>
+<li>内嵌的数据域和方法会被“升级”</li>
+<li>升级发生在运行时而不是声明时</li>
+<li>被升级的方法被认为是符合接口的</li>
+</ul>
+<h5 id="升级不是重载">升级不是重载</h5>
+<pre><code><code>func (a *Address) String() string {
+    return a.Number + &quot; &quot; + a.Street + &quot;\n&quot; + a.City + &quot;, &quot; + a.State + &quot; &quot; + a.Zip + &quot;\n&quot;
+}
+
+func (p *Person) String() string {
+    return p.Name + &quot;\n&quot; + p.Address.String()
+}</code></pre>
+<p>外部结构的方法和内部结构的方法都是可见的</p>
+<pre><code><code>func main() {
+    p := Person{
+        Name: &quot;Steve&quot;,
+        Address: Address{
+            Number: &quot;13&quot;,
+            Street: &quot;Main&quot;,
+            City:   &quot;Gotham&quot;,
+            State:  &quot;NY&quot;,
+            Zip:    &quot;01313&quot;,
+        },
+    }
+    fmt.Println(p.String())
+    fmt.Println(p.Address.String())
+}</code></pre>
+<p><a href="https://play.golang.org/p/Aui0nGa5Xi" class="uri">https://play.golang.org/p/Aui0nGa5Xi</a></p>
+<h5 id="这两个类型仍然是两个不同的类型">这两个类型仍然是两个不同的类型</h5>
+<pre><code><code>func isValidAddress(a Address) bool {
+    return a.Street != &quot;&quot;
+}
+
+func main() {
+    p := Person{
+        Name: &quot;Steve&quot;,
+        Address: Address{
+            Number: &quot;13&quot;,
+            Street: &quot;Main&quot;,
+            City:   &quot;Gotham&quot;,
+            State:  &quot;NY&quot;,
+            Zip:    &quot;01313&quot;,
+        },
+    }
+
+    // 这里不能用 p (Person类型) 作为 Address类型的IsValidAddress参数
+    // cannot use p (type Person) as type Address in argument to isValidAddress
+    fmt.Println(isValidAddress(p))
+    fmt.Println(isValidAddress(p.Address))
+}</code></pre>
+<p><a href="https://play.golang.org/p/KYjXZxNBcQ" class="uri">https://play.golang.org/p/KYjXZxNBcQ</a></p>
+<h5 id="升级不是子类型">升级不是子类型</h5>
+<h3 id="多态">多态</h3>
+<blockquote>
+<p>为不同类型的实体提供单一接口</p>
+</blockquote>
+<blockquote>
+<p>通常通过泛型、重载和/或子类型实现</p>
+</blockquote>
+<h3 id="go中实现多态的方式">Go中实现多态的方式</h3>
+<ul>
+<li>Go明确避免了子类型和重载</li>
+<li>Go尚未提供泛型</li>
+<li>Go的接口提供了多态功能</li>
+</ul>
+<h3 id="接口">接口</h3>
+<ul>
+<li>接口就是（要实现某种功能所需要提供的）方法的列表</li>
+<li>结构上的类型 vs 名义上的类型</li>
+<li>“如果什么东西能做这件事，那么就可以在这使用它”</li>
+<li>惯例上就叫它 某种东西</li>
+</ul>
+<p>Go语言采用了鸭式辩型，和JavaScript类似。鸭式辩型的思想是，只要一个动物走起路来像鸭子，叫起来像鸭子，那么就认为它是一只鸭子。<br />
+也就是说，只要一个对象提供了和某个接口同样（在Go中就是相同签名）的方法，那么这个对象就可以当做这个接口来用。并不需要像Java中一样显式的实现（implements）这个接口。</p>
+<h5 id="接口声明">接口声明</h5>
+<pre><code><code>type Shaper interface{ 
+    Area() int 
+}</code></pre>
+<h5 id="然后把这个接口作为一个参数类型">然后把这个接口作为一个参数类型</h5>
+<pre><code><code>func Describe(s Shaper) {
+    fmt.Println(&quot;Area is: &quot;, s.Area())
+}</code></pre>
+<h5 id="这样用">这样用</h5>
+<pre><code><code>func main() {
+    r := &amp;Rect{width: 10, height: 5}
+    x := &amp;Rect{width: 7, height: 10}
+    rs := &amp;Rects{r, x}
+    Describe(r)
+    Describe(x)
+    Describe(rs)
+}</code></pre>
+<p><a href="https://play.golang.org/p/WL77LihUwi" class="uri">https://play.golang.org/p/WL77LihUwi</a></p>
+<blockquote>
+<p>“如果你可以重新做一次Java，你会改变什么？”<br />
+“我会去掉类class，” 他回答道。<br />
+在笑声消失后，他解释道，真正的问题不是类class本身，而是“实现”的继承（类之间extends的关系）。接口的继承（implements的关系）是更可取的方式。<br />
+只要有可能，你就应该尽可能避免“实现”的继承。<br />
+—— James Gosling（Java之父）</p>
+</blockquote>
+<h3 id="go的接口是基于实现的而不是基于声明的">Go的接口是基于实现的，而不是基于声明的</h3>
+<p>这也就是上边所说的鸭式辩型</p>
+<h3 id="接口的力量">接口的力量</h3>
+<h5 id="io.reader">io.Reader</h5>
+<pre><code><code>type Reader interface {
+    Read(p []byte) (n int, err error)
+}</code></pre>
+<ul>
+<li>Interface</li>
+<li>Read方法读取最多len(p) bytes的数据到字节数组p中</li>
+<li>返回读取的字节数和遇到的任何error</li>
+<li>并不规定Read()方法如何实现</li>
+<li>被诸如 os.File, bytes.Buffer, net.Conn, http.Request.Body等等使用</li>
+</ul>
+<h5 id="io.writer">io.Writer</h5>
+<pre><code><code>type Writer interface {
+    Write(p []byte) (n int, err error)
+}</code></pre>
+<ul>
+<li>Interface</li>
+<li>Write方法写入最多len(p) bytes的数据到字节数组p中</li>
+<li>返回写入的字节数和遇到的任何error</li>
+<li>并不规定Write()方法如何实现</li>
+<li>被诸如 os.File, bytes.Buffer, net.Conn, http.Request.Body等等使用</li>
+</ul>
+<h5 id="io.reader-使用">io.Reader 使用</h5>
+<pre><code><code>func MarshalGzippedJSON(r io.Reader, v interface{}) error {
+    raw, err := gzip.NewReader(r)
+    if err != nil {
+        return err
+    }
+    return json.NewDecoder(raw).Decode(&amp;v)
+}</code></pre>
+<h5 id="读取一个json.gz文件">读取一个json.gz文件</h5>
+<pre><code><code>func main() {
+    f, err := os.Open(&quot;myfile.json.gz&quot;)
+    if err != nil {
+        log.Fatalln(err)
+    }
+    defer f.Close()
+    m := make(map[string]interface{})
+    MarshalGzippedJSON(f, &amp;m)
+}</code></pre>
+<h5 id="实用的交互性">实用的交互性</h5>
+<ul>
+<li>Gzip.NewReader(io.Reader) 只需要传入一个io.Reader接口类型即可</li>
+<li>在files, http requests, byte buffers, network connections, ...任何你创建的东西里都能工作</li>
+<li>在gzip包里不需要任何特殊处理。只要简单地调用Read(n),把抽象的部分留给实现者即可</li>
+</ul>
+<h5 id="将-http-response-写入文件">将 http response 写入文件</h5>
+<pre><code><code>func main() {
+    resp, err := http.Get(&quot;...&quot;)
+    if err != nil {
+        log.Fatalln(err)
+    }
+    defer resp.Body.Close()
+    out, err := os.Create(&quot;filename.ext&quot;)
+    if err != nil {
+        log.Fatalln(err)
+    }
+    defer out.Close()
+    io.Copy(out, resp.Body) // out io.Writer, resp.Body io.Reader 
+}</code></pre>
+<h1 id="go">Go</h1>
+<blockquote>
+<p>简单比复杂更难：你必须努力使你的思维清晰，使之简单。但最终还是值得的，因为一旦你到了那里，你就可以移山。 —— Steve Jobs</p>
+</blockquote>
+<h3 id="go简单实用绝妙">Go简单，实用，绝妙</h3>
+<h3 id="go做了一些伟大的事情">Go做了一些伟大的事情</h3>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

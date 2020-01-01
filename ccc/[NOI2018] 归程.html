@@ -1,0 +1,130 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[NOI2018] 归程' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[NOI2018] 归程</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/10912353.html</div><br>
+    <p>好久没更新博客了……</p>
+<p>说说本题，预处理出所有的dis[x]表示1至x的长度，询问(v,p)的答案为min_{minLev(x,v)&gt;p} dis[x]。建立关于lev从大到小的kruskal重构树，则minlev(x,v)=val[lca(x,v)]。</p>
+<p>换句话说，任意在重构树v的某个祖先d有val[d]&gt;p，可以用d子树（除开包含v节点的儿子子树）中所有叶节点的最小dis来更新答案。</p>
+<p>注意到重构树是个二叉树。因此对于关于d查询的子树仍是一个完整的子树结构，设为d'(d的某个儿子)。如果令mindis[x]表示子树x的叶节点的最小dis值，则直接拿mindis[d']来更新。</p>
+<p>若p始终为-inf,可以自顶向下预处理上述值，转换到一般情况就可以考虑树上主席树了。<span class="math inline">\(%^#\)</span>&amp;^&amp;…… 这么写就成笑话了……注意到满足d[v]&gt;p的点集中分布在v的祖先链的前缀，可以倍增找出那个分界点(深度最小的val&lt;=p的点)然后取它的mindis……</p>
+<p><del>1A了开心😊</del></p>
+<p>参考实现</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N=8e5+10;
+
+struct Enode {
+    int u,v,a,l;
+    bool operator&lt;(const Enode&amp;d) const{return a&gt;d.a;}
+};
+struct Pnode {
+    int key,dis;
+    bool operator&lt;(const Pnode&amp;d) const{return dis&gt;d.dis;}
+};
+
+int cnt,dis[N];
+int head[N],to[N],len[N],lst[N];
+bool vis[N];
+
+void ins(int x,int y,int w) {
+    to[++cnt]=y,len[cnt]=w,lst[cnt]=head[x],head[x]=cnt;
+    to[++cnt]=x,len[cnt]=w,lst[cnt]=head[y],head[y]=cnt;
+}
+priority_queue&lt;Pnode&gt; pq;
+void dijkstra() {
+    memset(dis,0x3f,sizeof dis);
+    pq.push((Pnode){1,dis[1]=0});
+    while(pq.size()) {
+        int x=pq.top().key; pq.pop();
+        if(vis[x]) continue; vis[x]=1;
+        for(int i=head[x]; i; i=lst[i]) if(dis[to[i]]&gt;dis[x]+len[i]) 
+            pq.push((Pnode){to[i],dis[to[i]]=dis[x]+len[i]});
+    }
+}
+
+Enode a[N];
+int n,m,rt[N],val[N],ch[N][2];
+int fa[N][20];
+
+int find(int x) {return rt[x]==x?x:rt[x]=find(rt[x]);}
+void dfs(int x,int d) {
+    for(int i=1; (1&lt;&lt;i)&lt;=d; ++i) fa[x][i]=fa[fa[x][i-1]][i-1];
+    if(x&gt;n) {
+        fa[ch[x][0]][0]=x; dfs(ch[x][0],d+1);
+        fa[ch[x][1]][0]=x; dfs(ch[x][1],d+1);
+        dis[x]=min(dis[ch[x][0]],dis[ch[x][1]]);
+    }
+}
+
+void rebuild() {
+    int tot=n;
+    sort(a+1,a+m+1); 
+    for(int i=1; i&lt;=n; ++i) {
+        memset(fa[i],0,sizeof fa[i]);
+        rt[i]=i;
+    }
+    for(int i=1; i&lt;=m; ++i) {
+        int x=find(a[i].u),y=find(a[i].v);
+        if(x!=y) {
+            tot++; 
+            memset(fa[tot],0,sizeof fa[tot]);
+            rt[tot]=tot; val[tot]=a[i].a;
+            rt[ch[tot][0]=x]=rt[ch[tot][1]=y]=tot;
+        }
+    }
+    dfs(tot,1);
+}
+int query(int x,int p) {
+    for(int i=19; ~i; --i) if(fa[x][i]&amp;&amp;val[fa[x][i]]&gt;p) x=fa[x][i];
+    return dis[x];
+}
+
+
+int main() {
+    int T;
+    scanf(&quot;%d&quot;,&amp;T);
+    while(T--) {
+        cnt=0;
+        memset(vis,0,sizeof vis);
+        memset(head,0,sizeof head);
+        scanf(&quot;%d%d&quot;,&amp;n,&amp;m);
+        for(int i=1; i&lt;=m; ++i) {
+            scanf(&quot;%d%d%d%d&quot;,&amp;a[i].u,&amp;a[i].v,&amp;a[i].l,&amp;a[i].a);
+            ins(a[i].u,a[i].v,a[i].l);
+        }
+        dijkstra();
+        rebuild();
+        int Q,K,S,lans=0;
+        scanf(&quot;%d%d%d&quot;,&amp;Q,&amp;K,&amp;S);
+        for(int v,p; Q--; ) {
+            scanf(&quot;%d%d&quot;,&amp;v,&amp;p);
+            v=(v+K*lans-1)%n+1;
+            p=(p+K*lans)%(S+1);
+            lans=query(v,p);
+            printf(&quot;%d\n&quot;,lans);
+        }
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

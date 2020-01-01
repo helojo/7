@@ -1,0 +1,180 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修bzoj1861 书架' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>bzoj1861 书架</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/bzoj1861.html</div><br>
+    <p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=1861"><font size=5>题目链接</font></a></p>
+<h1 id="思路">思路</h1>
+<p>用一个平衡树维护点的编号和权值。这里的权值是自己赋上去的。</p>
+<p>操作1，就把x从平衡树中删掉，然后将其权值变为最小值，重新插入。</p>
+<p>操作2，与操作1类似，只要将其权值变为最大值再重新插入就行了。</p>
+<p>操作3，其实就是将x与他的前驱或者后继交换。也很容易实现。</p>
+<p>操作4，查询排名。</p>
+<p>操作5，查找第k大。</p>
+<h1 id="代码">代码</h1>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-05-25 10:50:13
+* @Last Modified time: 2019-05-25 17:21:41
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+#define ls TR[cur].ch[0]
+#define rs TR[cur].ch[1]
+const  int N = 500000 + 100,INF = 1e9 + 10;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+struct node {
+    int ch[2],val,id,key,siz;
+}TR[N];
+int tot;
+int root,dy[N];
+void up(int cur) {
+    TR[cur].siz = TR[ls].siz + TR[rs].siz + 1;
+}
+void rotate(int &amp;cur,int f) {
+    int son = TR[cur].ch[f];
+    TR[cur].ch[f] = TR[son].ch[f ^ 1];
+    TR[son].ch[f ^ 1] = cur;
+    up(cur);
+    cur = son;
+    up(cur);
+}
+void insert(int &amp;cur,int val,int key) {
+    if(!cur) {
+        cur = ++tot;
+        TR[cur].val = val;TR[cur].key = key;
+        TR[cur].id = rand();TR[cur].siz = 1;
+        dy[key] = cur;
+        return;
+    }
+    TR[cur].siz++;
+    int d = val &gt; TR[cur].val;
+    insert(TR[cur].ch[d],val,key);
+    if(TR[TR[cur].ch[d]].id &lt; TR[cur].id) rotate(cur,d);
+}
+void del(int &amp;cur,int val) {
+    if(!cur) return;
+    if(val == TR[cur].val) {
+        if(!ls || !rs) {cur = ls + rs;return;}
+        
+        int d = TR[rs].id &lt; TR[ls].id;rotate(cur,d);
+        del(cur,val);
+    }
+    else TR[cur].siz--,del(TR[cur].ch[val &gt; TR[cur].val],val);
+}
+int Rank(int cur,int val) {
+    if(!cur) return 0;
+    if(val == TR[cur].val) return TR[ls].siz;
+    if(val &lt; TR[cur].val) return Rank(ls,val);
+    else return Rank(rs,val) + TR[ls].siz + 1;
+}
+int kth(int cur,int now) {
+    while(1) {
+        if(TR[ls].siz &gt;= now) cur = ls;
+        else if(TR[ls].siz + 1 == now) return TR[cur].key;
+        else now -= TR[ls].siz + 1,cur = rs;
+    }
+}
+int pred(int cur,int val) {
+    if(!cur) {
+        TR[++tot].val = -INF;
+        return tot;
+    }
+    if(val &lt;= TR[cur].val) return pred(ls,val);
+    int k = pred(rs,val);
+    return TR[k].val &gt; TR[cur].val ? k : cur;
+}
+int nex(int cur,int val) {
+    if(!cur) {
+        TR[++tot].val = INF;
+        return tot;
+    }
+    if(val &gt;= TR[cur].val) return nex(rs,val);
+    int k = nex(ls,val);
+    return TR[k].val &lt; TR[cur].val ? k : cur;
+}
+int LL,RR,a[N];
+char S[10];
+int main() {
+    srand(time(0));
+    int n = read(),m = read();
+    for(int i = 1;i &lt;= n;++i) {
+        int x = read();
+        a[x] = i,insert(root,++RR,x);
+    }
+    while(m--) {
+        scanf(&quot;%s&quot;,S + 1);
+        if(S[1] == &#39;T&#39;) {
+            int x = read();
+            del(root,a[x]);
+            a[x] = --LL;
+            insert(root,LL,x);
+        }
+        else if(S[1] == &#39;B&#39;) {
+            int x = read();
+            del(root,a[x]);a[x] = ++RR;
+            insert(root,RR,x);
+        }
+        else if(S[1] == &#39;I&#39;) {
+            int x = read(),y = read();
+            if(!y) continue;
+            int tmp;
+            if(y == -1) tmp = pred(root,a[x]);
+            else tmp = nex(root,a[x]);
+            int zz = TR[tmp].key;
+            swap(TR[tmp].key,TR[dy[x]].key);
+            // printf(&quot;!!%d %d\n&quot;,x,zz);
+            swap(dy[x],dy[zz]);
+            swap(a[x],a[zz]);
+        }
+        else if(S[1] == &#39;A&#39;) {
+            int x = read();
+            printf(&quot;%d\n&quot;,Rank(root,a[x]));
+        }
+        else {
+            int x = read();
+            printf(&quot;%d\n&quot;,kth(root,x));
+        }
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

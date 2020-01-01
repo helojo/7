@@ -1,0 +1,230 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修FFmpeg4.0笔记：封装ffmpeg的视频帧转换功能类CSws' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>FFmpeg4.0笔记：封装ffmpeg的视频帧转换功能类CSws</center></div><div class='banquan'>原文出处:本文由博客园博主gongluck提供。<br/>
+原文连接:https://www.cnblogs.com/gongluck/p/11022228.html</div><br>
+    <h2 id="github">Github</h2>
+<p><a href="https://github.com/gongluck/FFmpeg4.0-study/tree/master/Cff" class="uri">https://github.com/gongluck/FFmpeg4.0-study/tree/master/Cff</a></p>
+<h2 id="csws.h">CSws.h</h2>
+<pre><code>/*******************************************************************
+*  Copyright(c) 2019
+*  All rights reserved.
+*
+*  文件名称:    CSws.h
+*  简要描述:    帧转换
+*
+*  作者:  gongluck
+*  说明:
+*
+*******************************************************************/
+
+#ifndef __CSWS_H__
+#define __CSWS_H__
+
+#ifdef __cplusplus
+extern &quot;C&quot;
+{
+#endif
+
+#include &lt;libswscale/swscale.h&gt;
+#include &lt;libavutil/imgutils.h&gt; // av_image_alloc
+
+#ifdef __cplusplus
+}
+#endif
+
+#include &lt;string&gt;
+#include &lt;mutex&gt;
+
+class CSws
+{
+public:
+    virtual ~CSws();
+
+    // 状态
+    enum STATUS { STOP, LOCKED };
+    // 设置源参数
+    bool set_src_opt(AVPixelFormat pixfmt, int w, int h, std::string&amp; err);
+    // 设置目标参数
+    bool set_dst_opt(AVPixelFormat pixfmt, int w, int h, std::string&amp; err);
+    // 锁定设置
+    bool lock_opt(std::string&amp; err);
+    // 解除锁定
+    bool unlock_opt(std::string&amp; err);
+    // 转换
+    int scale(const uint8_t* const srcSlice[], const int srcStride[], int srcSliceY, int srcSliceH, uint8_t* const dst[], const int dstStride[], std::string&amp; err);
+
+private:
+    STATUS status_ = STOP;
+    std::recursive_mutex mutex_;
+
+    SwsContext* swsctx_ = nullptr;
+
+    AVPixelFormat src_pix_fmt_ = AV_PIX_FMT_NONE;
+    AVPixelFormat dst_pix_fmt_ = AV_PIX_FMT_NONE;
+    int src_w_ = 0;
+    int src_h_ = 0;
+    int dst_w_ = 0;
+    int dst_h_ = 0;
+};
+
+#endif//__CSWS_H__</code></pre>
+<h2 id="csws.cpp">CSws.cpp</h2>
+<pre><code>/*******************************************************************
+*  Copyright(c) 2019
+*  All rights reserved.
+*
+*  文件名称:    CSws.cpp
+*  简要描述:    帧转换
+*
+*  作者:  gongluck
+*  说明:
+*
+*******************************************************************/
+
+#include &quot;common.h&quot;
+#include &quot;CSws.h&quot;
+
+CSws::~CSws()
+{
+    std::string err;
+    unlock_opt(err);
+}
+
+bool CSws::set_src_opt(AVPixelFormat pixfmt, int w, int h, std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    src_pix_fmt_ = pixfmt;
+    src_w_ = w;
+    src_h_ = h;
+
+    return true;
+}
+
+bool CSws::set_dst_opt(AVPixelFormat pixfmt, int w, int h, std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    dst_pix_fmt_ = pixfmt;
+    dst_w_ = w;
+    dst_h_ = h;
+
+    return true;
+}
+
+bool CSws::lock_opt(std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    swsctx_ = sws_getContext(src_w_, src_h_, src_pix_fmt_, dst_w_, dst_h_, dst_pix_fmt_, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+    if (swsctx_ == nullptr)
+    {
+        err = &quot;sws_getContext return nullptr.&quot;;
+        return false;
+    }
+    status_ = LOCKED;
+
+    return true;
+}
+
+bool CSws::unlock_opt(std::string&amp; err)
+{
+    LOCK();
+    err = &quot;opt succeed.&quot;;
+
+    sws_freeContext(swsctx_);
+    swsctx_ = nullptr;
+    status_ = STOP;
+    src_w_ = 0;
+    src_h_ = 0;
+    dst_w_ = 0;
+    dst_h_ = 0;
+
+    return true;
+}
+
+int CSws::scale(const uint8_t* const srcSlice[], const int srcStride[], int srcSliceY, int srcSliceH, uint8_t* const dst[], const int dstStride[], std::string&amp; err)
+{
+    LOCK();
+    CHECKNOTSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    int ret = sws_scale(swsctx_, srcSlice, srcStride, srcSliceY, srcSliceH, dst, dstStride);
+    CHECKFFRET(ret);
+
+    return ret;
+}</code></pre>
+<h2 id="测试">测试</h2>
+<pre><code>// 视频帧转换
+void test_sws()
+{
+    bool ret = false;
+    std::string err;
+    std::ifstream yuv(&quot;in.yuv&quot;, std::ios::binary);
+    CSws sws;
+
+    // 分配图像数据内存
+    uint8_t* src[4] = { 0 };
+    int srclinesize[4] = { 0 };
+    uint8_t* dst[4] = { 0 };
+    int dstlinesize[4] = { 0 };
+
+    int srcsize = av_image_alloc(src, srclinesize, 640, 432, AV_PIX_FMT_YUV420P, 1);
+    int dstsize = av_image_alloc(dst, dstlinesize, 320, 240, AV_PIX_FMT_BGR24, 1);
+    yuv.read(reinterpret_cast&lt;char*&gt;(src[0]), 640 * 432);
+    yuv.read(reinterpret_cast&lt;char*&gt;(src[1]), 640 * 432 / 4);
+    yuv.read(reinterpret_cast&lt;char*&gt;(src[2]), 640 * 432 / 4);
+
+    ret = sws.set_src_opt(AV_PIX_FMT_YUV420P, 640, 432, err);
+    TESTCHECKRET(ret);
+    ret = sws.set_dst_opt(AV_PIX_FMT_BGR24, 320, 240, err);
+    TESTCHECKRET(ret);
+    ret = sws.lock_opt(err);
+    TESTCHECKRET(ret);
+    int size = sws.scale(src, srclinesize, 0, 432, dst, dstlinesize, err);
+    std::cout &lt;&lt; &quot;sws &quot; &lt;&lt; size &lt;&lt; &quot; line&quot; &lt;&lt; std::endl;
+    std::ofstream bgr(&quot;out.bgr&quot;, std::ios::binary);
+    bgr.write(reinterpret_cast&lt;char*&gt;(dst[0]), dstsize);
+    ret = sws.unlock_opt(err);
+    TESTCHECKRET(ret);
+
+    // 清理
+    if (src != nullptr)
+    {
+        av_freep(&amp;src[0]);
+    }
+    av_freep(&amp;src);
+    if (dst != nullptr)
+    {
+        av_freep(&amp;dst[0]);
+    }
+    av_freep(&amp;dst);
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

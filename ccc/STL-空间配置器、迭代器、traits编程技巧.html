@@ -1,0 +1,167 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修STL-空间配置器、迭代器、traits编程技巧' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>STL-空间配置器、迭代器、traits编程技巧</center></div><div class='banquan'>原文出处:本文由博客园博主gatsby123提供。<br/>
+原文连接:https://www.cnblogs.com/gatsby123/p/11094655.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#内存分配和释放">内存分配和释放</a></li>
+        <li><a href="#对象的构造和析构">对象的构造和析构</a></li>
+        <li><a href="#traits要解决的问题">traits要解决的问题</a><ul>
+        <li><a href="#内嵌类别声明解决非指针迭代器的情况">内嵌类别声明解决非指针迭代器的情况</a></li>
+        <li><a href="#使用模板特例化解决普通指针的情况">使用模板特例化解决普通指针的情况</a></li>
+        </ul></li>
+        <li><a href="#迭代器相应类别">迭代器相应类别</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="内存分配和释放">内存分配和释放</h2>
+<p>STL中有两个分配器，一级分配器和二级分配器，默认使用二级分配器，使用二级分配器分配大内存时会调用一级分配器去执行，一级分配器使用malloc和free分配和释放内存。如果分配小内存那么二级分配器会从内存池中进行查找，防止malloc/free的开销。<br />
+<img src="./images/STL-空间配置器、迭代器、traits编程技巧0.png" alt="二级配置器" /></p>
+<p>为了了解原理，不深挖细节，只实现一级分配器也是可以的：</p>
+<pre><code>class first_level_alloc {
+public:
+    static void* allocate(size_t n) {
+        void* result = malloc(n);       //直接使用malloc
+        //todo: out of memory handler
+        return result;
+    }
+    static void deallocate(void* p, size_t) {
+        free(p);            //直接使用free
+    }
+};</code></pre>
+<p>一级分配器，直接调用malloc和free分配和释放内存。这里也没有处理分配失败的情况。</p>
+<p>为了方便使用定义一个包装类：</p>
+<pre><code>template &lt;typename T, typename Alloc&gt;
+class simple_alloc {
+public:
+    static T* allocate(size_t n) {
+        return (0 == n) ? nullptr : static_cast&lt;T *&gt;(Alloc::allocate(n * sizeof(T)));
+    }
+    static T* allocate() {
+        return static_cast&lt;T *&gt;(Alloc::allocate(sizeof(T)));
+    }
+    static void deallocate(T *p, size_t n) {
+        if (0 != n) {
+            Alloc::deallocate(p, n * sizeof(T));
+        }
+    }
+    static void deallocate(T *p) {
+        Alloc::deallocate(p, sizeof(T));
+    }
+};</code></pre>
+<p>对外使用这个包装类模板参数T指定要分配的对象类型，Alloc指定分配器，因为没有实现二级分配器，所以都是指定为一级分配器first_level_alloc。</p>
+<h2 id="对象的构造和析构">对象的构造和析构</h2>
+<p>定义如下三个函数：</p>
+<pre><code>template &lt;typename T&gt;
+inline void construct(T* p, const T&amp; value) {
+    new(p) T(value);   //placement new
+}
+template &lt;typename T&gt;
+inline void destroy(T *p) {
+    p-&gt;~T();
+}
+//todo:low efficiency
+template &lt;typename ForwardIterator&gt;
+inline void destroy(ForwardIterator first, ForwardIterator last) {
+    for (; first != last; ++first) {
+        destroy(&amp;*first);
+    }
+}</code></pre>
+<ol>
+<li><code>void construct(T* p, const T&amp; value)</code>：在p指向的位置用value拷贝构造T对象并返回。这里用到了placement new。</li>
+<li><code>void destroy(T *p)</code>：析构p指向处的T对象。</li>
+<li><code>void destroy(ForwardIterator first, ForwardIterator last)</code>：析构[first, last)区间的对象。这里没有考虑效率，直接使用for循环调用destroy。STL库中使用模板特例化，根据迭代器指向的类型有没有trivial destructor，执行不同的特例化版本。如果有trivial destructor，比如内置类型，那么什么也不用做。如果有non-trivial destructor才调用上述的那个版本。</li>
+</ol>
+<h2 id="traits要解决的问题">traits要解决的问题</h2>
+<p>假如算法中要声明“迭代器所指类别”的变量，该怎么办？</p>
+<h3 id="内嵌类别声明解决非指针迭代器的情况">内嵌类别声明解决非指针迭代器的情况</h3>
+<pre><code>template &lt;typename T&gt;
+struct MyIter {                     //模拟迭代器类型
+    typedef T value_type;   //内嵌类别声明
+    T* ptr;
+    MyIter(T* p = 0) :ptr(p) {}
+    T&amp; operator*() const {
+        return *ptr;
+    }
+};
+
+template &lt;typename I&gt;
+typename I::value_type    //返回类型为迭代器指向的类型
+func(I ite) {      //该函数传入一个指针，返回指针指向的值。
+    return *ite;
+}
+
+int main() {
+    MyIter&lt;int&gt; ite(new int(8));
+    cout &lt;&lt; func(ite);
+}</code></pre>
+<p>MyIter模拟迭代器，T是迭代器所指的类型，通过在迭代器内<code>typedef T value_type;</code>后，就能用MyIter<T>::value_type定义T类型的变量。<br />
+上面的方法解决了一部分问题，但是普通指针也是迭代器类型，我们没办法给指针应用上面的方法。比如上面的func，如果我们传入一个指针，肯定无法通过编译。</p>
+<h3 id="使用模板特例化解决普通指针的情况">使用模板特例化解决普通指针的情况</h3>
+<pre><code>template &lt;typename T&gt;
+struct MyIter {
+    typedef T value_type;
+    T* ptr;
+    MyIter(T* p = 0) :ptr(p) {}
+    T&amp; operator*() const {
+        return *ptr;
+    }
+};
+
+template &lt;typename I&gt;
+struct iterator_traits {            //针对普通迭代器的模板类
+    typedef typename I::value_type value_type;
+};
+
+template &lt;typename I&gt;
+struct iterator_traits&lt;I*&gt; {      //针对指针类型的模板特例化
+    typedef I value_type;
+};
+
+template &lt;typename I&gt;
+typename iterator_traits&lt;I&gt;::value_type
+func(I ite) {                   //该函数返回迭代器或这种指向的值
+    return *ite;
+}
+
+int main() {
+    MyIter&lt;int&gt; it(new int(8));
+    int* ip = new int(8);
+    std::cout &lt;&lt; func(ip) &lt;&lt; std::endl;
+    std::cout &lt;&lt; func(it);
+}</code></pre>
+<p>这里定义了一个模板类iterator_traits，实际使用时<code>iterator_traits&lt;I&gt;::value_type</code>就是迭代器I所指的类型，如果是迭代器是指针类型，那么匹配的是itetraor_traits的特例化，<code>iterator_traits&lt;I&gt;::value_type</code>依然可以得到指针所指类型。</p>
+<p>所以所谓的traits就是一个模板类和一系列模板特例化。通过这个模板类可以得到指针或者迭代器的相关类型。</p>
+<p>同时如果一个迭代器类型如果想要和traits类配合使用需要在其内部通过typedef定义value_type类型。</p>
+<h2 id="迭代器相应类别">迭代器相应类别</h2>
+<p>前面的迭代器所指类型value_type就是迭代器的相关类别之一，除了迭代器所指类型，还有几个迭代器相关类型。</p>
+<ol>
+<li>value_type：迭代器所指类型，上一节已经讲过了。</li>
+<li>difference type：用来表示两个迭代器之间的距离。</li>
+<li>reference type：迭代器所指类型的引用类型。</li>
+<li>pointer type：迭代器所指类型的指针类型。</li>
+<li>iterator_category：迭代器的类别。</li>
+</ol>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

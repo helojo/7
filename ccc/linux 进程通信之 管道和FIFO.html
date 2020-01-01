@@ -1,0 +1,455 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修linux 进程通信之 管道和FIFO' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>linux 进程通信之 管道和FIFO</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/10794806.html</div><br>
+    <p>进程间通信：IPC概念</p>
+<p>IPC：Interprocess Communication，通过内核提供的缓冲区进行数据交换的机制。</p>
+<p>IPC通信的方式：</p>
+<ul>
+<li>pipe：管道（最简单）</li>
+<li>fifo：有名管道</li>
+<li><a href="https://www.cnblogs.com/xiaoshiwang/p/10823291.html">mmap：打开一块共享的内存（速度最快）</a></li>
+<li><a href="https://www.cnblogs.com/xiaoshiwang/p/11119455.html">本地套接字：最稳定</a></li>
+<li><a href="https://www.cnblogs.com/xiaoshiwang/p/10895795.html">信号：携带信息量最小</a></li>
+<li>共享内存</li>
+<li>消息队列</li>
+</ul>
+<p>通信种类：</p>
+<ul>
+<li>单工（广播）</li>
+<li>单双工（对讲机）</li>
+<li>全双工（电话）</li>
+</ul>
+<h2 id="一管道pipe">一，管道PIPE</h2>
+<p>pipe通信是单双工的。</p>
+<h4 id="pipe通信只能在有血缘关系的进程间通信父子进程兄弟进程爷孙进程等"><font color="red">pipe通信，只能在有血缘关系的进程间通信。父子进程，兄弟进程，爷孙进程等。</font></h4>
+<pre><code>#include &lt;unistd.h&gt;
+int pipe(int pipefd[2]);
+</code></pre>
+<ul>
+<li>pipefd：【0】是读端，【1】是写端。</li>
+<li>返回值：成功返回0；失败返回-1。</li>
+</ul>
+<p>例子：</p>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(){
+  int fds[2];
+  pipe(fds);
+  pid_t pid = fork();
+
+  if(pid == 0){
+    write(fds[1], &quot;hello\n&quot;, 6);
+    char buf[10] = {0};
+    int ret = read(fds[0], buf, sizeof buf);
+    if(ret &gt; 0){
+      printf(&quot;%s&quot;, buf);
+    }
+  }
+  if(pid &gt; 0){
+    char buf[10] = {0};
+    int ret = read(fds[0], buf, sizeof buf);
+    if(ret &gt; 0){
+      printf(&quot;%s&quot;, buf);
+    }
+    write(fds[1], &quot;world\n&quot;, 6);
+    sleep(1);
+  }
+}
+</code></pre>
+<p>例子1：子进程写，父进程读。</p>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(){
+  int fds[2];
+  pipe(fds);
+  pid_t pid = fork();
+
+  if(pid == 0){
+    write(fds[1], &quot;hello\n&quot;, 6);
+    /*
+    char buf[10] = {0};
+    int ret = read(fds[0], buf, sizeof buf);
+    if(ret &gt; 0){
+      printf(&quot;%s&quot;, buf);
+    }
+    */
+  }
+  if(pid &gt; 0){
+    char buf[10] = {0};
+    int ret = read(fds[0], buf, sizeof buf);
+    if(ret &gt; 0){
+      printf(&quot;%s&quot;, buf);
+    }
+    //write(fds[1], &quot;world\n&quot;, 6);
+    //sleep(1);
+  }
+}</code></pre>
+<p>例子2：用管道实现【ps aux | grep bash】命令。</p>
+<p>实现办法，用dup2函数把标准输出，重定向到写端；再把标准输入重定向到读端。</p>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(){
+  int fds[2];
+  pipe(fds);
+  pid_t pid = fork();
+  int stdoutfd = dup(STDOUT_FILENO);
+  if(pid == 0){
+    //close(fds[0]);//------------①
+    dup2(fds[1], STDOUT_FILENO);
+    execlp(&quot;ps&quot;, &quot;ps&quot;, &quot;aux&quot;, NULL);
+  }
+  if(pid &gt; 0){
+    //close(fds[1]);//----------②
+    dup2(fds[0], STDIN_FILENO);
+    execlp(&quot;grep&quot;, &quot;grep&quot;, &quot;bash&quot;, NULL);
+    dup2(stdoutfd, STDOUT_FILENO);
+  }
+}
+</code></pre>
+<p>运行结果：发现程序没有结束，阻塞住了，必须按ctol-c才能结束。</p>
+<pre class="shell"><code>ys@ys:~/test$ ./pi2 
+ys        1551  0.0  0.2  29692  5548 pts/0    Ss   10:05   0:00 bash
+ys        2316  0.0  0.2  29560  5328 pts/1    Ss+  11:33   0:00 bash
+ys        2486  0.0  0.0  21536  1060 pts/0    S+   11:56   0:00 grep bash
+
+</code></pre>
+<p>用【ps aux】调查一下，发现，由于父进程【grep bash】没有结束还没有回收子进程，导致【ps】变成了僵尸进程。</p>
+<pre class="shell"><code>ys        2437  0.0  0.0  21536  1088 pts/0    S+   11:50   0:00 grep bash
+ys        2438  0.1  0.0      0     0 pts/0    Z+   11:50   0:00 [ps] &lt;defunct&gt;
+ys        2439  0.0  0.1  44472  3800 pts/1    R+   11:50   0:00 ps aux
+</code></pre>
+<p>为什么父进程【grep bash】没有结束呢？确实在子进程里给父进程【ps aux】的输出结果了啊！</p>
+<p>这是grep命令本身的缘故，在终端执行【grep bash】的话，就变成了阻塞状态，grep在等待标准输入，如果输入了【bash】grep就会给出结果，但是还是在继续等待标准输入，所以这就是父进程没有结束，阻塞在【grep bash】那里的原因。</p>
+<p>解决办法：告诉【grep】，管道的写端不会再写入数据了后，grep就不会再继续等待，所以grep就会结束。grep的结束了，父进程也就结束了，所以僵尸进程也就自动消失了。</p>
+<p>需要改代码的地方是②处，加上【close(fds[1]);】，就告诉了grep，已经没有写入了，所以grep就不会阻塞，父进程就能够结束掉。</p>
+<p><font color="red">注意：其实应该在子进程里也应该加上【close(fds[1]);】，才能达到写端全部关闭了，为什么没写也没错误呢，因为子进程先执行结束了，进程结束后，系统会自动把进程中打开的文件描述符全部关闭，所以没在子进程里写关闭写端的代码，也没出问题。</font></p>
+<p>管道有如下的规则：</p>
+<ul>
+<li>读管道时：
+<ul>
+<li>写端全部关闭：read函数返回0，相当于没有再能读取到的了。</li>
+<li>写端未全部关闭：
+<ul>
+<li>管道里有数据：read函数能够读到数据。</li>
+<li>管道里没有数据：read 阻塞。（可以用fcnlt设置成非阻塞）</li>
+</ul></li>
+</ul></li>
+<li>写管道时：
+<ul>
+<li>读端全部关闭：write函数会产生SIGPIPE信号，程序异常结束。</li>
+<li>读端未全部关闭：
+<ul>
+<li>管道已满：write函数阻塞等待。</li>
+<li>管道未满：write函数正常写入。</li>
+</ul></li>
+</ul></li>
+</ul>
+<p>例子1：写端全部关闭：read函数返回0。</p>
+<p>在①和②两处必须都关闭写端，read函数才能返回0.</p>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main(){
+  int fds[2];
+  pipe(fds);
+  pid_t pid = fork();
+
+  if(pid == 0){
+    char buf[10] = {0};
+    int ret = read(fds[0], buf, sizeof buf);
+    if(ret &gt; 0){
+      printf(&quot;%s&quot;, buf);
+    }
+    close(fds[1]);//----①
+    sleep(1);
+    if(read(fds[0],buf, sizeof buf) == 0){
+      printf(&quot;all closed\n&quot;);
+    }
+
+  }
+  if(pid &gt; 0){
+    int ret = write(fds[1], &quot;hello\n&quot;, 6);
+    close(fds[1]);//------②
+    wait(NULL);    
+  }
+}</code></pre>
+<p>例子2：读端全部关闭：write函数会产生SIGPIPE信号，程序异常结束。</p>
+<p>在①和②两处必须都关闭读端，write函数会产生SIGPIPE信号。</p>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main(){
+  int fds[2];
+  pipe(fds);
+  pid_t pid = fork();
+
+  if(pid == 0){
+    close(fds[0]);//------②
+    int ret = write(fds[1], &quot;hello\n&quot;, 6); 
+  }
+  if(pid &gt; 0){
+    close(fds[0]);//----①
+    //close(fds[1]);
+    int status;
+    wait(&amp;status);
+    if(WIFSIGNALED(status)){
+      printf(&quot;killed by %d\n&quot;, WTERMSIG(status));
+    }
+  }
+}
+</code></pre>
+<p>执行结果：【killed by 13】。13是SIGPIPE</p>
+<p>查看系统默认的管道缓冲区的大小：ulimit -a</p>
+<pre class="shell"><code>pipe size            (512 bytes, -p) 8</code></pre>
+<p>查看系统默认的管道缓冲区的大小的函数：fpathconf</p>
+<pre><code>#include &lt;unistd.h&gt;
+long fpathconf(int fd, int name);
+</code></pre>
+<ul>
+<li>fd：文件描述符</li>
+<li>name：可以选择很多宏
+<ul>
+<li>_PC_PIPE_BUF：代表管道。</li>
+</ul></li>
+</ul>
+<p>例子：</p>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(){
+  int fds[2];
+  pipe(fds);
+  long ret = fpathconf(fds[0], _PC_PIPE_BUF);
+  printf(&quot;size:%ld\n&quot;, ret);
+}
+</code></pre>
+<p>执行结果：size:4096</p>
+<p>上面的【例子：用管道实现【ps aux | grep bash】命令】有个问题，父进程直接调用了exec函数，导致无法在父进程中回收子进程的资源。下面的例子就去解决这个问题，方法是，不在父进程里调用exec函数，在2个兄弟子进程里分别调用exec函数，然后在父进程里回收资源。</p>
+<pre><code>#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main(){
+  int fds[2];
+  pipe(fds);
+  pid_t pid = fork();
+  if(pid == 0){
+    pid_t pid1 = fork();
+    if(pid1 == 0){
+      dup2(fds[1], STDOUT_FILENO);
+      execlp(&quot;ps&quot;, &quot;ps&quot;, &quot;aux&quot;, NULL);
+      
+    }
+    else if(pid1 &gt; 0){
+      close(fds[1]);//----①
+      dup2(fds[0], STDIN_FILENO);
+      execlp(&quot;grep&quot;, &quot;grep&quot;, &quot;bash&quot;, NULL);
+      //dup2(stdoutfd, STDOUT_FILENO);
+    }
+  }
+  else if(pid &gt; 0){
+    close(fds[1]);//----②
+    wait(NULL);
+  }
+}</code></pre>
+<p>注意在①和②处的关闭代码。</p>
+<p>到此为止，可以看出来管道的</p>
+<ul>
+<li>优点：使用起来简单。</li>
+<li>缺点：只能在有血缘关系的进程间使用。</li>
+</ul>
+<h2 id="二fifo通信">二，FIFO通信</h2>
+<p>创建FIFO伪文件的命令：【mkfifo】</p>
+<pre class="shell"><code>prw-r--r-- 1 ys ys     0 4月  29 15:59 myfifo</code></pre>
+<p>文件类型为P，大小为0。</p>
+<p>也可以用函数：mkfifo创建</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+int mkfifo(const char *pathname, mode_t mode);</code></pre>
+<ul>
+<li>pathname：文件名</li>
+<li>mode：文件权限</li>
+<li>返回值：0成功；-1失败</li>
+</ul>
+<p>FIFO通信原理：内核对fifo文件开辟一个缓冲区，操作fifo伪文件，就相当于操作缓冲区，实现里进程间的通信。实际上就是文件读写。</p>
+<p>FIFO例子：传进一个事先用mkfifo 创建好的FIFO文件。可以同时打开多个读端和写端。</p>
+<ul>
+<li><p>写端：</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char* argv[]){
+
+  printf(&quot;begin write\n&quot;);
+  int fd = open(argv[1], O_WRONLY);
+  printf(&quot;end write\n&quot;);
+
+  int num = 0;
+  char buf[20] = {0};
+  while(1){
+    sprintf(buf, &quot;num=%04d\n&quot;, num++);
+    write(fd, buf, strlen(buf));
+    sleep(1);
+  }
+
+  close(fd);
+}
+</code></pre></li>
+<li><p>读端：</p>
+<pre><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;string.h&gt;
+
+int main(int argc, char* argv[]){
+
+  printf(&quot;begin read\n&quot;);
+  int fd = open(argv[1], O_RDONLY);
+  printf(&quot;end read\n&quot;);
+
+  int num = 0;
+  char buf[20] = {0};
+  while(1){
+    memset(buf, 0x00, sizeof buf);
+    int ret = read(fd, buf, sizeof buf);
+    if(ret &gt; 0){
+      printf(&quot;%s\n&quot;, buf);
+    }
+    else if(ret == 0){
+      break;
+    }
+    sleep(1);
+  }
+
+  close(fd);
+}</code></pre></li>
+</ul>
+<p>例子里有两个注意点：</p>
+<ul>
+<li><p>open的时候是阻塞的，只有当读端和写端都打开后，open函数才会返回。非FIFO文件的open函数不是阻塞的。</p>
+<pre class="shell"><code>FIFOs
+       Opening  the  read or write end of a FIFO blocks until the other end is
+       also opened (by another process or thread).  See  fifo(7)  for  further
+       details.</code></pre></li>
+<li>强制终止读端进程后，写端会自动终止。理由是读端已经关闭了，再往里写就会收到SIGFIFO信号，这个和管道的原理是一样的。</li>
+<li><p><font color="red">非常重要的一点：从fifo里读出数据后，这个被读出来的数据在fifo里就消失了。后面讲的mmap进程间通信就不一样，读完了，再读还有，因为是映射到内存了。</font></p></li>
+</ul>
+<p>A进程发送一个mp3文件，B进程接收这个mp3文件，并存储到磁盘上，代码如下：<br />
+发送端：先取得mp3文件的大小，把文件的大小先发给接收端，然后在把文件的内容发过去。</p>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;string.h&gt;
+
+int main(int argc, char* argv[]){
+  struct stat sbuf;
+  int ret = stat(&quot;02.mp3&quot;, &amp;sbuf);
+  if(ret &lt; 0){
+    perror(&quot;stat&quot;);
+    return -1;
+  }
+  //get file size
+  int sz = sbuf.st_size;
+  printf(&quot;size:%d\n&quot;, sz);
+  char buf[20] = {0};
+  sprintf(buf, &quot;%d&quot;, sz);
+  //open fifo file
+  int fd = open(argv[1], O_RDWR);
+  //send file size
+  write(fd, buf, sizeof(buf));
+
+  //open src mp3 file
+  int src = open(&quot;02.mp3&quot;, O_RDONLY);
+  char srcBuf[1024] = {0};
+  //send file content to dec file
+  int sent = 0;
+  while((sent = read(src, srcBuf, sizeof(srcBuf))) &gt; 0){
+    write(fd, srcBuf, sent);
+    memset(srcBuf, 0x00, sizeof(srcBuf));
+  }
+  close(fd);
+  close(src);
+}</code></pre>
+<p>接收端：先从发送端取得要发过来的MP3文件的大小，然后根据这个大小，先创建一个空的文件，然后再向这个空的文件里写内容。</p>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+
+int main(int argc, char* argv[]){
+  //open fifo file
+  int fd = open(argv[1], O_RDONLY);
+  //send file size
+  char buf[20] = {0};
+  //get file size
+  read(fd, buf, sizeof(buf));
+  int sz = atoi(buf);
+  printf(&quot;sz:%d\n&quot;, sz);
+
+  int dsc = open(&quot;des.mp3&quot;, O_RDWR|O_CREAT|O_TRUNC, 0666);
+  int ret = ftruncate(dsc, sz);
+  if(ret &lt; 0){
+    perror(&quot;ftruncate&quot;);
+    return -1;
+  }
+
+  char srcBuf[1024] = {0};
+  //recv file content from src file
+  int sent = 0;
+  while((sent = read(fd, srcBuf, sizeof(srcBuf))) &gt; 0){
+    write(dsc, srcBuf, sent);
+    memset(srcBuf, 0x00, sizeof(srcBuf));
+  }
+
+  close(fd);
+  close(dsc);
+}</code></pre>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/linux 进程通信之 管道和FIFO0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,169 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ 流插入&quot;&lt;&lt;&quot;和流提取&quot;&gt;&gt;&quot;运算符的重载' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ 流插入&quot;&lt;&lt;&quot;和流提取&quot;&gt;&gt;&quot;运算符的重载</center></div><div class='banquan'>原文出处:本文由博客园博主小林coding提供。<br/>
+原文连接:https://www.cnblogs.com/xiaolincoding/p/11969861.html</div><br>
+    <h2 id="流插入运算符的重载">01 流插入&lt;&lt;运算符的重载</h2>
+<p>C++ 在输出内容时，最常用的方式：</p>
+<pre><code>std::cout &lt;&lt; 1 &lt;&lt;&quot;hello&quot;;</code></pre>
+<p>问题：</p>
+<ul>
+<li>那这条语句为什么能成立呢？</li>
+<li><code>cout</code> 是什么？&quot;<code>&lt;&lt;</code>&quot; 运算符能用在 <code>cout</code> 上呢？</li>
+</ul>
+<p>原因：</p>
+<ul>
+<li>实际上，<code>cout</code> 是在 <code>iostream</code> 头文件中定义的 <code>ostream</code> 类的对象。</li>
+<li>&quot;<code>&lt;&lt;</code>&quot; 能够用在 <code>cout</code> 上是因为，在 <code>ostream</code> 类对 &quot;<code>&lt;&lt;</code>&quot; 进行了<strong>重载</strong>。</li>
+</ul>
+<p>对于<code>std::cout &lt;&lt; 1 &lt;&lt;&quot;hello&quot;;</code>这条语句，有可能按以下的方式重载成 <code>ostream</code> 类的成员函数：</p>
+<pre><code>ostream &amp; ostream::operator&lt;&lt;(int n)
+{
+    .... // 输出n整型的代码
+    return *this;
+}
+
+ostream &amp; ostream::operator&lt;&lt;(const char * s)
+{
+    .... // 输出s字符串的代码
+    return *this;
+}</code></pre>
+<ul>
+<li><code>std::cout &lt;&lt; 1;</code>语句，等价于<code>cout.operator&lt;&lt;(1);</code></li>
+<li><code>std::cout &lt;&lt; &quot;hello&quot;;</code>语句，等价于<code>cout.operator&lt;&lt;(&quot;hello&quot;);</code></li>
+<li><code>std::cout &lt;&lt; 1 &lt;&lt;&quot;hello&quot;;</code>语句，等价于<code>( cout.operator&lt;&lt;(1) ).operator&lt;&lt;(&quot;hello&quot;);</code></li>
+</ul>
+<h2 id="流插入运算符重载的例子">02 流插入&lt;&lt;运算符重载的例子</h2>
+<p>假定我们要想把某个对象里的内容进行打印输出，那么我们可以重载 <code>ostream</code> 类的流插入 <code>&lt;&lt;</code> 运算符。</p>
+<p>下面以 <code>CStudent</code> 类作为例子：</p>
+<pre class="cpp"><code>class CStudent // 学生类
+{
+public:
+    // 构造函数
+    CStudent(int id = 0, int age = 0, string name = &quot;&quot;):m_id(id), m_age(age), m_name(name) { }
+    
+    // 将该函数声明成友元函数
+    // 目的是使得函数可以访问CStudent类的私有成员变量
+    friend ostream &amp; operator&lt;&lt;(ostream &amp; o, const CStudent &amp; s);
+    
+private:
+    int m_age;      // 年龄
+    int m_id;       // ID号
+    string m_name;  // 名字
+};
+
+// 重载ostream对象的流插入&lt;&lt;运算符函数
+// 目的是使得能打印输出CStudent对象的信息
+ostream &amp; operator&lt;&lt;(ostream &amp; o, const CStudent &amp; s)
+{
+    o &lt;&lt; s.m_id &lt;&lt; &quot;,&quot; &lt;&lt; s.m_age &lt;&lt; &quot;,&quot; &lt;&lt; s.m_name;
+    return o;
+}
+
+int main()
+{
+    CStudent stu(1, 20, &quot;小林coding&quot;);
+    std::cout &lt;&lt; stu ; // 输出std对象的全部信息
+    
+    return 0;
+}</code></pre>
+<p>输出结果：</p>
+<pre><code>1,20,小林coding</code></pre>
+<p>需要注意是 <code>ostream &amp; operator&lt;&lt;(ostream &amp; o, const CStudent &amp; s)</code> 函数是全局的，所以函数的第一个参数必须要传入 <code>ostream</code> 的对象，并且 <code>CStudent</code> 类需要将此函数声明成<strong>友元函数</strong>，使得函数可以访问 <code>CStudent</code> 类的私有成员变量。</p>
+<h2 id="流提取运算符重载的例子">03 流提取&gt;&gt;运算符重载的例子</h2>
+<p>还是以 <code>CStudent</code> 类作为例子，假设想通过键盘的输入的内容，来初始化对象，则我们可以重载 <code>istream</code> 类的流提取 <code>&gt;&gt;</code> 运算符。</p>
+<pre><code>class CStudent // 学生类
+{
+public:
+
+    // 构造函数
+    CStudent(int id = 0, int age = 0, string name = &quot;&quot;):m_id(id), m_age(age), m_name(name) { }
+    
+    // 将该函数声明成友元函数
+    // 目的是使得函数可以访问CStudent类的私有成员变量
+    friend ostream &amp; operator&lt;&lt;(ostream &amp; o, const CStudent &amp; s);
+    
+    // 将该函数声明成友元函数
+    // 目的是使得函数可以给CStudent类的私有成员变量进行赋值
+    friend istream &amp; operator&gt;&gt;(istream &amp; is,  CStudent &amp; s);
+    
+private:
+    int m_age;      // 年龄
+    int m_id;       // ID号
+    string m_name;  // 名字
+};
+
+// 重载ostream对象的流插入&lt;&lt;运算符函数
+// 目的是使得能打印输出CStudent对象的信息
+ostream &amp; operator&lt;&lt;(ostream &amp; o, const CStudent &amp; s)
+{
+    o &lt;&lt; s.m_id &lt;&lt; &quot;,&quot; &lt;&lt; s.m_age &lt;&lt; &quot;,&quot; &lt;&lt; s.m_name;
+    return o;
+}
+
+// 重载istream对象的流提取&gt;&gt;运算符函数
+// 目的是使得初始化CStudent对象的内容
+istream &amp; operator&gt;&gt;(istream &amp; is,  CStudent &amp; stu)
+{
+    string inputStr;
+    is &gt;&gt; inputStr;
+    
+    int pos = inputStr.find(&quot;,&quot;, 0);         // 查找首次出现逗号的位置
+    string tmpStr = inputStr.substr(0, pos); // 截取从0到pos位置的字符串
+    stu.id = atoi(tmpStr.c_str());           // atoi可以将char*类型的内容转成int类型
+    
+    int pos2 = inputStr.find(&quot;,&quot;, pos + 1);            // 查找第二次出现逗号的位置
+    tmpStr = inputStr.substr(pos + 1, pos2 - pos -1);  // 取出age的值
+    stu.age = atoi(tmpStr.c_str());                    // atoi可以将char*类型的内容转成int类型
+    
+    tmpStr = inputStr.substr(pos2 + 1, inputStr.length() - pos2 - 1); // 取出name的值
+    stu.name = tmpStr;
+    
+    return is;
+}
+
+int main()
+{
+    CStudent stu;
+    
+    // 将输入的信息，初始化stu对象
+    cin &lt;&lt; stu;
+    
+    // 输出std对象的信息
+    cout &gt;&gt; stu;
+    
+    return 0;
+}</code></pre>
+<p>输入内容和输出内容：</p>
+<pre class="cpp"><code>// 输入内容：
+1,20,小林coding
+
+// 输出内容：
+1,20,小林coding</code></pre>
+<h2 id="小结">04 小结</h2>
+<p>要想流插入 <code>&lt;&lt;</code> 运算符和流提取 <code>&gt;&gt;</code> 运算符能针对<strong>自定义的对象</strong>，那么我们就需要<strong>重载</strong>针对该对象的 <code>ostream</code> 类的 <code>&lt;&lt;</code> 运算符 和 <code>istream</code> 的 <code>&gt;&gt;</code> 运算符，并且只能<strong>重载成全局的函数</strong>，然后在 <code>CStudent</code> 类里需要把上面的两个重载函数声明成<strong>友元函数</strong>，使得两个重载的函数可以访问和赋值 <code>CStudent</code> 类里的私有成员函数。</p>
+<hr />
+<blockquote>
+<p><img src="./images/C++ 流插入&quot;&lt;&lt;&quot;和流提取&quot;&gt;&gt;&quot;运算符的重载0.png" /></p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,139 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ 成员对象和封闭类' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ 成员对象和封闭类</center></div><div class='banquan'>原文出处:本文由博客园博主小林coding提供。<br/>
+原文连接:https://www.cnblogs.com/xiaolincoding/p/11954911.html</div><br>
+    <h2 id="成员对象与封闭类">01 成员对象与封闭类</h2>
+<p>类里有其他对象则该对象叫<strong>成员对象</strong>；有成员对象的类叫 <strong>封闭类</strong>；</p>
+<pre><code>class CTyre  // 轮胎类
+{
+public:
+    // 有参数构造函数
+    // 初始化成员变量m_radius和m_width
+    CTyre(int r, int w):m_radius(r),m_width(w) { }
+private:
+    int m_radius; // 半径
+    int m_width;  // 宽度
+};
+
+class CEngine // 引擎类
+{
+    // 默认会有无参数构造函数
+};
+
+class CCar // 汽车类 -- 封闭类
+{
+public:
+    // 有参数构造函数
+    // 对成员变量m_price初始化，对成员对象tyre初始化
+    CCar(int p, int tr, int tw):m_price(p),tyre(tr,tw){} 
+private:
+    int m_price;    // 价格
+    CTyre tyre;     // 成员对象
+    CEngine engine; // 成员对象
+};
+
+int main()
+{
+    CCar car(10000,20,50);
+    return 0;
+}</code></pre>
+<p>上例中，如果<code>CCar</code>类不定义构造函数，则会使用默认的无参构造函数，那么下面的语句会编译出错:</p>
+<pre><code>CCar car;</code></pre>
+<p>因为编译器不明白<code>CCar</code>类中的<code>tyre</code>成员对象该如何初始化。<code>engine</code>成员对象的初始化则没问题呢，因为用默认构造函数即可。</p>
+<p><strong>任何生成封闭类对象的语句，都要让编译器明白，对象中的成员对象，是如何初始化的。</strong></p>
+<p>具体的做法是：<strong>通过封闭类的构造函数的初始化列表</strong>。</p>
+<hr />
+<h2 id="封闭类构造函数和析构函数的执行顺序">02 封闭类构造函数和析构函数的执行顺序</h2>
+<ul>
+<li>封闭类对象生成时，先执行所有成员对象的构造函数，然后才执行封闭类的构造函数。</li>
+<li>成员对象的构造函数执行顺序，与在封闭类定义成员对象的顺序一致。</li>
+<li>当封闭类的对象消忙时，只需要记住一句话：<strong>先构造的对象，后析构</strong>，由于封闭类是最后才被构造的，所以封闭类对象最先析构。</li>
+</ul>
+<pre class="cpp"><code>class CTyre // 轮胎类
+{
+public:
+    CTyre(){ std::cout &lt;&lt; &quot;CTyre 构造函数&quot; &lt;&lt; std::endl; }
+    ~CTyre(){ std::cout &lt;&lt; &quot;CTyre 析构函数&quot; &lt;&lt; std::endl; }
+};
+
+class CEngine // 引擎类
+{
+public:
+    CEngine(){ std::cout &lt;&lt; &quot;CEngine 构造函数&quot; &lt;&lt; std::endl; }
+    ~CEngine(){ std::cout &lt;&lt; &quot;CEngine 析构函数&quot; &lt;&lt; std::endl; }
+};
+
+class CCar // 汽车类 -- 3. 最后构造封闭类对象
+{
+public:
+    CCar(){ std::cout &lt;&lt; &quot;CCar 构造函数&quot; &lt;&lt; std::endl; }
+    ~CCar(){ std::cout &lt;&lt; &quot;CCar 析构函数&quot; &lt;&lt; std::endl; }
+private:
+    CTyre tyre;     // 1. 先构构造该成员对象
+    CEngine engine; // 2. 接着构造该成员对象
+};
+
+int main()
+{
+    CCar car;
+    return 0;
+}</code></pre>
+<p>执行结果:</p>
+<pre><code>CTyre 构造函数
+CEngine 构造函数
+CCar 构造函数
+CCar 析构函数
+CEngine 析构函数
+CTyre 析构函数</code></pre>
+<h2 id="封闭类的复制构造函数">03 封闭类的复制构造函数</h2>
+<pre><code>class A
+{
+public:
+    // 无参数构造函数
+    A() { std::cout &lt;&lt; &quot;A 构造函数&quot; &lt;&lt; std::endl; }
+    // 复制构造函数
+    A(A &amp; a) { std::cout &lt;&lt; &quot;A 复制构造函数&quot; &lt;&lt; std::endl; }
+};
+
+class B
+{
+    // 若没有声明构造函数和复制构造函数，则编译器会默认生成构造函数和复制构造函数
+    
+    A a; // 成员对象
+};
+
+int main()
+{
+    B b1; // b1对象 和 成员对象a都会执行无参数的构造函数
+    B b2(b1); // b2对象 和 成员对象a都会执行复制构造函数
+    return 0;
+}</code></pre>
+<p>输出结果：</p>
+<pre><code>A 构造函数
+A 复制构造函数</code></pre>
+<hr />
+<blockquote>
+<p><img src="./images/C++ 成员对象和封闭类0.png" /></p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,193 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修win10下VSCode+CMake+Clang+GCC环境搭建' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>win10下VSCode+CMake+Clang+GCC环境搭建</center></div><div class='banquan'>原文出处:本文由博客园博主Laggage提供。<br/>
+原文连接:https://www.cnblogs.com/Laggage/p/11664299.html</div><br>
+    <h1 id="win10下vscodecmakeclanggcc环境搭建">win10下VSCode+CMake+Clang+GCC环境搭建</h1>
+<!-- TOC -->
+<ul>
+<li><a href="#win10下vscodecmakeclanggcc环境搭建">win10下VSCode+CMake+Clang+GCC环境搭建</a>
+<ul>
+<li><a href="#安装软件">安装软件</a></li>
+<li><a href="#安装vscode插件">安装VSCode插件</a></li>
+<li><a href="#新建文件夹-开始撸代码">新建文件夹, 开始撸代码</a>
+<ul>
+<li><a href="#maincpp">main.cpp</a></li>
+<li><a href="#cmakelisttxt">CMakeList.txt</a></li>
+<li><a href="#配置-c_cpp_propertiesjson">配置 c_cpp_properties.json</a></li>
+<li><a href="#配置cmake">配置CMake</a></li>
+<li><a href="#配置调试文件-launchjson-和-taskjson">配置调试文件 launch.json 和 task.json</a></li>
+</ul></li>
+<li><a href="#编译和调试">编译和调试</a></li>
+</ul></li>
+</ul>
+<!-- /TOC -->
+<p>打算用C/C++把基本的数据结构与算法实现一遍, 为考研做准备, 因为只是想实现算法和数据结构, 就不太想用VisualStudio, 感觉VSCode不错, 遂在网上找了一些教程, 结合自己的需求, 配置一下开发环境.</p>
+<h2 id="安装软件">安装软件</h2>
+<ol>
+<li><p>CMake<br />
+CMake是一个跨平台的自动化建构系统,它使用一个名为 CMakeLists.txt 的文件来描述构建过程;</p>
+<p><a href="https://cmake.org/">官网</a>下载安装, 傻瓜式操作;</p>
+<p>记得把安装目录下的bin文件添加到系统环境变量, 这个可以在安装的时候勾选, 勾选了就不用自己添加了;</p>
+<p><img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建0.png" alt="image" /></p>
+<p><img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建1.png" alt="image" /></p>
+<p>检测是否安装成功:<br />
+<img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建2.png" alt="image" /></p></li>
+<li><p>MinGW<br />
+MinGW即Minimalist GNU For Windows，是将GNU开发工具移植到Win32平台下的产物，是一套Windows上的GNU工具集。简单说，MinGW是一个编译环境; 相当于linux下的GCC;</p>
+<p><a href="https://osdn.net/projects/mingw/releases/">官网下载链接</a>;</p>
+<p><img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建3.png" alt="image" /></p>
+<p>安装好将安装目录下的bin文件夹的路径添加到环境变量:</p>
+<p><img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建4.png" alt="image" /></p></li>
+<li><p>Clang<br />
+类似GCC的编译器, 它的目标是干死GCC(网上看到别人这么说的).</p>
+<blockquote>
+<p><strong><a href="https://zh.wikipedia.org/wiki/Clang">维基百科</a></strong>:<br />
+Clang（发音为/ˈklæŋ/类似英文单字clang[1]） 是一个C、C++、Objective-C和Objective-C++编程语言的编译器前端。它采用了LLVM作为其后端，而且由LLVM2.6开始，一起发布新版本。它的目标是提供一个GNU编译器套装（GCC）的替代品，支持了GNU编译器大多数的编译设置以及非官方语言的扩展。作者是克里斯·拉特纳（Chris Lattner），在苹果公司的赞助支持下进行开发，而源代码许可是使用类BSD的伊利诺伊大学厄巴纳-香槟分校开源码许可。</p>
+</blockquote>
+<p>VSCode中可以用它来提供智能提示;</p>
+<p><a href="http://releases.llvm.org/download.html">官网下载</a></p>
+<p><img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建5.png" alt="image" /><img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建6.png" alt="image" /></p>
+<p>傻瓜式安装, 安装好把安装目录下的bin文件夹的路径添加到环境变量;<br />
+<img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建7.png" alt="image" /></p></li>
+</ol>
+<h2 id="安装vscode插件">安装VSCode插件</h2>
+<p>如图, 安装好图中的插件:</p>
+<p><img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建8.png" alt="image" /></p>
+<h2 id="新建文件夹-开始撸代码">新建文件夹, 开始撸代码</h2>
+<p><img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建9.png" alt="image" /></p>
+<h3 id="main.cpp">main.cpp</h3>
+<pre><code>#include &lt;iostream&gt;
+
+using namespace std;
+
+int main(int argc, char* argv[])
+{
+    int a = 89;
+    int b = a++;
+    char buf[10] ;
+    cout &lt;&lt; &quot;a = &quot; &lt;&lt; a &lt;&lt; endl;
+    cout &lt;&lt; &quot;b = &quot; &lt;&lt; b &lt;&lt; endl;
+    cout &lt;&lt; &quot;Hello...&quot;;
+    cin.get();  //防止闪屏
+    return 0;
+}</code></pre>
+<h3 id="cmakelist.txt">CMakeList.txt</h3>
+<pre class="conf"><code>cmake_minimum_required(VERSION 3.11)
+
+project(VSCode_Cpp_CMake)
+# 代码路径
+aux_source_directory(. DIR_TOOT_SRCS)
+# debug 模式
+set (CMAKE_CXX_FLAGS  &quot;${CMAKE_CXX_FLAGS} -g&quot;)
+# 生成可执行的文件
+add_executable(VSCode_Cpp_CMake ${DIR_TOOT_SRCS})</code></pre>
+<h3 id="配置-c_cpp_properties.json">配置 c_cpp_properties.json</h3>
+<p>键盘按下: <code>ctrl+shift+p</code><br />
+<img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建10.png" alt="image" /></p>
+<pre class="json"><code>{
+    &quot;configurations&quot;: [
+        {
+            &quot;name&quot;: &quot;CMake&quot;,
+            &quot;includePath&quot;: [
+                &quot;${workspaceFolder}/**&quot;
+            ],
+            &quot;defines&quot;: [
+                &quot;_DEBUG&quot;,
+                &quot;UNICODE&quot;,
+                &quot;_UNICODE&quot;
+            ],
+            &quot;windowsSdkVersion&quot;: &quot;10.0.18362.0&quot;,
+            &quot;compilerPath&quot;: &quot;C:/MinGW/bin/g++.exe&quot;, // 根据自己的安装目录确定
+            &quot;cStandard&quot;: &quot;c11&quot;,
+            &quot;cppStandard&quot;: &quot;c++17&quot;,
+            &quot;intelliSenseMode&quot;: &quot;clang-x64&quot;, // 注意修改, 提供智能提示
+            &quot;configurationProvider&quot;: &quot;vector-of-bool.cmake-tools&quot;
+        }
+    ],
+    &quot;version&quot;: 4
+}</code></pre>
+<h3 id="配置cmake">配置CMake</h3>
+<p>按快捷键: <code>ctrl+shift+p</code></p>
+<p>按下图操作:</p>
+<p><img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建11.png" alt="image" /><br />
+<img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建12.png" alt="image" /><br />
+<img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建13.png" alt="image" /></p>
+<p>这里操作好就可以进行编译生成exe文件了:</p>
+<p><img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建14.png" alt="image" /><br />
+<img src="./images/win10下VSCode+CMake+Clang+GCC环境搭建15.png" alt="image" /></p>
+<h3 id="配置调试文件-launch.json-和-task.json">配置调试文件 launch.json 和 task.json</h3>
+<p>使用gdb进行调试.</p>
+<p>快捷键: <code>F5</code> -&gt; <code>C++ (GDB/LLDB)</code> -&gt; <code>g++.exe build and debug actvive file</code></p>
+<p>vscode 会自动生成一个默认的 launch.json 和 task.json</p>
+<p>编辑launch.json和task.json, 注意加了注释的地方都是要修改的;</p>
+<p>task.json</p>
+<pre class="json"><code>{
+    &quot;tasks&quot;: [
+        {
+            &quot;type&quot;: &quot;shell&quot;,
+            &quot;label&quot;: &quot;cmake build active file&quot;, // 任务名称
+            &quot;command&quot;: &quot;cmake --build ${workspaceFolder}\\build --config Debug --target all -- -j 10&quot;, // cmake指令
+            &quot;args&quot;: [
+            ], // 指令参数
+            &quot;options&quot;: {
+                &quot;cwd&quot;: &quot;C:/MinGW/bin&quot;
+            }
+        }
+    ],
+    &quot;version&quot;: &quot;2.0.0&quot;
+}</code></pre>
+<p>launch.json</p>
+<pre class="json"><code>{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    &quot;version&quot;: &quot;0.2.0&quot;,
+    &quot;configurations&quot;: [
+        {
+            &quot;name&quot;: &quot;(gdb) Launch&quot;, // default: g++.exe build and debug active file
+            &quot;type&quot;: &quot;cppdbg&quot;,
+            &quot;request&quot;: &quot;launch&quot;,
+            &quot;program&quot;: &quot;${workspaceFolder}\\build\\Demo.exe&quot;, // 可执行文件所在的路径, Demo= 替换成自己的项
+            &quot;args&quot;: [],
+            &quot;stopAtEntry&quot;: false,
+            &quot;cwd&quot;: &quot;${workspaceFolder}&quot;,
+            &quot;environment&quot;: [],
+            &quot;externalConsole&quot;: true,  // 显示独立控制台窗口
+            &quot;MIMode&quot;: &quot;gdb&quot;,
+            &quot;miDebuggerPath&quot;: &quot;C:\\MinGW\\bin\\gdb.exe&quot;,
+            &quot;setupCommands&quot;: [
+                {
+                    &quot;description&quot;: &quot;Enable pretty-printing for gdb&quot;,
+                    &quot;text&quot;: &quot;-enable-pretty-printing&quot;,
+                    &quot;ignoreFailures&quot;: true
+                }
+            ],
+            &quot;preLaunchTask&quot;: &quot;cmake build active file&quot; // 执行cmake编译任务, 再task.json中定义的
+        }
+    ]
+}</code></pre>
+<h2 id="编译和调试">编译和调试</h2>
+<p>编译 快捷键: <code>F7</code><br />
+调试 快捷键: <code>F5</code></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

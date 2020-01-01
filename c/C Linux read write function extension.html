@@ -1,0 +1,272 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C Linux read write function extension' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C Linux read write function extension</center></div><div class='banquan'>原文出处:本文由博客园博主喜欢兰花山丘提供。<br/>
+原文连接:https://www.cnblogs.com/life2refuel/p/10957979.html</div><br>
+    <p><strong>前言 - 赠送 readn / writen</strong></p>
+<p>　　Linux 上默认的 read 和 write 函数会被信号软中断. 且 read 和 write 函数中第三个参数 count</p>
+<src class="cnblogs_code">
+<pre><code>#include &lt;unistd.h&gt;
+
+<span style="color: #0000ff;">extern</span> ssize_t read(<span style="color: #0000ff;">int</span> fd, <span style="color: #0000ff;">void</span> *<span style="color: #000000;"> buf, size_t count);
+</span><span style="color: #0000ff;">extern</span> ssize_t write(<span style="color: #0000ff;">int</span> fd, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">void</span> *<span style="color: #000000;"> buf, size_t count);<br /></span></code></pre>
+
+<p>也会因内部缓冲机制, 不一定保证读取或写入到指定 count 大小数据.</p>
+<p>这里将 read 和 write 拓展成 readn 和 writen</p>
+<src class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> readn - 力求读取 n 个字节
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> fd       : 文件描述符
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> buf      : 缓冲区
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> n        : 读取长度
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> return   : 返回读取的长度, -1 标识错误, &lt; n 标识关闭, 默认 n
+</span><span style="color: #008000;">//
+</span><span style="color: #000000;">ssize_t 
+readn(</span><span style="color: #0000ff;">int</span> fd, <span style="color: #0000ff;">void</span> *<span style="color: #000000;"> buf, size_t n) {
+    size_t div </span>=<span style="color: #000000;"> n;
+    </span><span style="color: #0000ff;">char</span> * ptr =<span style="color: #000000;"> buf;
+
+    </span><span style="color: #0000ff;">while</span> (div &gt; <span style="color: #800080;">0</span><span style="color: #000000;">) {
+        ssize_t ret </span>=<span style="color: #000000;"> read(fd, ptr, div);
+        </span><span style="color: #0000ff;">if</span> (ret &lt; <span style="color: #800080;">0</span><span style="color: #000000;">) {
+            </span><span style="color: #0000ff;">if</span> (errno ==<span style="color: #000000;"> EINTR)
+                </span><span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+        }
+        </span><span style="color: #0000ff;">if</span> (ret == <span style="color: #800080;">0</span><span style="color: #000000;">) 
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        ptr </span>+=<span style="color: #000000;"> ret;
+        div </span>-=<span style="color: #000000;"> ret;
+    }
+
+    </span><span style="color: #0000ff;">return</span> n -<span style="color: #000000;"> div;
+}
+
+</span><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> writen - 力求写入 n 个字节
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> fd       : 文件描述符
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> buf      : 缓冲区
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> n        : 读取长度
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> return   : 返回写入长度, -1 标识错误, 默认 n
+</span><span style="color: #008000;">//
+</span><span style="color: #000000;">ssize_t 
+writen(</span><span style="color: #0000ff;">int</span> fd, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">void</span> *<span style="color: #000000;"> buf, size_t n) {
+    size_t div </span>=<span style="color: #000000;"> n;
+    </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> * ptr =<span style="color: #000000;"> buf;
+
+    </span><span style="color: #0000ff;">while</span> (div &gt; <span style="color: #800080;">0</span><span style="color: #000000;">) {
+        ssize_t ret </span>=<span style="color: #000000;"> write(fd, ptr, div);
+        </span><span style="color: #0000ff;">if</span> (ret &lt;= <span style="color: #800080;">0</span><span style="color: #000000;">) {
+            </span><span style="color: #0000ff;">if</span> (errno ==<span style="color: #000000;"> EINTR)
+                </span><span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+        }
+        ptr </span>+=<span style="color: #000000;"> ret;
+        div </span>-=<span style="color: #000000;"> ret;
+    }
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> n;
+}</span></code></pre>
+
+<p>有了这些收获, 不妨写个小测试</p>
+<src class="cnblogs_code">
+<pre><code>#include &lt;stdio.h&gt;<span style="color: #000000;">
+#include </span>&lt;errno.h&gt;<span style="color: #000000;">
+#include </span>&lt;assert.h&gt;<span style="color: #000000;">
+#include </span>&lt;unistd.h&gt;
+
+<span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> readn - 力求读取 n 个字节
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> fd       : 文件描述符
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> buf      : 缓冲区
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> n        : 读取长度
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> return   : 返回读取的长度, -1 标识错误, &lt; n 标识关闭, 默认 n
+</span><span style="color: #008000;">//
+</span><span style="color: #0000ff;">extern</span> ssize_t readn(<span style="color: #0000ff;">int</span> fd, <span style="color: #0000ff;">void</span> *<span style="color: #000000;"> buf, size_t n);
+
+</span><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> writen - 力求写入 n 个字节
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> fd       : 文件描述符
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> buf      : 缓冲区
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> n        : 读取长度
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> return   : 返回写入长度, -1 标识错误, 默认 n
+</span><span style="color: #008000;">//
+</span><span style="color: #0000ff;">extern</span> ssize_t writen(<span style="color: #0000ff;">int</span> fd, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">void</span> *<span style="color: #000000;"> buf, size_t n);
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">
+                   _oo0oo_
+                  o8888888o
+                  88" . "88
+                  (| -_- |)
+                  0\  =  /0
+                ___/`---'\___
+              .' \\|     |// '.
+             / \\|||  :  |||// \
+            / _||||| -:- |||||- \
+           |   | \\\  -  /// |   |
+           | \_|  ''\---/''  |_/ |
+           \  .-\__  '-'  ___/-. /
+         ___'. .'  /--.--\  `. .'___
+       ."" '&lt;  `.___\_&lt;|&gt;_/___.' &gt;' "".
+      | | :  `- \`.;`\ _ /`;.`/ - ` : | |
+      \  \ `_.   \_ __\ /__ _/   .-` /  /
+   =====`-.____`.___ \_____/___.-`___.-'=====
+                     `=---='
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> argv[]) {
+    ssize_t ret </span>= writen(STDOUT_FILENO, <span style="color: #800000;">"</span><span style="color: #800000;">12345\n1</span><span style="color: #800000;">"</span>, <span style="color: #800080;">6</span><span style="color: #000000;">);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">ret = %ld\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, ret);
+
+    </span><span style="color: #0000ff;">char</span> buf[<span style="color: #800080;">4</span><span style="color: #000000;">];
+    ret </span>= readn(STDIN_FILENO, buf, <span style="color: #800080;">3</span><span style="color: #000000;">);
+    buf[</span><span style="color: #800080;">3</span>] = <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">ret = %ld, buf = %s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, ret, buf);
+
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></code></pre>
+
+<p>一忧一喜皆心火，一荣一枯皆眼尘，静心看透炎凉事，千古不做梦里人。</p>
+<p>聪明人，一味向前看；智慧人，事事向后看；聪明人，是战胜别人的人；智慧人，是战胜自己的人。</p>
+<p>修心当以净心为要，修道当以无我为基。</p>
+<p>过去事，过去心，不可记得；现在事，现在心，随缘即可；未来事，未来心，不必劳心。</p>
+<p>&nbsp;</p>
+<p><strong>正文 -&nbsp; 缓冲读</strong></p>
+<p><strong>　　</strong>在了解 readn 套路基础上, 你是否有所想过那缓冲读写的实现思路呢. 这里不妨借用深入理解计算机系统</p>
+<p>书中的思路实现一番.</p>
+<src class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">struct</span><span style="color: #000000;"> rio {
+    </span><span style="color: #0000ff;">int</span> fd;             <span style="color: #008000;">//</span><span style="color: #008000;"> 文件描述符</span>
+    <span style="color: #0000ff;">char</span> * ptr;         <span style="color: #008000;">//</span><span style="color: #008000;"> 下一次读取缓冲池 buf 起点</span>
+    ssize_t cnt;        <span style="color: #008000;">//</span><span style="color: #008000;"> 缓冲池 buf 字符数量</span>
+    <span style="color: #0000ff;">char</span> buf[BUFSIZ];   <span style="color: #008000;">//</span><span style="color: #008000;"> 缓冲池</span>
+<span style="color: #000000;">};
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> rio_init - rio 初始化</span>
+inline <span style="color: #0000ff;">void</span> rio_init(<span style="color: #0000ff;">struct</span> rio * r, <span style="color: #0000ff;">int</span><span style="color: #000000;"> fd) {
+    assert(r </span>&amp;&amp; fd &gt;= <span style="color: #800080;">0</span><span style="color: #000000;">);
+    r</span>-&gt;fd =<span style="color: #000000;"> fd;
+    r</span>-&gt;cnt = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    r</span>-&gt;ptr = r-&gt;<span style="color: #000000;">buf;
+}
+
+</span><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> readn - 力求读取 n 个字节
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> r        : 缓冲读取对象
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> buf      : 缓冲区
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> n        : 读取长度
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> return   : 返回读取的长度, -1 标识错误, &lt; n 标识关闭, 默认 n
+</span><span style="color: #008000;">//
+</span><span style="color: #0000ff;">extern</span> ssize_t rio_readn(<span style="color: #0000ff;">struct</span> rio * r, <span style="color: #0000ff;">void</span> *<span style="color: #000000;"> buf, size_t n);
+
+</span><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> rio_readline - 力求读取一行数据
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> r        : 缓冲读取对象
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> buf      : 缓冲区
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> n        : 读取长度
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> return   : 返回读取的长度, -1 标识错误, &lt; n 标识关闭, 默认 n
+</span><span style="color: #008000;">//
+</span><span style="color: #0000ff;">extern</span> ssize_t rio_readline(<span style="color: #0000ff;">struct</span> rio * r, <span style="color: #0000ff;">void</span> * buf, size_t n);</code></pre>
+
+<p>实现了缓冲读固定字符和缓冲读一行. 额外的缓冲写也是相似的思路, 简单点写不了会进入写缓冲区,</p>
+<p>可以当课外作业自行实现.</p>
+<src class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;"> rio_read - 带缓冲版本的 read</span>
+<span style="color: #0000ff;">static</span> ssize_t rio_read(<span style="color: #0000ff;">struct</span> rio * r, <span style="color: #0000ff;">void</span> *<span style="color: #000000;"> buf, size_t n) {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 当缓冲区中没有数据, 我们重新填充缓冲区</span>
+    <span style="color: #0000ff;">while</span> (r-&gt;cnt &lt;= <span style="color: #800080;">0</span><span style="color: #000000;">) {
+        r</span>-&gt;cnt = read(r-&gt;fd, r-&gt;buf, <span style="color: #0000ff;">sizeof</span> r-&gt;<span style="color: #000000;">buf);
+        </span><span style="color: #0000ff;">if</span> (r-&gt;cnt &lt; <span style="color: #800080;">0</span><span style="color: #000000;">) {
+            </span><span style="color: #0000ff;">if</span> (errno ==<span style="color: #000000;"> EINTR)
+                </span><span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+        }
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> EOF 直接返回</span>
+        <span style="color: #0000ff;">if</span> (r-&gt;cnt == <span style="color: #800080;">0</span><span style="color: #000000;">)
+            </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 重新设置 buffer ptr </span>
+        r-&gt;ptr = r-&gt;<span style="color: #000000;">buf;
+    }
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 尝试读取数据并返回</span>
+    ssize_t cnt = r-&gt;cnt &lt; n ? r-&gt;<span style="color: #000000;">cnt : n;
+    memcpy(buf, r</span>-&gt;<span style="color: #000000;">ptr, cnt);
+    r</span>-&gt;cnt -=<span style="color: #000000;"> cnt;
+    r</span>-&gt;ptr +=<span style="color: #000000;"> cnt;
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> cnt;
+}
+
+</span><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> readn - 力求读取 n 个字节
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> r        : 缓冲读取对象
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> buf      : 缓冲区
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> n        : 读取长度
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> return   : 返回读取的长度, -1 标识错误, &lt; n 标识关闭, 默认 n
+</span><span style="color: #008000;">//
+</span><span style="color: #000000;">ssize_t 
+rio_readn(</span><span style="color: #0000ff;">struct</span> rio * r, <span style="color: #0000ff;">void</span> *<span style="color: #000000;"> buf, size_t n) {
+    size_t div </span>=<span style="color: #000000;"> n;
+    </span><span style="color: #0000ff;">char</span> * ptr =<span style="color: #000000;"> buf;
+
+    </span><span style="color: #0000ff;">while</span> (div &gt; <span style="color: #800080;">0</span><span style="color: #000000;">) {
+        ssize_t ret </span>=<span style="color: #000000;"> rio_read(r, ptr, div);
+        </span><span style="color: #0000ff;">if</span> (ret &lt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+            </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">if</span> (ret == <span style="color: #800080;">0</span><span style="color: #000000;">) 
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        ptr </span>+=<span style="color: #000000;"> ret;
+        div </span>-=<span style="color: #000000;"> ret;
+    }
+
+    </span><span style="color: #0000ff;">return</span> n -<span style="color: #000000;"> div;    
+}
+
+</span><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> rio_readline - 力求读取一行数据, 会吃掉最后一个 \n 字符
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> r        : 缓冲读取对象
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> buf      : 缓冲区
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> n        : 读取长度
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> return   : 返回读取的长度, -1 标识错误, &lt; n 标识关闭, 默认 n
+</span><span style="color: #008000;">//
+</span><span style="color: #000000;">ssize_t 
+rio_readline(</span><span style="color: #0000ff;">struct</span> rio * r, <span style="color: #0000ff;">void</span> *<span style="color: #000000;"> buf, size_t n) {
+    size_t i;
+    </span><span style="color: #0000ff;">char</span> * ptr =<span style="color: #000000;"> buf, c;
+
+    </span><span style="color: #0000ff;">for</span> (i = <span style="color: #800080;">1</span>; i &lt; n; ++<span style="color: #000000;">i) {
+        ssize_t ret </span>= rio_read(r, &amp;c, <span style="color: #800080;">1</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">if</span> (ret &lt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+            </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">if</span> (c == <span style="color: #800000;">'</span><span style="color: #800000;">\n</span><span style="color: #800000;">'</span> || ret == <span style="color: #800080;">0</span><span style="color: #000000;">)
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        </span>*ptr++ =<span style="color: #000000;"> c;
+    }
+
+    </span>*ptr = <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">return</span> i - <span style="color: #800080;">1</span><span style="color: #000000;">;
+}</span></code></pre>
+
+<p>缓冲写实战包装要复杂一点. 和业务绑定重(或者实现多策略的). 例如缓冲区满了这时候的策略就由业务</p>
+<p>决定,&nbsp;是缓冲区扩容,&nbsp;还是等待下次写事件触发. 等等, 真实战场的缓冲读写需要具体场景和机器打配合,</p>
+<p>来构造满意的读写策略.</p>
+<p>&nbsp;</p>
+<p><strong>后记 - <a title="http://music.163.com/m/song?id=1365690382&amp;userid=16529894" href="http://music.163.com/m/song?id=1365690382&amp;userid=16529894" target="_blank">让水倒流</a></strong></p>
+<p><img src="./images/C Linux read write function extension0.png" alt="" /></p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

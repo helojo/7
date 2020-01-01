@@ -1,0 +1,217 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修GO 单例模式' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>GO 单例模式</center></div><div class='banquan'>原文出处:本文由博客园博主路人Q提供。<br/>
+原文连接:https://www.cnblogs.com/lurenq/p/11988920.html</div><br>
+    <h1>&nbsp;</h1>
+<blockquote>
+<p>wiki百科: 单例模式，也叫单子模式，是一种常用的软件设计模式。在应用这个模式时，单例对象的类必须保证只有一个实例存在。许多时候整个系统只需要拥有一个的全局对象，这样有利于我们协调系统整体的行为。比如在某个服务器程序中，该服务器的配置信息存放在一个文件中，这些配置数据由一个单例对象统一读取，然后服务进程中的其他对象再通过这个单例对象获取这些配置信息。这种方式简化了在复杂环境下的配置管理。</p>
+</blockquote>
+<p>单例模式要实现的效果就是，对于应用单例模式的类，整个程序中只存在一个实例化对象</p>
+<p>go并不是一种面向对象的语言，所以我们使用结构体来替代</p>
+<p>有几种方式:</p>
+<ul>
+<li>
+<p>懒汉模式</p>
+</li>
+<li>
+<p>饿汉模式</p>
+</li>
+<li>
+<p>双重检查锁机制</p>
+</li>
+</ul>
+<p>下面拆分讲解：</p>
+<h3><a id="user-content-懒汉模式" class="anchor" href="https://github.com/silsuer/golang-design-patterns/blob/master/singleton/README.md#%E6%87%92%E6%B1%89%E6%A8%A1%E5%BC%8F"></a>懒汉模式</h3>
+<ol>
+<li>构建一个示例结构体</li>
+</ol>
+<div class="highlight highlight-source-go">
+<div class="cnblogs_Highlighter">
+<pre><code>   type example struct {
+   	name string
+   }</pre>
+</div>
+</div>
+<ol start="2">
+<li>设置一个私有变量作为每次要返回的单例</li>
+</ol>
+<div class="highlight highlight-source-go">
+<div class="cnblogs_Highlighter">
+<pre><code>  var instance *example</pre>
+</div>
+</div>
+<ol start="3">
+<li>写一个可以获取单例的方法</li>
+</ol>
+<div class="highlight highlight-source-go">
+<div class="cnblogs_Highlighter">
+<pre><code>    func GetExample() *example {
+    
+    	// 存在线程安全问题，高并发时有可能创建多个对象
+    	if instance == nil {
+    		instance = new(example)
+    	}
+    	return instance
+    }</pre>
+</div>
+</div>
+<ol start="4">
+<li>
+<p>测试一下</p>
+<div class="highlight highlight-source-go">
+<div class="cnblogs_Highlighter">
+<pre><code>  func main() {
+  	s := GetExample()
+  	s.name = "第一次赋值单例模式"
+  	fmt.Println(s.name)
+  
+  	s2 := GetExample()
+  	fmt.Println(s2.name)
+  }</pre>
+</div>
+</div>
+</li>
+</ol>
+<p>懒汉模式存在线程安全问题，在第3步的时候，如果有多个线程同时调用了这个方法， 那么都会检测到<code>instance</code>为<code>nil</code>,就会创建多个对象，所以出现了饿汉模式...</p>
+<h3><a id="user-content-饿汉模式" class="anchor" href="https://github.com/silsuer/golang-design-patterns/blob/master/singleton/README.md#%E9%A5%BF%E6%B1%89%E6%A8%A1%E5%BC%8F"></a>饿汉模式</h3>
+<p>与懒汉模式类似，不再多说，直接上代码</p>
+<div class="highlight highlight-source-go">
+<div class="cnblogs_Highlighter">
+<pre><code>  // 构建一个结构体，用来实例化单例
+  type example2 struct {
+  	name string
+  }
+  
+  // 声明一个私有变量，作为单例
+  var instance2 *example2
+  
+  // init函数将在包初始化时执行，实例化单例
+  func init() {
+  	instance2 = new(example2)
+  	instance2.name = "初始化单例模式"
+  }
+  
+  func GetInstance2() *example2 {
+  	return instance2
+  }
+  
+  func main() {
+  	s := GetInstance2()
+  	fmt.Println(s.name)
+  }
+</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+<p>饿汉模式将在包加载的时候就创建单例对象，当程序中用不到该对象时，浪费了一部分空间</p>
+<p>和懒汉模式相比，更安全，但是会减慢程序启动速度</p>
+<h3><a id="user-content-双重检查机制" class="anchor" href="https://github.com/silsuer/golang-design-patterns/blob/master/singleton/README.md#%E5%8F%8C%E9%87%8D%E6%A3%80%E6%9F%A5%E6%9C%BA%E5%88%B6"></a>双重检查机制</h3>
+<p>懒汉模式存在线程安全问题，一般我们使用互斥锁来解决有可能出现的数据不一致问题</p>
+<p>所以修改上面的<code>GetInstance()</code>&nbsp;方法如下:</p>
+<div class="highlight highlight-source-go">
+<div class="cnblogs_Highlighter">
+<pre><code>   var mux Sync.Mutex
+   func GetInstance() *example {
+       mux.Lock()                    
+       defer mux.Unlock()
+       if instance == nil {
+           instance = &amp;example{}
+       }
+      return instance
+   }
+</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+<p>如果这样去做，每一次请求单例的时候，都会加锁和减锁，而锁的用处只在于解决对象初始化的时候可能出现的并发问题 当对象被创建之后，加锁就失去了意义，会拖慢速度，所以我们就引入了双重检查机制（<code>Check-lock-Check</code>）, 也叫<code>DCL</code>(<code>Double Check Lock</code>), 代码如下:</p>
+<div class="highlight highlight-source-go">
+<div class="cnblogs_Highlighter">
+<pre><code>  func GetInstance() *example {
+      if instance == nil {  // 单例没被实例化，才会加锁 
+          mux.Lock()
+          defer mux.Unlock()
+          if instance == nil {  // 单例没被实例化才会创建
+  	            instance = &amp;example{}
+          }
+      }
+      return instance
+  }
+</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+<p>这样只有当对象未初始化的时候，才会又加锁和减锁的操作</p>
+<p>但是又出现了另一个问题：每一次访问都要检查两次，为了解决这个问题，我们可以使用golang标准包中的方法进行原子性操作:</p>
+<div class="highlight highlight-source-go">
+<div class="cnblogs_Highlighter">
+<pre><code>   import "sync"  
+   import "sync/atomic"
+   
+   var initialized uint32
+   
+   func GetInstance() *example {
+   	
+   	  // 一次判断即可返回
+      if atomic.LoadUInt32(&amp;initialized) == 1 {
+   		return instance
+   	   }
+       mux.Lock()
+       defer mux.Unlock()
+       if initialized == 0 {
+            instance = &amp;example{}
+            atomic.StoreUint32(&amp;initialized, 1) // 原子装载
+   	}
+   	return instance
+   }</pre>
+</div>
+</div>
+<p>以上代码只需要经过一次判断即可返回单例，但是golang标准包中其实给我们提供了相关的方法:</p>
+<p><code>sync.Once</code>的<code>Do</code>方法可以实现在程序运行过程中只运行一次其中的回调，所以最终简化的代码如下:</p>
+<div class="highlight highlight-source-go">
+<div class="cnblogs_Highlighter">
+<pre><code> type example3 struct {
+ 	name string
+ }
+ 
+ var instance3 *example3
+ var once sync.Once
+ 
+ func GetInstance3() *example3 {
+ 
+ 	once.Do(func() {
+ 		instance3 = new(example3)
+ 		instance3.name = "第一次赋值单例"
+ 	})
+ 	return instance3
+ }
+ 
+ func main() {
+ 	e1 := GetInstance3()
+ 	fmt.Println(e1.name)
+ 
+ 	e2 := GetInstance3()
+ 	fmt.Println(e2.name)
+ }</pre>
+</div>
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

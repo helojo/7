@@ -1,0 +1,193 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++中的单例类模板' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++中的单例类模板</center></div><div class='banquan'>原文出处:本文由博客园博主子宇24提供。<br/>
+原文连接:https://www.cnblogs.com/dishengAndziyu/p/10919214.html</div><br>
+    <p align="left">1，本节课讲述单例类模式，实现并抽取相关代码实现单例类模板，在以后开发工作 中，如果想要使用单例模式，那么直接使用今天开发的单例类模板就可以；</p>
+<p align="left">&nbsp;</p>
+<p align="left">2，需求的提出：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，在架构设计时，某些类在整个系统生命期中最多只能有一个对象存在&nbsp;&nbsp;&nbsp; （ Single Instance )；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，如超市收银系统，由外观来说其由显示器、扫描枪、收款箱组成，这几部分都只有一个部件，用面向对象的思想来进行架构设计的话，扫描枪应该对应到代码里面的一个类，它应该用来创建对象，实际的硬件只有一个扫描枪，肯定要限制扫描枪对应的类只能创建一个对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，这个时候单例模式的需求就出来了；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">3，问题：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，如何定义一个类，使得这个类最多只能创建一个对象？</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">4，单例模式：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，要控制类的对象数目，必须对外隐藏构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，要创建一个对象，必然要调用构造函数，因此可以控制构造函数的访问属性；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，思路：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，将构造函数的访问属性设置为 private；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，外界就不能创建对象了；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，定义 instance 并初始化为 NULL；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，当需要使用对象时，访问 instance 的值；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，空值：创建对象，并用 instance 标记；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，非空值：返回 instance 标记的对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">5，单例模式初探编程实验：</p>
+<div class="cnblogs_code">
+<pre>#include &lt;iostream&gt;<span style="color: #000000;">
+#include </span>&lt;<span style="color: #0000ff;">string</span>&gt;
+
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+
+</span><span style="color: #0000ff;">class</span><span style="color: #000000;"> SObject
+{
+    </span><span style="color: #0000ff;">static</span> SObject* c_instance;  <span style="color: #008000;">//</span><span style="color: #008000;"> 定义标识符指针；</span>
+
+    <span style="color: #008000;">/*</span><span style="color: #008000;"> 不需用拷贝和赋值 </span><span style="color: #008000;">*/</span><span style="color: #000000;">    
+    SObject(</span><span style="color: #0000ff;">const</span> SObject&amp;<span style="color: #000000;">);
+    SObject</span>&amp; <span style="color: #0000ff;">operator</span>= (<span style="color: #0000ff;">const</span> SObject&amp;<span style="color: #000000;">);
+    
+    SObject()  </span><span style="color: #008000;">//</span><span style="color: #008000;"> 构造函数创建为私有的；</span>
+<span style="color: #000000;">    {
+    }
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">static</span> SObject*<span style="color: #000000;"> GetInstance();
+    
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> print()
+    {
+        cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">this = </span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #0000ff;">this</span> &lt;&lt;<span style="color: #000000;"> endl;
+    }
+};
+
+SObject</span>* SObject::c_instance = NULL; <span style="color: #008000;">//</span><span style="color: #008000;">类的外部对静态变量定义并初始化；</span>
+<span style="color: #000000;">
+SObject</span>* SObject::GetInstance()  <span style="color: #008000;">//</span><span style="color: #008000;"> 创建对象</span>
+<span style="color: #000000;">{
+    </span><span style="color: #0000ff;">if</span>( c_instance ==<span style="color: #000000;"> NULL )
+    {
+        c_instance </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> SObject();
+    }
+    
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> c_instance;
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    SObject</span>* s =<span style="color: #000000;"> SObject::GetInstance();
+    SObject</span>* s1 =<span style="color: #000000;"> SObject::GetInstance();
+    SObject</span>* s2 =<span style="color: #000000;"> SObject::GetInstance();
+    
+    s</span>-&gt;print();  <span style="color: #008000;">//</span><span style="color: #008000;"> this = 0x940a008</span>
+    s1-&gt;print();  <span style="color: #008000;">//</span><span style="color: #008000;"> this = 0x940a008</span>
+    s2-&gt;print();  <span style="color: #008000;">//</span><span style="color: #008000;"> this = 0x940a008</span>
+    
+    <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，上述代码中并没有释放这个唯一的对象，这是因为单例模式所对应的对象在系统的生命周期中都是存在的，如果这个系统还在运行，就不需用释放它；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，单例模式所得到的对象在整个系统运行过程中是绝对不释放的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">6，单例模式存在问题（这里做的是锦上添花的事，要求完美）：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，需要使用单例模式时：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，必须定义静态成员变量 c_instance；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，必须定义静态成员函数 GetInstance()；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，如果现在要开发超市收银系统，那么开发扫描枪对应的类需要用单例模式来实现，收款箱对应的类也要用单例模式来实现，这个时候就要写重复的静态成员变量和静态成员函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，静态成员变量和静态成员函数和我们类的实际功能没有关系，这是单例模式的逻辑；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">7，解决方案：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，将单例模式相关的代码抽取出来，开发单例类模板，当需要单例类时，直接使用单例类模板；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">8，单例类模板编程实验：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，单例模式类模板 Singleton.h 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">#ifndef _SINGLETON_H_
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">#define</span> _SINGLETON_H_
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #000000;">template
+</span><span style="color: #008080;"> 5</span> &lt; typename T &gt;
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Singleton
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">static</span> T*<span style="color: #000000;"> c_instance;
+</span><span style="color: #008080;"> 9</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">static</span> T*<span style="color: #000000;"> GetInstance();
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span> <span style="color: #000000;">template
+</span><span style="color: #008080;">14</span> &lt; typename T &gt;
+<span style="color: #008080;">15</span> T* Singleton&lt;T&gt;::c_instance =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">16</span> 
+<span style="color: #008080;">17</span> <span style="color: #000000;">template
+</span><span style="color: #008080;">18</span> &lt; typename T &gt;
+<span style="color: #008080;">19</span> T* Singleton&lt;T&gt;<span style="color: #000000;">::GetInstance()
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">21</span>     <span style="color: #0000ff;">if</span>( c_instance ==<span style="color: #000000;"> NULL )
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">23</span>         c_instance = <span style="color: #0000ff;">new</span><span style="color: #000000;"> T();
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span>     
+<span style="color: #008080;">26</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> c_instance;
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">28</span> 
+<span style="color: #008080;">29</span> <span style="color: #0000ff;">#endif</span></pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，单例模式的使用：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 3</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">Singleton.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> SObject
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 9</span>     friend <span style="color: #0000ff;">class</span> Singleton&lt;SObject&gt;;    <span style="color: #008000;">//</span><span style="color: #008000;"> 当前类需要使用单例模式</span>
+<span style="color: #008080;">10</span>     
+<span style="color: #008080;">11</span>     SObject(<span style="color: #0000ff;">const</span> SObject&amp;<span style="color: #000000;">);
+</span><span style="color: #008080;">12</span>     SObject&amp; <span style="color: #0000ff;">operator</span>= (<span style="color: #0000ff;">const</span> SObject&amp;<span style="color: #000000;">);
+</span><span style="color: #008080;">13</span>     
+<span style="color: #008080;">14</span> <span style="color: #000000;">    SObject()
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">17</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">18</span>     
+<span style="color: #008080;">19</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> print()
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">21</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">this = </span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #0000ff;">this</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">24</span> 
+<span style="color: #008080;">25</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">27</span>     SObject* s = Singleton&lt;SObject&gt;<span style="color: #000000;">::GetInstance();
+</span><span style="color: #008080;">28</span>     SObject* s1 = Singleton&lt;SObject&gt;<span style="color: #000000;">::GetInstance();
+</span><span style="color: #008080;">29</span>     SObject* s2 = Singleton&lt;SObject&gt;<span style="color: #000000;">::GetInstance();
+</span><span style="color: #008080;">30</span>     
+<span style="color: #008080;">31</span>     s-&gt;print();  <span style="color: #008000;">//</span><span style="color: #008000;"> 0x9621008；</span>
+<span style="color: #008080;">32</span>     s1-&gt;print();  <span style="color: #008000;">//</span><span style="color: #008000;"> 0x9621008；</span>
+<span style="color: #008080;">33</span>     s2-&gt;print();  <span style="color: #008000;">//</span><span style="color: #008000;"> 0x9621008；</span>
+<span style="color: #008080;">34</span>     
+<span style="color: #008080;">35</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">36</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，使用单例类模板方法：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，构建对象的函数全部私有化；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，声明单例类模板为此类的友元（可以访问这个类）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，此单例类模板在我们今后开发工作中都可以使用；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">9，小结：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，单例模式是开发中最常用的设计模式之一；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，单例模式的应用使得一个类最多只有一个对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，可以将单例模式相关的代码抽象成类模板；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，需要使用单例模式的类直接使用单例类模板；</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

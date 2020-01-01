@@ -1,0 +1,124 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修PHP转Go系列：数组与切片' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>PHP转Go系列：数组与切片</center></div><div class='banquan'>原文出处:本文由博客园博主张以诺提供。<br/>
+原文连接:https://www.cnblogs.com/enochzzg/p/11013005.html</div><br>
+    <h2 id="数组的定义">数组的定义</h2>
+<p>用过PHP的同学应该很清楚，无论多么复杂的数据格式都可以用数组来表达，什么类型的数据都可以往里塞，它是工作必备的一部分，使用很简单，易用程度简直变态。</p>
+<pre><code><code>$array = [1, &#39;name&#39;, [&#39;sex&#39; =&gt; &#39;男&#39;]];</code></pre>
+<p>在Go语言中就有所不同了，数组是一段固定长度的连续内存区域，与C语言概念完全一致，在声明数组时，要先确定数组的长度，而且数组中的元素只能使用一种类型，心痛，我们再也不能随心所欲的存储数据了。</p>
+<pre class="go"><code>array := [3]int{1, 2, 3}</code></pre>
+<p>以上是数组在Go语言中的定义方法，<code>[3]</code>代表数组长度为3，<code>int</code>是数组中元素的类型，花括号中的是数组元素，切记元素个数与类型一定要与前面声明的相符，否则会报错。除了这种方式，PHP中还有一种动态赋值的方法，代码如下。</p>
+<pre><code><code>$array = [];
+$array[0] = &#39;name&#39;;
+$array[1] = 1;
+print_r($array);
+
+//output
+Array
+(
+    [0] =&gt; name
+    [1] =&gt; 1
+)</code></pre>
+<p>Go语言也能做到，不过别想那么多，要存储不同数据类型的元素就别想了（其实也不是没有办法，后续文章讲解）。可以通过var声明一个数组，数组的长度和类型提前定义好，接下来就可以根据数组下标来赋值了，可以不必为每个下标赋值，但是切记下标不能越界，否则会报错。</p>
+<pre class="go"><code>var array [3]string
+array[0] = &quot;name&quot;
+array[1] = &quot;sex&quot;
+fmt.Print(array) //output [name sex ]</code></pre>
+<p>每次声明数组时都要数一下元素个数写在中括号里也太鸡肋了，这点Go不可能想不到，果然，可以用<code>...</code>方法来省略掉中括号的数值，这样编译器会自动确定数组中的元素。</p>
+<pre class="go"><code>array := [...]string{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;}
+fmt.Print(array) //output [a b c d]</code></pre>
+<h2 id="数组的遍历">数组的遍历</h2>
+<p>数组已经定义了，来看一下怎么遍历，在PHP中通过<code>foreach</code>进行遍历。</p>
+<pre><code><code>$array = [&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;];
+foreach($array as $k =&gt; $v) {
+    echo $v;
+}
+//output abcd</code></pre>
+<p>Go的写法很类似，通过<code>range</code>进行遍历，只是语法看起来有点怪怪的。</p>
+<pre class="go"><code>array := [...]string{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;}
+for k, v := range array {
+    fmt.Print(k, v)
+}
+//output 0a1b2c3d</code></pre>
+<p>在Go中没有使用的变量在编译时会报错，那遍历时的k不见得会用到，那怎么解决变量k未被使用的问题呢？其实可以使用Go内置的符号<code>_</code>来替换掉变量k，它的意思是把当前赋的值丢弃掉。</p>
+<pre class="go"><code>array := [...]string{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;}
+for _, v := range array {
+    fmt.Print(v)
+}
+//output abcd</code></pre>
+<h3 id="数组的截取">数组的截取</h3>
+<p>PHP中对数组截取通过<code>array_slice</code>函数，以下代码是从数组的第二个元素开始，截取两个元素。</p>
+<pre><code><code>$array = [1, 2, 3, 4, 5];
+print_r(array_slice($array, 1, 2));
+
+//output
+Array
+(
+    [0] =&gt; 2
+    [1] =&gt; 3
+)</code></pre>
+<p>在Go中更简单一些，可以直接取出第二到第四个元素之间的数据，值得注意的是，取出来的已经不是数组了，叫做切片，记住了，从数组切出来的部分就叫切片，数组与切片最简单的区别就是：数组需要明确指定大小，切片不需要，数组是值传递，切片是地址传递。不过目前还是把它当数组好了。</p>
+<pre class="go"><code>array := [...]int{1, 2, 3, 4, 5}
+fmt.Print(array[1:3])</code></pre>
+<h3 id="数组的追加">数组的追加</h3>
+<p>在PHP中为数组添加一个新元素使用<code>array_push</code>函数。</p>
+<pre><code><code>$array = [1, 2, 3, 4, 5];
+array_push($array, 6);
+print_r($array);
+
+//output
+Array
+(
+    [0] =&gt; 1
+    [1] =&gt; 2
+    [2] =&gt; 3
+    [3] =&gt; 4
+    [4] =&gt; 5
+    [5] =&gt; 6
+)</code></pre>
+<p>在Go中使用<code>append</code>函数，注意这里实际上是对切片的添加而不是数组。</p>
+<pre class="go"><code>array := []int{1, 2, 3, 4, 5}
+array = append(array, 6)
+fmt.Print(array) //output [1 2 3 4 5 6]</code></pre>
+<h3 id="数组元素的删除">数组元素的删除</h3>
+<p>在PHP中删除数组元素非常简单，直接<code>unset</code>即可，以下代码是删除第二个元素。</p>
+<pre><code><code>$array = [1, 2, 3, 4, 5];
+unset($array[1]);
+print_r($array);
+
+//output
+Array
+(
+    [0] =&gt; 1
+    [2] =&gt; 3
+    [3] =&gt; 4
+    [4] =&gt; 5
+)</code></pre>
+<p>Go中比较特别，它并没有提供原生的删除方法，只能利用切片的特性，我们定义删除的元素索引为1，然后将1前面的元素与1后面的元素拼接起来，就过滤掉了第1个元素，感觉这种实现方式有点投机，不知道为什么不提供函数来操作。</p>
+<pre class="go"><code>index := 1
+array := []int{1, 2, 3, 4, 5}
+array = append(array[:index], array[index+1:]...)
+fmt.Print(array) //output [1 3 4 5]</code></pre>
+<p>以上就是PHP与Go在数组上的区别，感兴趣的同学可以自行了解或关注我后续的文章。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,98 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++类的this指针详解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++类的this指针详解</center></div><div class='banquan'>原文出处:本文由博客园博主zhxmdefj提供。<br/>
+原文连接:https://www.cnblogs.com/zhxmdefj/p/11572570.html</div><br>
+    <p>这篇文章主要讲解隐式this指针的概念，以及如何使用，包含const，基础部分不提太多</p>
+<p>先直接给出一个C++Primer里的类，你可能还不能完全看懂，但是不着急，我们一点点解释</p>
+<pre><code>class Sales_data {
+    std::string isbn() const { return bookNo; }
+    Sales_data&amp; combine(const Sales_data&amp;);
+    double avg_price() const;
+    std::string bookNo;
+    unsigned untis_sold = 0;
+    double revenue = 0.0;
+};
+//Sales_data非成员函数接口
+Sales_data add(const Sales_data, const Sales_data&amp;);
+std::ostream&amp; print(std::ostream&amp;, const Sales_data&amp;);
+std::istream&amp; read(std::istream&amp;, const Sales_data&amp;);</code></pre>
+<p><strong>类的所有成员都必须在类内部声明</strong>，但是成员函数体可以定义在外部，比如我们上面写的Sales_data类，isbn函数定义在了内部，combine和avg_price函数定义在了外部</p>
+<p>定义在类内部的函数是隐式的<strong>inline函数</strong></p>
+<blockquote>
+<p>inline函数，即为调用时“内联地”展开的函数，也就是就说：调用时，并不通过函数调用的机制，而是通过<strong>将函数体直接插入调用处</strong>来实现的，比如以下调用</p>
+<pre><code>inline const string &amp;
+cout &lt;&lt; shorter(s1, s2) &lt;&lt; endl;
+cout &lt;&lt; {s1.size() &lt; s2.size ? s1:s2} &lt;&lt; endl;</code></pre>
+</blockquote>
+<h2 id="this的概念">”this“的概念</h2>
+<p>我们先看isbn函数</p>
+<pre><code>std::string isbn() const { return bookNo; }</code></pre>
+<p>它的参数列表为空，返回一个string对象，那它是怎么知道这个string对象是来自哪个类的？</p>
+<p><strong>this</strong></p>
+<p>先看一个调用的例子</p>
+<pre><code>total.isbn()</code></pre>
+<p>当我们调用成员函数时，实际上是在替某个对象（这里是total）调用它，isbn指向Sales_data的成员（bookNo），则它隐式地指向<strong>调用该函数的对象的成员</strong></p>
+<p>在<code>total.isbn()</code>调用中，isbn返回bookNo时，实际上它隐式地返回<code>total.bookNo</code></p>
+<p>成员函数isbn又通过一个名为this的额外的隐式参数来访问调用它的那个对象（this其实就是指向当前对象的指针），当我们调用一个成员函数时，用该函数的对象地址初始化this，this就会指向当前对象</p>
+<p>例如调用<code>total.isbn()</code>则编译器负责把total的地址传递给isbn的隐式形参this，可以等价地理解为编译器将该调用重写成了以下形式</p>
+<pre><code>std::string isbn() const { return this-&gt;bookNo }</code></pre>
+<p>因为this的目的总是指向”这个“对象，所以<strong>this是一个常量指针</strong>（这是一个顶层const，this指针本身就是常量）</p>
+<h2 id="isbn-const">isbn() const</h2>
+<p>首先你要知道const的基本用法，顶层cosnt和底层const如何区别，建议先阅读<a href="https://www.cnblogs.com/zhxmdefj/p/11524403.html">这篇文章</a>，下面这几行代码方便你回忆起顶层cosnt</p>
+<pre><code>int i = 0;
+int* const p1 = &amp;i;         //p1本身是常量，顶层const
+const int ci = 42;          //ci本身是常量，顶层const
+const int* p2 = &amp;ci;        //*在const之后，p2是指向常量的指针，底层const
+const int* const p3 = p2;   //先看左边是顶层，再看右边是底层，p3是指向常量的常量指针
+const int&amp; r = ci;          //声明引用的const都是底层const，r是一个对常量的引用</code></pre>
+<p>好进入正题</p>
+<p>先讲结论：&quot;<code>isbn() const</code>里的const的作用是<strong>修改隐式this指针的类型</strong></p>
+<p>首先我们忘掉isbn，<strong>默认情况</strong>下，this的类型是<strong>指向类类型的 非常量版本的 常量指针</strong>（这是一个顶层const，this指针自己是常量，但是它所指向的对象并不是常量），在Sales_data的成员函数中，this的默认类型是<code>Sales_data* const</code></p>
+<p>尽管this是隐式的，但也遵循初始化规则，所以默认情况下我们<strong>不能把this直接绑定到一个常量对象上</strong>，同时也<strong>不能在一个常量对象上调用普通的函数成员</strong>（需要用到this）</p>
+<p>具体来说，如果，我是说如果，如果isbn是一个普通函数没有const，this也是一个普通的指针，isbn内不会改变this所指的对象（只是返回bookNo），则我们应该把this声明成const Sales_data* const，所以把this设置为<strong>指向常量的指针</strong>可以提高灵活性</p>
+<p>然而this隐式的，是不会出现在参数列表中的，所以在哪将this声明称指向常量的指针呢？C++的做法就是允许把const关键字放在成员函数的参数列表之后，就是我们看到的<code>isbn() const</code>，此时紧跟在参数列表后面的const表示this是一个指向常量的指针，像这样使用const的成员函数常被称作<strong>常量成员函数</strong></p>
+<pre><code>//下面代码是非法的，只用于说明隐式的this指针如何使用，但我们不能显式定义this指针
+//谨记此处的this是一个指向常量的指针，因为isbn是一个常量成员
+std::string Sales_data::isbn(const Sales_data *const this){
+    return this-&gt;isbn;
+}</code></pre>
+<h2 id="定义一个返回this对象的函数">定义一个返回this对象的函数</h2>
+<p>我们之前在Sales_data内声明了一个combine函数</p>
+<pre><code>Sales_data&amp; combine(const Sales_data&amp;);</code></pre>
+<p>现在我们在外部定义这个函数</p>
+<pre><code>Sales_data&amp; Sales_data::combine(const Sales_data &amp;rhs){
+    untis_sold += rhs.untis_sold;
+    revenue += rhs.revenue;
+    return *this;
+}</code></pre>
+<p>Sales_<a href="data::combine使用作用域运算符以说明：我们定义了一个名为combine的函数，并且该函数声明在Sales_data类的作用域内，因此当combine使用untis_sold和revenue时，也是隐式地使用了Sales_data的成员" class="uri">data::combine使用作用域运算符以说明：我们定义了一个名为combine的函数，并且该函数声明在Sales_data类的作用域内，因此当combine使用untis_sold和revenue时，也是隐式地使用了Sales_data的成员</a></p>
+<p>我们调用这个combine时</p>
+<pre><code>total.combine(trans)</code></pre>
+<p>total的地址被绑定到隐式的this参数上，而rhs绑定到了trans上</p>
+<p>你应该注意到了，这个函数的关注点应该在于返回类型和返回语句</p>
+<p>combine设计的初衷是尽量模仿+=运算符，+=把左侧的运算对象当成左值返回，为了尽可能一致，combine必须<strong>返回引用类型</strong>（这时左侧运算对象是一个Sales_data对象，所以返回类型为Sales_data&amp;）</p>
+<p>怎么返回呢，现在我们就不需要使用隐式的this指针访问函数调用者 的某个具体成员，而是需要把调用函数的对象当成一个整体来访问</p>
+<pre><code>return *this;</code></pre>
+<p>return语句解引用this指针，获得了执行该函数的对象，<code>total.combine(trans)</code>就会返回对total的引用</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

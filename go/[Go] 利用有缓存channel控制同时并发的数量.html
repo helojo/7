@@ -1,0 +1,63 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] 利用有缓存channel控制同时并发的数量' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] 利用有缓存channel控制同时并发的数量</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/11914065.html</div><br>
+    <p>如果有一个大循环,里面每一个都开启groutine,那么瞬间就会开启非常多的groutine,要解决这个问题就要用channel的阻塞特性来解决</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func main() {
+    control :</span>= <span style="color: #0000ff;">make</span>(chan interface{}, <span style="color: #800080;">2</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">for</span> i := <span style="color: #800080;">1</span>; i &lt;= <span style="color: #800080;">10</span>; i++<span style="color: #000000;"> {
+        control </span>&lt;- i <span style="color: #008000;">//</span><span style="color: #008000;">这里应该放上面,如果放下面就会每次都执行三个了</span>
+        go func(j <span style="color: #0000ff;">int</span><span style="color: #000000;">) {
+            </span><span style="color: #0000ff;">fmt</span>.Printf(<span style="color: #800000;">"</span><span style="color: #800000;">go func: %d, time: %d\n</span><span style="color: #800000;">"</span>, j, <span style="color: #0000ff;">time</span><span style="color: #000000;">.Now().Unix())
+            </span><span style="color: #0000ff;">time</span>.Sleep(<span style="color: #0000ff;">time</span><span style="color: #000000;">.Second)
+            </span>&lt;-<span style="color: #000000;">control
+        }(i)
+
+    }
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">主groutine不要断</span>
+    <span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">time</span>.Sleep(<span style="color: #0000ff;">time</span><span style="color: #000000;">.Second)
+    }
+}</span></pre>
+</div>
+<div class="cnblogs_code">
+<pre><code>go func: <span style="color: #800080;">2</span>, <span style="color: #0000ff;">time</span>: <span style="color: #800080;">1574427632</span><span style="color: #000000;">
+go func: </span><span style="color: #800080;">1</span>, <span style="color: #0000ff;">time</span>: <span style="color: #800080;">1574427632</span><span style="color: #000000;">
+go func: </span><span style="color: #800080;">4</span>, <span style="color: #0000ff;">time</span>: <span style="color: #800080;">1574427633</span><span style="color: #000000;">
+go func: </span><span style="color: #800080;">3</span>, <span style="color: #0000ff;">time</span>: <span style="color: #800080;">1574427633</span><span style="color: #000000;">
+go func: </span><span style="color: #800080;">5</span>, <span style="color: #0000ff;">time</span>: <span style="color: #800080;">1574427634</span><span style="color: #000000;">
+go func: </span><span style="color: #800080;">6</span>, <span style="color: #0000ff;">time</span>: <span style="color: #800080;">1574427634</span><span style="color: #000000;">
+go func: </span><span style="color: #800080;">7</span>, <span style="color: #0000ff;">time</span>: <span style="color: #800080;">1574427635</span><span style="color: #000000;">
+go func: </span><span style="color: #800080;">8</span>, <span style="color: #0000ff;">time</span>: <span style="color: #800080;">1574427635</span><span style="color: #000000;">
+go func: </span><span style="color: #800080;">9</span>, <span style="color: #0000ff;">time</span>: <span style="color: #800080;">1574427636</span><span style="color: #000000;">
+go func: </span><span style="color: #800080;">10</span>, <span style="color: #0000ff;">time</span>: <span style="color: #800080;">1574427636</span></pre>
+</div>
+<p>看时间每次只是同时执行两个</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

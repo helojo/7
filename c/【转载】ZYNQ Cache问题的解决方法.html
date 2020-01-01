@@ -1,0 +1,27 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修【转载】ZYNQ Cache问题的解决方法' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>【转载】ZYNQ Cache问题的解决方法</center></div><div class='banquan'>原文出处:本文由博客园博主没落骑士提供。<br/>
+原文连接:https://www.cnblogs.com/moluoqishi/p/10860628.html</div><br>
+    <p><strong><span style="font-size: 16px;">Zynq Cache问题的解决方法 - Kevin_HeYongyuan - 博客园</span></strong><br /><strong><span style="font-size: 16px;">https://www.cnblogs.com/kevin-heyongyuan/articles/7738552.html</span></strong></p>
+<p><span style="font-size: 16px;">在进行PS-PL之间的DMA传输时，不可避免会遇到Cache问题。今天在这里讲一下Cache的解决方法。其中参考了forums.xilinx.com的处理方法。</span><br /><span style="font-size: 16px;">首先解释为什么DMA会引入Cache问题（专业名称为Cache一致性问题）。</span><br /><span style="font-size: 16px;">PS和PL都在独立运行，PS通过DDR控制器来对DDR存储器进行访问，为了加速，常常将一些数据缓存（Cache），而且不是针对一个数据缓存，而是针对一批（Xilinx称为一行，即Line，一行长度为32）。这样好处很明显，下一次访问速度会加快；但坏处也很明显，就是Cache里的数据如果发生了改变，不能迅速反映到DDR2实际数据中，反之亦然。因此，当PL通过DMA修改了DDR2数据时，CPU可能还不知道发生了些什么，拿到的数据仍然是Cache中的没有改过的数据。</span><br /><span style="font-size: 16px;">在裸机开发时，规避Cache最简单的方法就是禁用Cache。</span><br /><span style="font-size: 16px;">#include &amp;quot;xil_cache.h&amp;quot;</span><br /><span style="font-size: 16px;">void Xil_DCacheDisable(void);</span><br /><span style="font-size: 16px;">这样操作后，CPU将直接访问DDR内存，读写都是直接的。这样显然会降低CPU性能，但简化了数据传输操作，属于极端的方法。</span><br /><span style="font-size: 16px;">&nbsp;</span><br /><span style="font-size: 16px;">另外一种操作要多加一道手续，在我的文章<strong>【参赛手记】详细介绍AXI-HP接口+DMA+GIC编程</strong>中，给出的例程里有Cache Flush和Cache Invalidate操作。从字面理解，Flush就是把Cache里的数据流放出去，清空Cache，也就是将Cache的内容推到DDR中去；而Cache Invalidate表示当场宣布Cache里的内容无效，需要从DDR中重新加载，即把数据从DDR中拉到Cache中来。</span><br /><span style="font-size: 16px;">理解了这个原理，在编程的时候心里就非常有底气了！</span><br /><span style="font-size: 16px;">#include &amp;quot;xil_cache.h&amp;quot;</span><br /><span style="font-size: 16px;">//写点什么到发送缓冲区sendram&nbsp;</span><br /><span style="font-size: 16px;"><strong>Xil_DCacheFlushRange((u32)sendram,sizeofbuffer);</strong>//将内容刷新至DDR</span><br /><span style="font-size: 16px;">//启动发送DMA过程。。。。</span><br /><span style="font-size: 16px;">&nbsp;</span><br /><span style="font-size: 16px;">//启动接收DMA过程。。。。。</span><br /><span style="font-size: 16px;"><strong>Xil_DCacheInvalidateRange((u32)recvram,sizeofbuffer);</strong>//将DDR内容拉进Cache</span><br /><span style="font-size: 16px;">//从recvram中读取数据吧！</span><br /><span style="font-size: 16px;">&nbsp;</span><br /><span style="font-size: 16px;">好了，裸机工程下面开发是非常简单的，出错了也容易定位，调试起来方便。在Linux下开发时，由于编写的接口模块处于驱动层面，调试可能不如SDK中那么直观，只能关键部位打印printk，然后慢慢去寻找错误，定位比较麻烦。</span><br /><span style="font-size: 16px;">在Linux下，Cache的Flush和Invalidate操作需要调用内核函数 dma_sync_single_for_device和 dma_sync_single_for_cpu。</span><br /><span style="font-size: 16px;">这两个函数包含时可以这样：</span><br /><span style="font-size: 16px;">#include&nbsp;</span><br /><span style="font-size: 16px;">其代码可以在内核源码的/arch/arm/include/asm中看到。</span><br /><span style="font-size: 16px;">同样，在驱动程序中，涉及到DMA操作时，也需要在DMA写之前先Flush，DMA读之后Invalidate操作。</span><br /><span style="font-size: 16px;">其参数为：第一个参数是device结构体，第二个参数为DMA的实际地址，需要通过虚拟地址到实际地址的映射才能实现（这是Linux的本身特点），第三个参数为方向，可以选择DMA_TO_DEVICE或 DMA_FROM_DEVICE（需要包含头文件#include ）。</span></p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

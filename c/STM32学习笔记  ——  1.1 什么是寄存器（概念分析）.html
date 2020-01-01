@@ -1,0 +1,124 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修STM32学习笔记  ——  1.1 什么是寄存器（概念分析）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>STM32学习笔记  ——  1.1 什么是寄存器（概念分析）</center></div><div class='banquan'>原文出处:本文由博客园博主LYT_Dr提供。<br/>
+原文连接:https://www.cnblogs.com/LYT-Dveloper/p/11229668.html</div><br>
+    <p><strong>问题引入：</strong></p>
+<p>用一句话回答以下问题：</p>
+<ul>
+<li>什么是寄存器？</li>
+<li>什么是寄存器映射？</li>
+<li>什么是存储器映射？</li>
+</ul>
+<p>（本章重点在 1.1.3 和 1.1.4）</p>
+<h1 id="stm32芯片实物图">1.1 STM32芯片实物图</h1>
+<p>（图）</p>
+<ol>
+<li><strong>学会看丝印图</strong>
+<ul>
+<li>芯片型号、内核提供商等其他信息</li>
+</ul></li>
+<li><strong>学会辨别正方向（芯片上的小圆点与PCB上的小圆点对应）</strong>
+<ul>
+<li>以小圆点为基础，逆时针旋转，从1号引脚开始递增（图）</li>
+<li>如果芯片上没有小圆点，那么就把丝印图正对着自己，左上角的引脚为1号引脚，同样逆时针旋转递增。</li>
+<li>所有芯片的引脚排列都是逆时针的，无论是LQFP还是DIP封装的。</li>
+</ul></li>
+</ol>
+<h1 id="stm32芯片架构简图">1.2 STM32芯片架构简图</h1>
+<p>（图）</p>
+<p>芯片主要是由内核和外设组成。</p>
+<p><strong>内核（主控制器）：</strong></p>
+<ul>
+<li>Cortex - M4内核（由Arm公司设计）用于控制外设。</li>
+</ul>
+<p><strong>外设（从控制器）：</strong></p>
+<ul>
+<li>Flash、Sram、USART、GPIO、IIC、SPI等（由Soc公司设计）</li>
+</ul>
+<p><strong>总线：</strong></p>
+<ol>
+<li><p>内核与外设通过总线连接，其分为：I（指令）、S（系统）、D（数据）总线。</p></li>
+<li><p>几个总线同时访问某个外设或者内核，产生竞争的时候，总线矩阵会使用调度算法进行仲裁。</p></li>
+<li><p>STM32F42xx的总线接口</p></li>
+</ol>
+<p>(图)</p>
+<ul>
+<li>黄色为主控制器，红色为从控制器。</li>
+<li>指令总线主要访问Flash，程序可以从内置Flash、外置Flash和Sram中启动。</li>
+<li>总线交叉处有圆点，说明可以连接，例如：程序只能存储在Sram1中，不能存储在Sram2中。</li>
+<li>数据总线主要用于取常量。常量的存储区域和程序的存储区域是一样的。</li>
+<li>系统总线主要访问Sram和寄存器。</li>
+</ul>
+<h1 id="存储器映射">1.3 存储器映射</h1>
+<ol>
+<li><p>存储器本身是不具有地址信息的，地址信息是由用户或者厂商分配的，为存储器重新分配地址的过程即为存储器映射。</p></li>
+<li><p>Cortex - M4内核是32位的，可以寻址2的32次方，也就是4GB（0x0000 0000 - 0xFFFF FFFF）的内存空间，</p></li>
+<li><p>这4GB的内存空间被分成了8个Block，每个Block都有特定的功能，每个Block大小为512MB。（教程里有每个Block的功能划分）</p>
+<ul>
+<li><p>Block0用于设计Flash，429IGT6只用了1MB。</p></li>
+<li><p>Block1用于设计Sram，用于存储变量，429IGT6用了256KB，被分成了三个部分：Sram1为112KB，Sram2为16KB，Sram3为64KB。</p></li>
+<li><p>Block2用于设计片上外设。外设根据速度不同被分成四条总线进行控制：AHB1、AHB2、APB2、APB1。</p>
+<p>（图）</p></li>
+<li><p>Block3是FMC的bank1 - bank2，用于扩展外部存储，一个bank为256MB，板上拓展了一个大小为8MB的Sram。</p></li>
+<li><p>Block4是FMC的bank3 - bank4</p>
+<ul>
+<li>四个bank通过一个片选信号控制四片拓展芯片 。</li>
+</ul></li>
+<li>Block5用于FMC</li>
+<li>Block6用于FMC</li>
+<li><p>Block7为Cortex - M4的内部外设，是由Arm公司设计的，如：NVIC等。</p></li>
+</ul></li>
+<li><p>通过地址和偏移量间接访寄存器。</p></li>
+</ol>
+<h1 id="寄存器映射">1.4 寄存器映射</h1>
+<p><strong>问题引入：</strong></p>
+<ul>
+<li>如何通过控制寄存器的方法，让GPIOH的16个引脚均输出高电平？</li>
+</ul>
+<p><strong>通过绝对地址访问内存单元：</strong></p>
+<pre><code><code>//GPIO端口全部输出高电平
+*(unsigned int *)(0x40021C14) = 0xFFFF;</code></code></pre>
+<ol>
+<li><p>0x40021C14是输出数据寄存器OCR的地址，如何找到？</p>
+<ol>
+<li>在《STM32中文参考手册》2.3.1 嵌入式SRAM这节中，可以查到GPIOH外设的起始地址为0x4002 1c00。</li>
+<li>在 7.4.6 GPIO端口输出数据寄存器这节中，可以查到偏移地址为0x14。</li>
+</ol></li>
+<li><p>（unsigned int *）的作用是什么？</p>
+<ul>
+<li>0x4002 1c14是我们人为理解的地址，但是直接写在程序中，只是一串十六进制常量，需要将其强制类型转换为指针类型，才能使用间接访问运算符访问该地址内存的数据。</li>
+</ul></li>
+</ol>
+<p><strong>通过寄存器别名方式访问内存单元：</strong></p>
+<pre><code><code>#define GPIOH_ODR *(unsigned int *)(0x40021C13)
+GPIOH_ODR = 0XFF;</code></code></pre>
+<p><strong>什么是寄存器？</strong></p>
+<ul>
+<li>给具有特定功能的内存单元取一个别名，这个别名就是寄存器，给已经分配好地址的特定内存单元取别名的过程叫做寄存器映射。</li>
+</ul>
+<p><strong>什么是存储器映射？</strong></p>
+<ul>
+<li>给存储器分配地址的过程叫做存储器映射，再分配一个地址的过程叫做重映射。</li>
+</ul>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

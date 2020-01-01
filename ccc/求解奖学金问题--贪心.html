@@ -1,0 +1,125 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修求解奖学金问题--贪心' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>求解奖学金问题--贪心</center></div><div class='banquan'>原文出处:本文由博客园博主回忆酿的甜提供。<br/>
+原文连接:https://www.cnblogs.com/ygsworld/p/10982183.html</div><br>
+    <div>/*问题描述：有n门课（编号为0～n-1），每门课都有考试。为了拿到奖学金，必须满足所有课程平均成绩至少为avg。每门课由平时成绩和考试成绩相加得到，满足为r。现知道每门课平均成绩ai（0&lt;=i&lt;=n-1），若想让这门课多考一分，需要花bi的时间复习。同时，也可能出现复习再多也不会超过满分的分数。为了拿到奖学金，请问至少需要花多少时间？？</div>
+<div>输入描述：每个测试用例第一行为整数n(1&lt;=n&lt;=200)，表示课程数，接下来n行，每行两个整数，分别表示一门课的平均成绩ai和bi，最后一行输入满分r和希望到达的平均成绩avg，以输入n==0结束</div>
+<div>4</div>
+<div>80 5</div>
+<div>70 2</div>
+<div>90 3</div>
+<div>60 1</div>
+<div>100 92.5</div>
+<div>0</div>
+<div>样例输出：</div>
+<div>100</div>
+<div>分析：既然选择用贪心，那么就要制定贪心准则。既然给定了avg平均成绩和n，那么我们不难得出拿到奖学金的总分为n*avg，同时每门课的平均成绩也已给出，那么二者之差就是我们需要复习之后提高的分数了。而且这个分数，要用最少的时间来获得。</div>
+<div>所以要对bi进行排序。</div>
+<div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include&lt;stdio.h&gt;
+<span style="color: #008080;"> 3</span> #include&lt;cstring&gt;
+<span style="color: #008080;"> 4</span> #include&lt;cmath&gt;
+<span style="color: #008080;"> 5</span> #include&lt;vector&gt;
+<span style="color: #008080;"> 6</span> #include&lt;stack&gt;
+<span style="color: #008080;"> 7</span> #include&lt;map&gt;
+<span style="color: #008080;"> 8</span> #include&lt;<span style="color: #0000ff;">set</span>&gt;
+<span style="color: #008080;"> 9</span> #include&lt;list&gt;
+<span style="color: #008080;">10</span> #include&lt;queue&gt;
+<span style="color: #008080;">11</span> #include&lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;">12</span> #include&lt;algorithm&gt;
+<span style="color: #008080;">13</span> #include&lt;iomanip&gt;
+<span style="color: #008080;">14</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;">15</span> <span style="color: #0000ff;">#define</span> MAX 201
+<span style="color: #008080;">16</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> n;
+</span><span style="color: #008080;">17</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> score
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">19</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> data </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">20</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> ai;
+</span><span style="color: #008080;">21</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> bi;
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">bool</span> <span style="color: #0000ff;">operator</span> &lt; (<span style="color: #0000ff;">const</span> score &amp; s)<span style="color: #0000ff;">const</span>
+<span style="color: #008080;">23</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">24</span>         <span style="color: #0000ff;">return</span>  bi &lt; s.bi;<span style="color: #008000;">//</span><span style="color: #008000;">复习时间递增排序</span>
+<span style="color: #008080;">25</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">27</span> 
+<span style="color: #008080;">28</span> <span style="color: #000000;">score A[MAX];
+</span><span style="color: #008080;">29</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> r;
+</span><span style="color: #008080;">30</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> avg;
+</span><span style="color: #008080;">31</span> <span style="color: #0000ff;">int</span> effort = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Solve()
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">35</span>     <span style="color: #0000ff;">int</span> Sums = (<span style="color: #0000ff;">int</span>) n * avg;<span style="color: #008000;">//</span><span style="color: #008000;">需要达到的总分</span>
+<span style="color: #008080;">36</span>     <span style="color: #0000ff;">int</span> cursum = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">37</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span> ; i&lt; n; i ++)<span style="color: #008000;">//</span><span style="color: #008000;">现有课程的总分</span>
+<span style="color: #008080;">38</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">39</span>         cursum +=<span style="color: #000000;"> A[i].ai;
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">41</span>     sort(A,A +<span style="color: #000000;"> n);
+</span><span style="color: #008080;">42</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j&lt; n;j++)<span style="color: #008000;">//</span><span style="color: #008000;">贪心选择</span>
+<span style="color: #008080;">43</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">44</span>         <span style="color: #0000ff;">if</span>(cursum &gt;= Sums)<span style="color: #008000;">//</span><span style="color: #008000;">分数达到，结束选择</span>
+<span style="color: #008080;">45</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">46</span>             <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">47</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">48</span>     
+<span style="color: #008080;">49</span>         <span style="color: #0000ff;">int</span> cur =<span style="color: #000000;"> cursum;
+</span><span style="color: #008080;">50</span>         cursum += min(Sums - cursum ,r -<span style="color: #000000;"> A[j].ai);
+</span><span style="color: #008080;">51</span>         effort += A[j].bi * min(Sums-cur,r -<span style="color: #000000;"> A[j].ai);
+</span><span style="color: #008080;">52</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">54</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">55</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">56</span>     <span style="color: #0000ff;">while</span>(cin&gt;&gt;n &amp;&amp; n != <span style="color: #800080;">0</span><span style="color: #000000;"> )
+</span><span style="color: #008080;">57</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">58</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>;i &lt; n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">59</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">60</span>             cin&gt;&gt;A[i].ai&gt;&gt;<span style="color: #000000;">A[i].bi;
+</span><span style="color: #008080;">61</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">62</span>         cin&gt;&gt;r&gt;&gt;<span style="color: #000000;">avg;
+</span><span style="color: #008080;">63</span> <span style="color: #000000;">        Solve();
+</span><span style="color: #008080;">64</span>         cout&lt;&lt;effort&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;">65</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">66</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">67</span> }</pre>
+</div>
+</div>
+<div>
+<div>
+<pre>  　　for(int j = 0; j&lt; n;j++)//贪心选择
+43 <span>    {
+44         if(cursum &gt;= Sums)//分数达到，结束选择
+45 <span>        {
+46             break<span>;
+47 <span>        }
+48     
+49         int cur =<span> cursum;
+50         cursum += min(Sums - cursum ,r -<span> A[j].ai);
+51         effort += A[j].bi * min(Sums-cur,r -<span> A[j].ai);
+52 <span>    }</span></span></span></span></span></span></span></span></pre>
+</div>
+<div>针对这一段，简单说一下，每门课已经按照单位复习时间递增排了序，50行是为了找出 （需要达到的总分与目前总分的差，每门课的满分r与当前平均成绩ai的差）较小的那个，因为从单位复习时间最少的开始复习（同样是总分加一分，当然是时间越少越好）。Sums-curcum==70,100-60=40，，所以花费时间为effort+= 1 * 40。即把60的成绩复习到满分，花费40分钟，此时目前总分为340,还需30分，继续循环单位复习时间第二小的那个，是70 ，2。Sums-cumin==30,100-70 ==30 ，所以这个复习到满分刚好达到条件。此时（effort += 2 *（30）） == 100.所以最终至少需要花费100单位时间去复习。如果Sums-cursum&nbsp; &lt; r-A[j].ai&nbsp; ，那就意味着当前课程不需要到满分就能拿奖学金了，最后加上需要的时间就行了</div>
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

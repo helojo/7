@@ -1,0 +1,113 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修CodeForces 15D Map' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>CodeForces 15D Map</center></div><div class='banquan'>原文出处:本文由博客园博主ycx060617提供。<br/>
+原文连接:https://www.cnblogs.com/ycx-akioi/p/CodeForces-15D.html</div><br>
+    <blockquote>
+<h3 id="洛谷题目页面传送门-codeforces题目页面传送门"><a href="https://www.luogu.org/problem/CF15D">洛谷题目页面传送门</a> &amp; <a href="https://codeforces.com/contest/15/problem/D">CodeForces题目页面传送门</a></h3>
+</blockquote>
+<blockquote>
+<p>题意见洛谷里的翻译。（注意翻译里有错误，应该是优先选上面的矩阵，在同一行的优先选左边的矩阵）</p>
+</blockquote>
+<p><del>这题一看就会做啊</del></p>
+<p>（以下设大矩阵是<span class="math inline">\(n\times m\)</span>，小矩阵是<span class="math inline">\(n0\times m0\)</span>，第<span class="math inline">\(i\)</span>行第<span class="math inline">\(j\)</span>列高度为<span class="math inline">\(a_{i,j}\)</span>）</p>
+<p>不难想到可以预处理出二维前缀和数组<span class="math inline">\(Sum\)</span>，后面就可以<span class="math inline">\(\mathrm{O}(1)\)</span>求出一个小矩阵的和；然后跑<span class="math inline">\(2\)</span>遍单调队列，第<span class="math inline">\(1\)</span>次求出<span class="math inline">\(\forall i\in[1,n],\forall j\in[1,m-m0+1],mn1_{i,j}=\min\limits_{k=j}^{j+m0-1}\{a_{i,k}\}\)</span>，第二次求出<span class="math inline">\(\forall i\in[1,n-n0+1],\forall j\in[1,m-m0+1],mn2_{i,j}=\min\limits_{k=i}^{k+n0-1}\left\{\min\limits_{o=j}^{j+m0-1}\{a_{k,o}\}\right\}=\min\limits_{k=i}^{k+n0-1}\{mn1_{k,j}\}\)</span>。那么一个左上角在<span class="math inline">\((i,j)\)</span>的小矩阵的花费<del>显然</del>是<span class="math inline">\(Sum_{i+n0-1,j+m0-1}-Sum_{i-1,j+m0-1}-Sum_{i+n0-1,j-1}+Sum_{i-1,j-1}-n0\times m0\times mn2_{i,j}\)</span>了。然后把所有小矩阵排个序，从头到尾扫一遍，如果一个小矩阵中有已经被标记的格子了，就不选；否则就选，并且把它所覆盖的格子都标记一下。但这样会TLE。<del>不难想到，</del>判一个小矩阵有没有被标记过的格子，只需要判四个角就可以了，这样判的时间总共就是<span class="math inline">\(\mathrm{O}(nm)\)</span>了；而每个格子最多会被标记一次，所以标记总共也是<span class="math inline">\(\mathrm{O}(nm)\)</span>，这样就不会TLE了。<del>（或者你用树状数组、线段树或其他一些更高级的数据结构我也不拦你）</del></p>
+<p>对了，这题非常的卡常。我第一次交，T了。然后加了个快读，还是T了。然后把所有<code>int</code>改成<code>register int</code>，还是T了。最后我发现，原来计算一个小矩阵的花费虽然<span class="math inline">\(\mathrm{O}(1)\)</span>，但是常数略大，而我却把它放在<code>sort</code>的<code>cmp</code>里计算，等于在扩大计算花费的常数<del>（众所周知，快排里一个元素可能和多个元素比较）</del>。于是我事先计算所有小矩阵的花费，然后存下来，<code>cmp</code>的时候直接调用，然后就AC了。</p>
+<p>下面贴上蒟蒻<del>又长又丑的</del>代码：</p>
+<pre><code>#include&lt;bits/stdc++.h&gt;
+using namespace std;
+#define int long long
+#define pb push_back
+#define mp make_pair
+#define X first
+#define Y second
+#define ri register int//呵呵 
+void read(int &amp;x){//快读 
+    x=0;char c=getchar();
+    while(!isdigit(c))c=getchar();
+    while(isdigit(c))x=(x&lt;&lt;3)+(x&lt;&lt;1)+(c^48),c=getchar();
+}
+const int N=1000,M=1000;
+int n,m/*大矩阵的尺寸*/,n0,m0/*小矩阵的尺寸*/;
+int a[N+1][M+1];//高度 
+int Sum[N+1][M+1];//二维前缀和 
+int q[N],head,tail;//单调队列 
+int mn1[N+1][M+1]/*一维最小值*/,mn2[N+1][M+1]/*二维最小值*/;
+vector&lt;pair&lt;int,int&gt; &gt; ord;//小矩阵访问顺序 
+int cst[N+1][M+1];//小矩阵的花费 
+int calc_cst(int x,int y){//计算左上角在(x,y)的小矩阵的花费 
+    return Sum[x+n0-1][y+m0-1]-Sum[x-1][y+m0-1]-Sum[x+n0-1][y-1]+Sum[x-1][y-1]-n0*m0*mn2[x][y];
+}
+bool cmp(pair&lt;int,int&gt; x,pair&lt;int,int&gt; y){//排序方式，以花费为第一关键字从小到大、行数为第二关键字从小到大、列数为第三关键字从小到大排序 
+    return cst[x.X][x.Y]!=cst[y.X][y.Y]?cst[x.X][x.Y]&lt;cst[y.X][y.Y]:x.X!=y.X?x.X&lt;y.X:x.Y&lt;y.Y;
+}
+bool vis[N+1][M+1];//标记 
+signed main(){
+//  freopen(&quot;C:\\Users\\chenx\\OneDrive\\桌面\\data.in&quot;,&quot;r&quot;,stdin);
+    read(n);read(m);read(n0);read(m0);
+    for(ri i=1;i&lt;=n;i++)for(ri j=1;j&lt;=m;j++){
+        read(a[i][j]);
+        Sum[i][j]=Sum[i-1][j]+Sum[i][j-1]-Sum[i-1][j-1]+a[i][j];//预处理二维前缀和 
+    }
+    for(ri i=1;i&lt;=n;i++){//第一次单调队列，算mn1 
+        head=tail=0;
+        for(ri j=1;j&lt;m0;j++){
+            while(head&lt;tail&amp;&amp;a[i][q[tail-1]]&gt;=a[i][j])tail--;
+            q[tail++]=j;
+        }
+        for(ri j=1;j+m0-1&lt;=m;j++){
+            while(head&lt;tail&amp;&amp;q[head]&lt;j)head++;
+            while(head&lt;tail&amp;&amp;a[i][q[tail-1]]&gt;=a[i][j+m0-1])tail--;
+            q[tail++]=j+m0-1;
+            mn1[i][j]=a[i][q[head]];
+        }
+    }
+//  for(ri i=1;i&lt;=n;i++){for(ri j=1;j+m0-1&lt;=m;j++)cout&lt;&lt;mn1[i][j]&lt;&lt;&quot; &quot;;puts(&quot;&quot;);}puts(&quot;&quot;);
+    for(ri j=1;j+m0-1&lt;=m;j++){//第二次单调队列，算mn2 
+        head=tail=0;
+        for(ri i=1;i&lt;n0;i++){
+            while(head&lt;tail&amp;&amp;mn1[q[tail-1]][j]&gt;=mn1[i][j])tail--;
+            q[tail++]=i;
+        }
+        for(ri i=1;i+n0-1&lt;=n;i++){
+            while(head&lt;tail&amp;&amp;q[head]&lt;i)head++;
+            while(head&lt;tail&amp;&amp;mn1[q[tail-1]][j]&gt;=mn1[i+n0-1][j])tail--;
+            q[tail++]=i+n0-1;
+            mn2[i][j]=mn1[q[head]][j];
+        }
+    }
+//  for(ri i=1;i+n0-1&lt;=n;i++){for(ri j=1;j+m0-1&lt;=m;j++)cout&lt;&lt;mn2[i][j]&lt;&lt;&quot; &quot;;puts(&quot;&quot;);} 
+    for(ri i=1;i+n0-1&lt;=n;i++)for(ri j=1;j+m0-1&lt;=m;j++)cst[i][j]=calc_cst(i,j)/*存花费*/,ord.pb(mp(i,j));
+    sort(ord.begin(),ord.end(),cmp);//排序 
+    vector&lt;pair&lt;int,int&gt; &gt; ans;//答案序列 
+    for(ri i=0;i&lt;ord.size();i++){
+        int x=ord[i].X,y=ord[i].Y;
+        if(vis[x][y]||vis[x][y+m0-1]||vis[x+n0-1][y]||vis[x+n0-1][y+m0-1])continue;//判四个角 
+        ans.pb(ord[i]);//放到答案序列里 
+        for(ri j=x;j&lt;=x+n0-1;j++)for(ri k=y;k&lt;=y+m0-1;k++)vis[j][k]=true;//标记 
+    }
+    cout&lt;&lt;ans.size()&lt;&lt;&quot;\n&quot;;//输出选的小矩阵的个数 
+    for(ri i=0;i&lt;ans.size();i++)printf(&quot;%lld %lld %lld\n&quot;,ans[i].X,ans[i].Y,cst[ans[i].X][ans[i].Y]);//输出选的小矩阵 
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

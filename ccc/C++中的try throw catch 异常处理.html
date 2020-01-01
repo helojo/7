@@ -1,0 +1,378 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++中的try throw catch 异常处理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++中的try throw catch 异常处理</center></div><div class='banquan'>原文出处:本文由博客园博主博客知行者提供。<br/>
+原文连接:https://www.cnblogs.com/r-yan/p/11698414.html</div><br>
+    <p>今天在开发过程中调用一个库函数结果库函数有throw操作，当前代码没有对throw进行捕获操作，导致进程在main 函数中捕获到异常导致进程crash。所以借此记录下c++关于try,throw,catch的用法。</p>
+<p>&nbsp;</p>
+<p>程序运行时常会碰到一些异常情况，例如：</p>
+<ul>
+<li>做除法的时候除数为 0；</li>
+<li>用户输入年龄时输入了一个负数；</li>
+<li>用 new 运算符动态分配空间时，空间不够导致无法分配；</li>
+<li>访问数组元素时，下标越界；打开文件读取时，文件不存在。</li>
+</ul>
+<p><br />这些异常情况，如果不能发现并加以处理，很可能会导致程序崩溃。<br /><br />所谓&ldquo;处理&rdquo;，可以是给出错误提示信息，然后让程序沿一条不会出错的路径继续执行；也可能是不得不结束程序，但在结束前做一些必要的工作，如将内存中的数据写入文件、关闭打开的文件、释放动态分配的内存空间等。<br /><br />一发现异常情况就立即处理未必妥当，因为在一个函数执行过程中发生的异常，在有的情况下由该函数的调用者决定如何处理更加合适。尤其像库函数这类提供给程序员调用，用以完成与具体应用无关的通用功能的函数，执行过程中贸然对异常进行处理，未必符合调用它的程序的需要。<br /><br />此外，将异常分散在各处进行处理不利于代码的维护，尤其是对于在不同地方发生的同一种异常，都要编写相同的处理代码也是一种不必要的重复和冗余。如果能在发生各种异常时让程序都执行到同一个地方，这个地方能够对异常进行集中处理，则程序就会更容易编写、维护。<br /><br />鉴于上述原因，c++&nbsp;引入了异常处理机制。其基本思想是：函数 A 在执行过程中发现异常时可以不加处理，而只是&ldquo;拋出一个异常&rdquo;给 A 的调用者，假定为函数 B。<br /><br />拋出异常而不加处理会导致函数 A 立即中止，在这种情况下，函数 B 可以选择捕获 A 拋出的异常进行处理，也可以选择置之不理。如果置之不理，这个异常就会被拋给 B 的调用者，以此类推。<br /><br />如果一层层的函数都不处理异常，异常最终会被拋给最外层的 main 函数。main 函数应该处理异常。如果main函数也不处理异常，那么程序就会立即异常地中止。</p>
+<p>&nbsp;</p>
+<h2>C++异常处理基本语法</h2>
+<p>C++ 通过 throw 语句和 try...catch 语句实现对异常的处理。throw 语句的语法如下：</p>
+<div class="cnblogs_code">
+<pre>throw  表达式;</pre>
+</div>
+<p>该语句拋出一个异常。异常是一个表达式，其值的类型可以是基本类型，也可以是类。</p>
+<p>try...catch 语句的语法如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">try {
+    语句组
+}
+catch(异常类型) {
+    异常处理代码
+}
+...
+catch(异常类型) {
+    异常处理代码
+}</span></pre>
+</div>
+<p>catch 可以有多个，但至少要有一个。<br /><br />不妨把 try 和其后<code>{}</code>中的内容称作&ldquo;try块&rdquo;，把 catch 和其后<code>{}</code>中的内容称作&ldquo;catch块&rdquo;。<br /><br />try...catch 语句的执行过程是：</p>
+<ul>
+<li>执行 try 块中的语句，如果执行的过程中没有异常拋出，那么执行完后就执行最后一个 catch 块后面的语句，所有 catch 块中的语句都不会被执行；</li>
+<li>如果 try 块执行的过程中拋出了异常，那么拋出异常后立即跳转到第一个&ldquo;异常类型&rdquo;和拋出的异常类型匹配的 catch 块中执行（称作异常被该 catch 块&ldquo;捕获&rdquo;），执行完后再跳转到最后一个 catch 块后面继续执行。</li>
+
+
+</ul>
+<p>例如下面的程序：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 3</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">double</span><span style="color: #000000;"> m ,n;
+</span><span style="color: #008080;"> 6</span>     cin &gt;&gt; m &gt;&gt;<span style="color: #000000;"> n;
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 8</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">before dividing.</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 9</span>         <span style="color: #0000ff;">if</span>( n == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">10</span>             <span style="color: #0000ff;">throw</span> -<span style="color: #800080;">1</span>; <span style="color: #008000;">//</span><span style="color: #008000;">抛出int类型异常</span>
+<span style="color: #008080;">11</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">12</span>             cout &lt;&lt; m / n &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">13</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">after dividing.</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">catch</span>(<span style="color: #0000ff;">double</span><span style="color: #000000;"> d) {
+</span><span style="color: #008080;">16</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">catch(double) </span><span style="color: #800000;">"</span> &lt;&lt; d &lt;&lt;<span style="color: #000000;">  endl;
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">18</span>     <span style="color: #0000ff;">catch</span>(<span style="color: #0000ff;">int</span><span style="color: #000000;"> e) {
+</span><span style="color: #008080;">19</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">catch(int) </span><span style="color: #800000;">"</span> &lt;&lt; e &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">21</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">finished</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">23</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>程序的运行结果如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #800080;">9</span> <span style="color: #800080;">6</span><span style="color: #000000;">↙
+before dividing.
+</span><span style="color: #800080;">1.5</span><span style="color: #000000;">
+after dividing.
+finished</span></pre>
+</div>
+<p>说明当 n 不为 0 时，try 块中不会拋出异常。因此程序在 try 块正常执行完后，越过所有的 catch 块继续执行，catch 块一个也不会执行。<br /><br />程序的运行结果也可能如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #800080;">9</span> <span style="color: #800080;">0</span><span style="color: #000000;">↙
+before dividing.
+</span><span style="color: #0000ff;">catch</span>\(<span style="color: #0000ff;">int</span>) -<span style="color: #800080;">1</span><span style="color: #000000;">
+finished</span></pre>
+</div>
+<p>当 n 为 0 时，try 块中会拋出一个整型异常。拋出异常后，try 块立即停止执行。该整型异常会被类型匹配的第一个 catch 块捕获，即进入&nbsp;catch(int e)&nbsp;&nbsp;块执行，该 catch 块执行完毕后，程序继续往后执行，直到正常结束。</p>
+<p>如果拋出的异常没有被 catch 块捕获，例如，将<code>catch(int e)</code>，改为<code>catch(char e)</code>，当输入的 n 为 0 时，拋出的整型异常就没有 catch 块能捕获，这个异常也就得不到处理，那么程序就会立即中止，try...catch 后面的内容都不会被执行。</p>
+<h2>能够捕获任何异常的 catch 语句</h2>
+<p>如果希望不论拋出哪种类型的异常都能捕获，可以编写如下 catch 块：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">catch</span><span style="color: #000000;">(...) {
+    ...
+}</span></pre>
+</div>
+<p>这样的 catch 块能够捕获任何还没有被捕获的异常。例如下面的程序：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 3</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">double</span><span style="color: #000000;"> m, n;
+</span><span style="color: #008080;"> 6</span>     cin &gt;&gt; m &gt;&gt;<span style="color: #000000;"> n;
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 8</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">before dividing.</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 9</span>         <span style="color: #0000ff;">if</span> (n == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">10</span>             <span style="color: #0000ff;">throw</span> - <span style="color: #800080;">1</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">抛出整型异常</span>
+<span style="color: #008080;">11</span>         <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (m == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">12</span>             <span style="color: #0000ff;">throw</span> - <span style="color: #800080;">1.0</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">拋出 double 型异常</span>
+<span style="color: #008080;">13</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">14</span>             cout &lt;&lt; m / n &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">15</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">after dividing.</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">catch</span> (<span style="color: #0000ff;">double</span><span style="color: #000000;"> d) {
+</span><span style="color: #008080;">18</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">catch (double)</span><span style="color: #800000;">"</span> &lt;&lt; d &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">20</span>     <span style="color: #0000ff;">catch</span><span style="color: #000000;"> (...) {
+</span><span style="color: #008080;">21</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">catch (...)</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">23</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">finished</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">24</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">25</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>程序的运行结果如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #800080;">9</span> <span style="color: #800080;">0</span><span style="color: #000000;">↙
+before dividing.
+</span><span style="color: #0000ff;">catch</span><span style="color: #000000;"> (...)
+finished</span></pre>
+</div>
+<p>当 n 为 0 时，拋出的整型异常被<code>catchy(...)</code>捕获。<br /><br />程序的运行结果也可能如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #800080;">0</span> <span style="color: #800080;">6</span><span style="color: #000000;">↙
+before dividing.
+</span><span style="color: #0000ff;">catch</span> (<span style="color: #0000ff;">double</span>) -<span style="color: #800080;">1</span><span style="color: #000000;">
+finished</span></pre>
+</div>
+<p>当 m 为 0 时，拋出一个 double 类型的异常。虽然<code>catch (double)</code>和<code>catch(...)</code>都能匹配该异常，但是<code>catch(double)</code>是第一个能匹配的 catch 块，因此会执行它，而不会执行<code>catch(...)</code>块。<br /><br />由于<code>catch(...)</code>能匹配任何类型的异常，它后面的 catch 块实际上就不起作用，因此不要将它写在其他 catch 块前面。</p>
+<h2>异常的再拋出</h2>
+<p>如果一个函数在执行过程中拋出的异常在本函数内就被 catch 块捕获并处理，那么该异常就不会拋给这个函数的调用者（也称为&ldquo;上一层的函数&rdquo;）；如果异常在本函数中没有被处理，则它就会被拋给上一层的函数。</p>
+<p>例如下面的程序：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> CException
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">string</span><span style="color: #000000;"> msg;
+</span><span style="color: #008080;"> 8</span>     CException(<span style="color: #0000ff;">string</span><span style="color: #000000;"> s) : msg(s) {}
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">10</span> <span style="color: #0000ff;">double</span> Devide(<span style="color: #0000ff;">double</span> x, <span style="color: #0000ff;">double</span><span style="color: #000000;"> y)
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">if</span> (y == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">13</span>         <span style="color: #0000ff;">throw</span> CException(<span style="color: #800000;">"</span><span style="color: #800000;">devided by zero</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">14</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">in Devide</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">return</span> x /<span style="color: #000000;"> y;
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">17</span> <span style="color: #0000ff;">int</span> CountTax(<span style="color: #0000ff;">int</span><span style="color: #000000;"> salary)
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">20</span>         <span style="color: #0000ff;">if</span> (salary &lt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">21</span>             <span style="color: #0000ff;">throw</span> - <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">22</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">counting tax</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">24</span>     <span style="color: #0000ff;">catch</span> (<span style="color: #0000ff;">int</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">25</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">salary &lt; 0</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">27</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">tax counted</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">28</span>     <span style="color: #0000ff;">return</span> salary * <span style="color: #800080;">0.15</span><span style="color: #000000;">;
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">30</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">32</span>     <span style="color: #0000ff;">double</span> f = <span style="color: #800080;">1.2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">33</span>     <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">34</span>         CountTax(-<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">35</span>         f = Devide(<span style="color: #800080;">3</span>, <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">36</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">end of try block</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">38</span>     <span style="color: #0000ff;">catch</span><span style="color: #000000;"> (CException e) {
+</span><span style="color: #008080;">39</span>         cout &lt;&lt; e.msg &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">41</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">f = </span><span style="color: #800000;">"</span> &lt;&lt; f &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">42</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">finished</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">43</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">44</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>程序的输出结果如下：</p>
+<div class="cnblogs_code">
+<pre>salary &lt; <span style="color: #800080;">0</span><span style="color: #000000;">
+tax counted
+devided by zero
+f</span>=<span style="color: #800080;">1.2</span><span style="color: #000000;">
+finished</span></pre>
+</div>
+<p>CountTa 函数拋出异常后自行处理，这个异常就不会继续被拋给调用者，即 main 函数。因此在 main 函数的 try 块中，CountTax 之后的语句还能正常执行，即会执行<code>f = Devide(3, 0);</code>。<br /><br />第 35 行，Devide 函数拋出了异常却不处理，该异常就会被拋给 Devide 函数的调用者，即 main 函数。拋出此异常后，Devide 函数立即结束，第 14 行不会被执行，函数也不会返回一个值，这从第 35 行 f 的值不会被修改可以看出。<br /><br />Devide 函数中拋出的异常被 main 函数中类型匹配的 catch 块捕获。第 38 行中的 e 对象是用复制构造函数初始化的。<br /><br />如果拋出的异常是派生类的对象，而 catch 块的异常类型是基类，那么这两者也能够匹配，因为派生类对象也是基类对象。<br /><br />虽然函数也可以通过返回值或者传引用的参数通知调用者发生了异常，但采用这种方式的话，每次调用函数时都要判断是否发生了异常，这在函数被多处调用时比较麻烦。有了异常处理机制，可以将多处函数调用都写在一个 try 块中，任何一处调用发生异常都会被匹配的 catch 块捕获并处理，也就不需要每次调用后都判断是否发生了异常。<br /><br />有时，虽然在函数中对异常进行了处理，但是还是希望能够通知调用者，以便让调用者知道发生了异常，从而可以作进一步的处理。在 catch 块中拋出异常可以满足这种需要。例如：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">int</span> CountTax(<span style="color: #0000ff;">int</span><span style="color: #000000;"> salary)
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 7</span>         <span style="color: #0000ff;">if</span>( salary &lt; <span style="color: #800080;">0</span><span style="color: #000000;"> )
+</span><span style="color: #008080;"> 8</span>             <span style="color: #0000ff;">throw</span> <span style="color: #0000ff;">string</span>(<span style="color: #800000;">"</span><span style="color: #800000;">zero salary</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 9</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">counting tax</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">catch</span> (<span style="color: #0000ff;">string</span><span style="color: #000000;"> s ) {
+</span><span style="color: #008080;">13</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CountTax error : </span><span style="color: #800000;">"</span> &lt;&lt; s &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">14</span>         <span style="color: #0000ff;">throw</span>; <span style="color: #008000;">//</span><span style="color: #008000;">继续抛出捕获的异常</span>
+<span style="color: #008080;">15</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">16</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">tax counted</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">return</span> salary * <span style="color: #800080;">0.15</span><span style="color: #000000;">;
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">19</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">21</span>     <span style="color: #0000ff;">double</span> f = <span style="color: #800080;">1.2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">23</span>         CountTax(-<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">24</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">end of try block</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">26</span>     <span style="color: #0000ff;">catch</span>(<span style="color: #0000ff;">string</span><span style="color: #000000;"> s) {
+</span><span style="color: #008080;">27</span>         cout &lt;&lt; s &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">29</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">finished</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">30</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">31</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>程序的输出结果如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">CountTax error:zero salary
+zero salary
+finished</span></pre>
+</div>
+<p>第 14 行的<code>throw;</code>没有指明拋出什么样的异常，因此拋出的就是 catch 块捕获到的异常，即 string("zero salary")。这个异常会被 main 函数中的 catch 块捕获。</p>
+<h2>函数的异常声明列表</h2>
+<p>为了增强程序的可读性和可维护性，使程序员在使用一个函数时就能看出这个函数可能会拋出哪些异常，C++ 允许在函数声明和定义时，加上它所能拋出的异常的列表，具体写法如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span> func() <span style="color: #0000ff;">throw</span> (<span style="color: #0000ff;">int</span>, <span style="color: #0000ff;">double</span>, A, B, C);</pre>
+</div>
+<p>或</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span> func() <span style="color: #0000ff;">throw</span> (<span style="color: #0000ff;">int</span>, <span style="color: #0000ff;">double</span>, A, B, C){...}</pre>
+</div>
+<p>上面的写法表明 func 可能拋出 int 型、double 型以及 A、B、C 三种类型的异常。异常声明列表可以在函数声明时写，也可以在函数定义时写。如果两处都写，则两处应一致。<br /><br />如果异常声明列表如下编写：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span> func() <span style="color: #0000ff;">throw</span> ();</pre>
+</div>
+<p>则说明 func 函数不会拋出任何异常。<br /><br />一个函数如果不交待能拋出哪些类型的异常，就可以拋出任何类型的异常。<br /><br />函数如果拋出了其异常声明列表中没有的异常，在编译时不会引发错误，但在运行时， Dev C++ 编译出来的程序会出错；用 Visual Studio 2010 编译出来的程序则不会出错，异常声明列表不起实际作用。</p>
+<h2>C++标准异常类</h2>
+<p>
+C++ 标准库中有一些类代表异常，这些类都是从 exception 类派生而来的。常用的几个异常类如图 1 所示。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;<img src="./images/C++中的try throw catch 异常处理0.png" alt="" /></p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;图1：常用的异常类</p>
+<p>&nbsp;</p>
+<p>bad_typeid、bad_cast、bad_alloc、ios_base::failure、out_of_range 都是 exception 类的派生类。C++ 程序在碰到某些异常时，即使程序中没有写 throw 语句，也会自动拋出上述异常类的对象。这些异常类还都有名为 what 的成员函数，返回字符串形式的异常描述信息。使用这些异常类需要包含头文件 stdexcept。<br /><br />下面分别介绍以上几个异常类。本节程序的输出以 Visual Studio 2010为准，Dev C++ 编译的程序输出有所不同。</p>
+<h4>1) bad_typeid</h4>
+<p>
+使用 typeid 运算符时，如果其操作数是一个多态类的指针，而该指针的值为 NULL，则会拋出此异常。</p>
+<h4>2) bad_cast</h4>
+<p>
+在用 dynamic_cast 进行从多态基类对象（或引用）到派生类的引用的强制类型转换时，如果转换是不安全的，则会拋出此异常。程序示例如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;stdexcept&gt;
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Base
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> func() {}
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">class</span> Derived : <span style="color: #0000ff;">public</span><span style="color: #000000;"> Base
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">10</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> Print() {}
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">13</span> <span style="color: #0000ff;">void</span> PrintObj(Base &amp;<span style="color: #000000;"> b)
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">16</span>         Derived &amp; rd = dynamic_cast &lt;Derived &amp;&gt;<span style="color: #000000;">(b);
+</span><span style="color: #008080;">17</span>         <span style="color: #008000;">//</span><span style="color: #008000;">此转换若不安全，会拋出 bad_cast 异常</span>
+<span style="color: #008080;">18</span> <span style="color: #000000;">        rd.Print();
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">20</span>     <span style="color: #0000ff;">catch</span> (bad_cast &amp;<span style="color: #000000;"> e) {
+</span><span style="color: #008080;">21</span>         cerr &lt;&lt; e.what() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">24</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">    Base b;
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">    PrintObj(b);
+</span><span style="color: #008080;">28</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">29</span> }</pre>
+</div>
+<p>程序的输出结果如下：</p>
+<div class="cnblogs_code">
+<pre>Bad dynamic_cast!</pre>
+</div>
+<p>在 PrintObj 函数中，通过 dynamic_cast 检测 b 是否引用的是一个 Derived 对象，如果是，就调用其 Print 成员函数；如果不是，就拋出异常，不会调用 Derived::Print。</p>
+<h4>3) bad_alloc</h4>
+<p>在用 new 运算符进行动态内存分配时，如果没有足够的内存，则会引发此异常。程序示例如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;stdexcept&gt;
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 7</span>         <span style="color: #0000ff;">char</span> * p = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>[<span style="color: #800080;">0x7fffffff</span>];  <span style="color: #008000;">//</span><span style="color: #008000;">无法分配这么多空间，会抛出异常</span>
+<span style="color: #008080;"> 8</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">catch</span> (bad_alloc &amp;<span style="color: #000000;"> e)  {
+</span><span style="color: #008080;">10</span>         cerr &lt;&lt; e.what() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">13</span> }</pre>
+</div>
+<p>程序的输出结果如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">bad allocation
+ios_base::failure</span></pre>
+</div>
+<p>在默认状态下，输入输出流对象不会拋出此异常。如果用流对象的 exceptions 成员函数设置了一些标志位，则在出现打开文件出错、读到输入流的文件尾等情况时会拋出此异常。此处不再赘述。</p>
+<h4>4) out_of_range</h4>
+<p>用 vector 或 string 的 at 成员函数根据下标访问元素时，如果下标越界，则会拋出此异常。例如：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;stdexcept&gt;
+<span style="color: #008080;"> 3</span> #include &lt;vector&gt;
+<span style="color: #008080;"> 4</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     vector&lt;<span style="color: #0000ff;">int</span>&gt; v(<span style="color: #800080;">10</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">10</span>         v.at(<span style="color: #800080;">100</span>) = <span style="color: #800080;">100</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">拋出 out_of_range 异常</span>
+<span style="color: #008080;">11</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">catch</span> (out_of_range &amp;<span style="color: #000000;"> e) {
+</span><span style="color: #008080;">13</span>         cerr &lt;&lt; e.what() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">string</span> s = <span style="color: #800000;">"</span><span style="color: #800000;">hello</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">try</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">17</span>         <span style="color: #0000ff;">char</span> c = s.at(<span style="color: #800080;">100</span>);  <span style="color: #008000;">//</span><span style="color: #008000;">拋出 out_of_range 异常</span>
+<span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">catch</span> (out_of_range &amp;<span style="color: #000000;"> e) {
+</span><span style="color: #008080;">20</span>         cerr &lt;&lt; e.what() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">23</span> }</pre>
+</div>
+<p>程序的输出结果如下：</p>
+<div class="cnblogs_code">
+<pre>invalid vector &lt;T&gt;<span style="color: #000000;"> subscript
+invalid </span><span style="color: #0000ff;">string</span> position</pre>
+</div>
+<p><br />如果将<code>v.at(100)</code>换成<code>v[100]</code>，将<code>s.at(100)</code>换成<code>s[100]</code>，程序就不会引发异常（但可能导致程序崩溃）。因为 at 成员函数会检测下标越界并拋出异常，而 operator[] 则不会。operator [] 相比 at 的好处就是不用判断下标是否越界，因此执行速度更快。</p>
+<p>转自：http://c.biancheng.net/view/422.html</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

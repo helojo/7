@@ -1,0 +1,99 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go语言框架gin之集成swagger' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go语言框架gin之集成swagger</center></div><div class='banquan'>原文出处:本文由博客园博主从流飘荡提供。<br/>
+原文连接:https://www.cnblogs.com/jindp/p/10749534.html</div><br>
+    <p><span style="font-family: 'courier new', courier; font-size: 13px;">1、安装swag</span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">在goLand中直接使用go get -u github.com/swaggo/swag/cmd/swag命令安装会报错</span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;"><img src="./images/go语言框架gin之集成swagger0.png" alt="" width="812" height="83" /></span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">翻了很多博客，都没找到太合适的办法，根据博客中所写的操作还是会报错，最后用git直接下载也挺方便的，类似这种问题都可以使用此方法</span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;"><img src="./images/go语言框架gin之集成swagger1.png" alt="" width="772" height="553" /></span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">&nbsp;此时执行swag -v命令判断是否安装成功，会返回以下错误</span></p>
+<p><img src="./images/go语言框架gin之集成swagger2.png" alt="" /></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">2、go install</span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">进入gopath下src\github.com\swaggo\swag\cmd\swag路径执行go install命令，可能会报如下错误</span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;"><img src="./images/go语言框架gin之集成swagger3.png" alt="" width="815" height="136" /></span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">此时可以按照1中的git clone方法下载所需包，但是包也可能存在于github.com目录下，如果存在此目录下只需要移动到golang.org/x目录下即可</span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">3、初始化swag</span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">执行完go install命令后如果没有报错出现，就可以cd到项目主目录执行swag init命令初始化swagger了</span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;"><img src="./images/go语言框架gin之集成swagger4.png" alt="" width="721" height="212" /></span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">4、为功能编写swagger注解</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    _ </span><span style="color: #800000;">"</span><span style="color: #800000;">./docs</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">github.com/gin-gonic/gin</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">github.com/swaggo/gin-swagger</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">github.com/swaggo/gin-swagger/swaggerFiles</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">net/http</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+</span>//<span style="color: #000000;"> @Summary 打印测试功能
+</span>//<span style="color: #000000;"> @title Swagger Example API
+</span>// @version 0.0.1
+// @description  This <span style="color: #0000ff;">is</span><span style="color: #000000;"> a sample server Petstore server.
+</span>// @BasePath /api/v1
+//<span style="color: #000000;"> @Host 127.0.0.1:8080
+</span>//<span style="color: #000000;"> @Produce  json
+</span>// @Param name query string true <span style="color: #800000;">"</span><span style="color: #800000;">Name</span><span style="color: #800000;">"</span>
+// @Success 200 {string} json <span style="color: #800000;">"</span><span style="color: #800000;">{</span><span style="color: #800000;">"</span>code<span style="color: #800000;">"</span><span style="color: #800000;">:200,</span><span style="color: #800000;">"</span>data<span style="color: #800000;">"</span><span style="color: #800000;">:</span><span style="color: #800000;">"</span>name<span style="color: #800000;">"</span><span style="color: #800000;">,</span><span style="color: #800000;">"</span>msg<span style="color: #800000;">"</span><span style="color: #800000;">:</span><span style="color: #800000;">"</span>ok<span style="color: #800000;">"</span><span style="color: #800000;">}</span><span style="color: #800000;">"</span>
+// @Router /<span style="color: #000000;"> [get]
+func Print(context </span>*<span style="color: #000000;">gin.Context) {
+    var (
+        name string
+    )
+    name </span>= context.Query(<span style="color: #800000;">"</span><span style="color: #800000;">name</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    context.JSON(http.StatusOK, gin.H{
+        </span><span style="color: #800000;">"</span><span style="color: #800000;">code</span><span style="color: #800000;">"</span><span style="color: #000000;">: http.StatusOK,
+        </span><span style="color: #800000;">"</span><span style="color: #800000;">msg</span><span style="color: #800000;">"</span>:  <span style="color: #800000;">"</span><span style="color: #800000;">success</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        </span><span style="color: #800000;">"</span><span style="color: #800000;">data</span><span style="color: #800000;">"</span><span style="color: #000000;">: name,
+    })
+}
+
+func main() {
+    var (
+        route </span>*<span style="color: #000000;">gin.Engine
+        v1    </span>*<span style="color: #000000;">gin.RouterGroup
+    )
+    route </span>=<span style="color: #000000;"> gin.Default()
+    route.GET(</span><span style="color: #800000;">"</span><span style="color: #800000;">/swagger/*any</span><span style="color: #800000;">"</span><span style="color: #000000;">, ginSwagger.WrapHandler(swaggerFiles.Handler))
+    </span>//<span style="color: #000000;">gin.SetMode(gin.ReleaseMode)
+    v1 </span>= route.Group(<span style="color: #800000;">"</span><span style="color: #800000;">/api/v1</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    {
+        v1.GET(</span><span style="color: #800000;">"</span><span style="color: #800000;">/</span><span style="color: #800000;">"</span><span style="color: #000000;">, Print)
+    }
+
+    route.Run()
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">5、生产swagger文件</span></p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">&nbsp;swag init</span></p>
+<div class="cnblogs_code">
+<pre><code>{<br />    "swagger": "2.0",<br />    "info": {<br />        "description": "This is a sample server Petstore server.",<br />        "title": "Swagger Example API",<br />        "contact": {},<br />        "license": {},<br />        "version": "0.0.1"<br />    },<br />    "host": "127.0.0.1:8080",<br />    "basePath": "/api/v1",<br />    "paths": {<br />        "/": {<br />            "get": {<br />                "description": "This is a sample server Petstore server.",<br />                "produces": [<br />                    "application/json"<br />                ],<br />                "summary": "打印测试功能",<br />                "parameters": [<br />                    {<br />                        "type": "string",<br />                        "description": "Name",<br />                        "name": "name",<br />                        "in": "query",<br />                        "required": true<br />                    }<br />                ],<br />                "responses": {<br />                    "200": {<br />                        "description": "{\"code\":200,\"data\":\"name\",\"msg\":\"ok\"}",<br />                        "schema": {<br />                            "type": "string"<br />                        }<br />                    }<br />                }<br />            }<br />        }<br />    }<br />}</pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-family: 'courier new', courier; font-size: 13px;">6、启动项目展示结果</span></p>
+<p><img src="./images/go语言框架gin之集成swagger5.png" alt="" width="837" height="441" /></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

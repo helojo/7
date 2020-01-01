@@ -1,0 +1,202 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修第一章：UNIX基础知识' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>第一章：UNIX基础知识</center></div><div class='banquan'>原文出处:本文由博客园博主Lioker提供。<br/>
+原文连接:https://www.cnblogs.com/Lioker/p/10636154.html</div><br>
+    <p>&nbsp;</p>
+<p style="background-color: #7ba5ce; text-align: left;"><span style="font-family: 宋体; font-size: 18px;"><strong>一、UNIX体系结构</strong></span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">严格来说，操作系统可定义为一种软件，它控制计算机硬件资源，提供程序运行环境。我们通常将这种软件称为</span><strong style="font-family: 宋体; font-size: 15px;">内核</strong><span style="font-family: 宋体; font-size: 15px;">。因为它小且位于计算机体系的核心。</span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">下图显示了UNIX系统的体系结构：</span></p>
+<p><span style="font-size: 15px; font-family: 宋体;"><img src="./images/第一章：UNIX基础知识0.png" alt="" /></span></p>
+<p style="margin-left: 30px;">&nbsp;</p>
+<p><span style="font-size: 15px; font-family: 宋体;">上图阴影部分为系统调用，<strong>所有的系统调用都会从用户空间中汇聚到 0x80中断点</strong>，同时保存具体的系统调用号。</span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">C语言中的open()、read()等函数都是通过系统调用触发中断，进而调用驱动函数完成读写操作。</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p style="background-color: #7ba5ce; text-align: left;"><span style="font-family: 宋体; font-size: 18px;"><strong>二、文件和目录</strong></span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">UNIX文件系统是一直树形层次结构，所有文件的起点是一个为根的目录，它是&ldquo;/&rdquo;。在UNIX系统中本着</span><strong style="font-family: 宋体; font-size: 15px;">是一切皆文件的思想</strong><span style="font-family: 宋体; font-size: 15px;">，比如在命令行中执行如下命令，就会显示/etc目录的下的文件和目录。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px; background-color: #99ccff;">$ vi /etc</span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">创建新目录时会自动创建两个文件夹：.（点）和..（点点）。.（点）表示当前目录，</span><span style="font-size: 15px; font-family: 宋体;">..（点点）表示父目录。</span><span style="font-size: 15px; font-family: 宋体;">有一个特殊的情况，<strong>那就是根目录&ldquo;/&rdquo;下的.（点）和..（点点）是同一个路径，都是&ldquo;/&rdquo;</strong>。</span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">由斜线&ldquo;/&rdquo;开头的路径都是绝对路径，反之则是相对路径。</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px; font-family: 宋体;">下面是一个用C实现的ls命令代码：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;dirent.h&gt;
+<span style="color: #008080;"> 2</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> <span style="color: #0000ff;">const</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">if</span> (argc != <span style="color: #800080;">2</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 8</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">usage: %s &lt;directory&gt;\n</span><span style="color: #800000;">"</span>, argv[<span style="color: #800080;">0</span><span style="color: #000000;">]);
+</span><span style="color: #008080;"> 9</span>         <span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span>     DIR                *<span style="color: #000000;">dp;
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">struct</span> dirent    *<span style="color: #000000;">dirp;
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span>     <span style="color: #0000ff;">if</span> (!(dp = opendir(argv[<span style="color: #800080;">1</span><span style="color: #000000;">])))
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">17</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">can't open %s\n</span><span style="color: #800000;">"</span>, argv[<span style="color: #800080;">0</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">18</span>         <span style="color: #0000ff;">return</span> -<span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span>     <span style="color: #0000ff;">while</span> ((dirp =<span style="color: #000000;"> readdir(dp)))
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">23</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span>, dirp-&gt;<span style="color: #000000;">d_name);
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span> 
+<span style="color: #008080;">26</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">27</span> }</code></pre>
+
+<p><span style="font-family: 宋体; font-size: 15px;">我们可以通过结果看到/etc目录下有.（点）和..（点点）两个目录。（仅展示部分结果）</span></p>
+<p style="margin-left: 30px;"><span style="background-color: #99ccff; font-family: 宋体; font-size: 15px;">$ ./a.out /etc</span><br /><span style="background-color: #99ccff; font-family: 宋体; font-size: 15px;">.</span><br /><span style="background-color: #99ccff; font-family: 宋体; font-size: 15px;">..</span><br /><span style="background-color: #99ccff; font-family: 宋体; font-size: 15px;">bluetooth</span><br /><span style="background-color: #99ccff; font-family: 宋体; font-size: 15px;">dbus-1</span><br /><span style="background-color: #99ccff; font-family: 宋体; font-size: 15px;">rsyslog.conf</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p style="background-color: #7ba5ce; text-align: left;"><span style="font-family: 宋体; font-size: 18px;"><strong>三、输入和输出</strong></span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">在UNIX系统中输入和</span><span style="font-size: 15px; font-family: 宋体;">输出是经过抽象的，所有的输入和输出都是通过文件来完成的。<strong>当我们读写时，是在对文件进行读写</strong>，而实际上该文件可能管理映射到硬件（如LED、按键等），也可能是一个socket套接字。</span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">文件的抽象是通过<strong>文件描述符</strong>实现的，打开一个文件得到一个文件描述符，它通常是非负数的，我们使用read()、write()读写时，都是对文件描述符进行操作。</span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">标准输入、标准输出和标准错误也是三个文件描述符，且一般情况下，它们被shell默认打开并默认被系统映射到硬件设备。我们可以使用&ldquo;&lt;&rdquo;和&ldquo;&gt;&rdquo;来重定向这三个文件描述符默认打开的设备。比如执行之前的命令：</span></p>
+<p style="margin-left: 30px;"><span style="background-color: #99ccff; font-family: 宋体; font-size: 15px;">$ ./a.out &gt; /dev/null</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">此时我们会发现命令行中没有输出，因为此命令将输出结果重定位到/dev/null空设备中。</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p style="background-color: #7ba5ce; text-align: left;"><span style="font-family: 宋体; font-size: 18px;"><strong>四、程序和进程</strong></span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">程序是静态的进程，而进程是运行着的程序。<strong>程序本质上是一个存在硬盘上的可执行文件</strong>。<strong>程序被加载到内存中之后就开始执行，此时程序变成一个动态的进程</strong>。每一个进程都有一个标识符，称为进程ID，其是一个非负数，且在当前时刻是唯一的。</span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">有3个可以用于控制进程的系统调用：fork、exec和waitpid。其中exec是一系列函数的统称。</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px; font-family: 宋体;">每一个进程都是一个独立的个体。<strong>一个进程可以拥有多个线程</strong>。</span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">通常，一个进程只有一个主线程，也就是main函数的线程。当我们需要同时处理多个任务时（比如我们一边听歌、一边走路），就需要使用多线程。</span><span style="font-size: 15px; font-family: 宋体;">一个进程内的所有线程共享当前进程的内存空间、文件描述符、栈和进程相关的属性。<strong>由于所有进程共享进程的内存空间，因此在访问共享数据时需要采取同步措施以避免数据的不一致。</strong></span></p>
+<p><span style="font-size: 15px; font-family: 宋体;">同进程类似，线程也有一个ID唯一标识每一个进程，但线程的ID只在进程内部有效，进程外部则无意义。</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p style="background-color: #7ba5ce; text-align: left;"><span style="font-family: 宋体; font-size: 18px;"><strong>五、出错处理</strong></span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">当UNIX系统调用函数出错时，通常会返回一个负值。一般我们需要对出错进行处理。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">系统调用函数通常会将错误返回值赋给<strong>errno</strong>，errno变量看起来像是一个int类型的变量，但实际上并不是。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">早期的时候，它被简单的用int类型变量实现。但随着多线程出现之后，一个进程的errno变量是被多个线程共享的，当某一个线程因为出错而改变了errno变量之后，其他线程无法根据errno来判断自己当前的状态，造成了混淆，因此现在它通常被实现为一个函数调用。</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">extern</span> <span style="color: #0000ff;">int</span> *__errno_location(<span style="color: #0000ff;">void</span><span style="color: #000000;">);
+</span><span style="color: #0000ff;">#define</span> errno (*__errno_location())</code></pre>
+
+<p>&nbsp;</p>
+<p><span style="font-family: 宋体; font-size: 15px;">C标准定义了两个函数，可用于打印出错信息。</span></p>
+<div class="cnblogs_code">
+<pre><code>#include &lt;<span style="color: #0000ff;">string</span>.h&gt;
+<span style="color: #0000ff;">char</span>* strerror(<span style="color: #0000ff;">int</span><span style="color: #000000;"> errnum);
+
+#include </span>&lt;stdio.h&gt;
+<span style="color: #0000ff;">void</span> perror(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *msg);</code></pre>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p style="background-color: #7ba5ce; text-align: left;"><span style="font-family: 宋体; font-size: 18px;"><strong>六、信号</strong></span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">信号（signal）用于通知进程发生了某种状况（比如执行除数为0的除法操作），则系统会发送一条通知至该进程，进程收到信号通知后，有3种应对处理方法：</span></p>
+<ol>
+<li><span style="font-family: 宋体; font-size: 15px;">忽略信号。不进行处理。</span></li>
+<li><span style="font-family: 宋体; font-size: 15px;">按系统默认方式处理。</span></li>
+<li><span style="font-family: 宋体; font-size: 15px;">提供一个函数。此方式在收到信号之后，用我们提供的函数进行处理。</span></li>
+</ol>
+<p><span style="font-family: 宋体; font-size: 15px;">举个例子，假设现在有一个程序，它有三种方式来处理用户通过键盘Ctrl+C（<strong>对应信号的SIGINT</strong>）发出的中断信号。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">对于忽略信号，程序会忽略Ctrl+C，导致按Ctrl+C时没有任何反应。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">对于按系统默认方式处理，Ctrl+C在系统中默认是终止程序，则程序会被终止。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">对于提供一个函数，程序使用我们提供的函数进行处理，我们可以在函数中执行printf()等操作。</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p style="background-color: #7ba5ce; text-align: left;"><span style="font-family: 宋体; font-size: 18px;"><strong>七、时间值</strong></span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">UNIX中有两种表示时间的方式。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">一种是指日历时间（比如现在是几点几分），该值是从1970年1月1日以来经过了多少秒的形式，该秒数使用time_t类型表示。在UNIX系统中，可以使用time()函数来返回当前日期和时间。</span></p>
+<div class="cnblogs_code">
+<pre><code>#include &lt;time.h&gt;<span style="color: #000000;">
+
+time_t time(time_t </span>*__timer);</code></pre>
+
+<p><span style="font-family: 宋体; font-size: 15px;">函数成功返回从1970年1月1日以来经过了多少秒，失败返回-1。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">如果__timer指针非空，那么__timer指针所指的对象也被设置为相应的值。</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family: 宋体; font-size: 15px;">返回的time_t对于我们来说没有意义，必须转换为我们可读的时间。UNIX系统提供了两个函数用于从time_t转换为年月日时分秒的时间结构类型，提供了一个逆向从年月日时分秒的时间结构类型转到time_t的函数，还提供了两个格式化输出的函数。其函数声明如下：</span></p>
+<div class="cnblogs_code">
+<pre><code>#include &lt;time.h&gt;
+
+<span style="color: #0000ff;">struct</span> tm *gmtime(<span style="color: #0000ff;">const</span> time_t *timer);    <span style="color: #008000;">/*</span><span style="color: #008000;"> 转换为格林威治时间 </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">struct</span> tm *localtime(<span style="color: #0000ff;">const</span> time_t *timer);    <span style="color: #008000;">/*</span><span style="color: #008000;"> 转换为本地时间 </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+time_t mktime(</span><span style="color: #0000ff;">struct</span> tm *<span style="color: #000000;">tp);
+size_t strftime(</span><span style="color: #0000ff;">char</span>* s, size_t maxsize, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>* format, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">struct</span> tm*<span style="color: #000000;"> tp);
+size_t strftime_l(</span><span style="color: #0000ff;">char</span>* s, size_t maxsize, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>* format, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">struct</span> tm* tp, locale_t loc);</code></pre>
+
+<p><span style="font-family: 宋体; font-size: 15px;">对于前两个函数，成功返回相应指针，失败返回NULL；对于第三个函数，成功返回时间，失败返回-1；对于最后两个函数，成功返回字符数，失败返回0。</span></p>
+<p>&nbsp;</p>
+<p><span style="font-family: 宋体;"><span style="font-size: 15px;">上面函数所使用或返回的struct tm如下：</span></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">struct</span><span style="color: #000000;"> tm
+{
+    </span><span style="color: #0000ff;">int</span>    tm_sec;        <span style="color: #008000;">/*</span><span style="color: #008000;"> Seconds: 0-59 (K&amp;R says 0-61?) </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">int</span>    tm_min;        <span style="color: #008000;">/*</span><span style="color: #008000;"> Minutes: 0-59 </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">int</span>    tm_hour;    <span style="color: #008000;">/*</span><span style="color: #008000;"> Hours since midnight: 0-23 </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">int</span>    tm_mday;    <span style="color: #008000;">/*</span><span style="color: #008000;"> Day of the month: 1-31 </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">int</span>    tm_mon;        <span style="color: #008000;">/*</span><span style="color: #008000;"> Months *since* january: 0-11 </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">int</span>    tm_year;    <span style="color: #008000;">/*</span><span style="color: #008000;"> Years since 1900 </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">int</span>    tm_wday;    <span style="color: #008000;">/*</span><span style="color: #008000;"> Days since Sunday (0-6) </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">int</span>    tm_yday;    <span style="color: #008000;">/*</span><span style="color: #008000;"> Days since Jan. 1: 0-365 </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">int</span>    tm_isdst;    <span style="color: #008000;">/*</span><span style="color: #008000;"> +1 Daylight Savings Time, 0 No DST,
+                 * -1 don't know </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+};</span></code></pre>
+
+<p>&nbsp;</p>
+<p><span style="font-family: 宋体; font-size: 15px;">示例代码如下：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">time_t sec;
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">struct</span> tm *<span style="color: #000000;">stm;
+</span><span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">while</span> (<span style="color: #800080;">1</span><span style="color: #000000;">) {
+</span><span style="color: #008080;"> 5</span>     time(&amp;<span style="color: #000000;">sec);
+</span><span style="color: #008080;"> 6</span>     stm = localtime(&amp;<span style="color: #000000;">sec);
+</span><span style="color: #008080;"> 7</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">Time: %4d-%02d-%02d %02d:%02d:%02d\r</span><span style="color: #800000;">"</span>, <span style="color: #800080;">1900</span> + stm-&gt;tm_year, <span style="color: #800080;">1</span> + stm-&gt;<span style="color: #000000;">tm_mon, \
+</span><span style="color: #008080;"> 8</span>         stm-&gt;tm_mday, stm-&gt;tm_hour, stm-&gt;tm_min, stm-&gt;<span style="color: #000000;">tm_sec);
+</span><span style="color: #008080;"> 9</span>     Sleep(<span style="color: #800080;">1</span>);    <span style="color: #008000;">/*</span><span style="color: #008000;"> 休眠1秒 </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">10</span> }</code></pre>
+
+<p>&nbsp;</p>
+<p><span style="font-family: 宋体; font-size: 15px;">另一种是指进程时间，用来表示进程执行的时间。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">我们可以用time命令来得知一个程序执行所花费的时间：</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 宋体; font-size: 15px; background-color: #99ccff;">$ time ./a.out &gt; /dev/null</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">在程序中可以使用clock_gettime()函数用来计时，比如从当前程序开始执行开始到程序停止执行为止统计总计花费了多少时间。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">此函数可用于获取指定时钟开始之后的秒数。函数声明如下：</span></p>
+<div class="cnblogs_code">
+<pre><code>#include &lt;time.h&gt;
+
+<span style="color: #0000ff;">int</span> clock_gettime(clockid_t __clock_id, <span style="color: #0000ff;">struct</span> timespec *__tp);</code></pre>
+
+<p><span style="font-family: 宋体; font-size: 15px;">函数成功时返回0，失败返回-1。</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p style="background-color: #7ba5ce; text-align: left;"><span style="font-family: 宋体; font-size: 18px;"><strong>八、系统调用和库函数</strong></span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">所有的操作系统都提供多种服务的入口点，由此程序可以向内核请求服务。各种版本的UNIX实现都提供良好定义、数量有限、直接进入内核的入口点，这些入口点被称为系统调用。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">系统调用接口在man手册的第二部分中说明，是使用C语言定义的。比如：</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 宋体; font-size: 15px; background-color: #99ccff;">$ man 2 read</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">公用函数库接口在man手册的第三部分中说明，也是使用C语言定义的。它们不一定是内核的入口点，部分会间接使用一个或多个内核系统调用，而有些则完全不使用。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">从实现角度看，系统调用和公用函数库有着本质区别，<strong>系统调用是伴随内核而产生的，在用户空间是不可替换的</strong>。<strong>公用函数库是编译器厂商根据语言标准而实现的，可以更新和替换</strong>。</span></p>
+<p><span style="font-family: 宋体; font-size: 15px;">从用户角度看，它们没有太大区别。</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-family: 宋体; font-size: 15px;">下一章 &nbsp;<a href="https://www.cnblogs.com/Lioker/p/10642216.html%20">第三章：文件I/O</a></span></p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

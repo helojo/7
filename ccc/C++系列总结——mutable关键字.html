@@ -1,0 +1,85 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++系列总结——mutable关键字' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++系列总结——mutable关键字</center></div><div class='banquan'>原文出处:本文由博客园博主一罪提供。<br/>
+原文连接:https://www.cnblogs.com/yizui/p/10624573.html</div><br>
+    <h2 id="介绍">介绍</h2>
+<p><code>mutable</code>的中文意思是易变的，是C++的一个关键字。它的作用就是允许修改被const修饰的对象的成员变量。</p>
+<h2 id="常用场景">常用场景</h2>
+<p>什么情况下我们会使用到mutable？</p>
+<p>一般我们会用<code>const</code>修饰get类的函数，明确函数内部不会修改任何成员变量，但是如果内部的成员变量需要多线程读写，我们必须加锁保证多线程安全。毫无疑问，加锁操作是要修改锁对象的，此时就用到了<code>mutable</code>。</p>
+<pre><code>#include &lt;mutex&gt;
+class A
+{
+public:
+    int get() const
+    {
+        std::lock_guard&lt;std::mutex&gt; lk( m );
+        return value;
+    }
+    
+    void set( int v )
+    {
+        value = v;
+        return;
+    }
+private:
+    mutable std::mutex m; // 不加mutable，编译就会报错
+    int value;
+};
+int main()
+{
+    A a;
+    return;
+}</code></pre>
+<p>还有比如我们使用<code>std::set:</code>保存对象，当我们修改对象中非key的值时也需要用到<code>mutable</code>，不然就得重新构造对象，设置非key的值，再重新塞入<code>set</code>中。</p>
+<pre><code>#include &lt;set&gt;
+class A
+{
+public:
+    void set( int v ) const
+    {
+        value = v;
+        return;
+    }
+    bool operator&lt;( const A&amp; rhs ) const
+    {
+        return key &lt; rhs.key;
+    }
+private:
+    int key;
+    mutable int value; // 不加mutable，编译就会报错
+};
+
+int main()
+{
+    std::set&lt;A&gt; s;
+    s.insert( A() );
+    s.begin()-&gt;set( 10 );
+    return 0;
+}</code></pre>
+<blockquote>
+<p><code>std::set</code>的迭代器类型总是<code>const_iterator</code>。这很好理解，因为对象的在<code>std::set</code>中的位置是根据其key值确定的，如果允许修改，那么<code>std::set</code>结构就不对了，再加上编译器无法确定函数内是否会修改key，所以通过其迭代器对象操作的函数必须是<code>const</code>修饰的。同理，<code>std::map</code>的<code>first</code>也是如此。</p>
+</blockquote>
+<p>结合以上两种情况，我们总结一下就能得出<code>mutable</code>可以用来修饰const对象中那些不会影响外部观察的成员。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

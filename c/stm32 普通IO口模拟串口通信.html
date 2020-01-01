@@ -1,0 +1,249 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修stm32 普通IO口模拟串口通信' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>stm32 普通IO口模拟串口通信</center></div><div class='banquan'>原文出处:本文由博客园博主毕宿五提供。<br/>
+原文连接:https://www.cnblogs.com/zhy-alive/p/11284232.html</div><br>
+    <h1><span style="font-family: 宋体;">普通IO口模拟串口通信</span></h1>
+<ul>
+<li>
+<h1><span style="font-family: 宋体;">串口通信协议　　</span></h1>
+</li>
+</ul>
+<h1><img style="font-family: 宋体; font-size: 14px;" src="./images/stm32 普通IO口模拟串口通信0.png" alt="" width="696" height="313" /></h1>
+<ol>
+<li>
+<p>串口传输 默认 波特率9600 1起始位 1停止位 其他0 数据位是8位（注意图上的给错了）。</p>
+</li>
+<li>传输时，从起始位开始，从一个数据的低位（LSB）开始发送，如图从左向右的顺序，对电平拉高或拉低，最后停止位时拉高。</li>
+<li>波特率大小，改变延时时间即可。例如9600 波特率&nbsp; &nbsp; 根据公式 ： 1/9600=0.000104s（大致） 也就是说每发送1bit延时104us （下面我用9600波特率来说，代码用的是19200）</li>
+<li>串口发送&nbsp; &nbsp; &nbsp; &nbsp;将电平拉低 延时104us（视为 起始位 0&nbsp; &nbsp;传输数据正式开始）&nbsp; 其中数据我发送的是16进制数据（8bit&nbsp; 一字节&nbsp; 例如10001000）&nbsp; 将想要发的数据按照二进制的&lsquo;0&rsquo;&lsquo;1&rsquo;高低电平的方式，每发送1bit 延时104us&nbsp; &nbsp;直到发送完到终止位 将电平拉高视为一包数据传输结束。（根据需求更改即可）</li>
+<li>串口接收&nbsp; &nbsp; （稍微麻烦一些） 两种方法：第一种可以用定时中断，每隔104us开启一次定时中断，中断函数内进行高低电平判断，将这些bit存储最后转换成需要的数据。第二种，用外部中断处理函数，外部中断设置同时开启上升沿下降沿，思路：根据上升下降的电平跳变分析。比如说，触发外部中断后检测电平高低，记录一下当前时间，然后再进入外部中断后 计算出总共几个bit&nbsp; &nbsp;（两个沿跳变之间的时间 =现在记录的时间 &mdash; 之前记录的时间&nbsp; &nbsp; &nbsp; &nbsp; bit=这个时间/104us）&nbsp; ，知道这个就可以转换数据了。</li>
+<li>定时中断逻辑相对外部中断而言简单好写，但是数据多的时候准确率下降很多，容易丢数据（因为定时中断毕竟用计时开启中断，不可能时间准确每104us开启一次，数据一多时间误差大，自然丢包。可以尝试每发一串数据，重新计时校准一次）。外部中断较为准确，检测的高低电平跳变较为明显唯一，一个跳变就是一个数据，只是分析情况比较多。</li>
+</ol>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">　　//IO模拟串口初始化<br /> 1</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> IRrec_Init(){
+</span><span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #000000;">    EXTI_InitTypeDef EXTI_InitStructure;
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">    NVIC_InitTypeDef NVIC_InitStructure;
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    GPIO_InitTypeDef GPIO_InitStructure;
+</span><span style="color: #008080;"> 7</span> 
+<span style="color: #008080;"> 8</span>     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC,ENABLE); <span style="color: #008000;">//</span><span style="color: #008000;">使能GPIOC时钟
+</span><span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span>     <span style="color: #008000;">//</span><span style="color: #008000;">IR TX C9 使能</span>
+<span style="color: #008080;">12</span>     GPIO_InitStructure.GPIO_Pin =<span style="color: #000000;"> GPIO_Pin_9;
+</span><span style="color: #008080;">13</span>     GPIO_InitStructure.GPIO_Mode =<span style="color: #000000;"> GPIO_Mode_Out_PP;   
+</span><span style="color: #008080;">14</span>     GPIO_InitStructure.GPIO_Speed =<span style="color: #000000;"> GPIO_Speed_50MHz; 
+</span><span style="color: #008080;">15</span>     GPIO_Init(GPIOC, &amp;<span style="color: #000000;">GPIO_InitStructure);
+</span><span style="color: #008080;">16</span>     GPIO_SetBits(GPIOC, GPIO_Pin_9);<span style="color: #008000;">//</span><span style="color: #008000;">  引脚拉高
+</span><span style="color: #008080;">17</span>             
+<span style="color: #008080;">18</span> 
+<span style="color: #008080;">19</span>     <span style="color: #008000;">//</span><span style="color: #008000;">IR RX C8</span>
+<span style="color: #008080;">20</span> <span style="color: #000000;">    RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO,ENABLE); 
+</span><span style="color: #008080;">21</span>     GPIO_InitStructure.GPIO_Pin =<span style="color: #000000;"> GPIO_Pin_8;
+</span><span style="color: #008080;">22</span>     GPIO_InitStructure.GPIO_Mode =<span style="color: #000000;"> GPIO_Mode_IPU;
+</span><span style="color: #008080;">23</span>     GPIO_InitStructure.GPIO_Speed =<span style="color: #000000;"> GPIO_Speed_50MHz;
+</span><span style="color: #008080;">24</span>     GPIO_Init(GPIOC, &amp;<span style="color: #000000;">GPIO_InitStructure);
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">    GPIO_EXTILineConfig(GPIO_PortSourceGPIOC,GPIO_PinSource8);
+</span><span style="color: #008080;">26</span> 
+<span style="color: #008080;">27</span>     EXTI_InitStructure.EXTI_Line=<span style="color: #000000;">EXTI_Line8;
+</span><span style="color: #008080;">28</span>     EXTI_InitStructure.EXTI_Mode=<span style="color: #000000;">EXTI_Mode_Interrupt;
+</span><span style="color: #008080;">29</span>     EXTI_InitStructure.EXTI_Trigger=      
+<span style="color: #008080;">30</span> <span style="color: #000000;">    EXTI_Trigger_Rising_Falling;
+</span><span style="color: #008080;">31</span>     EXTI_InitStructure.EXTI_LineCmd=<span style="color: #000000;">ENABLE;
+</span><span style="color: #008080;">32</span>     EXTI_Init(&amp;<span style="color: #000000;">EXTI_InitStructure);
+</span><span style="color: #008080;">33</span>     
+<span style="color: #008080;">34</span>     NVIC_InitStructure.NVIC_IRQChannel=<span style="color: #000000;">EXTI9_5_IRQn;
+</span><span style="color: #008080;">35</span>     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=<span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">36</span>     NVIC_InitStructure.NVIC_IRQChannelSubPriority=<span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">37</span>     NVIC_InitStructure.NVIC_IRQChannelCmd=<span style="color: #000000;">ENABLE;
+</span><span style="color: #008080;">38</span>     NVIC_Init(&amp;<span style="color: #000000;">NVIC_InitStructure);
+</span><span style="color: #008080;">39</span>         
+<span style="color: #008080;">40</span> }         </code></pre>
+
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> IR_SendByte(u8 val)//发送bit位
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span> <span style="color: #000000;">    u16 i;
+</span><span style="color: #008080;"> 4</span>     
+<span style="color: #008080;"> 5</span>     IRSEND=<span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">拉低 开始传输</span>
+<span style="color: #008080;"> 6</span>     SysTick_Delay_Us(<span style="color: #800080;">53</span>);<span style="color: #008000;">//</span><span style="color: #008000;">波特率根据延时在设置  19200波特率   </span>
+<span style="color: #008080;"> 7</span>     
+<span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">for</span>(i=<span style="color: #800080;">0</span>;i&lt;<span style="color: #800080;">8</span>;i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">10</span>         <span style="color: #0000ff;">if</span>(val&amp;<span style="color: #800080;">0x1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">12</span>             IRSEND=<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">14</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">15</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">16</span>             IRSEND=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">18</span>
+<span style="color: #008080;">19</span>         val&gt;&gt;=<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">20</span>         SysTick_Delay_Us(<span style="color: #800080;">53</span><span style="color: #000000;">);
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span>     
+<span style="color: #008080;">23</span>     IRSEND=<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">24</span>     SysTick_Delay_Us(<span style="color: #800080;">53</span><span style="color: #000000;">);
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">26</span> 
+<span style="color: #008080;">27</span> 
+<span style="color: #008080;">28</span> <span style="color: #0000ff;">void</span> IR_SendStr(u8*<span style="color: #000000;">st,u16 len){//在这填入16位数据即可
+</span><span style="color: #008080;">29</span>     <span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">30</span>     <span style="color: #0000ff;">while</span> ((len--)!=<span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">    {  
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">        IR_SendByte(st[i]);
+</span><span style="color: #008080;">33</span>         i++<span style="color: #000000;">;
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">35</span> 
+<span style="color: #008080;">36</span> }</code></pre>
+
+<div class="cnblogs_code" style="text-align: left;">
+<pre><code><span style="color: #008080;">  1</span> u8 IRREC_RX_BUF[<span style="color: #800080;">64</span>]={<span style="color: #800080;">0</span>};    <span style="color: #008000;">//</span><span style="color: #008000;">接收缓冲,最大64个字节.
+</span><span style="color: #008080;">  2</span>     <span style="color: #008000;">//</span><span style="color: #008000;">接收到的数据长度</span>
+<span style="color: #008080;">  3</span>     u8 IRREC_RX_CNT=<span style="color: #800080;">0</span><span style="color: #000000;">; 
+</span><span style="color: #008080;">  4</span> 
+<span style="color: #008080;">  5</span> <span style="color: #0000ff;">char</span> rebit=stopbit;<span style="color: #008000;">//</span><span style="color: #008000;">记录接收一个字节的二进制位所处何种位置</span>
+<span style="color: #008080;">  6</span> u8 Recev[<span style="color: #800080;">8</span>]={<span style="color: #800080;">0</span>};<span style="color: #008000;">//</span><span style="color: #008000;">记录接收的一个字节的二进制流</span>
+<span style="color: #008080;">  7</span> 
+<span style="color: #008080;">  8</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">volatile</span> unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> m_rx_previous_time = <span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">上一次进入中断时间</span>
+<span style="color: #008080;">  9</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">volatile</span> unsigned <span style="color: #0000ff;">char</span> m_rx_begin_f = <span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">开始一个字节的接收标志 0-无数据开始接收 1-有数据开始接收</span>
+<span style="color: #008080;"> 10</span> <span style="color: #0000ff;">void</span> EXTI9_5_IRQHandler(<span style="color: #0000ff;">void</span><span style="color: #000000;">){
+</span><span style="color: #008080;"> 11</span> 
+<span style="color: #008080;"> 12</span>     <span style="color: #0000ff;">if</span>(EXTI_GetITStatus(EXTI_Line8)!=<span style="color: #000000;">RESET)
+</span><span style="color: #008080;"> 13</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 14</span>         unsigned <span style="color: #0000ff;">char</span> skip_index = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 15</span>         unsigned <span style="color: #0000ff;">char</span> i = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 16</span>         unsigned <span style="color: #0000ff;">char</span> temp_bin = <span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">用于记录二进制值</span>
+<span style="color: #008080;"> 17</span>         unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> current_time = sys_micros();<span style="color: #008000;">//</span><span style="color: #008000;">记下此刻时间</span>
+<span style="color: #008080;"> 18</span>         unsigned <span style="color: #0000ff;">short</span> interval_time = current_time - m_rx_previous_time;<span style="color: #008000;">//</span><span style="color: #008000;">计算一个状态持续的时长 </span>
+<span style="color: #008080;"> 19</span>         m_rx_previous_time = current_time;<span style="color: #008000;">//</span><span style="color: #008000;">为下次计算时长做准备
+</span><span style="color: #008080;"> 20</span>         
+<span style="color: #008080;"> 21</span>         <span style="color: #008000;">//</span><span style="color: #008000;">当前未开始一个字节的接收且此时为下降沿</span>
+<span style="color: #008080;"> 22</span>         <span style="color: #0000ff;">if</span>(rebit == <span style="color: #800080;">10</span>)<span style="color: #008000;">//</span><span style="color: #008000;">10 当数据不合法时或者结束传输时 rebit值设为10</span>
+<span style="color: #008080;"> 23</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 24</span>             <span style="color: #0000ff;">if</span>(!PCin(<span style="color: #800080;">8</span>))<span style="color: #008000;">//</span><span style="color: #008000;">下降沿</span>
+<span style="color: #008080;"> 25</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;"> 26</span>                 rebit = <span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">记下开始接收</span>
+<span style="color: #008080;"> 27</span>                 m_rx_begin_f = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 28</span>                 debug_led(<span style="color: #800080;">1</span><span style="color: #000000;">,LED_TOGGLE);
+</span><span style="color: #008080;"> 29</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 30</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 31</span>         <span style="color: #008000;">//</span><span style="color: #008000;">已经开始接收</span>
+<span style="color: #008080;"> 32</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 33</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 34</span>             <span style="color: #008000;">//</span><span style="color: #008000;">上一状态为起始位</span>
+<span style="color: #008080;"> 35</span>             <span style="color: #0000ff;">if</span>(!rebit)<span style="color: #008000;">//</span><span style="color: #008000;">起始位0</span>
+<span style="color: #008080;"> 36</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;"> 37</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">计算二进制数据的个数</span>
+<span style="color: #008080;"> 38</span>                 skip_index = (interval_time/<span style="color: #800080;">50</span>)-<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 39</span> 
+<span style="color: #008080;"> 40</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">个数合法</span>
+<span style="color: #008080;"> 41</span>                 <span style="color: #0000ff;">if</span>(skip_index &lt;= <span style="color: #800080;">9</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 42</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;"> 43</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">根据状态保持时间更新接收值               </span>
+<span style="color: #008080;"> 44</span>                     <span style="color: #0000ff;">for</span>(i = <span style="color: #800080;">0</span>;i &lt; skip_index;i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 45</span> <span style="color: #000000;">                    {
+</span><span style="color: #008080;"> 46</span>                         Recev[i] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 47</span>                     
+<span style="color: #008080;"> 48</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;"> 49</span> 
+<span style="color: #008080;"> 50</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">更新接收二进制位的下标</span>
+<span style="color: #008080;"> 51</span>                     rebit =<span style="color: #000000;"> skip_index;
+</span><span style="color: #008080;"> 52</span>                     
+<span style="color: #008080;"> 53</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 54</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">不合法-重新接收</span>
+<span style="color: #008080;"> 55</span>                 <span style="color: #0000ff;">else</span> 
+<span style="color: #008080;"> 56</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;"> 57</span>                     rebit = <span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 58</span>                     m_rx_begin_f = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 59</span>                     
+<span style="color: #008080;"> 60</span>                     
+<span style="color: #008080;"> 61</span> <span style="color: #000000;">                }            
+</span><span style="color: #008080;"> 62</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 63</span>             <span style="color: #008000;">//</span><span style="color: #008000;">上一状态为数据位</span>
+<span style="color: #008080;"> 64</span>             <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 65</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;"> 66</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">计算二进制数据的个数</span>
+<span style="color: #008080;"> 67</span>                 skip_index = interval_time/<span style="color: #800080;">50</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 68</span> 
+<span style="color: #008080;"> 69</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">数据不合法-重新接收</span>
+<span style="color: #008080;"> 70</span>                 <span style="color: #0000ff;">if</span>((skip_index+rebit) &gt; <span style="color: #800080;">9</span>)<span style="color: #008000;">//</span><span style="color: #008000;">所处位置+数据个数 判断数据是否超10 合法判断</span>
+<span style="color: #008080;"> 71</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;"> 72</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">printf("skip_index %d   rebit=%d \r\n",skip_index,rebit);</span>
+<span style="color: #008080;"> 73</span>                     rebit = <span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 74</span>                     m_rx_begin_f = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 75</span>                     debug_led(<span style="color: #800080;">3</span><span style="color: #000000;">,LED_TOGGLE);
+</span><span style="color: #008080;"> 76</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 77</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">数据合法</span>
+<span style="color: #008080;"> 78</span>                 <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 79</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;"> 80</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">当前为高电平</span>
+<span style="color: #008080;"> 81</span>                     <span style="color: #0000ff;">if</span>(PCin(<span style="color: #800080;">8</span><span style="color: #000000;">))
+</span><span style="color: #008080;"> 82</span> <span style="color: #000000;">                    {
+</span><span style="color: #008080;"> 83</span>                      temp_bin = <span style="color: #800080;">1</span>;<span style="color: #008000;">//</span><span style="color: #008000;">0</span>
+<span style="color: #008080;"> 84</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;"> 85</span>                     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 86</span> <span style="color: #000000;">                    {
+</span><span style="color: #008080;"> 87</span>                      temp_bin = <span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">1 change</span>
+<span style="color: #008080;"> 88</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;"> 89</span>                     debug_led(<span style="color: #800080;">2</span><span style="color: #000000;">,LED_TOGGLE);
+</span><span style="color: #008080;"> 90</span>                     <span style="color: #0000ff;">for</span>(i = <span style="color: #800080;">0</span>;i &lt; skip_index ;i++)<span style="color: #008000;">//</span><span style="color: #008000;">根据几个数据 给予相应的位</span>
+<span style="color: #008080;"> 91</span> <span style="color: #000000;">                    {
+</span><span style="color: #008080;"> 92</span>                         Recev[rebit+i+<span style="color: #800080;">1</span>] = temp_bin;<span style="color: #008000;">//</span><span style="color: #008000;">change +1</span>
+<span style="color: #008080;"> 93</span>                         rebit++<span style="color: #000000;">;
+</span><span style="color: #008080;"> 94</span>             
+<span style="color: #008080;"> 95</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;"> 96</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 97</span>                 
+<span style="color: #008080;"> 98</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">数据已接收至结束位</span>
+<span style="color: #008080;"> 99</span>                 <span style="color: #0000ff;">if</span>(rebit &gt;= <span style="color: #800080;">8</span> )<span style="color: #008000;">//</span><span style="color: #008000;">=8&gt;?</span>
+<span style="color: #008080;">100</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;">101</span>                     <span style="color: #0000ff;">if</span>(IRREC_RX_CNT &lt; <span style="color: #800080;">64</span><span style="color: #000000;">)
+</span><span style="color: #008080;">102</span> <span style="color: #000000;">                    {
+</span><span style="color: #008080;">103</span>                         IRREC_RX_BUF[IRREC_RX_CNT++]     = (Recev[<span style="color: #800080;">7</span>] &lt;&lt; <span style="color: #800080;">7</span>) |(Recev[<span style="color: #800080;">6</span>] &lt;&lt; <span style="color: #800080;">6</span>)| (Recev[<span style="color: #800080;">5</span>] &lt;&lt; <span style="color: #800080;">5</span>)| (Recev[<span style="color: #800080;">4</span>] &lt;&lt; <span style="color: #800080;">4</span>)| (Recev[<span style="color: #800080;">3</span>] &lt;&lt; <span style="color: #800080;">3</span>) |(Recev[<span style="color: #800080;">2</span>] &lt;&lt; <span style="color: #800080;">2</span>) |(Recev[<span style="color: #800080;">1</span>] &lt;&lt; <span style="color: #800080;">1</span>) |Recev[<span style="color: #800080;">0</span><span style="color: #000000;">];
+</span><span style="color: #008080;">104</span>                         
+<span style="color: #008080;">105</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;">106</span>                     rebit = <span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;">107</span>                     m_rx_begin_f = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">108</span> 
+<span style="color: #008080;">109</span>                     
+<span style="color: #008080;">110</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">111</span>                 
+<span style="color: #008080;">112</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">113</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">114</span>         
+<span style="color: #008080;">115</span> 
+<span style="color: #008080;">116</span>         <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;">117</span>         EXTI_ClearITPendingBit(EXTI_Line8);<span style="color: #008000;">//</span><span style="color: #008000;">清除中断挂起标志位</span>
+<span style="color: #008080;">118</span> 
+<span style="color: #008080;">119</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">120</span> 
+<span style="color: #008080;">121</span> }</code></pre>
+
+<p>&nbsp;</p>
+<p>用于知识梳理积累，写的比较随意&nbsp;&nbsp;</p>
+<p>有问题可以发邮箱联系我&nbsp; &nbsp;udpmeettcp@163.com&nbsp;</p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,107 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修树形DP求树的直径' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>树形DP求树的直径</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/11199812.html</div><br>
+    <h2 id="思路">思路：</h2>
+<p>非常套路性的一个东西，记录一下，防止遗忘<br />
+设<span class="math inline">\(f[i]\)</span>表示以<span class="math inline">\(i\)</span>为根，到其子树的叶节点的最大距离。</p>
+<p>考虑如何用子节点更新父节点，<br />
+当前点到叶节点的最大距离=max{子节点到叶节点的距离+当前点到子节点的距离}。</p>
+<p>设<span class="math inline">\(u\)</span>为当前节点，<span class="math inline">\(v\)</span>为<span class="math inline">\(u\)</span>的子节点，<span class="math inline">\(dis(u,v)\)</span>是从<span class="math inline">\(u-&gt;v\)</span>这条路径上的距离<br />
+得到转移方程：<br />
+<span class="math display">\[f[u]=max\{f[v]+dis(u,v)\}\]</span></p>
+<p>如何维护以<span class="math inline">\(u\)</span>为根的子树中的直径呢<br />
+以<span class="math inline">\(u\)</span>为根子树的直径=max{u到叶节点的最大距离+子节点到叶节点的最大距离+<span class="math inline">\(u\)</span>到叶节点的距离}<br />
+然后我们钦定一个节点为根，比如1<br />
+得到转移方程：<br />
+<span class="math display">\[ans=max\{f[u]+f[v]+dis(u,v)\}\]</span><br />
+<span class="math inline">\(ans\)</span>即为树的直径<br />
+需要注意的是，我们要在更新<span class="math inline">\(f[u]\)</span>之前更新<span class="math inline">\(ans\)</span>，因为从u经过v到叶节点的路径是最长的路径，这样这条路径会被更新两次</p>
+<p>这样做一定会选出u到叶节点最长的两条路径<br />
+分类讨论一下</p>
+<ul>
+<li>更新<span class="math inline">\(f[u]\)</span>的路径是<span class="math inline">\(u\)</span>到叶节点的所有路径中最长的，次长的还未被选，那它会和次长（相等）的一同更新最大值</li>
+<li>更新<span class="math inline">\(f[u]\)</span>的路径是<span class="math inline">\(u\)</span>到叶节点的所有路径中次长的，最长的还未被选，那它会和最长的一同更新最大值</li>
+<li>更新<span class="math inline">\(f[u]\)</span>路径不是最长也不是次长，那么<span class="math inline">\(f[u]\)</span>就会被最长或次长的路径更新，然后在转化成上两种情况</li>
+</ul>
+<h2 id="代码">代码</h2>
+<pre><code>void dfs(int u, int fa) {
+    for (int i = head[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (v == fa) continue;
+        dfs(v, u);
+        ans = max(ans, f[u] + f[v] + e[i].w);
+        f[u] = max(f[u], f[v] + e[i].w);
+    }
+}</code></pre>
+<h2 id="练手题">练手题</h2>
+<p><a href="https://loj.ac/problem/10155">#10155. 「一本通 5.2 例 3」数字转换</a><br />
+边权全为1的树的直径</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+
+using namespace std;
+
+const int N = 1e5 + 10;
+
+int n, m, num, ans;
+
+int head[N], f[N];
+
+struct node {
+    int nx, v;
+} e[N];
+
+inline int sum(int x) {
+    int tmp = 1;
+    for (int i = 2; i * i &lt;= x; ++i) if (x % i == 0) {
+        tmp += i;
+        if (x / i != i) tmp += x / i; 
+    }
+    return tmp;
+}
+
+inline void add(int u, int v) {
+    e[++num].nx = head[u], e[num].v = v, head[u] = num;
+}
+
+void dfs(int u, int fa) {
+    for (int i = head[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (v == fa) continue;
+        dfs(v, u);
+        ans = max(ans, f[u] + f[v] + 1);
+        f[u] = max(f[u], f[v] + 1);
+    }
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    memset(head, -1, sizeof head);
+    cin &gt;&gt; n;
+    for (int i = 1; i &lt;= n; ++i) if (sum(i) &lt; i) 
+        add(sum(i), i), add(i, sum(i));
+    dfs(1, 0);
+    cout &lt;&lt; ans;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

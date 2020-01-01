@@ -1,0 +1,180 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修湫湫系列故事——设计风景线 HDU - 4514' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>湫湫系列故事——设计风景线 HDU - 4514</center></div><div class='banquan'>原文出处:本文由博客园博主SSummerZzz提供。<br/>
+原文连接:https://www.cnblogs.com/SSummerZzz/p/11305328.html</div><br>
+    <p>题目链接：<a href="https://vjudge.net/problem/HDU-4514" target="_blank">https://vjudge.net/problem/HDU-4514</a></p>
+<p>题意：判断没有没有环，如果没有环，通俗的讲就是找出一条最长的路，相当于一笔画能画多长。</p>
+<p>思路：dfs判环。</p>
+<p>最后就是没有环的情况了：最长的路的话，我们可以先从一个点A开始遍历所有边，找出最长的路，</p>
+<p>但是，那个最长路不一定是一个图的最长路，只能说，从这个点A开始跑，跑到了B是A能跑出的最长路，</p>
+<p>那么我们只需要再从B点跑一遍图，因为是一笔画，可能B跑到了C比A跑到B长。</p>
+<p>那么B跑出的最长路就是从所有起点开始跑图的图的最长路了。</p>
+<p>这个图可能是有很多不联通的子图组成，这个需要注意。</p>
+<hr />
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> #include &lt;iostream&gt;
+<span style="color: #008080;">  2</span> #include &lt;cstdio&gt;
+<span style="color: #008080;">  3</span> #include &lt;cstring&gt;
+<span style="color: #008080;">  4</span> #include &lt;algorithm&gt;
+<span style="color: #008080;">  5</span> #include &lt;queue&gt;
+<span style="color: #008080;">  6</span> #include &lt;map&gt;
+<span style="color: #008080;">  7</span> #include &lt;cmath&gt;
+<span style="color: #008080;">  8</span> #include &lt;iomanip&gt;
+<span style="color: #008080;">  9</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 10</span> 
+<span style="color: #008080;"> 11</span> typedef <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> LL;
+</span><span style="color: #008080;"> 12</span> <span style="color: #0000ff;">#define</span> inf (1LL &lt;&lt; 25)
+<span style="color: #008080;"> 13</span> <span style="color: #0000ff;">#define</span> rep(i,j,k) for(int i = (j); i &lt;= (k); i++)
+<span style="color: #008080;"> 14</span> <span style="color: #0000ff;">#define</span> rep__(i,j,k) for(int i = (j); i &lt; (k); i++)
+<span style="color: #008080;"> 15</span> <span style="color: #0000ff;">#define</span> per(i,j,k) for(int i = (j); i &gt;= (k); i--)
+<span style="color: #008080;"> 16</span> <span style="color: #0000ff;">#define</span> per__(i,j,k) for(int i = (j); i &gt; (k); i--)
+<span style="color: #008080;"> 17</span> 
+<span style="color: #008080;"> 18</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> N = <span style="color: #800080;">100010</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 19</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> M = <span style="color: #800080;">1000010</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 20</span> 
+<span style="color: #008080;"> 21</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> node{
+</span><span style="color: #008080;"> 22</span> 
+<span style="color: #008080;"> 23</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> to;
+</span><span style="color: #008080;"> 24</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> w;
+</span><span style="color: #008080;"> 25</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> next;
+</span><span style="color: #008080;"> 26</span> }edge[M &lt;&lt; <span style="color: #800080;">1</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 27</span> 
+<span style="color: #008080;"> 28</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> head[N];
+</span><span style="color: #008080;"> 29</span> <span style="color: #0000ff;">int</span> cnt;<span style="color: #008000;">//</span><span style="color: #008000;">链式前向星</span>
+<span style="color: #008080;"> 30</span> <span style="color: #0000ff;">bool</span><span style="color: #000000;"> vis[N];
+</span><span style="color: #008080;"> 31</span> <span style="color: #0000ff;">bool</span> used[N]; <span style="color: #008000;">//</span><span style="color: #008000;">用于判断子图情况</span>
+<span style="color: #008080;"> 32</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> dis[N];
+</span><span style="color: #008080;"> 33</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> n,m;
+</span><span style="color: #008080;"> 34</span> 
+<span style="color: #008080;"> 35</span> <span style="color: #0000ff;">void</span> add(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span> v,<span style="color: #0000ff;">int</span><span style="color: #000000;"> w){
+</span><span style="color: #008080;"> 36</span>     
+<span style="color: #008080;"> 37</span>     edge[cnt].to =<span style="color: #000000;"> v;
+</span><span style="color: #008080;"> 38</span>     edge[cnt].w =<span style="color: #000000;"> w;
+</span><span style="color: #008080;"> 39</span>     edge[cnt].next =<span style="color: #000000;"> head[u];
+</span><span style="color: #008080;"> 40</span>     head[u] = cnt++<span style="color: #000000;">;
+</span><span style="color: #008080;"> 41</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 42</span> 
+<span style="color: #008080;"> 43</span> 
+<span style="color: #008080;"> 44</span> <span style="color: #0000ff;">bool</span> dfs(<span style="color: #0000ff;">int</span> pre,<span style="color: #0000ff;">int</span><span style="color: #000000;"> now){
+</span><span style="color: #008080;"> 45</span> 
+<span style="color: #008080;"> 46</span>     <span style="color: #0000ff;">if</span>(used[now]) <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 47</span>     <span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 48</span>         used[now] = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 49</span> 
+<span style="color: #008080;"> 50</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> o = head[now]; ~o; o =<span style="color: #000000;"> edge[o].next){
+</span><span style="color: #008080;"> 51</span>             <span style="color: #0000ff;">int</span> v =<span style="color: #000000;"> edge[o].to;
+</span><span style="color: #008080;"> 52</span>             <span style="color: #0000ff;">if</span>(v == pre) <span style="color: #0000ff;">continue</span>;<span style="color: #008000;">//</span><span style="color: #008000;">与之前的点不冲突</span>
+<span style="color: #008080;"> 53</span>             <span style="color: #0000ff;">if</span>(dfs(now,v)) <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 54</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 55</span> 
+<span style="color: #008080;"> 56</span>         <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 57</span> <span style="color: #000000;">    }    
+</span><span style="color: #008080;"> 58</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 59</span> 
+<span style="color: #008080;"> 60</span> 
+<span style="color: #008080;"> 61</span> <span style="color: #0000ff;">void</span> dfs_d(<span style="color: #0000ff;">int</span><span style="color: #000000;"> now){
+</span><span style="color: #008080;"> 62</span> 
+<span style="color: #008080;"> 63</span>     vis[now] = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 64</span>     used[now] = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 65</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> o = head[now]; ~o; o =<span style="color: #000000;"> edge[o].next){
+</span><span style="color: #008080;"> 66</span>         <span style="color: #0000ff;">int</span> v =<span style="color: #000000;"> edge[o].to;
+</span><span style="color: #008080;"> 67</span>         <span style="color: #0000ff;">int</span> w =<span style="color: #000000;"> edge[o].w;
+</span><span style="color: #008080;"> 68</span>         <span style="color: #0000ff;">if</span>(vis[v]) <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 69</span> 
+<span style="color: #008080;"> 70</span>         dis[v] = dis[now] +<span style="color: #000000;"> w;
+</span><span style="color: #008080;"> 71</span> <span style="color: #000000;">        dfs_d(v);
+</span><span style="color: #008080;"> 72</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 73</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 74</span> 
+<span style="color: #008080;"> 75</span> <span style="color: #0000ff;">int</span> work(<span style="color: #0000ff;">int</span><span style="color: #000000;"> now){
+</span><span style="color: #008080;"> 76</span> 
+<span style="color: #008080;"> 77</span>     rep(i,<span style="color: #800080;">1</span>,n) dis[i] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 78</span>     rep(i,<span style="color: #800080;">1</span>,n) vis[i] = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 79</span>     dfs_d(now); <span style="color: #008000;">//</span><span style="color: #008000;">正跑</span>
+<span style="color: #008080;"> 80</span> 
+<span style="color: #008080;"> 81</span>     <span style="color: #0000ff;">int</span> index = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 82</span>     <span style="color: #0000ff;">int</span> len = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 83</span>     <span style="color: #008000;">//</span><span style="color: #008000;">找到最长的路</span>
+<span style="color: #008080;"> 84</span>     rep(i,<span style="color: #800080;">1</span><span style="color: #000000;">,n){
+</span><span style="color: #008080;"> 85</span>         <span style="color: #0000ff;">if</span>(len &lt; dis[i]) len = dis[i],index =<span style="color: #000000;"> i;
+</span><span style="color: #008080;"> 86</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 87</span>     
+<span style="color: #008080;"> 88</span>     rep(i,<span style="color: #800080;">1</span>,n) dis[i] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 89</span>     rep(i,<span style="color: #800080;">1</span>,n) vis[i] = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 90</span>     dfs_d(index);<span style="color: #008000;">//</span><span style="color: #008000;">反跑</span>
+<span style="color: #008080;"> 91</span> 
+<span style="color: #008080;"> 92</span>     rep(i,<span style="color: #800080;">1</span>,n) len =<span style="color: #000000;"> max(len, dis[i]);
+</span><span style="color: #008080;"> 93</span> 
+<span style="color: #008080;"> 94</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> len;
+</span><span style="color: #008080;"> 95</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 96</span> 
+<span style="color: #008080;"> 97</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+</span><span style="color: #008080;"> 98</span> 
+<span style="color: #008080;"> 99</span>     ios::sync_with_stdio(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+</span><span style="color: #008080;">100</span>     cin.tie(<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">101</span> 
+<span style="color: #008080;">102</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> u,v,w;
+</span><span style="color: #008080;">103</span>     <span style="color: #0000ff;">while</span>(cin &gt;&gt; n &gt;&gt;<span style="color: #000000;"> m){
+</span><span style="color: #008080;">104</span> 
+<span style="color: #008080;">105</span>         cnt = <span style="color: #800080;">0</span>; <span style="color: #008000;">//</span><span style="color: #008000;">边数初始化</span>
+<span style="color: #008080;">106</span>         rep(i,<span style="color: #800080;">1</span>,n) head[i] = -<span style="color: #800080;">1</span>; <span style="color: #008000;">//</span><span style="color: #008000;">头初始化</span>
+<span style="color: #008080;">107</span> 
+<span style="color: #008080;">108</span>         rep(i,<span style="color: #800080;">1</span><span style="color: #000000;">,m){
+</span><span style="color: #008080;">109</span>             cin &gt;&gt; u &gt;&gt; v &gt;&gt;<span style="color: #000000;"> w;
+</span><span style="color: #008080;">110</span> 
+<span style="color: #008080;">111</span> <span style="color: #000000;">            add(u,v,w);
+</span><span style="color: #008080;">112</span> <span style="color: #000000;">            add(v,u,w);
+</span><span style="color: #008080;">113</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">114</span> 
+<span style="color: #008080;">115</span>         rep(i,<span style="color: #800080;">1</span>,n) used[i] = <span style="color: #0000ff;">false</span>; <span style="color: #008000;">//</span><span style="color: #008000;">连通图初始化</span>
+<span style="color: #008080;">116</span>         <span style="color: #0000ff;">bool</span> ok = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;">117</span> 
+<span style="color: #008080;">118</span>         <span style="color: #008000;">//</span><span style="color: #008000;">head[x] == -1 说明没有边和它相连，那不需要进入函数</span>
+<span style="color: #008080;">119</span>         rep(i,<span style="color: #800080;">1</span><span style="color: #000000;">,n){
+</span><span style="color: #008080;">120</span>             <span style="color: #0000ff;">if</span>(used[i] || head[i] == -<span style="color: #800080;">1</span>) <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+</span><span style="color: #008080;">121</span> 
+<span style="color: #008080;">122</span> 
+<span style="color: #008080;">123</span>             <span style="color: #008000;">//</span><span style="color: #008000;">判断有没有环</span>
+<span style="color: #008080;">124</span>             <span style="color: #0000ff;">if</span>(dfs(<span style="color: #800080;">0</span><span style="color: #000000;">,i)){
+</span><span style="color: #008080;">125</span>                 ok = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">126</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">127</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">128</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">129</span> 
+<span style="color: #008080;">130</span>         <span style="color: #0000ff;">if</span>(!ok) cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">YES</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">131</span>         <span style="color: #0000ff;">else</span><span style="color: #000000;">{
+</span><span style="color: #008080;">132</span> 
+<span style="color: #008080;">133</span>             <span style="color: #0000ff;">int</span> ans = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">134</span>             rep(i,<span style="color: #800080;">1</span>,n) used[i] = <span style="color: #0000ff;">false</span>; <span style="color: #008000;">//</span><span style="color: #008000;">连通图初始化</span>
+<span style="color: #008080;">135</span>             rep(i,<span style="color: #800080;">1</span>,n) <span style="color: #0000ff;">if</span>(!used[i]) <span style="color: #0000ff;">if</span>(head[i] != -<span style="color: #800080;">1</span>) ans =<span style="color: #000000;"> max(ans, work(i));
+</span><span style="color: #008080;">136</span> 
+<span style="color: #008080;">137</span>             cout &lt;&lt; ans &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">138</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">139</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">140</span> 
+<span style="color: #008080;">141</span> <span style="color: #000000;">    getchar(); getchar();
+</span><span style="color: #008080;">142</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">143</span> }</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

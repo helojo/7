@@ -1,0 +1,145 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修ZOJ 3408 Gao' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>ZOJ 3408 Gao</center></div><div class='banquan'>原文出处:本文由博客园博主ycx060617提供。<br/>
+原文连接:https://www.cnblogs.com/ycx-akioi/p/ZOJ-3408.html</div><br>
+    <blockquote>
+<h3 id="zoj题目页面传送门"><a href="http://acm.zju.edu.cn/onlinejudge/showProblem.do?problemCode=3408">ZOJ题目页面传送门</a></h3>
+</blockquote>
+<blockquote>
+<p>给定一个有向图<span class="math inline">\(G=(V,E),|V|=n,|E|=m\)</span>（可能有重边和自环，节点从<span class="math inline">\(0\)</span>开始编号），以及<span class="math inline">\(q\)</span>组询问，对于每组询问你需要回答有多少条从节点<span class="math inline">\(0\)</span>开始的最短路经过节点<span class="math inline">\(x\)</span>（节点<span class="math inline">\(0\)</span>到某一个节点的最短路可能不唯一），输出答案的后<span class="math inline">\(10\)</span>位。本题多测。</p>
+</blockquote>
+<blockquote>
+<p><span class="math inline">\(q,n\in\left[1,10^4\right],m\in\left[1,5\times10^4\right]\)</span>，边权为正。</p>
+</blockquote>
+<p>既然题目要数最短路的个数，我们可以把那些不在最短路上的边去掉，只保留在最短路上的边，构造出一个新图<span class="math inline">\(G&#39;=(V,E&#39;)\)</span>。这样问题就转化成了<strong>在$ {G'}$上有多少条从节点<span class="math inline">\(0\)</span>开始的路径经过节点$ x$</strong><del>（显然的吧）</del>。那怎么知道那些边该留那些边不该留呢？我们可以先跑一遍堆优化Dijkstra求出到节点<span class="math inline">\(0\)</span>的最短路长度数组<span class="math inline">\(dis\)</span>，那么<span class="math inline">\(E&#39;=\{(x,y,len)|(x,y,len)\in E,dis_y=dis_x+len\}\)</span>。</p>
+<p>接下来我们就要求<strong>在$ {G'}$上有多少条从节点<span class="math inline">\(0\)</span>开始的路径经过节点$ x$</strong>了。我们考虑将一条从节点<span class="math inline">\(0\)</span>开始、经过节点<span class="math inline">\(x\)</span>、终点为<span class="math inline">\(y\)</span>的路径拆成两段：<span class="math inline">\(0\to x,x\to y\)</span>，对它们分别计数，最后相乘即可。<del>很显然，</del><span class="math inline">\(G&#39;\)</span>是无环的，也就是一个DAG（因为边权为正），这样就可以在<span class="math inline">\(G&#39;\)</span>上DP了。设<span class="math inline">\(dp1_i\)</span>表示路径<span class="math inline">\(0\to i\)</span>的个数，<span class="math inline">\(dp2_i\)</span>表示以<span class="math inline">\(i\)</span>为起点的路径的个数（即<span class="math inline">\(\sum\limits_{j\in V}\text{路径}i\to j\text{的个数}\)</span>）。状态转移方程<del>显然</del>是：</p>
+<p><span class="math display">\[
+\begin{aligned}
+dp1_i&amp;=\begin{cases}1&amp;i=0\\\sum\limits_{(j,i,len)\in E&#39;}dp1_j&amp;i&gt;0\end{cases}\\
+dp2_i&amp;=\sum_{(i,j,len)\in E&#39;}dp2_j+1
+\end{aligned}
+\]</span></p>
+<p>可这是一个图啊，DP顺序是什么呢？<del>容易发现，</del>要想知道<span class="math inline">\(dp1_i\)</span>，得先知道<span class="math inline">\(\forall j\left((j,i,len)\in E&#39;\right),dp1_j\)</span>，所以要按照拓扑序DP；<span class="math inline">\(dp2\)</span>反之，要按照拓扑逆序DP。<del>（如果你懒得写拓扑排序，也可以记忆化搜索）</del></p>
+<p>这题还有个毒瘤的地方，就是要保留后<span class="math inline">\(10\)</span>位（即<span class="math inline">\(\bmod 10^{10}\)</span>），在乘法的时候会到<span class="math inline">\(10^{20}\)</span>，爆<code>unsigned long long</code>。这时聪明<del>（ruì zhì）</del>的读者可能会写高精度（毕竟只有最后一步才是乘法，不会TLE），但有个更巧妙的方法：利用乘法分配律，显然</p>
+<p><span class="math display">\[xy\bmod10^{10}=\left(\left(10^5\left\lfloor\dfrac x{10^5}\right\rfloor+x\bmod10^5\right)\left(10^5\left\lfloor\dfrac y{10^5}\right\rfloor+y\bmod10^5\right)\right)\bmod10^{10}=\left(10^{10}\left\lfloor\dfrac x{10^5}\right\rfloor\left\lfloor\dfrac y{10^5}\right\rfloor+10^5\left\lfloor\dfrac x{10^5}\right\rfloor\left(y\bmod10^5\right)+10^5\left(x\bmod10^5\right)\left\lfloor\dfrac y{10^5}\right\rfloor+\left(x\bmod10^5\right)\left(y\bmod10^5\right)\right)\bmod10^{10}=\left(\left(10^5\left\lfloor\dfrac x{10^5}\right\rfloor\right)\left(y\bmod10^5\right)+\left(x\bmod10^5\right)\left(10^5\left\lfloor\dfrac y{10^5}\right\rfloor\right)+\left(x\bmod10^5\right)\left(y\bmod10^5\right)\right)\bmod10^{10}=\left(\left(x\bmod10^5\right)y+\left(10^5\left\lfloor\dfrac x{10^5}\right\rfloor\right)\left(y\bmod10^5\right)\right)\bmod10^{10}
+\]</span></p>
+<p>这样最大是<span class="math inline">\(10^5\times10^{10}=10^{15}\)</span>级别的，不会爆。</p>
+<p>下面贴AC代码：<del>（最近码风有了很大的改变）</del></p>
+<pre><code>#include&lt;bits/stdc++.h&gt;
+using namespace std;
+#define int long long
+#define mp make_pair
+#define X first
+#define Y second
+#define pb push_back
+const int mod=10000000000ll,inf=1e18;
+const int N=10000;
+int n/*点数*/,m/*边数*/,qu/*数据组数*/;
+vector&lt;pair&lt;int,int&gt; &gt; nei[N]/*原邻接表*/;
+vector&lt;int&gt; dnei[N]/*新邻接表*/,rnei[N]/*新反邻接表*/;
+int dis[N]/*到节点0的最短路长度*/;
+bool vis[N]/*访问标记*/;
+int ideg[N]/*新图中的入度*/;
+void dijkstra(){//堆优化Dijkstra
+    priority_queue&lt;pair&lt;int,int&gt;,vector&lt;pair&lt;int,int&gt; &gt;,greater&lt;pair&lt;int,int&gt; &gt; &gt; q;
+    q.push(mp(0,0));
+    for(int i=1;i&lt;n;i++)dis[i]=inf;
+    for(int i=0;i&lt;n;i++)vis[i]=false;
+    while(q.size()){
+        int x=q.top().Y;
+        q.pop();
+        if(vis[x])continue;
+        vis[x]=true;
+        for(int i=0;i&lt;nei[x].size();i++){
+            int y=nei[x][i].X,len=nei[x][i].Y;
+            if(dis[x]+len&lt;dis[y])q.push(mp(dis[y]=dis[x]+len,y));
+        }
+    }
+    //建新图
+    for(int i=0;i&lt;n;i++)dnei[i].clear(),rnei[i].clear();
+    for(int i=0;i&lt;n;i++)for(int j=0;j&lt;nei[i].size();j++){
+        int x=nei[i][j].X,len=nei[i][j].Y;
+        if(dis[x]==dis[i]+len)dnei[i].pb(x),rnei[x].pb(i),ideg[x]++;
+    }
+}
+vector&lt;int&gt; topo;//拓扑序
+void toposort(){//拓扑排序
+    queue&lt;int&gt; q;
+    for(int i=0;i&lt;n;i++)if(!ideg[i])q.push(i);
+    topo.clear();
+    while(q.size()){
+        int x=q.front();
+        q.pop();
+        topo.pb(x);
+        for(int i=0;i&lt;dnei[x].size();i++){
+            int y=dnei[x][i];
+            ideg[y]--;
+            if(!ideg[y])q.push(y);
+        }
+    }
+}
+int dp1[N]/*dp1[i]表示新图中路径0-&gt;i的个数*/,dp2[N]/*dp2[i]表示新图中路径i-&gt;j的个数之和*/;
+int prod(int x,int y){//mod 10^5意义下的乘法
+    int lx=x%100000,ly=y%100000;
+    return (lx*y+(x-lx)*ly)%mod;
+}
+void prt(int x){//输出后10位
+    vector&lt;int&gt; v;
+    for(int i=1;i&lt;=10;i++)v.pb(x%10),x/=10;
+    for(int i=9;~i;i--)printf(&quot;%lld&quot;,v[i]);
+}
+void mian(){
+    for(int i=0;i&lt;n;i++)nei[i].clear();
+    while(m--){
+        int x,y,z;
+        scanf(&quot;%lld%lld%lld&quot;,&amp;x,&amp;y,&amp;z);
+        nei[x].pb(mp(y,z));
+    }
+    dijkstra();
+    toposort();
+    for(int i=0;i&lt;n;i++){//dp1，拓扑序
+        int x=topo[i];
+        dp1[x]=!x;
+        for(int j=0;j&lt;rnei[x].size();j++)
+            (dp1[x]+=dp1[rnei[x][j]])%=mod;
+    }
+    for(int i=n-1;~i;i--){//dp2，拓扑逆序
+        int x=topo[i];
+        dp2[x]=1;
+        for(int j=0;j&lt;dnei[x].size();j++)
+            (dp2[x]+=dp2[dnei[x][j]])%=mod;
+    }
+    while(qu--){
+        int x;
+        scanf(&quot;%lld&quot;,&amp;x);
+        prt(prod(dp1[x],dp2[x]));/*相乘得到总数*/puts(&quot;&quot;);
+    }
+}
+signed main(){
+//  freopen(&quot;C:\\Users\\chenx\\OneDrive\\桌面\\txt.txt&quot;,&quot;r&quot;,stdin);
+    while(~scanf(&quot;%lld%lld%lld&quot;,&amp;n,&amp;m,&amp;qu))mian();
+    return 0;
+}</code></pre>
+<p>我做这题的时候打错了一个字母，把<code>prod(int,int)</code>函数里的<code>ly=y%100000</code>打成了<code>ly=x%100000</code>，导致我调了几个小时。。。哎，血的教训！</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

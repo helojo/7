@@ -1,0 +1,99 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修在C++中调用FFTW' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>在C++中调用FFTW</center></div><div class='banquan'>原文出处:本文由博客园博主ZillyRex提供。<br/>
+原文连接:https://www.cnblogs.com/zillyrex/p/11802833.html</div><br>
+    <p>FFTW是一个可以进行可变长度一维或多维DFT的开源C程序库，是目前最快的FFT算法实现。</p>
+<p>本文简述了在Windows平台上，如何在C++中调用FFTW，所使用的IDE为Visual Studio 2017。</p>
+<p>FFTW的详细信息可在 <a href="http://www.fftw.org" class="uri">http://www.fftw.org</a> 中查看</p>
+<h2 id="获取fftw">获取FFTW</h2>
+<p>在 <a href="http://www.fftw.org/install/windows.html" class="uri">http://www.fftw.org/install/windows.html</a> 中下载32位或64位版并解压</p>
+<h2 id="生成lib文件">生成lib文件</h2>
+<p>打开VS自带的 “x86_x64 Cross Tools Command Prompt” ，cd到之前的解压文件夹</p>
+<p>键入命令</p>
+<pre><code>lib /machine:x86 /def:libfftw3-3.def</code></pre>
+<p>如果是64位则键入命令</p>
+<pre><code>lib /machine:x64 /def:libfftw3-3.def</code></pre>
+<p>以上命令产生了lib文件libfftw3-3.lib，应不同精度要求也可对libfftw3f-3.def及libfftw3l-3.def文件使用相同命令来产生相应lib文件</p>
+<h2 id="在c中调用fftw">在C++中调用FFTW</h2>
+<p>将下列三个文件粘贴到与cpp文件相同的目录下</p>
+<ul>
+<li>fftw3.h</li>
+<li>libfftw3-3.dll</li>
+<li>libfftw3-3.lib</li>
+</ul>
+<p>在cpp文件中加入代码</p>
+<pre class="c"><code>#include &quot;fftw3.h&quot;
+#pragma comment(lib, &quot;libfftw3-3.lib&quot;)</code></pre>
+<h2 id="测试代码">测试代码</h2>
+<pre class="c"><code>#include &lt;iostream&gt;
+
+#include &quot;fftw3.h&quot;
+#pragma comment(lib, &quot;libfftw3-3.lib&quot;)
+
+//实部与虚部
+#define REAL 0
+#define IMAG 1
+
+using namespace std;
+
+int main() {
+    /*
+    *fftw_complex 是FFTW自定义的复数类
+    *引入&lt;complex&gt;则会使用STL的复数类
+    */
+    fftw_complex x[5];
+    fftw_complex y[5];
+
+    for (int i = 0; i &lt; 5; i++) {
+        x[i][REAL] = i;
+        x[i][IMAG] = 0;
+    }
+    
+    //定义plan，包含序列长度、输入序列、输出序列、变换方向、变换模式
+    fftw_plan plan = fftw_plan_dft_1d(5, x, y, FFTW_FORWARD, FFTW_ESTIMATE);
+
+    //对于每个plan，应当&quot;一次定义 多次使用&quot;，同一plan的运算速度极快
+    fftw_execute(plan);
+
+    for (int i = 0; i &lt; 5; i++) {
+        cout &lt;&lt; y[i][REAL] &lt;&lt; &quot;  &quot; &lt;&lt; y[i][IMAG] &lt;&lt; endl;
+    }
+
+    //销毁plan
+    fftw_destroy_plan(plan);
+
+    cout &lt;&lt; &quot;\nPress Enter to exit...&quot; &lt;&lt; endl;
+    cin.get();
+
+    return 0;
+}</code></pre>
+<p>输出结果</p>
+<pre><code>10  0
+-2.5  3.44095
+-2.5  0.812299
+-2.5  -0.812299
+-2.5  -3.44095
+
+Press Enter to exit...</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

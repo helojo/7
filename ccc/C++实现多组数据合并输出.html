@@ -1,0 +1,180 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++实现多组数据合并输出' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++实现多组数据合并输出</center></div><div class='banquan'>原文出处:本文由博客园博主bypa55提供。<br/>
+原文连接:https://www.cnblogs.com/D0y-xia/p/11346909.html</div><br>
+    <p><strong><span style="font-size: 18px;">　　思路</span></strong></p>
+<p><strong><span style="font-size: 18px;">　　</span></strong><span style="font-size: 15px;">　　假设有多组数据，每一组都是按从小到大的顺序输入的，设计如下数据结构</span></p>
+<p><span style="font-size: 15px;"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/C++实现多组数据合并输出0.png" alt="" /></span></p>
+<p>　　　　前面一列是每一组数据的首部，后面是真正的数据，首部的定义为：</p>
+<div class="cnblogs_code">
+<pre>    <span style="color: #0000ff;">struct</span><span style="color: #000000;"> head {
+        Node</span>*<span style="color: #000000;"> next;
+        head</span>*<span style="color: #000000;"> down;
+        head</span>*<span style="color: #000000;"> up;
+    };</span></pre>
+</div>
+<p>　　　　数据部分的定义为：</p>
+<div class="cnblogs_code">
+<pre>    <span style="color: #0000ff;">struct</span><span style="color: #000000;"> Node {
+        </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> data;
+        Node</span>*<span style="color: #000000;"> next;
+    };</span></pre>
+</div>
+<p>&nbsp;　　　　1.我们称左上角为根，左下角为尾，根的前指针(up)和尾的后指针(down)为NULL，next指向数据，那么在输出的时候，只需要遍历第二列选出最小的数据即可，在输出该结点之后将该节点删除，并更新该数据结构。</p>
+<p>　　　　 2.定义两个指针p和q，分别用来遍历和指向最小数据。</p>
+<p>　　　　 　　a.如果q(指向最小数据的指针)指到了根，并且p-&gt;next-&gt;next=NULL,则表示根所在的一行已经输出完毕，需要更新根，于是判断根的下指针是否也为NULL，如果是，表示已经结束，如果不是则将下一行首部设置为根。</p>
+<p>　　　　 　　b.如果p-&gt;next-&gt;next不等于NULL，则只需要将p的next指向p的next的next即p-&gt;next = p-&gt;next-&gt;next。</p>
+<p>　　　　　　 c.如果q指向除根以外的首部，并且，后面有多的数据，则p-&gt;next = p-&gt;next-&gt;next，如果没有多余数据表示这一行已经全部输出，删除p和p-&gt;next指向的空间，并将p的上一行的首部的下指针指向p的下一行的首部，下一行的上指针指向p的上一行首部。</p>
+<p>　　　　 3.输出的时候只需要当前数据与前一个输出的数据不同即可。</p>
+<p>　　<span style="font-size: 18px;"><strong>代码：</strong></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> SORT {
+</span><span style="color: #008080;">  2</span>     <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;">  3</span>     <span style="color: #0000ff;">struct</span> Node {<span style="color: #008000;">//</span><span style="color: #008000;">数据结点</span>
+<span style="color: #008080;">  4</span>         <span style="color: #0000ff;">int</span><span style="color: #000000;"> data;
+</span><span style="color: #008080;">  5</span>         Node*<span style="color: #000000;"> next;
+</span><span style="color: #008080;">  6</span> <span style="color: #000000;">    };
+</span><span style="color: #008080;">  7</span>     <span style="color: #0000ff;">struct</span> head {<span style="color: #008000;">//</span><span style="color: #008000;">头结点</span>
+<span style="color: #008080;">  8</span>         Node*<span style="color: #000000;"> next;
+</span><span style="color: #008080;">  9</span>         head*<span style="color: #000000;"> down;
+</span><span style="color: #008080;"> 10</span>         head*<span style="color: #000000;"> up;
+</span><span style="color: #008080;"> 11</span> <span style="color: #000000;">    };
+</span><span style="color: #008080;"> 12</span>     <span style="color: #0000ff;">void</span> Create(Node*&amp;<span style="color: #000000;"> root) {
+</span><span style="color: #008080;"> 13</span>         <span style="color: #0000ff;">int</span><span style="color: #000000;"> tmp;
+</span><span style="color: #008080;"> 14</span>         <span style="color: #0000ff;">if</span> (root ==<span style="color: #000000;"> NULL) {
+</span><span style="color: #008080;"> 15</span>             cin &gt;&gt;<span style="color: #000000;"> tmp;
+</span><span style="color: #008080;"> 16</span>             <span style="color: #0000ff;">if</span> (tmp == -<span style="color: #800080;">1</span>)<span style="color: #008000;">//</span><span style="color: #008000;">输入-1是结束该行输入</span>
+<span style="color: #008080;"> 17</span>                 <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 18</span>             root = <span style="color: #0000ff;">new</span><span style="color: #000000;"> Node;
+</span><span style="color: #008080;"> 19</span>             root-&gt;data =<span style="color: #000000;"> tmp;
+</span><span style="color: #008080;"> 20</span>             root-&gt;next =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 21</span>             Create(root-&gt;<span style="color: #000000;">next);
+</span><span style="color: #008080;"> 22</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 23</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 25</span>     <span style="color: #0000ff;">void</span> Destory(head*&amp;<span style="color: #000000;"> root) {
+</span><span style="color: #008080;"> 26</span>         head* p = root;<span style="color: #008000;">//</span><span style="color: #008000;">循环遍历指针</span>
+<span style="color: #008080;"> 27</span>         head* q = root-&gt;down;<span style="color: #008000;">//</span><span style="color: #008000;">每次都指向最小</span>
+<span style="color: #008080;"> 28</span>         Node* tmp =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 29</span>         <span style="color: #0000ff;">int</span> num = <span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">保存前一次输出的值</span>
+<span style="color: #008080;"> 30</span>         <span style="color: #0000ff;">while</span> (p != NULL &amp;&amp; q !=<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;"> 31</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 32</span>             <span style="color: #0000ff;">while</span> (p !=<span style="color: #000000;"> NULL) {
+</span><span style="color: #008080;"> 33</span>                 <span style="color: #0000ff;">if</span> (p-&gt;next-&gt;data &lt; q-&gt;next-&gt;<span style="color: #000000;">data) {
+</span><span style="color: #008080;"> 34</span>                     q =<span style="color: #000000;"> p;
+</span><span style="color: #008080;"> 35</span>                     p = p-&gt;<span style="color: #000000;">down;
+</span><span style="color: #008080;"> 36</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 37</span>                 <span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 38</span>                     p = p-&gt;<span style="color: #000000;">down;
+</span><span style="color: #008080;"> 39</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 40</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 41</span>             <span style="color: #0000ff;">if</span> (q-&gt;next-&gt;data !=<span style="color: #000000;"> num) {
+</span><span style="color: #008080;"> 42</span>                 cout &lt;&lt; q-&gt;next-&gt;data &lt;&lt; <span style="color: #800000;">"</span> <span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 43</span>                 num = q-&gt;next-&gt;<span style="color: #000000;">data;
+</span><span style="color: #008080;"> 44</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 45</span>             <span style="color: #0000ff;">if</span> (q-&gt;up ==<span style="color: #000000;"> NULL) {
+</span><span style="color: #008080;"> 46</span>                 <span style="color: #0000ff;">if</span> (q-&gt;next-&gt;next ==<span style="color: #000000;"> NULL) {
+</span><span style="color: #008080;"> 47</span>                     p =<span style="color: #000000;"> root;
+</span><span style="color: #008080;"> 48</span>                     <span style="color: #0000ff;">if</span> (root-&gt;down ==<span style="color: #000000;"> NULL) {
+</span><span style="color: #008080;"> 49</span>                         <span style="color: #0000ff;">delete</span> root-&gt;<span style="color: #000000;">next;
+</span><span style="color: #008080;"> 50</span>                         <span style="color: #0000ff;">delete</span><span style="color: #000000;"> root;
+</span><span style="color: #008080;"> 51</span>                         <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 52</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;"> 53</span>                     root-&gt;down-&gt;up =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 54</span>                     root = root-&gt;<span style="color: #000000;">down;
+</span><span style="color: #008080;"> 55</span>                     <span style="color: #0000ff;">delete</span> p-&gt;<span style="color: #000000;">next;
+</span><span style="color: #008080;"> 56</span>                     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> p;
+</span><span style="color: #008080;"> 57</span>                     p = q =<span style="color: #000000;"> root;
+</span><span style="color: #008080;"> 58</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 59</span>                 <span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 60</span>                     tmp = q-&gt;<span style="color: #000000;">next;
+</span><span style="color: #008080;"> 61</span>                     q-&gt;next = q-&gt;next-&gt;<span style="color: #000000;">next;
+</span><span style="color: #008080;"> 62</span>                     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> tmp;
+</span><span style="color: #008080;"> 63</span>                     tmp =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 64</span>                     p = q =<span style="color: #000000;"> root;
+</span><span style="color: #008080;"> 65</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 66</span>             }<span style="color: #008000;">//</span><span style="color: #008000;">if</span>
+<span style="color: #008080;"> 67</span>             <span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 68</span>                 <span style="color: #0000ff;">if</span> (q-&gt;next-&gt;next ==<span style="color: #000000;"> NULL) {
+</span><span style="color: #008080;"> 69</span>                     q-&gt;up-&gt;down = q-&gt;<span style="color: #000000;">down;
+</span><span style="color: #008080;"> 70</span>                     <span style="color: #0000ff;">if</span> (q-&gt;down ==<span style="color: #000000;"> NULL) {
+</span><span style="color: #008080;"> 71</span>                         q-&gt;up-&gt;down =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 72</span>                         <span style="color: #0000ff;">delete</span> q-&gt;<span style="color: #000000;">next;
+</span><span style="color: #008080;"> 73</span>                         <span style="color: #0000ff;">delete</span><span style="color: #000000;"> q;
+</span><span style="color: #008080;"> 74</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;"> 75</span>                     <span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 76</span>                         q-&gt;down-&gt;up = q-&gt;<span style="color: #000000;">up;
+</span><span style="color: #008080;"> 77</span>                         <span style="color: #0000ff;">delete</span> q-&gt;<span style="color: #000000;">next;
+</span><span style="color: #008080;"> 78</span>                         <span style="color: #0000ff;">delete</span><span style="color: #000000;"> q;
+</span><span style="color: #008080;"> 79</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;"> 80</span>                     p = q =<span style="color: #000000;"> root;
+</span><span style="color: #008080;"> 81</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 82</span>                 <span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 83</span>                     tmp = q-&gt;<span style="color: #000000;">next;
+</span><span style="color: #008080;"> 84</span>                     q-&gt;next = q-&gt;next-&gt;<span style="color: #000000;">next;
+</span><span style="color: #008080;"> 85</span>                     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> tmp;
+</span><span style="color: #008080;"> 86</span>                     tmp =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 87</span>                     p = q =<span style="color: #000000;"> root;
+</span><span style="color: #008080;"> 88</span>                 }<span style="color: #008000;">//</span><span style="color: #008000;">else</span>
+<span style="color: #008080;"> 89</span>             }<span style="color: #008000;">//</span><span style="color: #008000;">else</span>
+<span style="color: #008080;"> 90</span>         }<span style="color: #008000;">//</span><span style="color: #008000;">while</span>
+<span style="color: #008080;"> 91</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 92</span>     <span style="color: #0000ff;">void</span> CreateHead(<span style="color: #0000ff;">int</span> n) {<span style="color: #008000;">//</span><span style="color: #008000;">n表示有几行数据</span>
+<span style="color: #008080;"> 93</span>         head* root = <span style="color: #0000ff;">new</span><span style="color: #000000;"> head;
+</span><span style="color: #008080;"> 94</span>         root-&gt;down =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 95</span>         root-&gt;up =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 96</span>         root-&gt;next =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 97</span>         Create(root-&gt;next);<span style="color: #008000;">//</span><span style="color: #008000;">第一行单独创建</span>
+<span style="color: #008080;"> 98</span>         head* p =<span style="color: #000000;"> root;
+</span><span style="color: #008080;"> 99</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt; n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">100</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">101</span>             head* N = <span style="color: #0000ff;">new</span><span style="color: #000000;"> head;
+</span><span style="color: #008080;">102</span>             N-&gt;down =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">103</span>             N-&gt;next =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">104</span>             N-&gt;up =<span style="color: #000000;"> p;
+</span><span style="color: #008080;">105</span>             p-&gt;down =<span style="color: #000000;"> N;
+</span><span style="color: #008080;">106</span>             p =<span style="color: #000000;"> N;
+</span><span style="color: #008080;">107</span>             Create(p-&gt;<span style="color: #000000;">next);
+</span><span style="color: #008080;">108</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">109</span> <span style="color: #000000;">        Destory(root);
+</span><span style="color: #008080;">110</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">111</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">　　调用：</span></p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main() {
+</span><span style="color: #008080;">2</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> num;
+</span><span style="color: #008080;">3</span>     std::cin &gt;&gt;<span style="color: #000000;"> num;
+</span><span style="color: #008080;">4</span> <span style="color: #000000;">    SORT::CreateHead(num);
+</span><span style="color: #008080;">5</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">　　运行结果：</span></p>
+<p><span style="font-size: 15px;"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/C++实现多组数据合并输出1.png" alt="" /></span></p>
+<p style="text-align: left;">　　<strong><span style="font-size: 18px;">如果有什么错误欢迎大家指正。</span></strong></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

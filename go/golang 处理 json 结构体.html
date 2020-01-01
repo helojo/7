@@ -1,0 +1,87 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang 处理 json 结构体' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang 处理 json 结构体</center></div><div class='banquan'>原文出处:本文由博客园博主feiquan提供。<br/>
+原文连接:https://www.cnblogs.com/feiquan/p/11468792.html</div><br>
+    <p>首先 我们来看一下这个json 字串</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">{
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">resp</span><span style="color: #800000;">"</span><span style="color: #000000;">: {
+        </span><span style="color: #800000;">"</span><span style="color: #800000;">respCode</span><span style="color: #800000;">"</span>: <span style="color: #800000;">"</span><span style="color: #800000;">000000</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        </span><span style="color: #800000;">"</span><span style="color: #800000;">respMsg</span><span style="color: #800000;">"</span>: <span style="color: #800000;">"</span><span style="color: #800000;">成功</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        </span><span style="color: #800000;">"</span><span style="color: #800000;">app</span><span style="color: #800000;">"</span><span style="color: #000000;">: {
+            </span><span style="color: #800000;">"</span><span style="color: #800000;">appId</span><span style="color: #800000;">"</span>: <span style="color: #800000;">"</span><span style="color: #800000;">xxxxxx</span><span style="color: #800000;">"</span><span style="color: #000000;">
+        }
+    }
+}</span></pre>
+</div>
+<p>go 内置了json字串的解析包 "encoding/json"</p>
+<p>接下来 就需要对结构体的定义了。</p>
+<p>按照json库的分析，其实每一个<strong>花括号</strong>就是一个结构体</p>
+<p>那么拆解的结构体如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">代表最里层的结构体</span>
+type appInfo <span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    Appid </span><span style="color: #0000ff;">string</span> `json:<span style="color: #800000;">"</span><span style="color: #800000;">appId</span><span style="color: #800000;">"</span><span style="color: #000000;">`
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">代表第二层的结构体</span>
+type response <span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    RespCode </span><span style="color: #0000ff;">string</span>  `json:<span style="color: #800000;">"</span><span style="color: #800000;">respCode</span><span style="color: #800000;">"</span><span style="color: #000000;">`
+    RespMsg  </span><span style="color: #0000ff;">string</span>  `json:<span style="color: #800000;">"</span><span style="color: #800000;">respMsg</span><span style="color: #800000;">"</span><span style="color: #000000;">`
+    AppInfo  appInfo `json:</span><span style="color: #800000;">"</span><span style="color: #800000;">app</span><span style="color: #800000;">"</span><span style="color: #000000;">`
+}
+
+type JsonResult </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    Resp response `json:</span><span style="color: #800000;">"</span><span style="color: #800000;">resp</span><span style="color: #800000;">"</span>`   <span style="color: #008000;">//</span><span style="color: #008000;">代表最外层花括号的结构体 </span>
+}</pre>
+</div>
+<p>&nbsp;</p>
+<p>结构体的命名必须遵循第一个字母<strong>大写</strong>，否则json库会忽略掉该成员，</p>
+<p>而后面的json:&ldquo;<strong>xxx</strong>&rdquo;&nbsp;<strong>xxx</strong>则需要和json字串里的名字相符合： 如最外层的&nbsp;<code>json:"**resp**"</code>&nbsp;和json字符串里的｛&ldquo;<strong>resp</strong>&rdquo;一致</p>
+<p>然后实际的代码解析如下</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+        <span style="color: #800000;">"</span><span style="color: #800000;">encoding/json</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+type appInfo </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    Appid </span><span style="color: #0000ff;">string</span> `json:<span style="color: #800000;">"</span><span style="color: #800000;">appId</span><span style="color: #800000;">"</span><span style="color: #000000;">`
+}
+type response </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    RespCode </span><span style="color: #0000ff;">string</span>  `json:<span style="color: #800000;">"</span><span style="color: #800000;">respCode</span><span style="color: #800000;">"</span><span style="color: #000000;">`
+    RespMsg  </span><span style="color: #0000ff;">string</span>  `json:<span style="color: #800000;">"</span><span style="color: #800000;">respMsg</span><span style="color: #800000;">"</span><span style="color: #000000;">`
+    AppInfo  appInfo `json:</span><span style="color: #800000;">"</span><span style="color: #800000;">app</span><span style="color: #800000;">"</span><span style="color: #000000;">`
+}
+type JsonResult </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    Resp response `json:</span><span style="color: #800000;">"</span><span style="color: #800000;">resp</span><span style="color: #800000;">"</span><span style="color: #000000;">`
+}
+func main() {
+    jsonstr :</span>= `{<span style="color: #800000;">"</span><span style="color: #800000;">resp</span><span style="color: #800000;">"</span>: {<span style="color: #800000;">"</span><span style="color: #800000;">respCode</span><span style="color: #800000;">"</span>: <span style="color: #800000;">"</span><span style="color: #800000;">000000</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">respMsg</span><span style="color: #800000;">"</span>: <span style="color: #800000;">"</span><span style="color: #800000;">成功</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">app</span><span style="color: #800000;">"</span>: {<span style="color: #800000;">"</span><span style="color: #800000;">appId</span><span style="color: #800000;">"</span>: <span style="color: #800000;">"</span><span style="color: #800000;">xxxxxx</span><span style="color: #800000;">"</span><span style="color: #000000;">}}}`
+    </span><span style="color: #0000ff;">var</span><span style="color: #000000;"> JsonRes JsonResult 
+        json.Unmarshal(body, </span>&amp;<span style="color: #000000;">JsonRes)
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">after parse</span><span style="color: #800000;">"</span><span style="color: #000000;">, JsonRes)
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

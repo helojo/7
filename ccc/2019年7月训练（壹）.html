@@ -1,0 +1,340 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修2019年7月训练（壹）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>2019年7月训练（壹）</center></div><div class='banquan'>原文出处:本文由博客园博主plzplz提供。<br/>
+原文连接:https://www.cnblogs.com/plzplz/p/11247078.html</div><br>
+    <p><span style="font-size: 15px;">2019-07-25</span></p>
+<p><span style="font-size: 15px;">luogu&nbsp;P3627 [APIO2009]抢掠计划</span></p>
+<p><span style="font-size: 15px;">卡了三个小时，看了题解才作出来的（菜）</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;"><strong>前驱知识：</strong></span></p>
+<p><span style="font-size: 15px;">壹~邻接表存储/遍历</span></p>
+<p><span style="font-size: 15px;">贰~SPFA跑最长路（&lt;改&gt;就行了）</span></p>
+<p><span style="font-size: 15px;">叄~Tarjan缩点</span></p>
+<hr />
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><strong><span style="font-size: 15px;">壹.邻接表储存</span></strong></p>
+<p><span style="font-size: 15px;">两个，add存无边权，未缩点；build有边权，已缩点。</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code><span style="font-size: 15px;">void add(int u,int v)
+ {
+    cnt++;
+    e[cnt].to=v;
+    e[cnt].next=head[u];
+    head[u]=cnt;
+ }
+</span></pre>
+</div>
+<p><span style="font-size: 15px;">　　</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code><span style="font-size: 15px;"> void build(int u,int v,int w)
+ {
+    cnt++;
+    e[cnt].to=v;
+    e[cnt].val=w;
+    e[cnt].next=head[u];
+    head[u]=cnt;
+ }</span></pre>
+</div>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<hr />
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><strong><span style="font-size: 15px;">贰.输入</span></strong></p>
+<p><span style="font-size: 15px;">懒得开两个head数组了，所以memset了。</span></p>
+<p><span style="font-size: 15px;">cnt记得重置为零。</span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code><span style="font-size: 15px;">　　 cnt=0;
+    memset(e,0,sizeof(e));
+    memset(head,0,sizeof(head));
+    scanf("%d%d",&amp;n,&amp;m);
+    for(int i=1;i&lt;=m;i++)
+    {
+        scanf("%d%d",&amp;u[i],&amp;v[i]);
+        add(u[i],v[i]);
+    }
+    for(int i=1;i&lt;=n;i++) scanf("%d",&amp;w[i]);
+    scanf("%d%d",&amp;s,&amp;p);
+    for(int i=1;i&lt;=p;i++) scanf("%d",&amp;bar[i]);
+    
+</span></pre>
+</div>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<hr />
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><strong><span style="font-size: 15px;">叄.tarjan 缩点</span></strong></p>
+<div class="cnblogs_Highlighter">
+<pre><code><span style="font-size: 15px;"> void Tarjan(int x)
+ {
+    dfn[x]=low[x]=++total;
+    stk[++top]=x;vis[x]=true;
+    for(int i=head[x];i;i=e[i].next)
+    {
+        int t=e[i].to;
+        if(!dfn[t])
+        {
+            Tarjan(t);
+            low[x]=min(low[x],low[t]);
+        }
+        else if(vis[t])
+         low[x]=min(low[x],dfn[t]);
+    }
+    if(dfn[x]==low[x])
+    {
+        tot++;
+        do{
+            int tp=stk[top];
+            sum[tot]+=w[tp];
+            vis[tp]=false;
+            be[tp]=tot;
+        }while(stk[top--]!=x);
+    }//数组模拟栈
+ }
+</span></pre>
+</div>
+<p><span style="font-size: 15px;">　</span></p>
+<pre><code><span style="font-size: 15px;"><code>这里我是用的数组模拟栈，首先int tp=stk[top]取出栈顶
+
+sum表示缩完点后这个点的点权
+不是很懂Tarjan的好好理解下Tarjan弹栈的部分再看这里就懂了
+懂Tarjan的模拟一下应该就懂了，每次弹栈时，所有被弹出的点都是缩完点后的一个点
+即sum[tot]+=w[tp]，缩完点后的点权+=原点权
+很好理解吧
+不懂的说明你对Tarjan还是理解不到位&hellip;&hellip;这篇题解不是讲Tarjan的，楼下大佬应该有详细讲解。
+
+然后vis[tp]=false表示tp已经出栈
+
+g表示缩完点后每个点在哪个点中
+即g[tp]=tot，tp这个点在缩完点后的第tot个点里
+然后用栈顶和x比较，标准Tarjan操作
+
+stk[top--]就相当于pop弹栈了<br /></code></span></pre>
+<hr />
+<pre><strong><span style="font-size: 15px;">肆.Spfa跑最长路<br /></span></strong></pre>
+<div class="cnblogs_Highlighter">
+<pre><code><span style="font-size: 15px;"> void Spfa(int s)
+ {
+    for(int i=1;i&lt;=tot;i++) dis[i]=0;
+    int bes=be[s];//不想认真想变量名了
+    q.push(bes);
+    vis[bes]=true;
+    dis[bes]=sum[bes];
+    while(!q.empty())
+    {
+        int h=q.front();q.pop();
+        vis[h]=false;
+        for(int i=head[h];i;i=e[i].next)
+        {
+            int t=e[i].to;
+            if(dis[t]&lt;dis[h]+e[i].val)
+            {
+                dis[t]=dis[h]+e[i].val;
+                if(!vis[t])
+                {
+                    q.push(t);
+                    vis[t]=true;
+                }
+            }
+        }
+    }
+ }</span></pre>
+</div>
+<p><span style="font-size: 15px;">起点边权解决方法：</span></p>
+<p><span style="font-size: 15px;">起点从s变为be[s]了，dis[s]不是0了</span></p>
+<p><span style="font-size: 15px;">因为缩点</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">我们刚刚build建的图是一张缩完点后的缩点图，所以我们push起点的时候当然是push缩完点后s所在的点啊</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">为什么呢？万一s本身就在一个环里，push（s)的话问题就大了</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">所以我们把起点一律改成g[s]来操作</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">并且，我们把起点的dis值直接加上点权，这样就不会漏掉起点点权了</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">而且放心，一开始更改dis值不会对后续松弛操作造成无法更改的影响，毕竟这是最长路</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;"><strong>伍.main函数部分</strong></span></p>
+<p>&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code><span style="font-size: 15px;"> for(int i=1;i&lt;=m;i++)
+     if(be[u[i]]!=be[v[i]])
+      build(be[u[i]],be[v[i]],sum[be[v[i]]]);
+</span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">这时候前面的u，v数组便起作用了</span></p>
+<p><span style="font-size: 15px;">我们通过判断u[i],v[i]是否在一个新点里，如果不在的话就build一条新边，这样就能建一个缩完点后的图</span></p>
+<p><span style="font-size: 15px;">！！！build：起点是u[i]所在的缩点，终点是v[i]所在的缩点（如果u[i]和v[i]在一个缩点里就不会执行build了），边权是v[i]所在缩点的点权（sum）！！！</span></p>
+<p><span style="font-size: 15px;">这样，这张新图就表明：从U走到V可以抢劫W的钱，钱数当然是缩点点权啊</span></p>
+<p><span style="font-size: 15px;">但是-------------------------------------------------------------------------这样每次把边权设置为后头那个缩点的点权，前头那个点（起点）被忽略了，点权不就没用了吗？</span></p>
+<p><span style="font-size: 15px;">对&radic;的确有这个问题</span></p>
+<p><span style="font-size: 15px;">但是在上一部分我们已经简单粗暴の解决了</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;"><strong>以下为AC码：</strong></span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code><span style="font-size: 15px;">#include&lt;cstdio&gt;
+#include&lt;cstring&gt;
+#include&lt;stack&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#define maxn 500010
+using namespace std;
+struct edbee
+{
+    int to,val,next;
+} e[maxn];
+int m,n,p,s,cnt,be[maxn],u[maxn],v[maxn],w[maxn],head[maxn],bar[maxn],dis[maxn],dfn[maxn],low[maxn],stk[maxn],sum[maxn];
+bool vis[maxn];
+queue &lt;int&gt; q;
+int ans,top,tot,total;
+
+ void add(int u,int v)
+ {
+    cnt++;
+    e[cnt].to=v;
+    e[cnt].next=head[u];
+    head[u]=cnt;
+ }
+ 
+ void build(int u,int v,int w)
+ {
+    cnt++;
+    e[cnt].to=v;
+    e[cnt].val=w;
+    e[cnt].next=head[u];
+    head[u]=cnt;
+ }
+ 
+ void Tarjan(int x)
+ {
+    dfn[x]=low[x]=++total;
+    stk[++top]=x;vis[x]=true;
+    for(int i=head[x];i;i=e[i].next)
+    {
+        int t=e[i].to;
+        if(!dfn[t])
+        {
+            Tarjan(t);
+            low[x]=min(low[x],low[t]);
+        }
+        else if(vis[t])
+         low[x]=min(low[x],dfn[t]);
+    }
+    if(dfn[x]==low[x])
+    {
+        tot++;
+        do{
+            int tp=stk[top];
+            sum[tot]+=w[tp];
+            vis[tp]=false;
+            be[tp]=tot;
+        }while(stk[top--]!=x);
+    }
+ }
+ 
+ void Spfa(int s)
+ {
+    for(int i=1;i&lt;=tot;i++) dis[i]=0;
+    int bes=be[s];
+    q.push(bes);
+    vis[bes]=true;
+    dis[bes]=sum[bes];
+    while(!q.empty())
+    {
+        int h=q.front();q.pop();
+        vis[h]=false;
+        for(int i=head[h];i;i=e[i].next)
+        {
+            int t=e[i].to;
+            if(dis[t]&lt;dis[h]+e[i].val)
+            {
+                dis[t]=dis[h]+e[i].val;
+                if(!vis[t])
+                {
+                    q.push(t);
+                    vis[t]=true;
+                }
+            }
+        }
+    }
+ }
+ 
+int main()
+{
+    cnt=0;
+    memset(e,0,sizeof(e));
+    memset(head,0,sizeof(head));
+    scanf("%d%d",&amp;n,&amp;m);
+    for(int i=1;i&lt;=m;i++)
+    {
+        scanf("%d%d",&amp;u[i],&amp;v[i]);
+        add(u[i],v[i]);
+    }
+    for(int i=1;i&lt;=n;i++) scanf("%d",&amp;w[i]);
+    scanf("%d%d",&amp;s,&amp;p);
+    for(int i=1;i&lt;=p;i++) scanf("%d",&amp;bar[i]);
+    for(int i=1;i&lt;=n;i++)
+     if(!dfn[i]) Tarjan(i);
+    cnt=0;
+    memset(e,0,sizeof(e));
+    memset(head,0,sizeof(head));
+    for(int i=1;i&lt;=m;i++)
+     if(be[u[i]]!=be[v[i]])
+      build(be[u[i]],be[v[i]],sum[be[v[i]]]);
+    Spfa(s);
+    for(int i=1;i&lt;=p;i++)
+     ans=max(ans,dis[be[bar[i]]]);
+    printf("%d",ans);
+    return 0;
+}</span></pre>
+</div>
+<p><span style="font-size: 15px;">&nbsp;谢谢你能看到这里。</span></p>
+<p style="text-align: right;"><span style="font-size: 15px;">2019-07-25 22:35:43</span></p>
+<p><span style="font-size: 15px;">以下为私货，可以不看</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;">&darr;</span></p>
+<p><span style="font-size: 15px;"><img src="./images/2019年7月训练（壹）0.png" alt="" /></span></p>
+<p>REOL要出新专啦！！！</p>
+<p>唱歌超好听，人长得超好看的！！！</p>
+<div>&nbsp;国内Apple music：https://music.apple.com/cn/album/1472096049?app=music</div>
+<p><span style="font-size: 15px;">&nbsp;再次谢谢你能看到这里。</span></p>
+<p style="text-align: right;"><span style="font-size: 15px;">2019-07-2522:36:16</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

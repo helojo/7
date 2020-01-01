@@ -1,0 +1,376 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修linux 线程基础' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>linux 线程基础</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11038532.html</div><br>
+    <h3 id="线程基础函数">线程基础函数</h3>
+<p>查看进程中有多少个线程，查看线程的LWP</p>
+<pre><code><code>ps -Lf 进程ID(pid)</code></code></pre>
+<p>执行结果：LWP列</p>
+<pre><code><code>y:~$ ps -Lf 1887
+UID        PID  PPID   LWP  C NLWP STIME TTY      STAT   TIME CMD
+ys        1887  1341  1887  0    3 14:57 tty2     Sl     0:00 /usr/lib/ibus/ibus
+ys        1887  1341  1889  0    3 14:57 tty2     Sl     0:00 /usr/lib/ibus/ibus
+ys        1887  1341  1890  0    3 14:57 tty2     Sl     0:00 /usr/lib/ibus/ibus</code></code></pre>
+<h3 id="线程共享的资源">线程共享的资源：</h3>
+<p><font color=red>注意：信号和线程最好不要一起使用。又用信号又用多线程的架构不太合理。</font></p>
+<ul>
+<li>文件描述符表</li>
+<li>信号的处理方式</li>
+<li>当前工作目录</li>
+<li>用户ID和组ID</li>
+<li>内存地址空间（.text/.data/.bss/heap/共享库，栈区(stack)不共享）</li>
+</ul>
+<h3 id="非线程共享的资源">非线程共享的资源：</h3>
+<ul>
+<li><p>线程ID</p></li>
+<li><p>处理器现场和栈指针（内核栈）</p></li>
+<li><p>独立的栈空间（用户空间栈）</p></li>
+<li><p>errno变量</p>
+<ul>
+<li><p>所以不能用函数perrno打印错误信息了。</p></li>
+<li><p>使用strerror函数打印错误信息</p>
+<pre class="c"><code>#include &lt;string.h&gt;
+char *strerror(int errnum);</code></code></pre>
+<ul>
+<li>errnum:errno</li>
+</ul></li>
+</ul></li>
+<li><p>阻塞信号集合</p></li>
+<li><p>调度优先级</p></li>
+</ul>
+<h3 id="现场优缺点">现场优，缺点</h3>
+<ul>
+<li>优点：1，提高程序并发性。2，开销小。3，数据通信，共享方便</li>
+<li>缺点：1，因为使用的时库函数，所以不太稳定。2，调试，编写困难。3，对信号支持不好。</li>
+</ul>
+<h3 id="进程和线程都是通过系统函数clone创建的">进程和线程都是通过系统函数clone创建的。</h3>
+<p>每个线程有自己独立的PCB</p>
+<p><img src="./images/linux 线程基础0.png" /></p>
+<h3 id="pcb进程控制块结构体usrsrclinux-headers-4.15.0-29includelinuxsched.h">pcb：进程控制块结构体：/usr/src/linux-headers-4.15.0-29/include/linux/sched.h</h3>
+<ul>
+<li><p>进程id：系统中每个进程有唯一的id，在c语言中用pid_t类型表示，是个非负整数。</p></li>
+<li><p>进程状态：就绪，运行，挂起，停止等状态</p></li>
+<li><p>描述虚拟地址空间的信息</p></li>
+<li><p>描述控制终端的信息</p></li>
+<li><p>进程执行时的当前工作目录（current working directory）</p></li>
+<li><p>umask掩码</p></li>
+<li><p>文件描述符表，包含很多指向file结构体的指针</p></li>
+<li><p>和信号相关的信息</p></li>
+<li><p>用户id和组id</p></li>
+<li><p>会话（session）和进程组</p></li>
+<li><p>进程可以使用的资源上限（Resource Limit）</p>
+<p>用【ulimit -a】查看：</p>
+<pre><code><code>ys@ys:~$ ulimit -a
+core file size          (blocks, -c) 0
+data seg size           (kbytes, -d) unlimited
+scheduling priority             (-e) 0
+file size               (blocks, -f) unlimited
+pending signals                 (-i) 7743
+max locked memory       (kbytes, -l) 16384
+max memory size         (kbytes, -m) unlimited
+open files                      (-n) 1024
+pipe size            (512 bytes, -p) 8
+POSIX message queues     (bytes, -q) 819200
+real-time priority              (-r) 0
+stack size              (kbytes, -s) 8192
+cpu time               (seconds, -t) unlimited
+max user processes              (-u) 7743
+virtual memory          (kbytes, -v) unlimited
+file locks                      (-x) unlimited</code></code></pre></li>
+</ul>
+<h3 id="pthread_create函数创建一个线程并开始执行这个线程">pthread_create函数：创建一个线程，并开始执行这个线程</h3>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+                          void *(*start_routine) (void *), void *arg);</code></code></pre>
+<ul>
+<li>thread：线程的ID</li>
+<li>attr：线程的属性，一般不使用</li>
+<li>start_routine：函数指针</li>
+<li>arg：start_routine函数的参数</li>
+<li>返回值：成功返回0；失败返回errno</li>
+</ul>
+<p><font color=red>编译的时候要加【-lpthread】</font></p>
+<h3 id="pthread_self函数得到线程的id">pthread_self函数：得到线程的id</h3>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+pthread_t pthread_self(void);</code></code></pre>
+<p>例子：得到主线程的ID和子线程的ID。注意要sleep1秒，不睡的话，主线程就先结束了，所以子线程里的打印打不出来。</p>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+
+void * thr(void* args){
+  printf(&quot;in thread %d, %lu\n&quot;, getpid(), pthread_self());
+}
+
+int main(){
+  pthread_t tid;
+  pthread_create(&amp;tid, NULL, thr, NULL);
+  printf(&quot;in main thread %d, %lu\n&quot;, getpid(), pthread_self());
+  sleep(1);
+  return 0;
+}</code></code></pre>
+<h3 id="pthread_exit函数终止线程">pthread_exit函数：终止线程</h3>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+void pthread_exit(void *retval);</code></code></pre>
+<ul>
+<li>retval：线程的返回值</li>
+</ul>
+<p>改进上面的例子，用pthread_exit代替sleep</p>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+
+void * thr(void* args){
+  printf(&quot;in thread %d, %lu\n&quot;, getpid(), pthread_self());
+  //exit(1);//不要在子线程里调用此函数，调用的结果是把整个进程终止了。
+  //return NULL;//可以使用
+  //pthread_exit(NULL);//可以使用
+}
+
+int main(){
+  pthread_t tid;
+  pthread_create(&amp;tid, NULL, thr, NULL);
+  printf(&quot;in main thread %d, %lu\n&quot;, getpid(), pthread_self());
+  //sleep(1);
+  pthread_exit(NULL);
+  return 0;
+}</code></code></pre>
+<h3 id="终止线程时的注意事项">终止线程时的注意事项</h3>
+<ul>
+<li>要使用pthread_exit函数，不能使用exit函数</li>
+<li>也可以使用return，但是在主线程里使用return的话，就把进程终止了。</li>
+<li>exit是推出进程，所以不要在线程函数里调用exit函数</li>
+</ul>
+<h3 id="pthread_join函数阻塞等待回收线程资源其实也是等待线程结束所以是阻塞的函数线程不执行完pthread_join就一直处于阻塞状态类似wait函数回收子进程的函数也是阻塞的并且它的第二个参数是可以接收线程的返回值的">pthread_join函数：阻塞等待回收线程资源，其实也是等待线程结束，所以是阻塞的函数，线程不执行完，pthread_join就一直处于阻塞状态，类似wait函数(回收子进程的函数，也是阻塞的）。并且它的第二个参数是可以接收线程的返回值的。</h3>
+<p>线程不回收也会变成僵尸线程，线程里也有PCB资源，也要回收。</p>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+int pthread_join(pthread_t thread, void **retval);</code></code></pre>
+<ul>
+<li>thread：函数pthread_create调用后，传出的第一个参数的值，也就是线程的ID</li>
+<li>retval：二级指针，线程推出时，返回的信息。</li>
+<li>返回值：成功返回0；失败返回errno</li>
+</ul>
+<p>例子：实验pthread_join是否是阻塞。</p>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+
+void * thr(void* args){
+  printf(&quot;in thread %d, %lu\n&quot;, getpid(), pthread_self());
+  sleep(1);
+  return (void*)200;
+}
+
+int main(){
+  pthread_t tid;
+  pthread_create(&amp;tid, NULL, thr, NULL);
+  printf(&quot;in main thread %d, %lu\n&quot;, getpid(), pthread_self());
+
+  void *ret;
+  pthread_join(tid, &amp;ret);
+  printf(&quot;return value:%d\n&quot;, (int)ret);
+
+  return 0;
+}</code></code></pre>
+<p>结果分析，发现在子线程睡的1秒内，pthread_join是阻塞的，线程的返回值200，也可以打印出来，但是编译有警告。</p>
+<p>用pthread_exit函数也可以设置线程的返回值和return的效果一模一样。</p>
+<pre class="c"><code>pthread_exit((void*)11);
+return (void*)11;</code></code></pre>
+<h3 id="pthread_cancel函数终止线程并把线程的返回值设置为-1是个宏">pthread_cancel函数：终止线程，并把线程的返回值设置为-1（是个宏）</h3>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+int pthread_cancel(pthread_t thread);</code></code></pre>
+<ul>
+<li>thread：线程ID</li>
+<li>返回值：成功返回0；失败返回errno</li>
+</ul>
+<p>例子：验证被函数pthread_cancel终止的进程的返回值。</p>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+
+
+void * thr(void* args){
+  while(1){
+    printf(&quot;in thread %d, %lu\n&quot;, getpid(), pthread_self());
+    sleep(1);
+  }
+
+  pthread_exit((void*)101);
+  //return (void*)200;
+}
+
+int main(){
+  pthread_t tid;
+  pthread_create(&amp;tid, NULL, thr, NULL);
+
+  sleep(5);
+  pthread_cancel(tid);
+
+  void *ret;
+  pthread_join(tid, &amp;ret);
+  printf(&quot;return value:%d\n&quot;, (int)ret);
+
+  return 0;
+}</code></code></pre>
+<p><font color=red>注意：pthread_cancel能够执行成功的前提是要终止的线程里必须有Cancellation points。也就是说线程里不能光是一个空的死循环，循环里至少要有一行代码，否则pthread_cancel不能执行成功。</font></p>
+<h3 id="pthread_detach函数从父线程中分离出线程也就是说这个子线程不受父线程的控制了父线程不再需要回收这个子线程的资源了也就是不可以调用pthread_join函数去回收它所占的资源了">pthread_detach函数：从父线程中分离出线程，也就是说这个子线程不受父线程的控制了，父线程不再需要回收这个子线程的资源了，也就是不可以调用pthread_join函数去回收它所占的资源了。</h3>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+int pthread_detach(pthread_t thread);</code></code></pre>
+<ul>
+<li>thread：线程ID</li>
+<li>返回值：成功返回0；失败返回errno</li>
+</ul>
+<p>例子：验证分离后，不可以调用pthread_join函数。</p>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+
+void * thr(void* args){
+  while(1){
+    printf(&quot;in thread %d, %lu\n&quot;, getpid(), pthread_self());
+    sleep(1);
+  }
+
+  pthread_exit((void*)101);
+  //return (void*)200;
+}
+
+int main(){
+  pthread_t tid;
+  pthread_create(&amp;tid, NULL, thr, NULL);
+
+  sleep(5);
+  pthread_detach(tid);
+
+  int ret = pthread_join(tid, NULL);
+  if(ret != 0){
+    printf(&quot;return value:%d, %s\n&quot;, ret, strerror(ret));
+  }
+  
+  return 0;
+}</code></code></pre>
+<p>结果分析：打印出下面的，errno是22.</p>
+<pre><code><code>return value:22, Invalid argument</code></code></pre>
+<h3 id="查看线程库函数的版本nptl-2.27nptlnative-posix-thread-library">查看线程库函数的版本：NPTL 2.27(NPTL：Native POSIX Thread Library)</h3>
+<pre><code><code>getconf GNU_LIBPTHREAD_VERSION
+NPTL 2.27</code></code></pre>
+<h3 id="线程创建多少个性能好">线程创建多少个性能好？</h3>
+<p>CPU核数*2 + 2</p>
+<h3 id="pthread_equal函数判断2个线程id是否相同">pthread_equal函数：判断2个线程ID是否相同</h3>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+int pthread_equal(pthread_t t1, pthread_t t2);</code></code></pre>
+<p>虽然线程ID的类型是pthread_t，也就是无符号长整形，但是也不推荐用==去判断，因为Linux后续的版本有可能把pthread_t类型变为构造。</p>
+<p><font color=red>注意：在同一个进程内，线程ID是唯一的。但是在不同的进程里，可以参数相同的线程ID。这点和进程的ID不同，进程ID肯定是唯一的。</font></p>
+<h3 id="创建线程时pthread_create函数的第二参数可以设置线程的属性">创建线程时，pthread_create函数的第二参数，可以设置线程的属性。</h3>
+<p>设置线程属性的步骤：</p>
+<p>1，调用pthread_attr_init函数</p>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+int pthread_attr_init(pthread_attr_t *attr);</code></code></pre>
+<p>2，设置属性。设置属性的函数如下：</p>
+<pre class="c"><code>pthread_attr_getaffinity_np   pthread_attr_setaffinity_np
+pthread_attr_getdetachstate   pthread_attr_setdetachstate
+pthread_attr_getguardsize     pthread_attr_setguardsize
+pthread_attr_getinheritsched  pthread_attr_setinheritsched
+pthread_attr_getschedparam    pthread_attr_setschedparam
+pthread_attr_getschedpolicy   pthread_attr_setschedpolicy
+pthread_attr_getscope         pthread_attr_setscope
+pthread_attr_getstack         pthread_attr_setstack
+pthread_attr_getstackaddr     pthread_attr_setstackaddr
+pthread_attr_getstacksize     pthread_attr_setstacksize</code></code></pre>
+<p>3，调用pthread_attr_destroy函数</p>
+<pre class="c"><code>#include &lt;pthread.h&gt;
+int pthread_attr_destroy(pthread_attr_t *attr);</code></code></pre>
+<p>举例：先指定线程的属性是detatch，然后再创建线程。创建线程后就不用再调用pthread_detach函数了。<font color=red>这么做的好处是，如果线程的执行时间特别短，还没调用pthread_detach函数，线程就结束了的情况，程序也可以正常回收线程的资源。</font></p>
+<pre class="c"><code>#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;string.h&gt;
+
+void * thr(void* arg){
+  printf(&quot;thread\n&quot;);
+}
+
+int main(){
+
+  pthread_attr_t attr;
+  pthread_attr_init(&amp;attr);
+
+  pthread_attr_setdetachstate(&amp;attr, PTHREAD_CREATE_DETACHED);
+
+  pthread_t tid;
+  pthread_create(&amp;tid, &amp;attr, thr, NULL);
+
+  int ret = pthread_join(tid, NULL);
+  if(ret &gt; 0){
+    printf(&quot;ret:%d, %s\n&quot;, ret, strerror(ret));    
+  }
+  
+  pthread_attr_destroy(&amp;attr);
+}
+</code></code></pre>
+<h3 id="线程传递参数的例子">线程传递参数的例子</h3>
+<p>用malloc开辟内存空间，记得释放。</p>
+<pre class="c"><code>#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+
+void * thr(void* arg){
+  int* pi = arg;
+  printf(&quot;%d thread\n&quot;, *pi);
+  *pi = 100 + *pi;
+  return pi;
+}
+
+int main(){
+
+  pthread_t tid[5];
+  int* pi[5];
+  for(int j = 0; j &lt; 5; ++j){
+    pi[j] = (int*)malloc(sizeof(int));
+  }
+  int i = 0;
+  for(; i &lt; 5; ++i){
+    *pi[i] = i;
+    pthread_create(&amp;tid[i], NULL, thr, pi[i]);
+  }
+
+  void* ret;
+  for(i = 0; i &lt; 5; ++i){
+    pthread_join(tid[i], &amp;ret);
+    printf(&quot;ret:%d\n&quot;, *(int*)ret);
+  }
+
+  for(int i = 0; i &lt; 5; ++i){
+    free(pi[i]);
+  }
+}</code></code></pre>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/linux 线程基础1.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

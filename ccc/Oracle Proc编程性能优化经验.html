@@ -1,0 +1,104 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Oracle Proc编程性能优化经验' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Oracle Proc编程性能优化经验</center></div><div class='banquan'>原文出处:本文由博客园博主皇家救星提供。<br/>
+原文连接:https://www.cnblogs.com/kingstarer/p/11968247.html</div><br>
+    <p align="center">&nbsp;</p>
+<p>Proc 是Oracle提供的一种数据库操作的API。它是基于ESql技术的，需要预编译后才可以变成普通c代码，非常不直观，使用起来不太方便，阅读也存在困难。</p>
+<p>因为这些问题导致程序员平时开发中会出现一些Proc操作存在效率低下的情况，本文介绍一些Proc一些编译经验，希望能给大家提供参考。</p>
+<p>&nbsp;</p>
+<p><strong>下面以一个简单需求进行举例说明：</strong></p>
+<p>要求把DB1里面一张数据表tbl_hch_test的数据导出到DB2的同名表。</p>
+<p>最快的方法当然是使用oracle的数据泵工具进行压缩导出再导入，但expdp/impdp对数据库环境有特别要求，所以我们需要使用Proc编程，先从DB1取出数据，再insert到Db2里面。</p>
+<p>&nbsp;</p>
+<p><strong>简单实现：</strong></p>
+<p>打开一个游标，从DB1循环FETCH数据出来，再使用sprintf拼装成insert语句，到DB2使用exec sql指令执行插入并提交数据库。</p>
+<p>&nbsp;</p>
+<p><strong>优化：</strong></p>
+<p>虽然上面的做法可以完成需求，但在效率上存在不优化空间。下面依次进行介绍：</p>
+<p>1 使用绑定变量代替sprintf拼装sql</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 实践证明sprintf函数在对效率要求比较高的场景下容易成为性能瓶颈，使用绑定变量可以避免sprintf调用。</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 并且，由于数据库里面执行的sql是相同的，不需要每次重新分析sql生成执行计划，也能大大减轻数据库负担，提高执行效率。</p>
+<p>&nbsp;</p>
+<p>2 对insert语句进行预编译，一次编译多次执行，避免使用隐性游标，每次都要重新编译。</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 同上，预编译是比较消耗cpu的操作。如果sql相同，可以复用游标，减少性能开支。</p>
+<p>3 使用批量操作，每次取数和插入数据都使用数组进行绑定。</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 批量操作可以减少客户端与服务器之间交互次数，加快操作数据。</p>
+<p>4 适当加大事务提交间隔（insert多行记录commit一次）</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Oracle提交数据库事务时需要将日志从内存刷回磁盘并等待磁盘操作完成才返回，提高事务提交间隔可以减少等待消耗。</p>
+<p>&nbsp;</p>
+<p><strong>优化前后效率测试对比：</strong></p>
+<p>&nbsp;<img src="./images/Oracle Proc编程性能优化经验0.png" alt="" /></p>
+<p>相同的操作，从23s降低到1.3s</p>
+<p>&nbsp;</p>
+<p><strong>其它提高效率措施：</strong></p>
+<p>以上是在编程上的一些优化，结合oracle一些特性，速度还能再提升，简单介绍几个优化技巧：</p>
+<p>1 先删除目标表索引，insert完数据后再重建</p>
+<p>2 关闭表的日志， 减少redo日志，alter table tbl_hch_test nologing。装载完数据再改回来。</p>
+<p>3 使用append HINT，在高水位上面直接插入数据，加快插入速度。</p>
+<p>4 使用并行（parallel）查询，或者使用分区查询（select * from tab parttion(par_name)）加快查询速度。</p>
+<p>5 如果可能，尽量在数据库服务器上执行程序，减少网络传输开销</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><strong>关键代码参考：</strong></p>
+<p>&nbsp;<img src="./images/Oracle Proc编程性能优化经验1.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;<img src="./images/Oracle Proc编程性能优化经验2.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;<img src="./images/Oracle Proc编程性能优化经验3.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;<img src="./images/Oracle Proc编程性能优化经验4.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>另外，附上几个平时使用Proc容易出现误区。</p>
+<p>1 使用char数组保存数据库varchar2类型字段的值</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Proc的char数组对应的数据库类型是char，varchar结构体对应的类型才是varchar2。使用char数组保存数据库varchar2类型字段的值，会导致取出的数据像char类型一样，在末尾自动添加空格。</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 解决方法可以使用EXEC SQL VAR/ EXEC SQL TYPE同等化变量或者数据类型。或者在预编译时指定CHAR_MAP=string一劳永役</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>2 需要注意proc的一些命令是预编译命令，只在预编译期间生效，与C语言的宏十分相似。例如以下命令：。</p>
+<p>EXEC SQL CONTEXT USE</p>
+<p>ESEC SQL Whenever Sqlerror Do</p>
+<p>&nbsp;</p>
+<p>下面举一个常见的错误进行说明：</p>
+<p>&nbsp;<img src="./images/Oracle Proc编程性能优化经验5.png" alt="" /></p>
+<p>要完全搞明白proc的原理，建议多分析.pc文件与porc预编译后生成的.c文件代码区别。</p>
+<p>&nbsp;</p>
+<p>3 proc指针变量</p>
+<p>Proc可以正确识别指针与普通变量，使用指针做为绑定变量与使用普通变量的方法一样，在变量前面加上冒号即可。</p>
+<p>官方文档是这样说的：</p>
+<p>&nbsp;<img src="./images/Oracle Proc编程性能优化经验6.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>有一些程序员不清楚怎么在proc使用指针，会使用memcpy把数据复制多一遍，增加无谓消耗。</p>
+<p>&nbsp;</p>
+<p>&nbsp;<img src="./images/Oracle Proc编程性能优化经验7.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>4 proc与C语言宏</p>
+<p>Proc能识别C语言的一些简单的宏，但如果有复杂的宏（如不定参数宏），proc在预编译时会报错。</p>
+<p>此时可以考虑使用gcc &ndash;E先对.pc文件进行预处理，之后再使用proc进行预编译。</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>如果对于proc编程还有什么其它疑惑的地方，欢迎大家与我讨论，或者查阅官方帮助文档。《Oracle Proc官方文档.pdf》</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

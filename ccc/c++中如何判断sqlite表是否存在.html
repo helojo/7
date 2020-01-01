@@ -1,0 +1,41 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++中如何判断sqlite表是否存在' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++中如何判断sqlite表是否存在</center></div><div class='banquan'>原文出处:本文由博客园博主曾浩楠提供。<br/>
+原文连接:https://www.cnblogs.com/honernan/p/11714804.html</div><br>
+    <p>&nbsp;　　在项<span style="background-color: #ffffff;">目中遇到需</span>要判断sqlite数据库中某个表是否存在，上网搜索一些资料后，解决了问题，如下：</p>
+<p>　　首先，在每个sqlite数据库中，都有一个名为sqlite_master的表，它定义了数据库的模式，它的结构如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">sqlite_master (
+　　type TEXT, //项目的类型，如table、index、view、trigger
+　　name TEXT, //项目的名称，如表名、索引名等
+　　tbl_name TEXT, //所从属的表名，如索引所在的表名。对于表来说，该列就是表名本身
+　　rootpage INTEGER, //项目在数据库页中存储的编号。对于视图和触发器，该列值为0或者NULL
+　　sql TEXT   //创建该项目的SQL语句<br /> ); </span></pre>
+</div>
+<p>　　这个表中记录了数据库中的相关信息，我们通过在这个表中查找我们需要判断的表来判断其是否存在。相关代码如下：</p>
+<div class="cnblogs_code">
+<pre><code><span data-mce-="">char strFindTable[<span data-mce-="">128<span data-mce-="">];<br />sprintf_s(strFindTable, <span data-mce-="">"<span data-mce-="">SELECT * FROM&nbsp;&nbsp; where type ='table' and name ='%s'<span data-mce-="">"<span data-mce-="">, tabletname); //tablename为表名<br />sqlite3_stmt* stmt0 =<span data-mce-=""> NULL;<br /><span data-mce-="">if (sqlite3_prepare_v2(conn, strFindTable, strlen(strFindTable), &amp;stmt0, NULL) !=<span data-mce-=""> SQLITE_OK) {<br />　　<span data-mce-="">if<span data-mce-=""> (stmt0)<br />　　　　sqlite3_finalize(stmt0);<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sqlite3_close(conn);<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout &lt;&lt; <span data-mce-="">"<span data-mce-="">语句初始化错误<span data-mce-="">"<span data-mce-="">;<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span data-mce-="">return<span data-mce-="">;<br />　　}<br /><span data-mce-="">int r =<span data-mce-=""> sqlite3_step(stmt0);<br />&nbsp;&nbsp;&nbsp; <span data-mce-="">//<span data-mce-="">判断表存在，结果集是否已到末尾<br />&nbsp;&nbsp;&nbsp; <span data-mce-="">//<span data-mce-="">通过sqlite3_step命令执行创建表的语句。对于DDL和DML语句而言， sqlite3_step执行正确的返回值<br />&nbsp;&nbsp;&nbsp; <span data-mce-="">//<span data-mce-="">只有SQLITE_DONE，对于SELECT查询而言，如果有数据返回SQLITE_ROW，当到达结果集末尾时则返回SQLITE_DONE。<br /><span data-mce-="">if (r == SQLITE_DONE){<br />　　cout&lt;&lt;"table doesn't existed";<br />}<br />else if (r == SQLITE_ROW){<br />　　cout&lt;&lt;"table had existed";<br />}</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></pre>
+</div>
+<p>　　这里要注意的是，当sqlite_master表中没有我们查询的表时，它返回的结果集并不会为空，它先返回表项，所以需要使用sqlite3_step。该函数用于评估sqlite3_prepare函数返回的prepared_statement对象，在执行完该函数之后，prepared_statement对象的内部指针将指向其返回的结果集的第一行。如果打算进一步迭代其后的数据行就需要不断的调用该函数，直到所有的数据行都遍历完毕。在这里，使用了sqlite3_step之后，如果返回的是SQLITE_DONE，就说明结果集到了末尾，也就是说没有找到我们判断存在与否的表，即表不存在；如果返回的是SQLITE_ROW，说明在sqlite_master中找到了表相关的信息，即表存在。</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

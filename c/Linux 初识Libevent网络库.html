@@ -1,0 +1,281 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Linux 初识Libevent网络库' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Linux 初识Libevent网络库</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11139758.html</div><br>
+    <h3 id="初识libevent">初识Libevent</h3>
+<p>libevent是用c写的高并发网络io库，只要有文件描述符，就都可使用libevent。</p>
+<p>libevent使用回调函数（callback） 。</p>
+<h3 id="有了libevent网络编程我有">有了libevent，网络编程我有</h3>
+<h4 id="fifo的进程间通信">1, FIFO的进程间通信。</h4>
+<p>利用FIFO的进程间通信read端：</p>
+<pre><code><code>#include &lt;event2/event.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+
+#define MYFIFO &quot;myfifo&quot;
+
+//call back
+void readcb(evutil_socket_t fd, short what, void* arg){
+  //read fifo
+  char buf[24] = {0};
+  int len = read(fd, buf, sizeof(buf));
+  buf[len] = &#39;\0&#39;;
+  printf(&quot;data len = %d, buf = %s\n&quot;, len, buf);
+  printf(&quot;read event:%s\n&quot;, what &amp; EV_READ ? &quot;Yes&quot; : &quot;No&quot;);
+}
+
+int main(){
+  unlink(MYFIFO);
+  mkfifo(MYFIFO, 0664);
+
+  int fd = open(MYFIFO, O_RDONLY | O_NONBLOCK);
+  //int fd = open(MYFIFO, O_RDONLY);
+
+  struct event_base* base;
+  base = event_base_new();
+
+  //create event
+  struct event* ev = NULL;
+  ev = event_new(base, fd, EV_READ | EV_PERSIST | EV_ET, readcb, NULL);
+
+  //add event
+  event_add(ev, NULL);
+
+  //start
+  event_base_dispatch(base);
+
+  //free event
+  event_free(ev);
+  event_base_free(base);
+  close(fd);
+
+  return 0;
+}
+</code></code></pre>
+<p>利用FIFO的进程间通信write端：</p>
+<pre><code><code>#include &lt;event2/event.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;string.h&gt;
+
+#define MYFIFO &quot;myfifo&quot;
+
+//call back
+void writecb(evutil_socket_t fd, short what, void* arg){
+  //write fifo
+  char buf[24] = {0};
+  static int num = 0;
+  sprintf(buf, &quot;num = %d&quot;, num++);
+  write(fd, buf, strlen(buf) + 1);
+}
+
+int main(){
+
+  int fd = open(MYFIFO, O_WRONLY | O_NONBLOCK);
+
+  struct event_base* base;
+  base = event_base_new();
+
+  //create event
+  struct event* ev = NULL;
+  ev = event_new(base, fd, EV_WRITE | EV_PERSIST | EV_ET, writecb, NULL);
+
+  //add event
+  event_add(ev, NULL);
+
+  //start
+  event_base_dispatch(base);
+
+  //free event
+  event_free(ev);
+  event_base_free(base);
+  close(fd);
+
+  return 0;
+}
+
+</code></code></pre>
+<h4 id="socket通信">2, socket通信。</h4>
+<p>server端：</p>
+<pre><code><code>#include &lt;event2/event.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;event2/bufferevent.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;event2/listener.h&gt;
+
+//write callback
+void write_cb(struct bufferevent* bev, void* ctx){
+  printf(&quot;all is sent\n&quot;);
+}
+
+//read callback
+void read_cb(struct bufferevent *bev, void *ctx){
+  char buf[64];
+  size_t ret = bufferevent_read(bev, buf, sizeof(buf));
+  buf[ret] = &#39;\0&#39;;
+  printf(&quot;server recf:%s\n&quot;, buf);
+
+  bufferevent_write(bev, &quot;hahaha&quot;, 6);
+}
+
+//event callback
+void event_cb(struct bufferevent *bev, short what, void *ctx){
+
+  if(what &amp; BEV_EVENT_EOF){
+    printf(&quot;EOF\n&quot;);
+  }
+  if(what &amp; BEV_EVENT_CONNECTED){
+    printf(&quot;connected\n&quot;);
+  }
+}
+
+//listener call back
+void listencb(struct evconnlistener* listener, evutil_socket_t fd,
+          struct sockaddr* cli, int len, void* ptr){
+
+  struct event_base* base = evconnlistener_get_base(listener);
+  struct bufferevent* bev =
+    bufferevent_socket_new(base, fd, BEV_OPT_CLOSE_ON_FREE);
+
+  //set callback function
+  bufferevent_setcb(bev, read_cb, write_cb, event_cb, NULL);
+  bufferevent_enable(bev, EV_READ | EV_WRITE);
+
+  
+  //set water
+  bufferevent_setwatermark(bev, EV_READ, 10, 0);
+  bufferevent_setwatermark(bev, EV_WRITE, 1, 2);
+
+}
+
+int main(int argc, char** argv){
+
+  int port = atoi(argv[1]);
+  struct event_base* base;
+  base = event_base_new();
+  if(!base){
+    perror(&quot;event_base_new&quot;);
+    exit(1);
+  }
+
+  struct sockaddr_in s;
+  s.sin_family = AF_INET;
+  s.sin_port = htons(port);
+  s.sin_addr.s_addr = htonl(INADDR_ANY);
+  struct evconnlistener* listener =
+    evconnlistener_new_bind(base, listencb, NULL, LEV_OPT_CLOSE_ON_FREE,
+                -1, (struct sockaddr*)&amp;s, sizeof(s));
+  if(!listener){
+    perror(&quot;bind&quot;);
+    exit(1);
+  }
+  event_base_dispatch(base);
+  event_base_free(base);
+}
+</code></code></pre>
+<p>client端:</p>
+<pre><code><code>#include &lt;event2/event.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;event2/bufferevent.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;event2/listener.h&gt;
+#include &lt;event2/dns.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;event2/util.h&gt;
+
+//read write callback
+void readcb(struct bufferevent *bev, void *ctx){
+  char buf[64];
+  size_t ret = bufferevent_read(bev, buf, sizeof(buf));
+  buf[ret] = &#39;\0&#39;;
+  printf(&quot;client recf:%s\n&quot;, buf);
+
+}
+
+//event callback
+void eventcb(struct bufferevent *bev, short what, void *ctx){
+  if(what &amp; BEV_EVENT_CONNECTED){
+    printf(&quot;connect okay\n&quot;);  
+  }
+  else if(what &amp; BEV_EVENT_ERROR){
+    struct event_base* base = ctx;
+    int err = bufferevent_socket_get_dns_error(bev);
+    if(err){
+      printf(&quot;DNS error:%s\n&quot;, evutil_gai_strerror(err));
+    }
+    printf(&quot;closing\n&quot;);
+    bufferevent_free(bev);
+    event_base_loopexit(base, NULL);
+  }
+}
+
+//terminal read callback
+void termicb(evutil_socket_t fd, short what, void* ptr){
+  char buf[64] = {0};
+  int len = read(fd, buf, sizeof(buf));
+  buf[len] = &#39;\0&#39;;
+  printf(&quot;in termicb\n&quot;);
+  struct bufferevent* bev = ptr;
+  bufferevent_write(bev, buf, len);
+}
+int main(int artc, char** argv){
+
+  struct event_base* base;
+  base = event_base_new();
+ 
+  struct evdns_base* dns_base;
+  dns_base = evdns_base_new(base, 1);
+
+  struct bufferevent* bev;
+  bev = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
+
+  int port = atoi(argv[2]);
+  bufferevent_setcb(bev, readcb, NULL, eventcb, base);
+  bufferevent_enable(bev, EV_READ);
+  bufferevent_socket_connect_hostname(bev, dns_base, AF_INET, argv[1], port);
+
+  struct event* ev = event_new(base, STDIN_FILENO, EV_READ | EV_PERSIST, termicb, bev);
+  event_add(ev, NULL);
+  event_base_dispatch(base);
+  event_base_free(base);
+}
+</code></code></pre>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/Linux 初识Libevent网络库0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

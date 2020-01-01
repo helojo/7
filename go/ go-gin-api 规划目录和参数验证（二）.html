@@ -1,0 +1,189 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修 go-gin-api 规划目录和参数验证（二）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center> go-gin-api 规划目录和参数验证（二）</center></div><div class='banquan'>原文出处:本文由博客园博主it-world提供。<br/>
+原文连接:https://www.cnblogs.com/it-3327/p/11828538.html</div><br>
+    <p>概述<br /><br />首先同步下项目概况：<br /><br /><img src="./images/ go-gin-api 规划目录和参数验证（二）0.png" alt="" width="389" height="630" /><br /><br />上篇文章分享了，使用 go modules 初始化项目，这篇文章咱们分享：<br /><br />&nbsp;&nbsp;&nbsp; 规划目录结构<br /><br />&nbsp;&nbsp;&nbsp; 模型绑定和验证<br /><br />&nbsp;&nbsp;&nbsp; 自定义验证器<br /><br />&nbsp;&nbsp;&nbsp; 制定 API 返回结构<br /><br />废话不多说，咱们开始吧。<br /><br />规划目录结构<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>  ├─ go-gin-api    
+    │  ├─ app    
+    │     ├─ config           //配置文件    
+    │        ├─ config.go    
+    │     ├─ controller       //控制器层    
+    │        ├─ param_bind    
+    │        ├─ param_verify    
+    │        ├─ ...    
+    │     ├─ model            //数据库ORM    
+    │        ├─ proto    
+    │        ├─ ...    
+    │     ├─ repository       //数据库操作层    
+    │        ├─ ...    
+    │     ├─ route            //路由    
+    │        ├─ middleware    
+    │        ├─ route.go    
+    │     ├─ service          //业务层    
+    │        ├─ ...    
+    │     ├─ util             //工具包    
+    │        ├─ ...    
+    │  ├─ vendor  //依赖包    
+    │     ├─ ...    
+    │  ├─ go.mod    
+    │  ├─ go.sum    
+    │  ├─ main.go //入口文件
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />上面的目录结构是我自定义的，大家也可以根据自己的习惯去定义。<br /><br />controller 控制器层主要对提交过来的数据进行验证，然后将验证完成的数据传递给 service 处理。<br /><br />在 gin 框架中，参数验证有两种：<br /><br />1、模型绑定和验证。<br /><br />2、自定义验证器。<br /><br />其中目录 param_bind，存储的是参数绑定的数据，目录 param_verify 存储的是自定义验证器。<br /><br />接下来，让咱们进行简单实现。<br /><br />模型绑定和验证<br /><br />比如，有一个创建商品的接口，商品名称不能为空。<br /><br />配置路由(route.go)：<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>  ProductRouter := engine.Group("")    
+    {    
+        // 新增产品    
+        ProductRouter.POST("/product", product.Add)    
+        // 更新产品    
+        ProductRouter.PUT("/product/:id", product.Edit)    
+        // 删除产品    
+        ProductRouter.DELETE("/product/:id", product.Delete)    
+        // 获取产品详情    
+        ProductRouter.GET("/product/:id", product.Detail)    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br />参数绑定(param_bind/product.go)：<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>   type ProductAdd struct {    
+        Name string `form:"name" json:"name" binding:"required"`    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br />控制器调用(controller/product.go)：<br /><br />&nbsp;&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code> if err := c.ShouldBind(&amp;param_bind.ProductAdd{}); err != nil {    
+        utilGin.Response(-1, err.Error(), nil)    
+        return    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />咱们用 Postman 模拟 post 请求时，name 参数不传或传递为空，会出现：<br /><br />Key: 'ProductAdd.Name' Error:Field validation for 'Name' failed on the 'required' tag<br /><br />这说明使用到了参数设置的 binding:"required"。<br /><br />那么还能使用 binding 哪些参数，有文档吗？<br /><br />有。Gin 使用 go-playground/validator.v8 进行验证，相关文档：<br /><br />https://godoc.org/gopkg.in/go-playground/validator.v8<br /><br />接下来，咱们实现一下自定义验证器。<br /><br />自定义验证器<br /><br />比如，有一个创建商品的接口，商品名称不能为空并且参数名称不能等于 admin。<br /><br />类似于这种业务需求，无法 binding 现成的方法，需要我们自己写验证方法，才能实现。<br /><br />自定义验证方法(param_verify/product.go)<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>    func NameValid (    
+        v *validator.Validate, topStruct reflect.Value, currentStructOrField reflect.Value,    
+        field reflect.Value, fieldType reflect.Type, fieldKind reflect.Kind, param string,    
+    ) bool {    
+        if s, ok := field.Interface().(string); ok {    
+            if s == "admin" {    
+                return false    
+            }    
+        }    
+        return true    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />参数绑定(param_bind/product.go)：<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>    type ProductAdd struct {    
+        Name string `form:"name" json:"name" binding:"required,NameValid"`    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br />同时还要绑定验证器:<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>   // 绑定验证器    
+    if v, ok := binding.Validator.Engine().(*validator.Validate); ok {    
+        v.RegisterValidation("NameValid", param_verify.NameValid)    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br />咱们用 Postman 模拟 post 请求时，name 参数不传或传递为空，会出现：<br /><br />Key: 'ProductAdd.Name' Error:Field validation for 'Name' failed on the 'required' tag<br /><br />name=admin 时：<br /><br />Key: 'ProductAdd.Name' Error:Field validation for 'Name' failed on the 'NameValid' tag<br /><br />OK，上面两个验证都生效了！<br /><br />上面的输出都是在控制台，能不能返回一个 Json 结构的数据呀？<br /><br />能。接下来咱们制定 API 返回结构。<br /><br />制定 API 返回结构<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>   {    
+        "code": 1,    
+        "msg": "",    
+        "data": null    
+    }
+</pre>
+</div>
+<p>&nbsp;这里我还准备了一分学习图和资料，如下：</p>
+<p><img src="./images/ go-gin-api 规划目录和参数验证（二）1.png" alt="" /></p>
+<p>链接：<a href="https://pan.baidu.com/s/1v5gm7n0L7TGyejCmQrMh2g" target="_blank">https://pan.baidu.com/s/1v5gm7n0L7TGyejCmQrMh2g</a>&nbsp;提取码：x2p5<br /><br />免费分享，但是X度限制严重，如若链接失效点击链接或搜索加群 群号<a href="https://jq.qq.com/?_wv=1027&amp;k=5Qtjg0V" target="_blank">518475424</a>。</p>
+<p><br /><br />API 接口的返回的结构基本都是这三个字段。<br /><br />比如 code=1 表示成功，code=-1 表示失败。<br /><br />msg 表示提示信息。<br /><br />data 表示返回的数据。<br /><br />那么，我们怎么在 gin 框架中实现它？<br /><br />其实很简单 基于 c.JSON() 方法进行封装即可，直接看代码。<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>   package util    
+    import "github.com/gin-gonic/gin"    
+    type Gin struct {    
+        Ctx *gin.Context    
+    }    
+    type response struct {    
+        Code     int         `json:"code"`    
+        Message  string      `json:"msg"`    
+        Data     interface{} `json:"data"`    
+    }    
+    func (g *Gin)Response(code int, msg string, data interface{}) {    
+        g.Ctx.JSON(200, response{    
+            Code    : code,    
+            Message : msg,    
+            Data    : data,    
+        })    
+        return    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />控制器调用(controller/product.go)：<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>  utilGin := util.Gin{Ctx:c}    
+    if err := c.ShouldBind(&amp;param_bind.ProductAdd{}); err != nil {    
+        utilGin.Response(-1, err.Error(), nil)    
+        return    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />咱们用 Postman 模拟 post 请求时，name 参数不传或传递为空，会出现：<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>    {    
+        "code": -1,    
+        "msg": "Key: 'ProductAdd.Name' Error:Field validation for 'Name' failed on the 'required' tag",    
+        "data": null    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>name=admin 时：
+
+    {    
+        "code": -1,    
+        "msg": "Key: 'ProductAdd.Name' Error:Field validation for 'Name' failed on the 'NameValid' tag",    
+        "data": null    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br />OK，上面两个验证都生效了！<br /><br /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

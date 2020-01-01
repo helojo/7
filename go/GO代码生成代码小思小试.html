@@ -1,0 +1,77 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修GO代码生成代码小思小试' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>GO代码生成代码小思小试</center></div><div class='banquan'>原文出处:本文由博客园博主三人行工作室提供。<br/>
+原文连接:https://www.cnblogs.com/timeddd/p/11138987.html</div><br>
+    <h3 id="推进需求">推进需求</h3>
+<p>GO 项目，可整体生成一个运行文件到处跑，是极爽之事。但如果有资源文件要得带着跑，则破坏了这种体验。</p>
+<p>例如下边这个项目结构，resource 目录下为资源文件，main.go 中会通过路径引用到这些资源文件，于是新的需求产生了。</p>
+<blockquote>
+<p>|- hello<br />
+----|- resource<br />
+---------|- note.txt<br />
+----|- main.go</p>
+</blockquote>
+<p><strong>需求推进一步</strong>：将资源文件打包至运行文件中，在代码中仍然使用类似相对路径的引用方式使用它（这个很重要，使用在概念上保持一致）。</p>
+<p><strong>解决方案跟上</strong>：把资源文件数据转换成 GO 代码中的变量值存储，并提供函数可根据路径差数返回相应的数据。这样一来资源文件就变成了代码文件，又可以一个运行文件到处跑了。</p>
+<h3 id="工具跟进-go-bindata">工具跟进 go-bindata</h3>
+<p>于是，工具 go-bindata 就来了，它来完成将资源文件变成 GO 代码的工作。</p>
+<pre><code><code>go get -u github.com/jteeuwen/go-bindata/...
+go install</code></pre>
+<p>在 hello 项目目录下执行这个工具，就会生成 -o 指定的 bindata.go 代码文件。</p>
+<pre><code><code>go-bindata -pkg main -o bindata.go resource/</code></pre>
+<p>此时，在 hello 目录下就多了 bindata.go 代码文件，然后，在 main.go 中，就可以使用以下方式指定相对路径参数来取得资源数据。</p>
+<pre><code><code>bs, _ := Asset(&quot;resource/note.txt&quot;)</code></pre>
+<h3 id="生成代码机制-go-generate">生成代码机制 go generate</h3>
+<p>有了上述工具，当 note.txt 数据有更新时，就需要使用 go-bindata 工具重新生成代码文件再编译，可不可以形成一种专门的机制来规范化这类动作呢？</p>
+<p>于是，再进一步，若能如此甚好：</p>
+<p>（1）GO 项目的代码中，能自描述的表明有些相关依赖代码由需要由工具产生。</p>
+<p>（2）支持简单的方式来完成自描述所表明的操作动作。</p>
+<p>于是，go generate 应运而生，来看一下它的大概描述。</p>
+<blockquote>
+<p>go generate 命令是 go 1.4 版新添加的一个命令，它将扫描与当前包相关的源代码文件，找出所有包含 &quot;//<a href="go:generate" class="uri">go:generate</a>&quot; 的特殊注释，提取并执行该特殊注释后面的命令，命令为可执行程序。</p>
+</blockquote>
+<p>是不是完美的实现了上述两项诉求。</p>
+<p>（1）在源代码，即 GO 文件中，进行注释（自描述）即可指定要执行的工具命令。<br />
+除了 go-bindata 工具之外，类似的工具定是还有很多。工具抽象出来可认为就是可执行命令，指定命令甚是灵活。</p>
+<p>（2）只要执行一条命令，即可自动扫描当前包相关的源代码文件来完成相应的执行。<br />
+这说明，不论有多少个这样的命令需要执行，它会负责找到并执行。</p>
+<h3 id="小小实例一目了然">小小实例，一目了然</h3>
+<p>开头项目结构中，main.go 的完整代码如下：</p>
+<pre><code><code>//go:generate go-bindata -pkg main -o bindata.go resource/
+//go:generate go build
+//go:generate hello
+
+package main
+
+import (
+    &quot;fmt&quot;
+)
+
+func main() {
+    bs, _ := Asset(&quot;resource/note.txt&quot;)
+    fmt.Println(string(bs))
+}</code></pre>
+<p>注释部分即描述了三个动作，完成资源文件代码生成，编译与运行命令，当执行 go generate 时，三条命令执行下来运行的结果为显示 note.txt 中的文本内容。运行效果如下，当修改了 note.txt，执行 go generate，会自动完成重新生成代码，编译和运行。</p>
+<p><img src="./images/GO代码生成代码小思小试0.png" /></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

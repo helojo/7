@@ -1,0 +1,250 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ const 引用 指针' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ const 引用 指针</center></div><div class='banquan'>原文出处:本文由博客园博主zhxmdefj提供。<br/>
+原文连接:https://www.cnblogs.com/zhxmdefj/p/11524403.html</div><br>
+    <p>先简单回忆一下常量的性质：</p>
+<pre><code>int main()
+{
+    const int buffSize = 512;
+    buffsize = 512; //× buffSize是常量
+}</code></pre>
+<p>初始化时：</p>
+<pre><code>const int i = get_val();    //√ 运行时初始化
+const int j = 42;           //√ 编译时初始化
+const int k;                //× k未经初始化</code></pre>
+<p>当用一个对象去初始化另外一个对象，他们是不是const就无关紧要</p>
+<pre><code>int i = 42;
+const int ci = i;
+int j = ci;</code></pre>
+<p>ci是整形常量，但ci的常量特征仅仅在执行 改变ci 的操作时才会发挥作用</p>
+<h2 id="const和引用">const和引用</h2>
+<h3 id="对常量的引用">对常量的引用</h3>
+<p>·把引用绑定到const对象上，称之为<strong>对常量的引用</strong></p>
+<p>对常量的引用<strong>不能用作修改它所绑定的对象</strong>，引用 及其 引用的对象 都是常量</p>
+<pre><code>const int ci = 1024;
+const int &amp;r1 = ci;</code></pre>
+<p>需要注意的是：</p>
+<pre><code>const int ci = 1024;
+const int &amp;r1 = ci;
+r1 = 42;        //× r1是对常量的引用
+int &amp;r2 = ci;   //× r2是一个非常量引用，ci是一个常量对象</code></pre>
+<p>因为不允许把<code>ci</code>用作修改它所绑定的对象，所以也不能通过引用去改变ci（假设第四句合法，那我们就可以通过r2去改变ci了，显然是不对的）</p>
+<p>以下两句同理</p>
+<pre><code>int &amp;r3 = r1;       //×
+const int &amp;r4 = r1; //√</code></pre>
+<p>我们口头所说的<strong>常量引用</strong>其实是<strong>对const的引用</strong>，严格来说是不存在常量引用的，因为和指针不一样，<strong>引用不是对象</strong>，我们没有办法让引用本身很定不变</p>
+<p>（P.S:由于C++不允许随意改变引用所绑定的对象，所以也可以理解为，所有的引用都是常量，当然了，引用的对象是否是常量，会决定其所能参与的操作，但无论如何也不会影响到引用和对象的绑定关系）</p>
+<h3 id="初始化对常量的引用">初始化对常量的引用</h3>
+<p>我们知道引用的类型必须要和所引用的对象类型一致，但涉及初始化常量的引用会出现第二种例外（第一种：初始化常量引用是允许用任意表达式作为初始值，只要该表达式能转换成引用的类型）</p>
+<pre><code>int i = 42;
+const int &amp;r1 = i;      //√ 允许const int绑定到一个普通int对象上
+const int &amp;r2 = 42;     //√ r2是一个常量引用
+const int &amp;r3 = r1 * 2; //√ r3是一个常量引用
+int &amp;r4 = r1 * 2;       //× r4是一个普通的非常量引用</code></pre>
+<p>为什么会出现这种情况？先来看一个简单的例子</p>
+<pre><code>double dval = 0.114514;
+const int &amp;ri = dval;
+cout &lt;&lt; &quot;ri = &quot; &lt;&lt; ri &lt;&lt;endl;</code></pre>
+<p>运行输出</p>
+<blockquote>
+<p>ri=0</p>
+</blockquote>
+<p>在这个过程中，其实是编译器把代码改成了：</p>
+<pre><code>double dval = 0.114514;
+const int temp = dval;
+const int &amp;ri = temp;
+cout &lt;&lt; &quot;ri = &quot; &lt;&lt; ri &lt;&lt;endl;</code></pre>
+<p>这种情况下，ri绑定了一个<strong>临时量对象</strong>，这下你可看懂上面的代码发生了什么了吧</p>
+<p>你可以想象以下，如果ri不是常量时，执行了上述初始化过程会带来怎样的后果：如果ri不是常量。就允许对ri赋值，这样就会改变ri所引用对象的值（此时绑定的是临时量而非dval），所以C++也把以下这种行为归为非法</p>
+<pre><code>double dval = 0.114514;
+int &amp;ri = dval;     //×
+cout &lt;&lt; &quot;ri = &quot; &lt;&lt; ri &lt;&lt;endl;</code></pre>
+<p>同时注意，<strong>对const的引用可能引用一个并非const的对象</strong></p>
+<p>对const的引用仅对<strong>引用可参与的操作</strong>做出了限定，对于引用对象本身是否是一个常量没有做出限定，因此对象也可能是个非常量，允许通过其他途径改变它的值</p>
+<pre><code>int i = 42;
+int &amp;r1 = i;
+const int &amp;r2 = i;
+//r2 = 0; //× r2是一个常量引用
+cout &lt;&lt; &quot;r2 = &quot; &lt;&lt; r2 &lt;&lt;endl;
+i = 0;
+cout &lt;&lt; &quot;r2 = &quot; &lt;&lt; r2 &lt;&lt;endl;</code></pre>
+<p>该程序输出如下：</p>
+<blockquote>
+<p>r2 = 42<br />
+r2 = 0</p>
+</blockquote>
+<h2 id="const和指针">const和指针</h2>
+<h3 id="指向常量的指针">指向常量的指针</h3>
+<p>类似于<strong>对常量的引用</strong>，<strong>指向常量的指针</strong>不能用于改变其所指对象的值</p>
+<p>同时，想要存放常量对象的地址，只能使用指向常量的指针：</p>
+<pre><code>const double homo = 1.14;
+double *ptr = &amp;homo;            //× ptr是一个普通指针
+const double *cptr = &amp;homo;     //√
+cptr = 5.14                     //× 不能给*cptr赋值</code></pre>
+<p>不同于引用，我们能改变<strong>指向常量的指针</strong>所指向的对象</p>
+<pre><code>const double homo = 1.14;
+const double *cptr = &amp;homo;
+cout &lt;&lt; &quot;cptr = &quot; &lt;&lt; *cptr &lt;&lt;endl
+const double homo2 = 5.14;
+cptr = &amp;homo2;  
+cout &lt;&lt; &quot;cptr = &quot; &lt;&lt; *cptr &lt;&lt;endl;
+//允许一个 指向常量的指针 指向 一个非常量对象</code></pre>
+<p>注意，与引用类似，虽然我们说指针的类型必须与所指对象一致，但是这里有第一种例外：允许一个<strong>指向常量的指针</strong>指向一个<strong>非常量对象</strong></p>
+<pre><code>const double homo = 1.14;
+const double *cptr = &amp;homo;
+double dval = 3.14;
+cptr = &amp;dval;   //允许一个 指向常量的指针 指向 一个非常量对象
+*cptr = 0.0     //但是不允许通过 指向常量的指针 修改非常量对象的值</code></pre>
+<p>所以，<strong>指向常量的指针也没有规定其所指的对象必须是一个常量</strong>，所谓指向常量仅仅要求不能通过该指针修改所指向对象的值，而<strong>没有规定所指对象的值不能通过其他途径改变</strong></p>
+<pre><code>const double homo = 1.14;
+const double *cptr = &amp;homo;
+cout &lt;&lt; &quot;cptr = &quot; &lt;&lt; *cptr &lt;&lt;endl
+
+double dval = 5.14;
+cptr = &amp;dval;   //允许一个 指向常量的指针 指向 一个非常量对象
+//*cptr = 0.0   //但是不允许通过 指向常量的指针 修改非常量对象的值
+cout &lt;&lt; &quot;cptr = &quot; &lt;&lt; *cptr &lt;&lt;endl;
+
+dval = 0.0      //所指对象的值可以通过其他途径改变
+cout &lt;&lt; &quot;cptr = &quot; &lt;&lt; *cptr &lt;&lt;endl;</code></pre>
+<p>现在我们输出就变成了：</p>
+<blockquote>
+<p>cptr = 1.14<br />
+cptr = 5.14<br />
+cptr = 0</p>
+</blockquote>
+<h3 id="const指针">const指针</h3>
+<p>和引用不同，指针本身是对象，所以允许把指针本身定为常量，也就是<strong>常量指针</strong>，常量指针必须被初始化，并且初始化完成后值（存放在指针对象里的地址）不能改变</p>
+<p><strong>把<code>*</code>放const关键字之前</strong>，用以说明指针是一个常量（即不变的是指针本身的值）</p>
+<pre><code>int errorNumb = 0;
+int* const curErr = &amp;errorNumb; //curErr是一个常量指针，一直指向errNumb
+const double pi = 3.1415;
+const double* const pip = &amp;pi;  //pip是一个 指向常量对象 的 常量指针</code></pre>
+<p>以下两种写法区别很大：</p>
+<pre><code>int* const curErr = &amp;errorNumb; //curErr一直指向errNumb
+*curErr = 1;                    //可以修改所指变量的值</code></pre>
+<pre><code>const int* curErr = &amp;errorNumb; //curErr是一个 指向常量的指针
+*curErr = 1;                    //× 不能通过curErr修改所指对象的值</code></pre>
+<h3 id="顶层const和底层const">顶层const和底层const</h3>
+<p>由于指针本身是一个对象，它又可以指向另外一个对象，因此<strong>指针本身是不是常量</strong>和<strong>指针所指的对象是不是常量</strong>就是两个互相独立的问题，<strong>顶层const</strong>表示指针本身是个常量，<strong>底层const</strong>表示指针所指的对象是个常量</p>
+<p>顶层const其实可以表示任意的对象(自身)是常量，指针式比较特殊的，因为它既可以是顶层也可以是底层const</p>
+<pre><code>int i = 0;
+int* const p1 = &amp;i;         //p1本身是常量，顶层const
+const int ci = 42;          //ci本身是常量，顶层const
+const int* p2 = &amp;ci;        //*在const之后，p2是指向常量的指针，底层const
+const int* const p3 = p2;   //先看左边是顶层，再看右边是底层，p3是指向常量的常量指针
+const int&amp; r = ci;          //声明引用的const都是底层const，r是一个对常量的引用</code></pre>
+<p>拷贝操作不会影响被拷贝对象的值，顶层const不受影响</p>
+<pre><code>i = ci;
+p2 = p3;</code></pre>
+<p>但是底层const就会产生限制：</p>
+<p>拷贝操作时，拷入和拷出的对象必须有相同的底层const资格，活着两个对象数据类型能转换（非常量能转成常量，反之不行）</p>
+<pre><code>int* p = p3;        //× p3包含底层const，p没有
+const int* p = p3;  //√ p和p3都是底层const
+p2 = p3;            //√ p2和p3都是底层const
+p2 = &amp;i;            //√ int能转换成const int*
+int&amp; r = ci;        //× 普通int&amp;不能绑到const int&amp;上
+const int&amp; r2 = i;  //√ const int&amp;可以绑到一个普通int上</code></pre>
+<h2 id="常对象成员">常对象成员</h2>
+<pre><code>class Corrdinate    //坐标
+{
+public:
+    Corrdinate(int x,int y);
+private:
+    const int m_iX;
+    const int m_iY;
+};</code></pre>
+<p>可以看到两个整形成员变量都是常量，我们也类似指针和数组，称之为<strong>常量成员</strong></p>
+<p>由于是常量，初始化肯定就会受到限制：</p>
+<pre><code>//m_iXh,m_iY是常量成员，以下写法是错误的
+Corrdinate::Corrdinate(int x, int y) {
+    m_iX = x;
+    m_iY = y;
+}</code></pre>
+<p>正确的方法应该是使用初始化列表</p>
+<pre><code>Corrdinate::Corrdinate(int x, int y):m_iX(x), m_iY(y) {
+
+}</code></pre>
+<p>那如果类的成员也是对象呢？</p>
+<p>我们再看一个线段类</p>
+<pre><code>class Line 
+{   
+public:
+    Line(int x1, int y1, int x2, int y2);
+private:
+    const Corrdinate m_corrA;
+    const Corrdinate m_corrB;
+};</code></pre>
+<p>我们需要让一个线段定义后不能修改，于是我们把线段的两个端点定义为const，类似地称之为<strong>常量对象</strong></p>
+<p>定义完后，想通过构造函数初始化，也是使用初始化列表</p>
+<pre><code>Line::Line(int x1, int y1, int x2, int y2) :m_corrA(x1, y1), m_corrB(x2, y2) {
+
+}</code></pre>
+<h2 id="常量成员函数">常量成员函数</h2>
+<p>我们还可以用cosnt修饰成员函数，这样的成员函数叫<strong>常量成员函数</strong></p>
+<pre><code>class Corrdinate    //坐标
+{
+public:
+    Corrdinate(int x,int y);
+    void changeX() const;   //常量成员函数
+    void changeX();
+private:
+    int m_iX;
+    int m_iY;
+};</code></pre>
+<p>然后你就会发现</p>
+<pre><code>void Corrdinate::changeX() const {  //×
+    m_iX = 10;
+}
+
+void Corrdinate::changeX() {        //√
+    m_iX = 20;
+}</code></pre>
+<p>常量成员函数中不能改变数具成员的值，为什么呢？</p>
+<p>这个函数只是看似没有参数，其实还是有一个隐式的this参数的</p>
+<pre><code>void Corrdinate::changeX() {
+    m_iX = 20;
+}</code></pre>
+<p>实际在编译时会变成</p>
+<pre><code>void changeX(Corrdinate *this) {
+    this-&gt;m_iX = 20;
+}</code></pre>
+<p>当我们定义了常量成员函数时：</p>
+<pre><code>void Corrdinate::changeX() const {
+    m_iX = 20;
+}</code></pre>
+<p>实际在编译时会变成</p>
+<pre><code>void changeX(const Corrdinate *this) {
+    this-&gt;m_iX = 20;
+}</code></pre>
+<p>此时的this指针是个常量指针，不能用于改变其所指对象的值</p>
+<p>还要注意的是，由于我们定义了两个版本的<code>changeX</code>函数，你还要弄明白什么时候会调用哪个<code>changeX</code></p>
+<pre><code>int main()
+{
+    Corrdinate cor1(3, 5);
+    cor1.changeX();         //此时调用的是void changeX()
+    const Corrdinate cor2(3, 5);    //常量对象
+    cor1.changeX();         //此时调用的是void changeX() const
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

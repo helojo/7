@@ -1,0 +1,150 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修bzoj2648 SJY摆棋子' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>bzoj2648 SJY摆棋子</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/bzoj2648.html</div><br>
+    <p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=2648"><font size=5>题目链接</font></a></p>
+<h1 id="思路">思路</h1>
+<p><span class="math inline">\(KD-tree\)</span>模板题</p>
+<h1 id="代码">代码</h1>
+<pre><code>#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+#define ls TR[rt].ch[0]
+#define rs TR[rt].ch[1]
+const int N = 1000000 + 100,INF = 1e9;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+struct node {
+    int ch[2],d[2],mx[2],mn[2];
+}TR[N],TMP,a[N];
+int n,m;
+int ans,root;
+int fx;
+bool cmp(const node &amp;A,const node &amp;B) {
+    return A.d[fx] &lt; B.d[fx];
+}
+void up(int rt) {
+    for(int i = 0;i &lt;= 1;++i) {
+        if(ls) TR[rt].mn[i] = min(TR[rt].mn[i],TR[ls].mn[i]),
+            TR[rt].mx[i] = max(TR[rt].mx[i],TR[ls].mx[i]);
+        if(rs) TR[rt].mn[i] = min(TR[rt].mn[i],TR[rs].mn[i]),
+            TR[rt].mx[i] = max(TR[rt].mx[i],TR[rs].mx[i]);
+    }
+}
+int build(int l,int r,int now) {
+    fx = now;
+    int mid = (l + r) &gt;&gt; 1;
+    nth_element(a + l,a + mid,a + r + 1,cmp);
+    TR[mid] = a[mid];
+    int rt = mid;
+    for(int i = 0;i &lt;= 1;++i) TR[mid].mn[i] = TR[mid].mx[i] = TR[mid].d[i];
+        if(l &lt; mid) ls = build(l,mid - 1,now ^ 1);
+        if(r &gt; mid) rs = build(mid + 1,r,now ^ 1);
+        up(mid);
+        return mid;
+}
+void insert(int rt,int now) {
+    if(TMP.d[now] &gt;= TR[rt].d[now]) {
+        if(rs) insert(rs,now ^ 1);
+        else {
+            rs = ++n;
+            TR[n] = TMP;
+            for(int i = 0;i &lt;= 1;++i) TR[n].mn[i] = TR[n].mx[i] = TR[n].d[i];
+        }
+    }
+    else {
+        if(ls) insert(ls,now ^ 1);
+        else {
+            ls = ++n;
+            TR[n] = TMP;
+            for(int i = 0;i &lt;= 1;++i) TR[n].mn[i] = TR[n].mx[i] = TR[n].d[i];
+        }
+    }
+    up(rt);
+}
+int dis(const node &amp;A,const node &amp;B) {
+    return abs(A.d[0] - B.d[0]) + abs(A.d[1] - B.d[1]);
+}
+int get(node A,node B) {
+    int ret = 0;
+    for(int i = 0;i &lt;= 1;++i) ret += max(0,A.mn[i] - B.d[i]);
+    for(int i = 0;i &lt;= 1;++i) ret += max(0,B.d[i] - A.mx[i]);
+    return ret;
+}
+void query(int rt,int now) {
+    int d = dis(TR[rt],TMP),dl = INF,dr = INF;
+    ans = min(ans,d);
+    if(ls) dl = get(TR[ls],TMP);
+    if(rs) dr = get(TR[rs],TMP);
+    if(dl &lt; dr) {
+        if(dl &lt; ans) query(ls,now ^ 1);
+        if(dr &lt; ans) query(rs,now ^ 1);
+    }
+    else {
+        if(dr &lt; ans) query(rs,now ^ 1);
+        if(dl &lt; ans) query(ls,now ^ 1);
+    }
+}
+int Query(int x,int y) {
+    TMP.d[0] = x;TMP.d[1] = y;
+    ans = INF;
+    query(root,0);
+    return ans;
+}
+void Insert(int x,int y) {
+    TMP.d[0] = x;TMP.d[1] = y;
+    insert(root,0);
+}
+int main() {
+    // freopen(&quot;2648/17.in&quot;,&quot;r&quot;,stdin);
+    n = read(),m = read();
+    for(int i = 1;i &lt;= n;++i) {
+        a[i].d[0] = read();a[i].d[1] = read();
+    }
+    root = build(1,n,0);
+    for(int i = 1;i &lt;= m;++i) {
+        int opt = read(),x = read(),y = read();
+        if(opt == 1) Insert(x,y);
+        else printf(&quot;%d\n&quot;,Query(x,y));
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

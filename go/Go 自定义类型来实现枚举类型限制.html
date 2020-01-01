@@ -1,0 +1,135 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go 自定义类型来实现枚举类型限制' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go 自定义类型来实现枚举类型限制</center></div><div class='banquan'>原文出处:本文由博客园博主周伯通的麦田提供。<br/>
+原文连接:https://www.cnblogs.com/phpper/p/11913400.html</div><br>
+    <p>今天使用iota 发现一个问题。定义别名类型的时候 调用函数报错。废话不多说，我们看一段示例(关于iota的用法这里就不介绍了,手册介绍滴比较详细)：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type Aliasint </span><span style="color: #0000ff;">int</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 定义int 的别名 为Aliasint</span>
+
+<span style="color: #0000ff;">const</span><span style="color: #000000;"> (
+    AA Aliasint </span>= iota <span style="color: #008000;">//</span><span style="color: #008000;">初始化 0</span>
+    BB                 <span style="color: #008000;">//</span><span style="color: #008000;"> 1</span>
+    CC                 <span style="color: #008000;">//</span><span style="color: #008000;"> 2</span>
+<span style="color: #000000;">)
+
+func test(m Aliasint) { fmt.Println(m) }
+
+func main() {
+    m :</span>=<span style="color: #000000;"> AA
+    test(m)
+    x :</span>= <span style="color: #800080;">1</span><span style="color: #000000;">
+    test(x)
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> cannot use x (type int) as type Aliasint in argument to test</span>
+}</pre>
+</div>
+<p>报错的意思是：不能在参数中使用x（type int）作为类型Aliasint来测试</p>
+<p>分析：因为int 被别名化了。使用额外同类型变量不被支持，为啥？因为 x := 1这里 x 被隐试定义为了int, 而int不再是所谓的"int",而是 Aliasint.<br />怎么理解? 如果我们这样，那就没问题，继续看：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+
+<span style="color: #008000;">//</span><span style="color: #008000;">type Aliasint int </span><span style="color: #008000;">//</span><span style="color: #008000;"> 定义int 的别名 为Aliasint</span>
+
+<span style="color: #0000ff;">const</span><span style="color: #000000;"> (
+    AA </span><span style="color: #0000ff;">int</span> = iota <span style="color: #008000;">//</span><span style="color: #008000;">初始化 0</span>
+    BB                 <span style="color: #008000;">//</span><span style="color: #008000;"> 1</span>
+    CC                 <span style="color: #008000;">//</span><span style="color: #008000;"> 2</span>
+<span style="color: #000000;">)
+
+func test(m </span><span style="color: #0000ff;">int</span><span style="color: #000000;">) { fmt.Println(m) }
+
+func main() {
+    m :</span>=<span style="color: #000000;"> AA
+    test(m)
+    x :</span>= <span style="color: #800080;">1</span><span style="color: #000000;">
+    test(x)
+}</span></pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #800080;">0</span>
+<span style="color: #800080;">1</span></pre>
+</div>
+<p>我们看到不使用别名正常输出。那么，使用别名如何调用函数传参？</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type Aliasint </span><span style="color: #0000ff;">int</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 定义int 的别名 为Aliasint</span>
+
+<span style="color: #0000ff;">const</span><span style="color: #000000;"> (
+    AA Aliasint </span>= iota <span style="color: #008000;">//</span><span style="color: #008000;">初始化 0</span>
+    BB                 <span style="color: #008000;">//</span><span style="color: #008000;"> 1</span>
+    CC                 <span style="color: #008000;">//</span><span style="color: #008000;"> 2</span>
+<span style="color: #000000;">)
+
+func test(m Aliasint) { fmt.Println(m) }
+
+func main() {
+    m :</span>=<span style="color: #000000;"> AA
+    test(m)
+    test(</span><span style="color: #800080;">110</span>) <span style="color: #008000;">//</span><span style="color: #008000;"> 常量会被编译器自动转换</span>
+}</pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #800080;">0</span>
+<span style="color: #800080;">110</span></pre>
+</div>
+<p>结论：自定义类型必须使用别名类型的变量名定义，因为此时别名类型被"覆盖了"。继续，我们看了下面这段代码，相信大家也理解啦：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type Aliasint </span><span style="color: #0000ff;">int</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 定义int 的别名 为Aliasint</span>
+
+<span style="color: #0000ff;">const</span><span style="color: #000000;"> (
+    AA Aliasint </span>= iota <span style="color: #008000;">//</span><span style="color: #008000;">初始化 0</span>
+    BB                 <span style="color: #008000;">//</span><span style="color: #008000;"> 1</span>
+    CC                 <span style="color: #008000;">//</span><span style="color: #008000;"> 2</span>
+<span style="color: #000000;">)
+
+func test(m Aliasint) { fmt.Println(m) }
+
+func main() {
+    m :</span>=<span style="color: #000000;"> AA
+    test(m)
+    </span><span style="color: #0000ff;">var</span><span style="color: #000000;"> x Aliasint
+    x </span>= <span style="color: #800080;">99</span><span style="color: #000000;">
+    test(x)
+}</span></pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #800080;">0</span>
+<span style="color: #800080;">99</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,156 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修google test 打印派生类对象' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>google test 打印派生类对象</center></div><div class='banquan'>原文出处:本文由博客园博主CY君提供。<br/>
+原文连接:https://www.cnblogs.com/alancprc/p/google-test-print-derived-class-object.html</div><br>
+    <p>在Unison中使用google test时，发现EXPECT_EQ在fail时，不能打印Unison Test Language中定义的派生类的对象。于是写了个纯C++的示例，发现在只定义基类的<code>operator&lt;&lt;</code>时，无法打印派生类对象。</p>
+<p>于是在github上给googletest提交了一个issue<a href="https://github.com/google/googletest/issues/2435">Unable to print derived class while <code>operator&lt;&lt;</code> for base class defined #2435</a>。</p>
+<p>示例代码如下：</p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+class B {
+ public:
+  B(std::string name = &quot;class B&quot;) : name_(name) {}
+  bool operator==(const B&amp; rhs) const { return name_ == rhs.Name(); }
+  std::string Name()const { return name_;}
+
+ private:
+  std::string name_;
+};
+
+class D : public B {
+ public:
+  D(std::string name = &quot;class D&quot;) : B(name) {}
+};
+
+std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, const B&amp; b) {
+  os &lt;&lt; b.Name();
+  return os;
+}
+
+/* without this operator&lt;&lt; for D, EXPECT_EQ won&#39;t print D properly */
+/*
+std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, const D&amp; b) {
+  os &lt;&lt; b.Name();
+  return os;
+}
+*/
+
+#include &lt;gtest/gtest.h&gt;
+
+TEST(Print, PrintByCout) { std::cout &lt;&lt; B() &lt;&lt; std::endl &lt;&lt; D() &lt;&lt; std::endl; }
+
+TEST(Print, PrintB) {
+  B obj1(&quot;b1&quot;);
+  B obj2(&quot;b2&quot;);
+  EXPECT_EQ(obj1, obj2);
+}
+
+TEST(Print, PrintD) {
+  D obj1(&quot;d1&quot;);
+  D obj2(&quot;d2&quot;);
+  EXPECT_EQ(obj1, obj2);
+}</code></pre>
+<p>执行结果:</p>
+<pre><code>Running main() from ./googletest/googletest/src/gtest_main.cc
+[==========] Running 3 tests from 1 test case.
+[----------] Global test environment set-up.
+[----------] 3 tests from Print
+[ RUN      ] Print.PrintByCout
+class B
+class D
+[       OK ] Print.PrintByCout (0 ms)
+[ RUN      ] Print.PrintB
+sample.cpp:39: Failure
+Expected equality of these values:
+  obj1
+    Which is: b1
+  obj2
+    Which is: b2
+[  FAILED  ] Print.PrintB (0 ms)
+[ RUN      ] Print.PrintD
+sample.cpp:45: Failure
+Expected equality of these values:
+  obj1
+    Which is: 32-byte object &lt;90-64 84-4C FF-7F 00-00 02-00 00-00 00-00 00-00 64-31 00-6E 39-56 00-00 E0-E1 75-6E 39-56 00-00&gt;
+  obj2
+    Which is: 32-byte object &lt;B0-64 84-4C FF-7F 00-00 02-00 00-00 00-00 00-00 64-32 00-4C FF-7F 00-00 40-7D D9-7F 87-7F 00-00&gt;
+[  FAILED  ] Print.PrintD (0 ms)
+[----------] 3 tests from Print (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 3 tests from 1 test case ran. (0 ms total)
+[  PASSED  ] 1 test.
+[  FAILED  ] 2 tests, listed below:
+[  FAILED  ] Print.PrintB
+[  FAILED  ] Print.PrintD</code></pre>
+<p>没想到很快就有人回复了，<a href="https://github.com/kuzkry">kuzkry</a>通过一小段代码说明了原因：</p>
+<pre><code>#include &lt;iostream&gt;
+
+struct B {};
+struct D : B {};
+
+template &lt;typename T&gt;
+void foo(T) {
+    // This is something that works under the hood of GTest.
+    // I think we cannot change this as we don&#39;t know what types
+    // users will try to print.
+    std::cout &lt;&lt; &quot;Not what we wanted\n&quot;;
+}
+
+void foo(const B&amp;) {
+    // This is what we want.
+    std::cout &lt;&lt; &quot;Good\n&quot;;
+}
+
+int main() {
+    foo(D{}); // oops, a function template is a better match
+}</code></pre>
+<p>并且也还提供了解决办法：</p>
+<pre><code>/* template header */
+template &lt;typename T, typename = typename std::enable_if&lt;std::is_base_of&lt;B, T&gt;::value&gt;::type&gt;  // (C++11)
+template &lt;typename T, typename = std::enable_if_t&lt;std::is_base_of&lt;B, T&gt;::value&gt;&gt;  // (C++14)
+template &lt;typename T, typename = std::enable_if_t&lt;std::is_base_of_v&lt;B, T&gt;&gt;&gt;  // (C++17)
+std::ostream&amp; operator&lt;&lt;(std::ostream&amp; os, const T&amp; b) {
+  os &lt;&lt; b.Name();
+  return os;
+}</code></pre>
+<p>完美！</p>
+<p>2019/09/03更新：<br />
+这是涉及函数模板的重载问题，《C++ Primer》第五版中有如下说明：</p>
+<ul>
+<li>对于一个调用，其候选函数包括所有模板实参推断成功的函数模板实例。</li>
+<li>候选的函数模板总是可行的，因为函数实参推断会排除任何不可行的模板。</li>
+<li>与往常一样，可行函数（模板和非模板）按类型转换（如果对此调用需要的话）来排序。当然，可以用于函数模板调用的类型转换是非常有限的。</li>
+<li>与往常一样，如果恰有一个函数提供比任何其他函数都更好的匹配，则选择此函数。但是，如果有多个函数提供同样好的匹配，则：
+<ul>
+<li>如果同样好的函数中只有一个是非模板函数，则选择此函数。</li>
+<li>如果同样好的函数中没有非模板函数，而有多个函数模板，且其中一个比其他模板更特例化，则选择此模板。</li>
+<li>否则，此调用有歧义。</li>
+</ul></li>
+</ul>
+<p>原创文章，始发于<a href="https://alancprc.github.io/c++/2019/09/02/google-test-print-derived-class-object.html" class="uri">https://alancprc.github.io/c++/2019/09/02/google-test-print-derived-class-object.html</a><br />
+原创文章，本文链接<a href="https://www.cnblogs.com/alancprc/p/google-test-print-derived-class-object.html" class="uri">https://www.cnblogs.com/alancprc/p/google-test-print-derived-class-object.html</a></p>
+<p><a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="知识共享许可协议" style="border-width:0" src="./images/google test 打印派生类对象0.png" /></a><br />本作品采用<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">知识共享署名-相同方式共享 4.0 国际许可协议</a>进行许可。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

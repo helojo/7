@@ -1,0 +1,114 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Linux system v 共享内存' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Linux system v 共享内存</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11259093.html</div><br>
+    <h3 id="system-v-共享内存">system v 共享内存</h3>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/shm.h&gt;
+int shmget(key_t key, size_t size, int shmflg);</code></code></pre>
+<p>建立：进程与共享内存的关联关系</p>
+<ul>
+<li><p>key_t key：16进制的非0数字。</p>
+<p>一般有两种方式设置它。</p>
+<p>第一种:调用fotk函数</p>
+<p>第二种：直接使用IPC_PRIVATE</p></li>
+</ul>
+<h4 id="注意如果两次调用ftok函数时参数都一样那么得到的key_t-key是一样的所以shmget函数的返回值也是一样的也就是说可以访问同一个共享内存如果使用ipc_private那么shmget函数的返回值每次都不一样">注意：<font color=red>如果两次调用ftok函数时，参数都一样，那么得到的key_t key是一样的，所以shmget函数的返回值也是一样的，也就是说可以访问同一个共享内存。如果使用IPC_PRIVATE，那么shmget函数的返回值每次都不一样。</font></h4>
+<ul>
+<li><p>size：共享内存的大小</p></li>
+<li><p>shmflg：</p>
+<ul>
+<li>IPC_CREAT</li>
+<li>IPC_EXCL</li>
+<li>用户，组用户，其他用户对这片内存的权限，有9个bit来表示，比如664</li>
+</ul></li>
+<li><p>返回值：成功返回这片共享内存的标识号；失败返回-1，errno被设置。</p></li>
+</ul>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/shm.h&gt;
+void *shmat(int shmid, const void *shmaddr, int shmflg);</code></code></pre>
+<ul>
+<li>shmid：由shmget函数创建的，也就是shmget函数的返回值</li>
+<li>shmaddr：
+<ul>
+<li>NULL：让内核去申请内存空间</li>
+<li>非NULL：自己用malloc开辟一个空间，让共享内存shmid和这个地址关联上。但是如果不是4K的整数倍，内核会向上或者向下调整。</li>
+</ul></li>
+<li>shmflg：
+<ul>
+<li>SHM_RND：读写</li>
+<li>SHM_RDONLY：只读</li>
+</ul></li>
+<li>返回值：
+<ul>
+<li>成功：返回内存地址</li>
+<li>失败：返回(void *) -1</li>
+</ul></li>
+</ul>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/shm.h&gt;
+int shmdt(const void *shmaddr);</code></code></pre>
+<p>取消进程与共享内存的关联关系</p>
+<ul>
+<li>shmaddr：shmat的返回值</li>
+<li>返回值：成功0；失败-1，并设置errno。</li>
+</ul>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/shm.h&gt; 
+int shmctl(int shmid, int cmd, struct shmid_ds *buf);</code></code></pre>
+<p>对共享内存操作，更具cmd的不同，对共享内存进行不同的操作。</p>
+<ul>
+<li>shmid：由shmget函数创建的，也就是shmget函数的返回值</li>
+<li>cmd：
+<ul>
+<li>IPC_STAT：得到共享内存的状态</li>
+<li>IPC_RMID：标记删除共享内存（当共享内存的引用计数变为0时，删除）</li>
+<li>IPC_SET：设置共享内存的属性（修改权限，修改shmid等）</li>
+<li>等等</li>
+</ul></li>
+<li>buf：shmid_ds结构体</li>
+<li>返回值：当cmd是IPC_RMID时：成功0；失败-1，并设置errno</li>
+</ul>
+<h3 id="用命令ipcs可以查看共享内存的状态">用命令【ipcs】可以查看共享内存的状态</h3>
+<pre class="shell"><code>------ Shared Memory Segments --------
+key        shmid      owner      perms      bytes      nattch     status
+0x00007fff 65536      ys         664        256        0
+0x00007ffe 98305      ys         664        256        0
+0x0000555e 131074     ys         664        256        0
+0x00000011 229379     ys         664        256        3</code></code></pre>
+<ul>
+<li>key:函数shmget指定的第一个参数</li>
+<li>shmid：函数shmget的返回值</li>
+<li>owner：属于哪个用户创建的</li>
+<li>perms：这个共享内存的访问权限</li>
+<li>bytes：大小</li>
+<li>nattch：使用这个共享内存的进程的数量</li>
+<li>status：共享内存的状态</li>
+</ul>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/Linux system v 共享内存0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

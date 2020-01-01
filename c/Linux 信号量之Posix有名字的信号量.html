@@ -1,0 +1,346 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Linux 信号量之Posix有名字的信号量' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Linux 信号量之Posix有名字的信号量</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11065569.html</div><br>
+    <h3 id="信号量semaphore也和互斥锁一样提供了线程间或者进程间的同步功能">信号量（semaphore），也和互斥锁一样提供了线程间或者进程间的同步功能。</h3>
+<h3 id="信号量有三种">信号量有三种：</h3>
+<ul>
+<li>Posix有名字的信号量</li>
+<li><a href="https://www.cnblogs.com/xiaoshiwang/p/11070030.html">Posix基于内存的信号量</a></li>
+<li>System V信号量</li>
+</ul>
+<p><font color=red>信号量比互斥锁高级，互斥锁只允许一个线程访问临界区，信号量可以多个，可以把信号量看作成互斥锁的升级版，但是如果能用互斥锁解决，就用互斥锁，互斥锁比信号量节省资源。</font></p>
+<h3 id="这篇文章只介绍posix有名字的信号量">这篇文章只介绍Posix有名字的信号量</h3>
+<p>1，创建有名字的信号量，创建成功后，会在ubuntu的/dev/shm目录下，生成一个文件，名字为【sem.name】。【sem】是固定的，【name】是函数sem_open的第一个参数。</p>
+<p><font color=red>名字的信号量的生命周期和内核一样，只要系统不重启，它就一直存在。</font></p>
+<pre><code><code>#include &lt;fcntl.h&gt;           /* For O_* constants */
+#include &lt;sys/stat.h&gt;        /* For mode constants */
+#include &lt;semaphore.h&gt;
+
+sem_t *sem_open(const char *name, int oflag);
+sem_t *sem_open(const char *name, int oflag,
+                mode_t mode, unsigned int value);</code></code></pre>
+<ul>
+<li>name：任意名字，当不能包含【/】</li>
+<li>oflag：和open函数一样，O_RDWR，O_CREAT，O_EXCL等</li>
+<li>mode：和open函数一样，比如0664</li>
+<li><font color=red>value：可以同时访问临界区的线程或者进程的数量。如果设置为1，功能就和互斥锁一样了。</font></li>
+<li>返回值：成功0；失败：SEM_FAILED（这个宏的实际值是-1）。</li>
+</ul>
+<p>2，删除有名字的信号量，并删除文件。</p>
+<pre><code><code>#include &lt;semaphore.h&gt;
+int sem_unlink(const char *name);</code></code></pre>
+<ul>
+<li><p>返回值：成功0</p>
+<ul>
+<li><p>失败：-1，设置errno</p>
+<pre><code><code>EACCES：没有权限访问这个信号量对应的文件
+ENAMETOOLONG：信号量的名字长了
+ENOENT：信号量不存在</code></code></pre></li>
+</ul></li>
+</ul>
+<p>3，取得信号量的value值</p>
+<pre><code><code>#include &lt;semaphore.h&gt;
+int sem_getvalue(sem_t *sem, int *sval);</code></code></pre>
+<ul>
+<li>sem:信号量指针</li>
+<li>sval：返回的信号量的value值</li>
+<li>返回值：成功0；失败：-1，设置errno。（EINVAL ：不是一个有效的信号量）。</li>
+</ul>
+<p>4，如果信号量的value值大于0，把信号量的value值-1；如果信号量的value值小于1，阻塞等待，直到信号量的value值大于0。<font color=red>注意：在ubuntu下，如果sem_wait执行前，value值为0，sem_wait执行后，value也不会变成-1，再次执行sem_wait，value还是0。但是有的unix系统value会变成负数。即使value不变成负数，内核也会准确记录它的值。</font></p>
+<pre><code><code>#include &lt;semaphore.h&gt;
+int sem_wait(sem_t *sem);
+int sem_trywait(sem_t *sem);
+int sem_timedwait(sem_t *sem, const struct timespec *abs_timeout);
+</code></code></pre>
+<ul>
+<li><p>sem:信号量指针</p></li>
+<li><p>返回值：成功0；失败：</p>
+<ul>
+<li>EINTR ：阻塞的过程种被信号终止了。</li>
+<li>EINVAL：不是一个有效的信号量</li>
+</ul>
+<p>sem_trywait():不阻塞等待。</p>
+<ul>
+<li>EAGAIN： 信号量的value值为0。</li>
+</ul>
+<p>sem_timedwait():</p>
+<ul>
+<li>EINVAL： Tabs_timeout.tv_nsecs 小于0，或者大于等于1000毫秒。</li>
+<li>ETIMEDOUT： 超时了。</li>
+</ul></li>
+</ul>
+<p>5，把信号量的value值+1。</p>
+<pre><code><code>#include &lt;semaphore.h&gt;
+int sem_post(sem_t *sem);</code></code></pre>
+<ul>
+<li>返回值：成功0；失败：
+<ul>
+<li>EINVAL：不是一个有效的信号量</li>
+<li>EOVERFLOW：超过了信号量的value。</li>
+</ul></li>
+</ul>
+<h3 id="用下面5个程序观察有名字信号量的特性">用下面5个程序观察有名字信号量的特性。</h3>
+<p>semcreate.c</p>
+<pre><code><code>#include &lt;unistd.h&gt;
+#include &lt;fcntl.h&gt;          
+#include &lt;sys/stat.h&gt;       
+#include &lt;semaphore.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(int argc, char** argv){
+  int c, flags;
+  unsigned int val = 1;
+  sem_t* sem;
+
+  flags = O_RDWR | O_CREAT;
+
+  while((c = getopt(argc, argv, &quot;ei:&quot;)) != -1){
+    switch(c){
+    case &#39;e&#39;:
+      flags |= O_EXCL;
+      break;
+    case &#39;i&#39;:
+      val = atoi(optarg);
+      break;
+    }
+  }
+
+  if(optind != argc - 1){
+    printf(&quot;usage error\n&quot;);
+    return -1;
+  }
+
+  sem = sem_open(argv[optind], flags, 0664, val);
+  if(sem == SEM_FAILED){
+    perror(&quot;sem&quot;);
+    return -1;
+  }
+  sem_close(sem);
+  exit(0);
+}
+</code></code></pre>
+<p>semunlink.c</p>
+<pre><code><code>#include &lt;semaphore.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(int argc, char** argv){
+  if(argc != 2){
+    printf(&quot;usage err\n&quot;);
+    exit(1);
+  }
+
+  if(sem_unlink(argv[1]) == -1){
+    perror(&quot;sem_unlink&quot;);
+  }
+}
+</code></code></pre>
+<p>semgetvalue.c</p>
+<pre><code><code>#include &lt;semaphore.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(int argc, char** argv){
+  sem_t* sem;
+  int val;
+
+  if(argc != 2){
+    printf(&quot;usage error\n&quot;);
+    exit(1);
+  }
+
+  sem = sem_open(argv[1], 0);
+  sem_getvalue(sem, &amp;val);
+  printf(&quot;value = %d\n&quot;, val);
+  exit(0);
+}
+</code></code></pre>
+<p>semwait.c</p>
+<pre><code><code>#include &lt;semaphore.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+
+int main(int argc, char** argv){
+  sem_t* sem;
+  int val;
+
+  if(argc != 2){
+    printf(&quot;usage error\n&quot;);
+    exit(1);
+  }
+
+  sem = sem_open(argv[1], 0);
+  sem_wait(sem);
+  sem_getvalue(sem, &amp;val);
+  printf(&quot;pid %ld has semaphore, value = %d\n&quot;, (long) getpid(), val);
+
+  pause();
+  exit(0);
+}
+</code></code></pre>
+<p>sempost.c</p>
+<pre><code><code>#include &lt;semaphore.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+
+int main(int argc, char** argv){
+  sem_t* sem;
+  int val;
+
+  if(argc != 2){
+    printf(&quot;usage error\n&quot;);
+    exit(1);
+  }
+
+  sem = sem_open(argv[1], 0);
+  sem_post(sem);
+  sem_getvalue(sem, &amp;val);
+  printf(&quot;value = %d\n&quot;, val);
+  
+  exit(0);
+}
+</code></code></pre>
+<h4 id="步骤1创建有名字信号量发现在devshm下生成了sem.test1mode是0664但是umask是0022所以sem.test1mode是0644">步骤1：创建有名字信号量。发现在/dev/shm/下生成了sem.test1，mode是0664，但是umask是0022，所以sem.test1mode是0644</h4>
+<pre class="shell"><code>ubuntu$ ./semcreate test1
+ubuntu$ ls -l /dev/shm/
+total 4
+-rw-r--r-- 1 ys ys 32 6月  21 16:25 sem.test1</code></code></pre>
+<h4 id="步骤2查看有名字信号量的value值">步骤2：查看有名字信号量的value值</h4>
+<pre class="shell"><code>ubuntu$ ./semgetvalue test1
+value = 1</code></code></pre>
+<h4 id="步骤3等待信号量发现执行完sem_wait函数后信号量的value值变更为0了">步骤3：等待信号量,发现执行完sem_wait函数后，信号量的value值变更为0了。</h4>
+<pre class="shell"><code>ubuntu$ ./semwait test1
+pid 2995 has semaphore, value = 0
+^C
+ubuntu$</code></code></pre>
+<h4 id="步骤4查看有名字信号量的value值信号量的value值还是0">步骤4：查看有名字信号量的value值,信号量的value值还是0。</h4>
+<pre class="shell"><code>ubuntu$ ./semgetvalue test1
+value = 0</code></code></pre>
+<h4 id="步骤5等待信号量2次由于执行前value值已经是0了按理来说执行了2次sem_wait后应该变成-2但是发现还行0不要惊慌内核是记住了value的值为-2的">步骤5：等待信号量2次,由于执行前value值已经是0了，按理来说执行了2次sem_wait后，应该变成-2，但是发现还行0。不要惊慌，内核是记住了value的值为-2的。</h4>
+<pre class="shell"><code>ubuntu$ ./semwait test1 &amp;
+[8] 3000
+ubuntu$ ./semgetvalue test1
+value = 0
+ubuntu$ ./semwait test1 &amp;
+[9] 3002
+ubuntu$ ./semgetvalue test1
+value = 0</code></code></pre>
+<h4 id="步骤6把信号量的value值1">步骤6：把信号量的value值+1</h4>
+<pre class="shell"><code>ubuntu$ ./sempost test1
+pid 3000 has semaphore, value = 0 //来之第一个sem_wait程序的输出
+value = 0</code></code></pre>
+<h4 id="步骤7把信号量的value值1">步骤7：把信号量的value值+1</h4>
+<pre class="shell"><code>ubuntu$ ./sempost test1
+pid 3002 has semaphore, value = 0  //来之第二个sem_wait程序的输出
+value = 0</code></code></pre>
+<h4 id="步骤8把信号量的value值1发现内核正确的记录的value的值">步骤8：把信号量的value值+1，发现内核正确的记录的value的值。</h4>
+<pre class="shell"><code>ubuntu$ ./sempost test1
+value = 1</code></code></pre>
+<h3 id="用信号量实现生产者和消费者">用信号量实现生产者和消费者</h3>
+<pre><code><code>#include &lt;pthread.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;fcntl.h&gt;       
+#include &lt;sys/stat.h&gt;    
+#include &lt;semaphore.h&gt;
+
+#define NBUFF 10
+#define SEM_MUTEX   &quot;mutex&quot;
+#define SEM_NEMPTY  &quot;nempty&quot;
+#define SEM_NSTORED &quot;nstored&quot;
+
+int nitems;
+struct {
+  int buff[NBUFF];
+  sem_t *mutex, *nempty, *nstored;
+} shared;
+
+void* produce(void *args){
+  int i;
+  for(i = 0; i &lt; nitems; ++i){
+    sem_wait(shared.nempty);
+    sem_wait(shared.mutex);
+    shared.buff[i % NBUFF] = i;
+    sem_post(shared.mutex);
+    sem_post(shared.nstored);
+  }
+
+  return NULL;
+}
+
+void* consume(void* args){
+  int i;
+  for(i = 0; i &lt; nitems; ++i){
+    sem_wait(shared.nstored);
+    sem_wait(shared.mutex);
+    shared.buff[i % NBUFF] = i;
+    sem_post(shared.mutex);
+    sem_post(shared.nempty);
+  }
+
+  return NULL;
+}
+
+int main(int argc, char** argv){
+
+  pthread_t tid_produce, tid_consume;
+
+  if(argc != 2){
+    printf(&quot;usage error\n&quot;);
+    exit(1);
+  }
+
+  nitems = atoi(argv[1]);
+
+  //create 3 semaphore
+  shared.mutex = sem_open(SEM_MUTEX, O_CREAT | O_EXCL, 0664, 1);
+  shared.nempty = sem_open(SEM_NEMPTY, O_CREAT | O_EXCL, 0664, NBUFF);
+  shared.nstored = sem_open(SEM_NSTORED, O_CREAT | O_EXCL, 0664, 0);
+
+  //create produce and consume thread
+  pthread_create(&amp;tid_produce, NULL, produce, NULL);
+  pthread_create(&amp;tid_consume, NULL, consume, NULL);
+
+  //wait for 2 thread
+  pthread_join(tid_produce, NULL);
+  pthread_join(tid_consume, NULL);
+
+  sem_unlink(SEM_MUTEX);
+  sem_unlink(SEM_NEMPTY);
+  sem_unlink(SEM_NSTORED);
+  exit(0);
+}
+</code></code></pre>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/Linux 信号量之Posix有名字的信号量0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

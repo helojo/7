@@ -1,0 +1,385 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++-变量，this指针，全局函数，成员函数，自定义数组类' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++-变量，this指针，全局函数，成员函数，自定义数组类</center></div><div class='banquan'>原文出处:本文由博客园博主跌倒的小黄瓜提供。<br/>
+原文连接:https://www.cnblogs.com/ygjzs/p/12076768.html</div><br>
+    <h2 id="区分变量属于哪个对象">区分变量属于哪个对象</h2>
+<ul>
+<li>c++对象管理模型初探
+<ul>
+<li>C++类对象中的成员变量和成员函数是分开存储的，C中内存四区仍然有效</li>
+<li>C++编译器对普通成员函数的内部处理（隐藏this指针）</li>
+<li>this指针解决函数形参和类属性相同</li>
+<li>类成员函数写const，修饰的是谁？</li>
+<li>全局函数 pk 类成员函数</li>
+<li>类成员函数返回指针 和 返回引用</li>
+</ul></li>
+<li>C++类对象中的成员变量和成员函数是分开存储的，C中内存四区仍然有效</li>
+<li>C++编译器对普通成员函数的内部处理（隐藏this指针）</li>
+<li>this指针解决函数形参和类属性相同</li>
+<li>类成员函数写const，修饰的是谁？</li>
+<li>全局函数 pk 类成员函数</li>
+<li>类成员函数返回指针 和 返回引用</li>
+</ul>
+<pre><code>#define _CRT_SECURE_NO_WARNINGS
+#include &lt;iostream&gt;
+
+
+using namespace std;
+
+class Test
+{
+public:
+    Test(int i)
+    {
+        mI = i;
+    }
+
+    int getI()
+    {
+        //this就是指向调用改成员函数方法的对象地址
+        return this-&gt;mI;
+        //return mI;
+    }
+private:
+    int mI;
+};
+
+/*
+struct Test
+{
+    int mI;
+};
+
+void Test_init(Test *pthis, int i)
+{
+    pthis-&gt;mI = i;
+}
+
+int getI(struct Test *pthis)
+{
+    return pthis-&gt;mI;
+}
+*/
+int main(void)
+{
+
+    Test t1(10);//Test(&amp;t1, 10)
+    Test t2(20);
+
+    t1.getI();// getI(&amp;t1)
+    
+    return 0;
+}</code></pre>
+<h2 id="this指针">　this指针</h2>
+<pre><code>#define _CRT_SECURE_NO_WARNINGS
+#include &lt;iostream&gt;
+
+
+using namespace std;
+
+class Test
+{
+public:
+    Test(int k)
+    {
+        this-&gt;m_k = k;
+    }
+
+    int getK()  const//成员函数尾部出现const 修饰是this指针
+    {
+        //this-&gt;m_k = 100; //this指针不是 const Test *
+        //this++;// this指针是一个常指针， Test *const  
+        //this-&gt;m_k = 100;
+        //this = this + 1;
+        return this-&gt;m_k;
+    }
+
+    //static成员函数，只能返回static成员变量
+    static int s_getK()
+    {
+        //return m_k;
+        return s_k;
+    }
+private:
+    int m_k;
+    static int s_k;
+};
+
+int Test::s_k = 0;
+
+
+int main(void)
+{
+    Test t1(10); //Test(&amp;t1, 10);
+    Test t2(20);
+
+
+    return 0;
+}</code></pre>
+<h2 id="全局函数和成员函数">全局函数和成员函数</h2>
+<p>如果想返回一个对象的本身，在成员方法中，用*this返回<br />
+}</p>
+<pre><code>#define _CRT_SECURE_NO_WARNINGS
+#include &lt;iostream&gt;
+
+
+using namespace std;
+
+class Test
+{
+public:
+    Test(int a, int b)
+    {
+        this-&gt;a = a;
+        this-&gt;b = b;
+    }
+
+    void printT()
+    {
+        cout &lt;&lt; &quot;a = &quot; &lt;&lt; this-&gt;a &lt;&lt; &quot;, b=&quot; &lt;&lt; this-&gt;b &lt;&lt; endl;
+    }
+
+    int getA()
+    {
+        return this-&gt;a;
+    }
+
+    int getB()
+    {
+        return this-&gt;b;
+    }
+
+    //成员方法
+    Test TestAdd(Test &amp;another)
+    {
+        Test temp(this-&gt;a + another.a,this-&gt;b + another.b);
+
+        return temp;
+    }
+
+    //+= 方法
+    Test&amp; TestAdd2(Test &amp;another)
+    {
+        this-&gt;a += another.a;
+        this-&gt;b += another.b;
+
+        //this===&gt;&amp;t1
+            
+        return *this;//如果想返回一个对象的本身，在成员方法中，用*this返回
+    }
+
+private:
+    int a;
+    int b;
+};
+
+
+/*
+//1 在全局提供一个两个Test想加的函数
+Test TestAdd(Test &amp;t1, Test &amp;t2)
+{
+    Test temp(t1.getA() + t2.getA(), t1.getB() + t2.getB());
+
+    return temp;
+}
+*/
+
+int main(void)
+{
+    Test t1(10, 20);
+    Test t2(100, 200);
+
+    //Test t3 = TestAdd(t1, t2);
+    Test t3 = t1.TestAdd(t2);
+
+    t3.printT();
+
+
+    //((t1 += t2) += t2 )+= t2
+
+    //如果相对一个对象连续调用成员方法，每次都会改变对象本身，成员方法需要返回引用。
+    t1.TestAdd2(t2).TestAdd2(t2);
+
+    t1.printT();
+
+    return 0;
+}</code></pre>
+<h2 id="自定义数组类">自定义数组类</h2>
+<p>main.cpp</p>
+<pre><code>#define _CRT_SECURE_NO_WARNINGS
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;iostream&gt;
+#include &lt;fstream&gt;
+#include &quot;MyArray.h&quot;
+
+using namespace std;
+
+int main(void)
+{
+
+    MyArray array1(10);//开辟10元素的数组
+
+    //赋值操作
+    for (int i = 0; i &lt; 10; i++) {
+        array1.setData(i, i + 10);
+    }
+
+    cout &lt;&lt; &quot;--------&quot; &lt;&lt; endl;
+
+    cout &lt;&lt; &quot;array1:&quot; &lt;&lt; endl;
+    for (int i = 0; i &lt; 10; i++) {
+        cout &lt;&lt; array1.getData(i) &lt;&lt; &quot; &quot;;
+    }
+    cout &lt;&lt; endl;
+
+    MyArray array2 = array1;
+    cout &lt;&lt; &quot;array2:&quot; &lt;&lt; endl;
+    for (int i = 0; i &lt; array2.getLen(); i++) {
+        cout &lt;&lt; array2.getData(i) &lt;&lt; &quot; &quot;;
+    }
+    cout &lt;&lt; endl;
+
+    MyArray array3;
+    array3 = array1;
+
+
+    cout &lt;&lt; &quot;array3:&quot; &lt;&lt; endl;
+    for (int i = 0; i &lt; array3.getLen(); i++) {
+        cout &lt;&lt; array3.getData(i) &lt;&lt; &quot; &quot;;
+    }
+    cout &lt;&lt; endl;
+
+    return 0;
+}
+</code></pre>
+<p>Array.h</p>
+<pre><code>#pragma once
+#include &lt;iostream&gt;
+
+using namespace std;
+
+class MyArray
+{
+public:
+    MyArray();
+    MyArray(int len);
+    MyArray(const MyArray &amp;another);
+    ~MyArray();
+
+    void setData(int index, int data);
+    int getData(int index);
+    int getLen();
+
+    void operator=(const MyArray&amp; another);
+private:
+    int len;
+    int *space;
+};
+
+
+
+</code></pre>
+<p>Array.cpp</p>
+<pre><code>#include &quot;MyArray.h&quot;
+
+
+MyArray::MyArray()
+{
+    cout &lt;&lt; &quot;MyArray()...&quot; &lt;&lt; endl;
+    this-&gt;len = 0;
+    this-&gt;space = NULL;
+}
+
+MyArray::MyArray(int len)
+{
+    if (len &lt;= 0) {
+        this-&gt;len = 0;
+        return;
+    }
+    else {
+        this-&gt;len = len;
+
+        //给space开辟空间
+        this-&gt;space = new int[this-&gt;len];
+        cout &lt;&lt; &quot;MyArray::MyArray(int len) ...&quot; &lt;&lt; endl;
+    }
+}
+MyArray::MyArray(const MyArray &amp;another)
+{
+    if (another.len &gt;= 0) {
+        this-&gt;len = another.len;
+
+        //深拷贝
+        this-&gt;space = new int[this-&gt;len];
+        for (int i = 0; i &lt; this-&gt;len; i++) {
+            this-&gt;space[i] = another.space[i];
+        }
+        cout &lt;&lt; &quot;MyArray::MyArray(const MyArray &amp;another) ...&quot; &lt;&lt; endl;
+
+    }
+}
+MyArray::~MyArray()
+{
+    if (this-&gt;space != NULL) {
+        delete[]this-&gt;space;
+        this-&gt;space = NULL;
+        len = 0;
+        cout &lt;&lt; &quot;MyArray::~MyArray() ...&quot; &lt;&lt; endl;
+    }
+}
+
+void MyArray::setData(int index, int data)
+{
+    if (this-&gt;space != NULL) {
+        this-&gt;space[index] = data;
+    }
+}
+int MyArray::getData(int index)
+{
+    return this-&gt;space[index];
+}
+int MyArray::getLen()
+{
+    return this-&gt;len;
+}
+
+void MyArray::operator=(const MyArray&amp; another)
+{
+    if (another.len &gt;= 0) {
+        this-&gt;len = another.len;
+
+        //深拷贝
+        this-&gt;space = new int[this-&gt;len];
+        for (int i = 0; i &lt; this-&gt;len; i++) {
+            this-&gt;space[i] = another.space[i];
+        }
+        cout &lt;&lt; &quot;MyArray::operator=(const MyArray&amp; another) ...&quot; &lt;&lt; endl;
+
+    }
+}
+
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

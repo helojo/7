@@ -1,0 +1,397 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Qt实现表格树控件-支持多级表头' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Qt实现表格树控件-支持多级表头</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11167659.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一概述">一、概述</a></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三实现方式">三、实现方式</a></li>
+        <li><a href="#四多级表头">四、多级表头</a><ul>
+        <li><a href="#数据源">1、数据源</a></li>
+        <li><a href="#表格">2、表格</a></li>
+        <li><a href="#qstyleditemdelegate绘制代理">3、QStyledItemDelegate绘制代理</a></li>
+        </ul></li>
+        <li><a href="#五测试代码">五、测试代码</a></li>
+        <li><a href="#六相关文章">六、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11167659.html">Qt实现表格树控件-支持多级表头</a></p>
+<h2 id="一概述">一、概述</h2>
+<p>之前写过一篇关于表格控件多级表头的文章，喜欢的话可以参考<a href="https://www.cnblogs.com/swarmbees/p/11167664.html">Qt实现表格控件-支持多级列表头、多级行表头、单元格合并、字体设置等</a>。今天这篇文章带来了比表格更加复杂的控件-树控件多级表头实现。</p>
+<p>在Qt中，表格控件包含有水平和垂直表头，但是常规使用模式下都是只能实现一级表头，而树控件虽然包含有了branch分支，这也间接的削弱了他自身的表头功能，细心的同学可能会发现Qt自带的QTreeView树控件只包含有水平表头，没有了垂直表头。</p>
+<blockquote>
+<p>既然Qt自带的控件中没有这个功能，那么我们只能自己去实现了。</p>
+</blockquote>
+<p>要实现多级表头功能方式也多种多样，之前就看到过几篇关于实现多级表头的文章，总体可以分为如下两种方式</p>
+<ol>
+<li>表头使用一个表格来模拟</li>
+<li>通过给表头自定义Model</li>
+</ol>
+<p>今天这篇文章我们是通过方式2来实现多级表头。如效果图所示，实现的是一个树控件的多级表头，并且他还包含了垂直列头，实现这个控件所需要完成的代码量还是比较多的。本篇文章可以算作是一个开头吧，后续会逐步把关键功能的实现方式分享出来。</p>
+<h2 id="二效果展示">二、效果展示</h2>
+<html>
+<center>
+<div>
+    <img src="./images/Qt实现表格树控件-支持多级表头0.png" />
+</div>
+</center>
+</html>
+<h2 id="三实现方式">三、实现方式</h2>
+<p>本篇文章中的控件看起来是一个树控件，但是他又具备了表格控件该有的一些特性，比如垂直表头、多级水平表头等等。要实现这样的树控件，我们有两个大的方向可以去考虑</p>
+<ol>
+<li>重写表格控件，实现branch</li>
+<li>表格控件+树控件</li>
+</ol>
+<p>方式1重写表格控件实行branch的工作量是比较大的，而且需要把Qt原本的代码迁出来，工作量会比加大，个人选择了发你。</p>
+<p><strong>方式2是表格控件+树控件的实现方式，说白了就是表格控件提供水平和垂直表头，树控件提供内容展示，听起来好像没毛病，那么还等什么，直接干呗。</strong></p>
+<p>既然大方向定了，那么接下来可能就是一些细节问题的确定。</p>
+<ol>
+<li>多级水平表头</li>
+<li>垂直列头拖拽时，实现树控件行高同步变动</li>
+<li>自绘branch</li>
+</ol>
+<p>以上三个问题都是实现表格树控件时遇到的一些比较棘手的问题，后续会分别通过单独的文章来进行讲解，今天这篇文章也是我们的第一讲，怎么实现水平多级表头</p>
+<h2 id="四多级表头">四、多级表头</h2>
+<p>第一节我们也说了，实现多级表头我们使用重写model的方式来实现，接下来就是贴代码的时候。</p>
+<h3 id="数据源">1、数据源</h3>
+<p>经常重写model的同学对如下代码应该不陌生，对于继承自QAbstractItemModel的数据源肯定是需要重写该类的所有纯虚方法，包括所有间接父类的纯虚方法。</p>
+<p>除此之外自定义model应该还需要提供一个可以合并单元格的方法，为什么呢？因为我们多级表头需要。比如说我们一级表头下有3个二级表头，那这就说明一级表头合并了3列，使得本身的3列数据变成一列。</p>
+<pre><code>class HHeaderModel : public QAbstractItemModel
+{
+    struct ModelData //模型数据结构
+    {
+        QString text;
+
+        ModelData() : text(&quot;&quot;)
+        {
+        }
+    };
+
+    Q_OBJECT
+
+public:
+    HHeaderModel(QObject * parent = 0);
+    ~HHeaderModel();
+
+public:
+    void setItem(int row, int col, const QString &amp; text);
+
+    QString item(int row, int col);
+
+    void setSpan(int firstRow, int firstColumn, int rowSpanCount, int columnSpanCount);
+    const CellSpan&amp; getSpan(int row, int column);
+
+public:
+    virtual QModelIndex index(int row, int column, const QModelIndex &amp; parent) const override;
+    virtual QModelIndex parent(const QModelIndex &amp; child) const override;
+    virtual int rowCount(const QModelIndex &amp; parent) const override;
+    virtual int columnCount(const QModelIndex &amp; parent) const override;
+    virtual QVariant data(const QModelIndex &amp; index, int role) const override;
+    virtual Qt::ItemFlags flags(const QModelIndex &amp; index) const override;
+    virtual bool setData(const QModelIndex &amp; index, const QVariant &amp; value, int role = Qt::EditRole) override;
+    virtual QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+
+private:
+    //找到对应的模型数据
+    ModelData * modelData(const QModelIndex &amp; index) const;
+
+private:
+    //key rowNo,  key colNo
+    QMap&lt;int, QMap&lt;int, ModelData *&gt; &gt; m_modelDataMap;
+    int m_iMaxCol;
+
+    CellSpan m_InvalidCellSpan;
+    QList&lt;CellSpan&gt; m_cellSpanList;
+};
+</code></pre>
+<p>以上便是model的头文件声明，其中重写父类的虚方法这里就不做过多说明，和平时重写其他数据源没有区别，这里多了重点说明下setSpan接口。</p>
+<pre><code>void HHeaderModel::setSpan(int firstRow, int firstColumn, int rowSpanCount, int columnSpanCount)
+{
+    for (int row = firstRow; row &lt; firstRow + rowSpanCount; ++row)
+    {
+        for (int col = firstColumn; col &lt; firstColumn + columnSpanCount; ++col)
+        {
+            m_cellSpanList.append(CellSpan(row, col, rowSpanCount, columnSpanCount, firstRow, firstColumn));
+        }
+    }
+}
+
+const CellSpan&amp; HHeaderModel::getSpan(int row, int column)
+{
+    for (QList&lt;CellSpan&gt;::const_iterator iter = m_cellSpanList.begin(); iter != m_cellSpanList.end(); ++iter)
+    {
+        if ((*iter).curRow == row &amp;&amp; (*iter).curCol == column)
+        {
+            return *iter;
+        }
+    }
+
+    return m_InvalidCellSpan;
+}</code></pre>
+<p>setSpan接口存储了哪些列或者行被合并了，在绘制表格头时我们也可以根据这些信息来计算绘制的大小和位置。</p>
+<h3 id="表格">2、表格</h3>
+<p>数据源介绍完，接下来看看表头视图类，这个类相对Model来说会复杂很多，主要也是根据Model中存储的合并信息来进行绘制。</p>
+<p>由于这个类代码比价多，这里我就不贴头文件声明了，下面还是主要介绍下关键函数</p>
+<p><strong>a、paintEvent绘制函数</strong></p>
+<pre><code>void HHeaderView::paintEvent(QPaintEvent * event)
+{
+    QPainter painter(viewport());
+    QMultiMap&lt;int, int&gt; rowSpanList;
+
+    int cnt = count();
+    int curRow, curCol;
+    
+    HHeaderModel * model = qobject_cast&lt;HHeaderModel *&gt;(this-&gt;model());
+    for (int row = 0; row &lt; model-&gt;rowCount(QModelIndex()); ++row)
+    {
+        for (int col = 0; col &lt; model-&gt;columnCount(QModelIndex()); ++col)
+        {
+            curRow = row;
+            curCol = col;
+
+            QStyleOptionViewItemV4 opt = viewOptions();
+
+            QStyleOptionHeader header_opt;
+            initStyleOption(&amp;header_opt);
+
+            header_opt.textAlignment = Qt::AlignCenter;
+            // header_opt.icon = QIcon(&quot;./Resources/logo.ico&quot;);
+            QFont fnt;
+            fnt.setBold(true);
+            header_opt.fontMetrics = QFontMetrics(fnt);
+
+            opt.fontMetrics = QFontMetrics(fnt);
+            QSize size = style()-&gt;sizeFromContents(QStyle::CT_HeaderSection, &amp;header_opt, QSize(), this);
+
+            // size.setHeight(25);
+            header_opt.position = QStyleOptionHeader::Middle;
+
+            //判断当前行是否处于鼠标悬停状态
+            if (m_hoverIndex == model-&gt;index(row, col, QModelIndex()))
+            {
+                header_opt.state |= QStyle::State_MouseOver;
+                // header_opt.state |= QStyle::State_Active;
+            }
+
+            opt.text = model-&gt;item(row, col);
+            header_opt.text = model-&gt;item(row, col);
+
+            CellSpan span = model-&gt;getSpan(row, col);
+
+            int rowSpan = span.rowSpan;
+            int columnSpan = span.colSpan;
+
+            if (columnSpan &gt; 1 &amp;&amp; rowSpan &gt; 1)
+            {
+                //单元格跨越多列和多行, 不支持，改为多行1列
+                continue;
+                /*header_opt.rect = QRect(sectionViewportPosition(logicalIndex(col)), row * size.height(), sectionSizes(col, columnSpan), rowSpan * size.height());
+                opt.rect = header_opt.rect;
+                col += columnSpan - 1; */
+            }
+            else if (columnSpan &gt; 1)//单元格跨越多列
+            {
+                header_opt.rect = QRect(sectionViewportPosition(logicalIndex(col)), row * size.height(), sectionSizes(col, columnSpan), size.height());
+                opt.rect = header_opt.rect;
+                col += columnSpan - 1;
+            }
+            else if (rowSpan &gt; 1)//单元格跨越多行
+            {
+                header_opt.rect = QRect(sectionViewportPosition(logicalIndex(col)), row * size.height(), sectionSize(logicalIndex(col)), size.height() * rowSpan);
+                opt.rect = header_opt.rect;
+                for (int i = row + 1; i &lt;= rowSpan - 1; ++i)
+                {
+                    rowSpanList.insert(i, col);
+                }
+            }
+            else
+            {
+                //正常的单元格
+                header_opt.rect = QRect(sectionViewportPosition(logicalIndex(col)), row * size.height(), sectionSize(logicalIndex(col)), size.height());
+                opt.rect = header_opt.rect;
+            }
+
+            opt.state = header_opt.state;
+
+            //opt.displayAlignment = Qt::AlignCenter;
+
+            //opt.icon = QIcon(&quot;./Resources/logo.ico&quot;);
+            //opt.backgroundBrush = QBrush(QColor(255, 0, 0));
+            QMultiMap&lt;int, int&gt;::iterator it = rowSpanList.find(curRow, curCol);
+            if (it == rowSpanList.end())
+            {
+                //保存当前item的矩形
+                m_itemRectMap[curRow][curCol] = header_opt.rect;
+                itemDelegate()-&gt;paint(&amp;painter, opt, model-&gt;index(curRow, curCol, QModelIndex()));
+
+                painter.setPen(QColor(&quot;#e5e5e5&quot;));
+                painter.drawLine(opt.rect.bottomLeft(), opt.rect.bottomRight());
+            }
+            else
+            {
+                //如果是跨越多行1列的情况，采用默认的paint
+            }
+        }
+    }
+
+    //painter.drawLine(viewport()-&gt;rect().bottomLeft(), viewport()-&gt;rect().bottomRight());
+}</code></pre>
+<p><strong>b、列宽发生变化</strong></p>
+<pre><code>void HHeaderView::onSectionResized(int logicalIndex, int oldSize, int newSize)
+{
+    if (0 == newSize)
+    {
+        //过滤掉隐藏列导致的resize
+        viewport()-&gt;update();
+        return;
+    }
+
+    static bool selfEmitFlag = false;
+    if (selfEmitFlag)
+    {
+        return;
+    }
+
+    int minWidth = 99999;
+    QFontMetrics metrics(font());
+    //获取这列上最小的字体宽度，移动的长度不能大于最小的字体宽度
+    HHeaderModel * model = qobject_cast&lt;HHeaderModel *&gt; (this-&gt;model());
+    for (int i = 0; i &lt; model-&gt;rowCount(QModelIndex()); ++i)
+    {
+        QString text = model-&gt;item(i, logicalIndex);
+        if (text.isEmpty())
+            continue;
+
+        int textWidth = metrics.width(text);
+        if (minWidth &gt; textWidth)
+        {
+            minWidth = textWidth;
+        }
+    }
+
+    if (newSize &lt; minWidth)
+    {
+        selfEmitFlag = true;
+        resizeSection(logicalIndex, oldSize);
+        selfEmitFlag = false;
+    }
+
+    viewport()-&gt;update();
+}</code></pre>
+<h3 id="qstyleditemdelegate绘制代理">3、QStyledItemDelegate绘制代理</h3>
+<p>既然说到了自绘，那么有必要说下Qt自绘相关的一些东西。</p>
+<p><strong>a、paintEvent</strong></p>
+<p>paintEvent是QWidget提供的自绘函数，当界面刷新时该接口就会被调用。</p>
+<p><strong>b、复杂控件自绘</strong></p>
+<p>对于一些比较复杂的控件为了达到更好的定制型，Qt把paintEvent函数中的绘制过程进行了更为详细的切割，也可以让我们进行布局的重写。</p>
+<p>比如今天说到的树控件，当paintEvent函数调用时，其实内部真正进行绘制的是如下3个函数，重写如下三个函数可以为我们带来更友好的定制性，并且很大程度上减轻了我们自己去实现的风险。</p>
+<pre><code>virtual void drawBranches(QPainter *painter, const QRect &amp;rect, const QModelIndex &amp;index) const
+virtual void drawRow(QPainter *painter, const QStyleOptionViewItem &amp;option, const QModelIndex &amp;index) const
+void drawTree(QPainter *painter, const QRegion &amp;region) const</code></pre>
+<p><strong>c、QStyledItemDelegate绘制代理</strong></p>
+<p>为了更好的代码管理和接口抽象，Qt在处理一些超级变态的控件时提供了绘制代理这个类，即使在一些力度很小的绘制函数中依然是调用的绘制代理去绘图。</p>
+<p>刚好我们今天说的这个表头绘制就是如此。<strong>如下代码所示，是一部分的HHeaderItemDelegate::paint函数展示，主要是针对表头排序进行了定制。</strong></p>
+<pre><code>void HHeaderItemDelegate::paint(QPainter * painter, const QStyleOptionViewItem &amp; option, const QModelIndex &amp; index) const
+{
+    int row = index.row();
+    int col = index.column();
+
+    const int textMargin = QApplication::style()-&gt;pixelMetric(QStyle::PM_FocusFrameHMargin) + 1;
+
+    QStyleOptionHeader header_opt;
+    header_opt.rect = option.rect;
+    header_opt.position = QStyleOptionHeader::Middle;
+    header_opt.textAlignment = Qt::AlignCenter;
+
+    header_opt.state = option.state;
+    //header_opt.state |= QStyle::State_HasFocus;//QStyle::State_Enabled | QStyle::State_Horizontal | QStyle::State_None | QStyle::State_Raised;
+
+
+    if (HHeaderView::instance-&gt;isItemPress(row, col))
+    {
+        header_opt.state |= QStyle::State_Sunken; //按钮按下效果
+    }
+
+    // if ((QApplication::mouseButtons() &amp;&amp; (Qt::LeftButton || Qt::RightButton)))
+    //             header_opt.state |= QStyle::State_Sunken;
+
+    painter-&gt;save();
+    QApplication::style()-&gt;drawControl(QStyle::CE_Header, &amp;header_opt, painter);
+    painter-&gt;restore();
+}</code></pre>
+<h2 id="五测试代码">五、测试代码</h2>
+<p>把需要合并的列和行进行合并，即可达到多级表头的效果，如下是设置表格model合并接口展示。</p>
+<pre><code>horizontalHeaderModel-&gt;setSpan(0, 0, 1, 4);
+horizontalHeaderModel-&gt;setSpan(0, 4, 1, 3);
+horizontalHeaderModel-&gt;setSpan(0, 7, 1, 3);
+
+horizontalHeaderModel-&gt;setSpan(0, 10, 2, 1);
+horizontalHeaderModel-&gt;setSpan(0, 11, 2, 1); //不支持跨越多行多列的情况
+}</code></pre>
+<p>model设置完毕后只要把Model设置给QHeaderView类即可。</p>
+<h2 id="六相关文章">六、相关文章</h2>
+<p><strong>值得一看的优秀文章：</strong></p>
+<ol>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/6707798.html">财联社-产品展示</a></strong></li>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/10836505.html">广联达-产品展示</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95527107">Qt定制控件列表</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95526527">牛逼哄哄的Qt库</a></strong></li>
+</ol>
+<hr />
+<ol>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11167664.html">Qt实现表格控件-支持多级列表头、多级行表头、单元格合并、字体设置等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11155074.html">Qt高仿Excel表格组件-支持冻结列、冻结行、内容自适应和合并单元格</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11129274.html">属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11117259.html">超级实用的属性浏览器控件--QtTreePropertyBrowser</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/9288902.html">Qt之表格控件蚂蚁线</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11185435.html">QRowTable表格控件-支持hover整行、checked整行、指定列排序等</a></p></li>
+</ol>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

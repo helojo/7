@@ -1,0 +1,148 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[译] Go语言测试进阶版建议与技巧' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[译] Go语言测试进阶版建议与技巧</center></div><div class='banquan'>原文出处:本文由博客园博主就想叫yoko提供。<br/>
+原文连接:https://www.cnblogs.com/notokoy/p/11523496.html</div><br>
+    <p>阅读本篇文章前，你最好已经知道如何写基本的单元测试。本篇文章共包含3个小建议，以及7个小技巧。</p>
+<h3 id="建议一不要使用框架">建议一，不要使用框架</h3>
+<!-- more -->
+<p>Go语言自身已经有一个非常棒的测试框架，它允许你使用Go编写测试代码，不需要再额外学习其它的库或测试引擎。关于断言方面的帮助函数，你可以看看这个 <a href="https://github.com/benbjohnson/testing">testing</a>，或者这个 <a href="https://github.com/q191201771/nezha/blob/master/pkg/assert/assert.go">assert.go</a> :)</p>
+<h3 id="建议二使用_test包名">建议二，使用&quot;_test&quot;包名</h3>
+<p>相较于直接使用被测试代码的包名，使用 <code>*_test</code>包名使得测试代码只能访问包中对外暴露出的接口。这使得你在写测试时更多的是站在包使用者的角度来写，从而使得你可以思考包的接口是否设计合理。</p>
+<h3 id="建议三避免全局常量配置项">建议三，避免全局常量配置项</h3>
+<p>避免使用全局常量配置项，因为测试代码无法修改常量。下面举了三个例子做对比：</p>
+<pre><code><code>// 1. 不好，测试代码无法修改它
+const port = 8080
+
+// 2. 好一些，测试代码可以修改它
+var port = 8080
+
+// 3. 更好的方式，测试代码可以通过 struct 配置 Port
+const defaultPort = 8080
+type AppConfig {
+  Port int // 构造函数中初始化为 defaultPort
+}</code></pre>
+<h3 id="技巧一加载测试数据">技巧一，加载测试数据</h3>
+<p>Go对从文件中加载测试数据提供了非常好的支持。首先，Go编译时会忽略<code>testdata</code>目录。然后，当测试代码运行时，Go会将当前目录作为包的目录。这使得你可以使用相对路径来访问<code>testdata</code>目录。看例子：</p>
+<pre><code><code>func helperLoadBytes(t *testing.T, name string) []byte {
+  path := filepath.Join(&quot;testdata&quot;, name) // relative path
+  bytes, err := ioutil.ReadFile(path)
+  if err != nil {
+    t.Fatal(err)
+  }
+  return bytes
+}</code></pre>
+<h3 id="技巧二保存测试时的预期结果至.golden文件中">技巧二，保存测试时的预期结果至<code>.golden</code>文件中</h3>
+<p>将测试时的预期结果保存至<code>.golden</code>文件中。并且提供一个<code>flag</code>来决定是否更新它。使用这个技巧可以避免在测试代码中硬编码预期输出结果非常复杂的内容。看例子：</p>
+<pre><code><code>var update = flag.Bool(&quot;update&quot;, false, &quot;update .golden files&quot;)
+func TestSomething(t *testing.T) {
+  actual := doSomething()
+  golden := filepath.Join(“testdata”, tc.Name+”.golden”)
+  if *update {
+    ioutil.WriteFile(golden, actual, 0644)
+  }
+  expected, _ := ioutil.ReadFile(golden)
+
+  if !bytes.Equal(actual, expected) {
+    // FAIL!
+  }
+}</code></pre>
+<h3 id="技巧三测试时的初始化清理代码">技巧三，测试时的初始化、清理代码</h3>
+<p>有时候测试代码比较复杂，在跑测试的case之前需要初始化好环境，这可能会包含很多不相关的错误检查，比如测试文件是否加载成功，测试数据是否能按json格式解析等等。这使得测试代码变得很不纯粹优雅。</p>
+<p>为了解决这个问题，你可以把不相关的代码放入帮助函数中。这些函数永远不返回error，而是传入<code>*testing.T</code>，当有错误发生时直接断言报错。</p>
+<p>同样的，如果帮助函数需要在结束后做清理工作，帮助函数应该返回一个函数做清理工作。看例子：</p>
+<pre><code><code>func testChdir(t *testing.T, dir string) func() {
+  old, err := os.Getwd()
+  if err != nil {
+    t.Fatalf(&quot;err: %s&quot;, err)
+  }
+  if err := os.Chdir(dir); err != nil {
+    t.Fatalf(&quot;err: %s&quot;, err)
+  }
+  return func() { // 返回清理函数，供外部需要清理时调用
+    if err := os.Chdir(old); err != nil {
+       t.Fatalf(&quot;err: %s&quot;, err)
+    }
+  }
+}
+func TestThing(t *testing.T) {
+  defer testChdir(t, &quot;/other&quot;)()
+  // ...
+}</code></pre>
+<p>上面的例子包含了另外一个关于<code>defer</code>使用的非常酷的技巧。<code>defer testChdir(t, &quot;/other&quot;)()</code>会先执行<code>testChdir</code>内的代码，并且在<code>TestThing</code>结束时执行<code>testChdir</code>所返回的清理函数中的代码。</p>
+<h3 id="技巧四当依赖第三方可执行程序时">技巧四，当依赖第三方可执行程序时</h3>
+<p>有时测试代码会依赖第三方可执行程序，我们可以通过以下方法检查程序是否存在，存在则执行测试，不存在则跳过测试。</p>
+<pre><code><code>var testHasGit bool
+func init() {
+  if _, err := exec.LookPath(&quot;git&quot;); err == nil {
+    testHasGit = true
+  }
+}
+func TestGitGetter(t *testing.T) {
+  if !testHasGit {
+    t.Log(&quot;git not found, skipping&quot;)
+    t.Skip()
+  }
+  // ...
+}</code></pre>
+<h3 id="技巧五测试包含os.exit的代码">技巧五，测试包含<code>os.Exit</code>的代码</h3>
+<p>该方法通过启动子进程的方式，避免测试包含<code>os.Exit</code>的代码导致测试程序提前退出。看例子：</p>
+<pre><code><code>func CrashingGit() {
+  os.Exit(1)
+}
+func TestFailingGit(t *testing.T) {
+  if os.Getenv(&quot;BE_CRASHING_GIT&quot;) == &quot;1&quot; { // 子进程进入这个逻辑分支
+    CrashingGit()
+    return
+  }
+  // 被 go test 执行，
+  // 设置好环境变量，启动子进程再次执行 TestFailingGit
+  cmd := exec.Command(os.Args[0], &quot;-test.run=TestFailingGit&quot;)
+  cmd.Env = append(os.Environ(), &quot;BE_CRASHING_GIT=1&quot;)
+  err := cmd.Run()
+  if e, ok := err.(*exec.ExitError); ok &amp;&amp; !e.Success() {
+    return
+  }
+  t.Fatalf(&quot;Process ran with err %v, want os.Exit(1)&quot;, err)
+}</code></pre>
+<p>上面例子的思想是，当Go测试框架运行<code>TestFailingGit</code>时，启动一个子进程（<code>os.Args[0]</code>即生成的Go测试程序）。子进程再次运行测试程序，并只执行<code>TestFailingGit</code>（通过参数 <code>-test.run=TestFailingGit</code> 实现），并且设置了环境变量<code>BE_CRASHING_GIT=1</code>，这样子进程将执行<code>CrashingGit()</code>。</p>
+<h3 id="技巧六将mockshelpers放入testing.go文件中">技巧六，将mocks、helpers放入testing.go文件中</h3>
+<p>testing.go文件会被当做一个普通的源码文件，而不是测试代码文件。这样在其它的包中或其它包的测试代码可以使用这些mocks、helpers。</p>
+<h3 id="技巧七单独处理耗时长的测试">技巧七，单独处理耗时长的测试</h3>
+<p>当存在一些耗时很长的测试时，等待所有的测试结束会让人烦躁。解决方法是将这些耗时长的测试放入<code>_integration_test.go</code>文件中，并在该文件的头部加入编译tag。看例子：</p>
+<pre><code><code>// +build integration</code></pre>
+<p>这样Go测试时默认不会运行这些测试代码。<br />
+如果想运行所有的测试代码，你可以这样：</p>
+<pre><code><code>go test -tags=integration</code></pre>
+<p>以下是我个人使用alias做的一个简便命令，可以运行当前目录以及子目录中除vendoer目录外的所有测试：</p>
+<pre><code><code>alias gtest=&quot;go test \$(go list ./… | grep -v /vendor/) -tags=integration&quot;</code></pre>
+<p>这个命令可以配合<code>-v</code>参数使用：</p>
+<pre><code><code> $ gtest
+ …
+ $ gtest -v
+ …</code></pre>
+<p>感谢阅读，英文原文地址：<a href="https://medium.com/@povilasve/go-advanced-tips-tricks-a872503ac859">Go advanced testing tips &amp; tricks</a> (https://medium.com/@povilasve/go-advanced-tips-tricks-a872503ac859)</p>
+<p>本文作者： yoko<br />
+本文链接： http://www.pengrl.com/p/32101/<br />
+版权声明： 本博客所有文章除特别声明外，均采用 CC BY-NC-SA 3.0 许可协议。转载请注明出处！</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

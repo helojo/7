@@ -1,0 +1,85 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修float（double）快速转换int的方法' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>float（double）快速转换int的方法</center></div><div class='banquan'>原文出处:本文由博客园博主中華大帝提供。<br/>
+原文连接:https://www.cnblogs.com/sdragonx/p/10933096.html</div><br>
+    <p>自己写一个软件渲染器的时候，无意中发现float转换int非常耗时，于是查阅文章，这才有了这个命题，以前不清楚还有这么个机制。网上看了很多文章，搜索到了一个数字6755399441055744，这个是double快速转换int的一个magic number。至于原理我一知半解，主要看效果。经测试，这个函数的效率比c++直接float转int高很多，记录下来以便备忘。</p>
+<div class="cnblogs_Highlighter">
+<pre>//
+// 将64位浮点数转换为32位整数
+// 小数部分将四舍五入到偶数
+//
+//用于double的magic number是1.5*2^52=6755399441055744.0
+//对于double来说，相应的magic number就是1.5*2^36
+//处理float的速度比汇编低1/3
+//编译器优化情况下，比手写汇编快
+
+inline int32_t f_toint(double x)
+{
+    x += 6755399441055744.0;
+    return *(int32_t*)&amp;x;
+}
+
+//四舍五入，处理的数据范围是-2^22 ~ 2^22-1, -4194304.0 ~ 4194303.0
+inline int32_t f_toint32(float x)
+{
+    //取得符号位，设置掩码
+    uint32_t n = ((*(uint32_t*)&amp;x) &amp; 0x80000000) ? 0xFFC00000 : 0;
+    x += 12582912.0f;
+    return ((*(uint32_t*)&amp;x) &amp; 0x3FFFFF) | n;
+}
+</pre>
+</div>
+<pre></pre>
+<div class="line number28 index27 alt1">
+<p>f_toint32的原型是csdn论坛一个网友说的回复：</p>
+</div>
+<div class="line number28 index27 alt1"><strong><code>inline</code>&nbsp;<code class="cpp color1 bold">long</code>&nbsp;<code class="cpp plain">magic_f2l(&nbsp;</code><code class="cpp color1 bold">float</code>&nbsp;<code class="cpp plain">x&nbsp;)</code></strong></div>
+<div class="line number29 index28 alt2"><strong><code class="cpp plain">{</code></strong></div>
+<div class="line number30 index29 alt1"><strong><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code>static</code>&nbsp;<code class="cpp color1 bold">long</code>&nbsp;<code class="cpp plain">mask[]&nbsp;=&nbsp;{&nbsp;0x0,&nbsp;0xffc00000&nbsp;};</code></strong></div>
+<div class="line number31 index30 alt2"><strong><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code>static</code>&nbsp;<code class="cpp color1 bold">float</code>&nbsp;<code class="cpp plain">trunc[]&nbsp;=&nbsp;{&nbsp;-.5f,&nbsp;.5f&nbsp;};</code></strong></div>
+<div class="line number32 index31 alt1"><strong><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="cpp color1 bold">int</code>&nbsp;<code class="cpp plain">s&nbsp;=&nbsp;(&nbsp;*(unsigned&nbsp;</code><code class="cpp color1 bold">long</code><code class="cpp plain">*)&amp;x&nbsp;)&gt;&gt;31;</code></strong></div>
+<div class="line number33 index32 alt2"><strong><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="cpp plain">x&nbsp;+=&nbsp;trunc[s];</code></strong></div>
+<div class="line number34 index33 alt1"><strong><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="cpp plain">x&nbsp;+=&nbsp;12582912.f;</code></strong></div>
+<div class="line number35 index34 alt2"><strong><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code>return</code>&nbsp;<code class="cpp plain">(*(</code><code class="cpp color1 bold">long</code><code class="cpp plain">*)&amp;x)&nbsp;&amp;&nbsp;0x3fffff&nbsp;&nbsp;|&nbsp;mask[s];</code></strong></div>
+<div class="line number36 index35 alt1"><strong><code class="cpp plain">}</code></strong></div>
+<div class="line number36 index35 alt1">&nbsp;</div>
+<div class="line number36 index35 alt1">这个里面用到了12582912这个魔法数字，和double转换那个是一样的，都可以用这个函数得到：</div>
+<div class="line number36 index35 alt1">
+<p><strong>double float_magic_number(int bits)</strong><br /><strong>{</strong><br /><strong>&nbsp; &nbsp; return 1.5 * STD::pow(2.0, double(bits));</strong><br /><strong>}</strong></p>
+<p>但magic_f2l()这个函数效率并没有double版本的那么好，原因估计是运算运算太多了，于是我精简了一下：</p>
+<div class="line number28 index27 alt1"><code>inline</code>&nbsp;<code class="cpp color1 bold">long</code>&nbsp;<code class="cpp plain">magic_f2l(&nbsp;</code><code class="cpp color1 bold">float</code>&nbsp;<code class="cpp plain">x&nbsp;)</code></div>
+<div class="line number29 index28 alt2"><code class="cpp plain">{</code></div>
+<div class="line number30 index29 alt1"><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code>static</code>&nbsp;<code class="cpp color1 bold">long</code>&nbsp;<code class="cpp plain">mask[]&nbsp;=&nbsp;{&nbsp;0x0,&nbsp;0xffc00000&nbsp;};</code></div>
+<div class="line number31 index30 alt2"><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code>static</code>&nbsp;<code class="cpp color1 bold">float</code>&nbsp;<code class="cpp plain">trunc[]&nbsp;=&nbsp;{&nbsp;-.5f,&nbsp;.5f&nbsp;};</code></div>
+<div class="line number32 index31 alt1"><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="cpp color1 bold">int</code>&nbsp;<code class="cpp plain">s&nbsp;=&nbsp;(&nbsp;*(unsigned&nbsp;</code><code class="cpp color1 bold">long</code><code class="cpp plain">*)&amp;x&nbsp;)&gt;&gt;31;<span style="color: #339966; background-color: #ffffff;">//这里得到float的符号位，如果是负数，最后结果就和0xFFC00000进行or运算。这里有个位移操作</span></code></div>
+<div class="line number33 index32 alt2"><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="cpp plain">x&nbsp;+=&nbsp;trunc[s];<span style="color: #339966;">//这里有个加法和数组取值操作</span></code></div>
+<div class="line number34 index33 alt1"><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code class="cpp plain">x&nbsp;+=&nbsp;12582912.f;</code></div>
+<div class="line number35 index34 alt2"><code class="cpp spaces">&nbsp;&nbsp;&nbsp;&nbsp;</code><code>return</code>&nbsp;<code class="cpp plain">(*(</code><code class="cpp color1 bold">long</code><code class="cpp plain">*)&amp;x)&nbsp;&amp;&nbsp;0x3fffff&nbsp;&nbsp;|&nbsp;mask[s];<span style="color: #339966;">//数组取值</span></code></div>
+<div class="line number36 index35 alt1"><code class="cpp plain">}</code></div>
+<div class="line number36 index35 alt1">&nbsp;</div>
+<div class="line number36 index35 alt1">经简化，完成如下函数，这个效率和double版本不相上下，稍微慢一丢丢（几个时钟周期），仍然把c++默认转换摔在后面。</div>
+<div class="line number36 index35 alt1">
+<p><strong>inline int32_t f_toint32(float x)</strong><br /><strong>{</strong><br /><strong>    //取得符号位，设置掩码</strong><br /><strong>    uint32_t n = ((*(uint32_t*)&amp;x) &amp; 0x80000000) ? 0xFFC00000 : 0;<span style="color: #339966;">//一个三元操作符，直接储存掩码</span></strong><br /><strong>    x += 12582912.0f;<span style="color: #339966;">//魔法数字加法</span></strong><br /><strong>    return ((*(uint32_t*)&amp;x) &amp; 0x3FFFFF) | n;<span style="color: #339966;">//直接or运算</span></strong><br /><strong>}</strong></p>
+</div>
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

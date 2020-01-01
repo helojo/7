@@ -1,0 +1,136 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修this指针详解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>this指针详解</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/10632814.html</div><br>
+    <h2 id="什么是this">什么是this</h2>
+<p>this是一个const指针，存的是<strong>当前对象</strong>的地址，指向<strong>当前对象</strong>，通过this指针可以访问类中的所有成员。</p>
+<p>当前对象是指正在使用的对象，比如<code>a.print()</code>，<code>a</code>就是当前对象。</p>
+<p><strong>关于this</strong></p>
+<ol>
+<li>每个对象都有this指针，通过this来访问自己的地址。</li>
+<li>每个成员函数都有一个指针形参（构造函数没有这个形参），名字固定，称为this指针，this是隐式的。</li>
+<li>编译器在编译时会自动对成员函数进行处理，将对象地址作实参传递给成员函数的第一个形参this指针。</li>
+<li>this指针是编译器自己处理的形参，不能在成员函数的形参中添加this指针的参数定义。</li>
+<li><p>this只能在成员函数中使用，全局函数，静态函数不能使用this。因为静态函数没有固定对象。</p>
+<h2 id="this的使用">this的使用</h2></li>
+</ol>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+class A {
+    private :
+        int a;
+    public :
+        A(int x = 0) : a(x) {}
+        void set(int x) {
+            a = x;
+        }
+        void print() {printf(&quot;%d\n&quot;, a);} 
+};
+
+int main() {
+    A a, b;
+    int x;
+    a.set(111);
+    b.set(222);
+    a.print();
+    b.print();
+    return 0;
+}</code></pre>
+<p>输出：</p>
+<blockquote>
+<p>111<br />
+222</p>
+</blockquote>
+<p>可以看出赋值的时候是分别给当前对象的成员赋的值。<br />
+就像上文中提到的3一样，拿<code>set()</code>函数来说，其实编译器在编译的时候是这样的</p>
+<pre><code>void set(A *this, int x) {
+    this-&gt;a = x;
+}</code></pre>
+<h3 id="何时调用">何时调用</h3>
+<p>那什么时候要调用this指针呢？</p>
+<p><strong>1. 在类的非静态成员函数中返回对象的本身时候，直接用<code>return *this</code>。</strong></p>
+<p><strong>2. 传入函数的形参与成员变量名相同时</strong></p>
+<p>例如</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+class A {
+    private :
+        int x;
+    public :
+        A() {x = 0;}
+        void set(int x) {
+            x = x;
+        }
+        void print() {
+            printf(&quot;%d\n&quot;, x);
+        }
+};
+
+int main() {
+    A a, b;
+    int x;
+    a.set(111);
+    b.set(222);
+    a.print();
+    b.print();
+    return 0;
+}</code></pre>
+<p>输出是</p>
+<blockquote>
+<p>0<br />
+0</p>
+</blockquote>
+<p>这时因为我们的set()函数中，编译器会认为我们把成员x的值赋给了参数x；<br />
+如果我们改成这样，就没有问题了</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+class A {
+    private :
+        int x;
+    public :
+        A() {x = 0;}
+        void set(int x) {
+            this-&gt;x = x;
+        }
+        void print() {
+            printf(&quot;%d\n&quot;, x);
+        }
+};
+
+int main() {
+    A a, b;
+    int x;
+    a.set(111);
+    b.set(222);
+    a.print();
+    b.print();
+    return 0;
+}</code></pre>
+<p>这样输出的就是</p>
+<blockquote>
+<p>111<br />
+222</p>
+</blockquote>
+<p>而且这段代码一目了然，左值是类成员x，右值是形参x。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

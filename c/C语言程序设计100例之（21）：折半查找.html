@@ -1,0 +1,275 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C语言程序设计100例之（21）：折半查找' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C语言程序设计100例之（21）：折半查找</center></div><div class='banquan'>原文出处:本文由博客园博主aTeacher提供。<br/>
+原文连接:https://www.cnblogs.com/cs-whut/p/11971327.html</div><br>
+    <h4><span style="font-size: 18px;">例21&nbsp; 折半查找</span></h4>
+<p><strong>问题描述</strong></p>
+<p>顺序查找是一种最简单和最基本的检索方法。其基本思想是：从检索表的一端（如表中第一个记录或最后一个记录）开始，逐个进行记录的关键字和给定值的比较。若某个记录的关键字和给定值比较相等，则查找成功；否则，若直至检索表的另一端（如最后一个记录或第一个记录），其关键字和给定值比较都不等，则表明表中没有待查记录，查找不成功。</p>
+<p>顺序查找可以写成一个简单的一重循环，循环中依次将检索表（不妨设为数组a）中的元素与给定值比较，若相等，用break退出循环。算法描述为：</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (i=0; i&lt; n;i++)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp; if (a[i]==x) break;</p>
+<p>这样，循环结束后，若循环控制变量i小于数组元素个数n，则查找成功；否则，查找失败。</p>
+<p>顺序查找实现简单，但效率不高。当待查找序列有序时，即各检索表中元素的次序是按其记录的关键字值的大小顺序存储的。此时采用折半查找会大幅提高查找效率。</p>
+<p>折半查找的基本思想是先确定待查数据的范围（区间），然后逐步缩小范围直到找到或找不到该记录为止。具体做法是：先取数组中间位置的数据元素与给定值比较。若相等，则查找成功；否则，若给定值比该数据元素的值小（或大），则给定值必在数组的前半部分（或后半部分），然后在新的查找范围内进行同样的查找。如此反复进行，直到找到数组元素值与给定值相等的元素或确定数组中没有待查找的数据为止。因此，折半查找每查找一次，或成功，或使查找数组中元素的个数减少一半，当查找数组中不再有数据元素时，查找失败。</p>
+<p>输入一个整数，在给定的有序数组中查找该整数是否存在，若存在，给出其数组的下标；若不存在，输出查找不成功信息。</p>
+<p><strong>输入格式</strong></p>
+<p>第一行是一个正整数N (1 &le; N &le; 100000)，代表数组中元素的个数。</p>
+<p>第二行有N个整数，这N个整数从小到大排列好了。</p>
+<p>第三行是一个整数M，代表待查找元素的个数。</p>
+<p>接下来的M行，每行有一个整数x，表示每个待查找的元素。</p>
+<p><strong>输出格式</strong></p>
+<p>输出有M行，每行一个整数。若待查找元素x在数组中存在，输出其数组元素的下标；若不存在，输出-1。</p>
+<p><strong>输入样例</strong></p>
+<p>20</p>
+<p>1 6 9 14 15 17 18 23 24 28 34 39 48 56 67 72 89 92 98 100</p>
+<p>3</p>
+<p>1</p>
+<p>25</p>
+<p>72</p>
+<p><strong>输出样例</strong></p>
+<p>0</p>
+<p>-1</p>
+<p>15</p>
+<h5><span style="font-size: 16px;">&nbsp; &nbsp; &nbsp; &nbsp; （1）编程思路。</span></h5>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;设有一数组a[n]，数组中的元素按值从小到大排列有序。用变量low、high和mid分别指示待查元素所在区间的下界、上界和中间位置。初始时，low=0，high=n-1。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 1）令 mid = (low+ high) /2 。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 2）比较给定值x与a[mid]值的大小</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 若a[mid] == x ，则查找成功，结束查找；</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 若a[mid]&gt; x ，则表明给定值x只可能在区间low ~ mid-1内，修改检索范围。令high=mid-1，low值保持不变；</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 若a[mid]&lt; x ，则表明给定值x只可能在区间mid+1~high内，修改检索范围。令low=mid+1，high值保持不变。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 3）比较当前变量low和high的值，若low&le;high，重复执行第1）、2）两步，若low&gt;high，表明数组中不存在待查找的元素，查找失败。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 例如，设一有序的数组中有11个数据元素，它们的值依次为{3，8，15，21，35，54，63，79，82，92，97}，用折半查找在该数组中查找值为82和87的元素的过程如图1所示。</p>
+<p align="center"><img src="./images/C语言程序设计100例之（21）：折半查找0.png" alt="" /></p>
+<p style="text-align: center;">&nbsp;&nbsp;图1 折半查找的查找过程</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;图1（a）所示为查找成功的情况，仅需比较2次。若用顺序查找，则需比较9次。图1（b）所示为查找不成功的情况，此时因为low&gt;high，说明数组中没有元素值等于87的元素。得到查找失败信息，也只需比较4次。若用顺序查找，则必须比较12次。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 折半查找过程通常可用一个二叉判定树表示。对于上例给定长度的数组，折半查找过程可用图2所示的二叉判定树来描述，树中结点的值为相应元素在数组中的位置。查找成功时恰好走了一条从根结点到该元素相应结点的路径，所用的比较次数是该路径长度加1或结点在二叉判定树上的层次数。所以，折半查找在查找成功时所用的比较次数最多不超过相应的二叉判定树的深度[log<sub>2</sub>n]+ 1。同理，查找不成功时，恰好走了一条从根结点到某一终端结点的路径。因此，所用的比较次数最多也不超过[log<sub>2</sub>n] + 1。</p>
+<p class="a" style="text-align: center;">&nbsp;<img src="./images/C语言程序设计100例之（21）：折半查找1.png" alt="" /></p>
+<p class="a" style="text-align: center;">图2&nbsp; 描述折半查找过程的二叉判定树</p>
+<h5><span style="font-size: 16px;">&nbsp; &nbsp; &nbsp; &nbsp; （2）源程序。</span></h5>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">#define N 100001</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int a[N],n;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; scanf("%d",&amp;n);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; for (int i=0;i&lt;n;i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d",&amp;a[i]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int m;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; scanf("%d",&amp;m);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while (m--)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int x;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d",&amp;x);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int low =0, high =n-1,mid;&nbsp;&nbsp; // 置区间初值</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while (low&lt;=high)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mid = (low+high)/2 ;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (x == a[mid])&nbsp;&nbsp; break;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 找到待查记录</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else if (x&lt;a[mid])&nbsp; high=mid-1;&nbsp;&nbsp; // 继续在前半区间进行检索</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else&nbsp; low=mid+1; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 继续在后半区间进行检索</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (low&lt;=high)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 找到待查记录</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("%d\n",mid);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("-1\n");</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<h4><span style="font-size: 18px;">习题21</span></h4>
+<h5><span style="font-size: 16px;">21-1&nbsp; Can you find it?</span></h5>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 本题选自杭州电子科技大学OJ题库（http://acm.hdu.edu.cn/showproblem.php?pid=2141）</p>
+<p><strong>Problem Description</strong></p>
+<p>Give you three sequences of numbers A, B, C, then we give you a number X. Now you need to calculate if you can find the three numbers Ai, Bj, Ck, which satisfy the formula Ai+Bj+Ck = X.</p>
+<p><strong>Input</strong></p>
+<p>There are many cases. Every data case is described as followed: In the first line there are three integers L, N, M, in the second line there are L integers represent the sequence A, in the third line there are N integers represent the sequences B, in the forth line there are M integers represent the sequence C. In the fifth line there is an integer S represents there are S integers X to be calculated. 1&lt;=L, N, M&lt;=500, 1&lt;=S&lt;=1000. all the integers are 32-integers.</p>
+<p><strong>Output</strong></p>
+<p>For each case, firstly you have to print the case number as the form "Case d:", then for the S queries, you calculate if the formula can be satisfied or not. If satisfied, you print "YES", otherwise print "NO".</p>
+<p><strong>Sample Input</strong></p>
+<p>3 3 3</p>
+<p>1 2 3</p>
+<p>1 2 3</p>
+<p>1 2 3</p>
+<p>3</p>
+<p>1</p>
+<p>4</p>
+<p>10</p>
+<p><strong>Sample Output</strong></p>
+<p>Case 1:</p>
+<p>NO</p>
+<p>YES</p>
+<p>NO</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; （1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 本题的题意是：有A、B、C三个数组，每个数组中有若干个整数元素，要求判断对于输入的整数x，是否可以在A、B、C三个数组中各取一个元素，使得三个元素之和等于x，若可以取得，输出&ldquo;YES&rdquo;，否则输出&ldquo;NO&rdquo;。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 预先求出数组A和B中任意各取一个数相加所得到的和值，存储到q数组中，然后对q数组进行排序，排序后去掉数组q中重复的和值。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 对于输入的X，枚举数组C中的每个元素C[i]，然后在q数组中采用折半查找是否存在X-C[i]，若存在，则输出&ldquo;YES&rdquo;，否则输出&ldquo;NO&rdquo;。</p>
+<p>&nbsp; &nbsp; &nbsp; （2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">#include&lt;algorithm&gt;</p>
+<p style="margin-left: 30px;">using namespace std;</p>
+<p style="margin-left: 30px;">#define N 501</p>
+<p style="margin-left: 30px;">int binsearch(int a[],int n,int key);</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int a[N],b[N],c[N];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int q[N*N];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int cnt=0,l,m,n;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while(scanf("%d%d%d",&amp;l,&amp;m,&amp;n)!=EOF)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; int i,j,k;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;l;i++) scanf("%d",&amp;a[i]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;m;i++) scanf("%d",&amp;b[i]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;n;i++) scanf("%d",&amp;c[i]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; k=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;l;i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (j=0;j&lt;m;j++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; q[k++]=a[i]+b[j];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sort(q,q+k);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=j=1;i&lt;k;i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (q[i]!=q[j]) q[j++]=q[i];&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 去重</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; k=j;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("Case %d:\n",++cnt);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int s,x;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d",&amp;s);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; for(i=1;i&lt;=s;i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d",&amp;x);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(j=0;j&lt;n;j++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (binsearch(q,k,x-c[j])!=-1) break;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("%s\n",(j&lt;n)?"YES":"NO");</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int binsearch(int a[],int n,int key)</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int low =0,high =n-1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while (low&lt;=high)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int mid = (low+high)/2 ;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (key==a[mid])&nbsp;&nbsp; return mid;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 找到待查记录</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else if (key&lt;a[mid])&nbsp; high=mid-1;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 继续在前半区间进行检索</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else&nbsp; low=mid+1; &nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 继续在后半区间进行检索</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return -1;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 找不到待查记录</p>
+<p style="margin-left: 30px;">}</p>
+<h5><span style="font-size: 16px;">21-2&nbsp; 木材加工</span></h5>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 本题选自洛谷题库 （https://www.luogu.org/problem/P2440）</p>
+<p><strong>题目描述</strong></p>
+<p>木材厂有一些原木，现在想把这些木头切割成一些长度相同的小段木头（木头有可能有剩余），需要得到的小段的数目是给定的。当然，我们希望得到的小段木头越长越好，你的任务是计算能够得到的小段木头的最大长度。木头长度的单位是cm。原木的长度都是正整数，我们要求切割得到的小段木头的长度也是正整数。</p>
+<p>例如有两根原木长度分别为11和21，要求切割成到等长的6段，很明显能切割出来的小段木头长度最长为5.</p>
+<p><strong>输入格式</strong></p>
+<p>第一行是两个正整数N和K(1 &le; N &le; 100000，1 &le; K &le; 100000000)，N是原木的数目，K是需要得到的小段的数目。</p>
+<p>接下来的N行，每行有一个1到100000000之间的正整数，表示一根原木的长度。</p>
+<p><strong>输出格式</strong></p>
+<p>能够切割得到的小段的最大长度。如果连1cm长的小段都切不出来，输出&rdquo;0&rdquo;。</p>
+<p><strong>输入样例</strong></p>
+<p>3 7</p>
+<p>232</p>
+<p>124</p>
+<p>456</p>
+<p><strong>输出样例</strong></p>
+<p>114</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; （1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 这个问题可以采用类似于折半查找的方法进行解决。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 设left是切割的小段木头的最短长度，right是最大长度，初始时，left为1，right为最长的原木长度。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 每次取left和right的中间值mid（mid = (left + right) / 2）进行尝试，测试采用当前长度mid进行加工，能否切割出需要的段数K，测试算法描述为：</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; num = 0;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i = 0; i &lt; n; i++)</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (num &gt;= k) break;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; num = num + len[i] / mid ;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 如果当前mid值可以加工出所需段数（即num &gt;= k），就增大mid值继续试（通过让left = mid的方法来增大mid），不符合要求就减小mid值继续试（通过让right = mid的方法来减小mid）。直到left + 1 &gt;= right结束尝试，所得的left值就是可以加工出的小段木头的最大长度。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;（2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int n, k, len[100001], i, left, right, mid,num;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;scanf("%d%d",&amp;n,&amp;k);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;right = 0;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;int sum=0;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (i = 0; i &lt; n; i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;scanf("%d",&amp;len[i]);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;sum+=len[i];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (right &lt; len[i]) right = len[i];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; if (sum&lt;k)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; printf("0\n");</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; return 0;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; left =1 ;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; while ( left + 1&nbsp; &lt; right)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;mid = (left + right) / 2;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;num = 0;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;for (i = 0; i &lt; n; i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (num &gt;= k) break;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;num = num + len[i] / mid ;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if ( num &gt;= k )</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; left = mid;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;else</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;right = mid;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;printf("%d\n",left);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<h5><span style="font-size: 16px;">21-3&nbsp; x<sup>x</sup>的位数</span></h5>
+<p><strong>题目描述</strong></p>
+<p>使得 x<sup>x</sup> 达到或超过 n 位数字的最小正整数 x 是多少？</p>
+<p><strong>输入格式</strong></p>
+<p>一个正整数 n（n&lt;=2000000000）。</p>
+<p><strong>输出格式</strong></p>
+<p>使得 x<sup>x</sup>达到 n 位数字的最小正整数 x。</p>
+<p><strong>输入样例</strong></p>
+<p>11</p>
+<p><strong>输出样例</strong></p>
+<p>10</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; （1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 正整数m的位数为[log<sub>10</sub>(m)]+1&nbsp; ([ ]表示向下取整）。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 本题求x^x的位数，也就是求[log<sub>10</sub>(x^x)]+1，利用对数的运算法则，log<sub>10</sub>(x^x)=x* log<sub>10</sub>(x)。由于对数函数满足单调递增，因此可采用二分的思想求x* log<sub>10</sub>(x)&ge;n-1的最小值。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 初始时，设left为1，right为最大整数2e9。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 每次取left和right的中间值mid（mid = (left + right) / 2）进行尝试，看当前数mid^mid的位数是否达到或超过n。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 如果当前mid^mid的位数小于n（即mid*log10(mid)&lt;n），说明mid小了，就增大mid值继续试（通过让left = mid+1的方法来增大mid），若当前mid^mid的位数不小于n（即mid*log10(mid)&gt;=n），说明mid值符合要求，但为了找到其最小值，就减小mid值继续试（通过让right = mid的方法来减小mid）。直到left &gt;= right结束尝试，所得的left值就是可以使得 x<sup>x</sup> 达到或超过 n 位数字的最小正整数 x。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; （2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">#include &lt;math.h&gt;</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int n;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; scanf("%d",&amp;n);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; n--;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int left=1,right=2e9;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while (left&lt;right)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int mid=(left+right)/2;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (mid*log10(mid)&lt;n) left=mid+1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else right=mid;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; printf("%d\n",left);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

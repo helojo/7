@@ -1,0 +1,258 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang数据库操作初体验' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang数据库操作初体验</center></div><div class='banquan'>原文出处:本文由博客园博主随彦心MO提供。<br/>
+原文连接:https://www.cnblogs.com/smartrui/p/12116042.html</div><br>
+    <p>在golang中，提供了标准的数据库接口database/sql包，做过数据库开发的应该知道，不同的数据库有不同的数据库驱动。比如mysql等，我们可以去找 <code>https://golang.org/s/sqldrivers</code> 这里找自已需要的驱动，这里我就以mysql的驱动为例，用的是go-sql-driver这个。</p>
+<h3 id="安装">安装</h3>
+<p>直接执行go get,然后会下载到你的$GOPATH中，如果用的go mod也一样，只不过下载的路径不一样。</p>
+<pre><code><code>go get -u github.com/go-sql-driver/mysql</code></pre>
+<h3 id="导入驱动">导入驱动</h3>
+<p>database/sql这个包是要导入的，然后导入go-sql-driver,包前面的 “_&quot;表示执行包的init函数，函数init里面直接将自已注册到database/sql包中，然后就能用这个包里面的方法访问数据库了。</p>
+<pre><code><code>import (
+    &quot;database/sql&quot;
+    _ &quot;github.com/go-sql-driver/mysql&quot;   
+)
+
+func init() {
+    sql.Register(&quot;mysql&quot;, &amp;MySQLDriver{})
+}</code></pre>
+<h3 id="连接数据库">连接数据库</h3>
+<pre><code><code>type dbObj struct {
+    db *sql.DB
+}
+
+func (d *dbObj) Open() *sql.DB{
+    var err error
+    d.db, err = sql.Open(&quot;mysql&quot;, &quot;lc:111111@/test&quot;)
+    if err != nil {
+        panic(err)
+    }
+    return d.db
+}</code></pre>
+<p>使用 <code>sql.Open</code> 来连接数据库，但是这个只是返回一个数据库的抽象实例，并没有真正的连接到数据库中，在后续的对数据库的操作中才会真正去网络连接，如果要马上验证，可以用 <code>db.ping()</code>.</p>
+<p><code>sql.Open</code>的签名如下：</p>
+<pre><code><code>func Open(driverName, dataSourceName string) (*DB, error) {</code></pre>
+<p>它接受两个参数:</p>
+<ul>
+<li>driverName就是我们在init函数注册的那个名字</li>
+<li>dataSourceName为数据库链接dsn，格式为 <code>[username[:password]@][protocol[(address)]]/dbname[?param1=value1&amp;...&amp;paramN=valueN]</code></li>
+</ul>
+<h3 id="示例">示例</h3>
+<p>来点基本的CURD操作，还是挺简单的。</p>
+<pre><code><code>package db
+
+import (
+    &quot;database/sql&quot;
+    &quot;fmt&quot;
+    _ &quot;github.com/go-sql-driver/mysql&quot;
+    &quot;log&quot;
+)
+
+type  userInfo struct {
+    id int
+    orgcode string
+    name string
+    version int
+}
+
+type dbObj struct {
+    db *sql.DB
+}
+
+func (d *dbObj) Open() *sql.DB{
+    var err error
+    d.db, err = sql.Open(&quot;mysql&quot;, &quot;lc:111111@/test&quot;)
+    if err != nil {
+        panic(err)
+    }
+    return d.db
+}
+func (d *dbObj) Close(){
+    d.Close()
+}
+
+
+func SelectAll() {
+    dbc :=&amp;dbObj{}
+    db := dbc.Open()
+    defer db.Close()
+
+    stmt ,_ :=db.Prepare(&quot;SELECT orgcode,`name` FROM  userinfo WHERE id &gt; ?&quot;)
+    rows, _ :=stmt.Query(0) //query为多行
+    defer rows.Close()
+    user :=&amp;userInfo{}
+
+    for rows.Next() {
+        err :=rows.Scan(&amp;user.orgcode,&amp;user.name)
+        if err != nil {
+            log.Fatal(err)
+        }
+        fmt.Println(user.orgcode , &quot;:&quot;, user.name)
+    }
+}
+
+func Select() {
+    dbc :=&amp;dbObj{}
+    db := dbc.Open()
+    defer db.Close()
+
+    stmt ,_ :=db.Prepare(&quot;SELECT orgcode,`name` FROM  userinfo WHERE ID= ?&quot;)
+    rows :=stmt.QueryRow(1008) //QueryRow为单行
+
+    user :=&amp;userInfo{}
+
+
+    err :=rows.Scan(&amp;user.orgcode,&amp;user.name)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(user.orgcode , &quot;:&quot;, user.name)
+
+}
+
+func Insert() {
+    dbc :=&amp;dbObj{}
+    db := dbc.Open()
+    defer db.Close()
+
+    result, err :=db.Exec(&quot;INSERT  userinfo (orgcode,imei,`name`) VALUE(?,?,?)&quot;,&quot;cccc&quot;,1009,&quot;cccc&quot;)
+    if err != nil {
+        log.Fatal(err)
+    }
+    rowsaffected,err :=  result.RowsAffected()
+    if err != nil {
+        fmt.Printf(&quot;获取受影响行数失败,err:%v&quot;,err)
+        return
+    }
+    fmt.Println(&quot;受影响行数:&quot; ,rowsaffected )
+}
+
+func Delete() {
+    dbc :=&amp;dbObj{}
+    db := dbc.Open()
+    defer db.Close()
+
+    result, err :=db.Exec(&quot;DELETE FROM userinfo WHERE id=?&quot;,1009)
+    if err != nil {
+        log.Fatal(err)
+    }
+    rowsaffected,err :=  result.RowsAffected()
+    if err != nil {
+        fmt.Printf(&quot;获取受影响行数失败,err:%v&quot;,err)
+        return
+    }
+    fmt.Println(&quot;受影响行数:&quot; ,rowsaffected )
+}
+
+func Update() {
+    dbc :=&amp;dbObj{}
+    db := dbc.Open()
+    defer db.Close()
+
+    result, err :=db.Exec(&quot;UPDATE userinfo SET `name`= ? WHERE id=?&quot;, &quot;lcbbb&quot;,1008)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    rowsaffected,err :=  result.RowsAffected()
+    if err != nil {
+        fmt.Printf(&quot;获取受影响行数失败,err:%v&quot;,err)
+        return
+    }
+    fmt.Println(&quot;受影响行数:&quot; ,rowsaffected )
+}
+
+
+
+func Transaction() {
+    dbc :=&amp;dbObj{}
+    db := dbc.Open()
+    defer db.Close()
+
+    tx ,_:=db.Begin()
+    tx.Exec(&quot;UPDATE userinfo SET `name`= ? WHERE id=?&quot;, &quot;lcaaa&quot;,1007)
+    result, err :=tx.Exec(&quot;UPDATE userinfo SET `name`= ? WHERE id=?&quot;, &quot;lcbbb&quot;,1008)
+    if err != nil {
+        log.Fatal(err)
+    }
+    tx.Commit() //提交事务
+    rowsaffected,err :=  result.RowsAffected()
+    if err != nil {
+        fmt.Printf(&quot;获取受影响行数失败,err:%v&quot;,err)
+        return
+    }
+    fmt.Println(&quot;受影响行数:&quot; ,rowsaffected )
+}
+
+
+func ConcurrenceUpdate() {
+    dbc :=&amp;dbObj{}
+    db := dbc.Open()
+    defer db.Close()
+
+    getone :=func(db *sql.DB,id int) *userInfo{
+
+
+        stmt ,_ :=db.Prepare(&quot;SELECT orgcode,`name`,version FROM  userinfo WHERE ID= ?&quot;)
+        rows :=stmt.QueryRow(id) //
+
+        user :=&amp;userInfo{}
+
+
+        err :=rows.Scan(&amp;user.orgcode,&amp;user.name, &amp;user.version)
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        return user
+
+    }
+
+    udateone :=func(db *sql.DB,name string,id int,version int){
+        result, err :=db.Exec(&quot;UPDATE userinfo SET `name`= ?, version=version+1 WHERE id=? AND version=?&quot;, name,id,version)
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        rowsaffected,err :=  result.RowsAffected()
+        if err != nil {
+            fmt.Printf(&quot;并发更新获取受影响行数失败,err:%v&quot;,err)
+            return
+        }
+        fmt.Println(&quot;并发更新受影响行数:&quot; ,rowsaffected )
+    }
+
+    num :=10
+    for i:=0; i&lt;num ;i++{
+        go func(){
+            u :=getone(db,1008)
+            fmt.Printf(&quot;获取数据:%v\r\n&quot;,u)
+            udateone(db,&quot;lc并发更新测试&quot;, 1008,u.version)
+        }()
+    }
+
+    select{}
+}</code></pre>
+<p>以上只是一些基本的数据库操作，像连接池等还没有做，这个等后续看了再去写。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

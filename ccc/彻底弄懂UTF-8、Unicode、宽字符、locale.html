@@ -1,0 +1,307 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修彻底弄懂UTF-8、Unicode、宽字符、locale' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>彻底弄懂UTF-8、Unicode、宽字符、locale</center></div><div class='banquan'>原文出处:本文由博客园博主gatsby123提供。<br/>
+原文连接:https://www.cnblogs.com/gatsby123/p/11150472.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#unicodeucs">Unicode、UCS</a></li>
+        <li><a href="#utf8">UTF8</a><ul>
+        <li><a href="#结论">结论</a></li>
+        </ul></li>
+        <li><a href="#宽字符类型wchar_t">宽字符类型wchar_t</a><ul>
+        <li><a href="#locale">locale</a></li>
+        <li><a href="#为什么需要宽字符类型">为什么需要宽字符类型</a></li>
+        <li><a href="#多字节字符串和宽字符串相互转换">多字节字符串和宽字符串相互转换</a></li>
+        </ul></li>
+        </ul>
+    </div>
+</div>
+<p>最近使用到了wchar_t类型，所以准备详细探究下，没想到水还挺深，网上的资料大多都是复制粘贴，只有个结论，也没个验证过程。本文记录探究的过程及结论，如有不对请指正。</p>
+<h2 id="unicodeucs">Unicode、UCS</h2>
+<p>UCS（Universal Character Set）本质上就是一个字符集。<br />
+Unicode的开发结合了国际标准化组织所制定的 ISO/IEC 10646，即通用字符集（<br />
+Universal Character Set, UCS）。Unicode 与 ISO/IEC 10646 在编码的运作原理相同，但 The Unicode Standard 包含了更详尽的实现信息、涵盖了更细节的主题，诸如比特编码（bitwise encoding）、校对以及呈现等。摘自（<a href="https://zh.wikipedia.org/zh-cn/Unicode#%E6%A8%99%E6%BA%96">Unicode</a>)<br />
+所以也可以简单的理解为，Unicode和UCS等价，都是字符集。</p>
+<p>UCS编码的长度是31位，可用4个字节表示，可以表示2的31次方个字符。如果两个字符的高位相同，只有低16位不同，则它们属于同一平面，所以一个平面由2的16次方个字符组成。目前大部分字符都位于第一个平面称为BMP。BMP的编码通常以U+xxxx这种形式表示，其中x是16进制数。<br />
+比如中文“你”对应的UCS编码为U+4f60，“好”对应的UCS编码为U+597d。更多中文编码可以在<a href="http://www.chi2ko.com/tool/CJK.htm">Unicode编码表</a>中查询。</p>
+<p>有了UCS编码，任何一个字符在计算机中都最多可以用四个字节来表示，称为码点。</p>
+<h2 id="utf8">UTF8</h2>
+<p>现在有了UCS字符集，那么一个字符在计算机中真的要按四个字节（UTF-32）来存储吗？<br />
+答案是否定的，一方面每个字符都按四字节来存储非常浪费空间，因为大部分字符都在BMP，只有后16位有效，前16位都是0。另一方面这与c语言不兼容，在c语言中0字节表示字符串的结尾，库函数strlen等函数依赖这一点，如果按UTF-32存储，其中有很多0字节并不表示字符串结尾。</p>
+<p>Ken Thompson发明了UTF-8编码，可以很好的解决以上问题。Unicode 和 UTF-8 之间的转换关系表如下：</p>
+<table>
+<thead>
+<tr class="header">
+<th>码点起值</th>
+<th>码点终值</th>
+<th>字节序列</th>
+<th>Byte1</th>
+<th>Byte2</th>
+<th>Byte3</th>
+<th>Byte4</th>
+<th>Byte5</th>
+<th>Byte6</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>U+0000</td>
+<td>U+007F</td>
+<td>1</td>
+<td>0xxxxxxx</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>U+0080</td>
+<td>U+07FF</td>
+<td>2</td>
+<td>110xxxxx</td>
+<td>10xxxxxx</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>U+0800</td>
+<td>U+FFFF</td>
+<td>3</td>
+<td>1110xxxx</td>
+<td>10xxxxxx</td>
+<td>10xxxxxx</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="even">
+<td>U+10000</td>
+<td>U+1FFFFF</td>
+<td>4</td>
+<td>11110xxx</td>
+<td>10xxxxxx</td>
+<td>10xxxxxx</td>
+<td>10xxxxxx</td>
+<td></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>U+200000</td>
+<td>U+3FFFFFF</td>
+<td>5</td>
+<td>111110xx</td>
+<td>10xxxxxx</td>
+<td>10xxxxxx</td>
+<td>10xxxxxx</td>
+<td>10xxxxxx</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>U+4000000</td>
+<td>U+7FFFFFFF</td>
+<td>6</td>
+<td>1111110x</td>
+<td>10xxxxxx</td>
+<td>10xxxxxx</td>
+<td>10xxxxxx</td>
+<td>10xxxxxx</td>
+<td>10xxxxxx</td>
+</tr>
+</tbody>
+</table>
+<p>第一个字节要么最高位是0（ASCII码），要么最高位都是1，最高位之后的1的个数决定了后面的有多少个字节也属于当前字符编码，例如111110xx，最高位之后还有4个1，表示后面的4个字节属于当前编码。后面的每个字节的最高位都是10，可以和第一个字节区分开来。后面字节的x表示的就是UCS编码。所以UTF-8就像一列火车，第一个字节是车头，包含了后面的哪几个字节也属于当前这列火车的信息，后面的字节是车厢，其中承载着UCS编码。</p>
+<p>以中文字符“你”为例，对应的Unicode为&quot;U+4f60&quot;，二进制表示为0100 1111 0110 0000。按照表中的规则编码成UTF-8就是11100100 10111101 10100000（0xe4 0xbd 0xa0）。</p>
+<h3 id="结论">结论</h3>
+<p>Unicode本质是字符集，在这个集合中的任意一个字符都可以用一个四字节来表示。</p>
+<p>UTF-8是编码规则，可以通过这个规则将Unicode字符集中任一字符对应的字节转换为另一个字节序列。UTF-8只是编码规则中的一种，其它的编码规则还有UTF-16，UTF-32等。</p>
+<h2 id="宽字符类型wchar_t">宽字符类型wchar_t</h2>
+<p>在介绍宽字符前先了解下locale。因为多字节字符串和宽字符串的转换和locale相关。</p>
+<h3 id="locale">locale</h3>
+<h4 id="什么是locale">什么是locale</h4>
+<p>区域设置（locale），也称作“本地化策略集”、“本地环境”，是表达程序用户地区方面的软件设定。在linux执行<code>locale</code>可以查看当前locale设置：</p>
+<pre><code>ubuntu@VM-0-16-ubuntu:~$ locale
+LANG=zh_CN.UTF-8
+LANGUAGE=
+LC_CTYPE=&quot;zh_CN.UTF-8&quot;
+LC_NUMERIC=&quot;zh_CN.UTF-8&quot;
+LC_TIME=&quot;zh_CN.UTF-8&quot;
+LC_COLLATE=&quot;zh_CN.UTF-8&quot;
+LC_MONETARY=&quot;zh_CN.UTF-8&quot;
+LC_MESSAGES=&quot;zh_CN.UTF-8&quot;
+LC_PAPER=&quot;zh_CN.UTF-8&quot;
+LC_NAME=&quot;zh_CN.UTF-8&quot;
+LC_ADDRESS=&quot;zh_CN.UTF-8&quot;
+LC_TELEPHONE=&quot;zh_CN.UTF-8&quot;
+LC_MEASUREMENT=&quot;zh_CN.UTF-8&quot;
+LC_IDENTIFICATION=&quot;zh_CN.UTF-8&quot;
+LC_ALL=</code></pre>
+<p>可以将locale理解为一系列环境变量。locale环境变量值的格式为<code>language_area.charset</code>。languag表示语言，例如英语或中文；area表示使用该语言的地区，例如美国或者中国大陆；charset表示字符集编码，例如UTF-8或者GBK。<br />
+这些环境变量会对日期格式，数字格式，货币格式，字符处理等多个方面产生影响。</p>
+<p>参考资料：</p>
+<ol>
+<li><a href="https://zh.wikipedia.org/zh-cn/%E5%8C%BA%E5%9F%9F%E8%AE%BE%E7%BD%AE#Ubuntu%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F">locale wiki</a></li>
+<li><a href="http://pubs.opengroup.org/onlinepubs/7908799/xbd/envvar.html">Environment Variables</a></li>
+</ol>
+<h4 id="如何设置系统默认的locale">如何设置系统默认的locale</h4>
+<p>修改配置文件/etc/default/locale，比如要将locale设为zh_CN.UTF-8，添加如下语句<code>LANG=zh_CN.UTF-8</code></p>
+<h4 id="locale环境变量有何作用">locale环境变量有何作用</h4>
+<p>以LC_TIME为例，该变量会影响strftime()等函数。<code>size_t strftime(char *str, size_t maxsize, const char *format, const struct tm *timeptr)</code><br />
+strftime根据format中定义的格式化规则，格式化结构timeptr表示的时间，并把它存储在str中。</p>
+<pre class="c"><code>#include &lt;locale.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;time.h&gt;
+
+int main () {
+    time_t currtime;
+    struct tm *timer;
+    char buffer[80];
+
+    time( &amp;currtime );
+    timer = localtime( &amp;currtime );
+
+    printf(&quot;Locale is: %s\n&quot;, setlocale(LC_TIME, &quot;en_US.iso88591&quot;));
+    strftime(buffer,80,&quot;%c&quot;, timer );
+    printf(&quot;Date is: %s\n&quot;, buffer);
+
+    printf(&quot;Locale is: %s\n&quot;, setlocale(LC_TIME, &quot;zh_CN.UTF-8&quot;));
+    strftime(buffer,80,&quot;%c&quot;, timer );
+    printf(&quot;Date is: %s\n&quot;, buffer);
+
+    printf(&quot;Locale is: %s\n&quot;, setlocale(LC_TIME, &quot;&quot;));
+    strftime(buffer,80,&quot;%c&quot;, timer );
+    printf(&quot;Date is: %s\n&quot;, buffer);
+    return(0);
+}</code></pre>
+<p>编译后运行结果如下：</p>
+<pre><code>Locale is: en_US.iso88591
+Date is: Sun 07 Jul 2019 04:08:39 PM CST
+Locale is: zh_CN.UTF-8
+Date is: 2019年07月07日 星期日 16时08分39秒
+Locale is: zh_CN.UTF-8
+Date is: 2019年07月07日 星期日 16时08分39秒</code></pre>
+<p>可以看到对LC_TIME设置不同的值后，调用strftime()会产生不同的结果。<br />
+<code>char* setlocale (int category, const char* locale);</code>可以用来对当前程序进行地域设置。<br />
+category：用于指定设置影响的范围，<code>LC_CTYPE</code>影响字符分类和字符转换，<code>LC_TIME</code>影响日期和时间的格式，<code>LC_ALL</code>影响所有内容。<br />
+locale：用于指定变量的值，上例中分别使用了&quot;en_US.iso88591&quot;，&quot;zh_CN.UTF-8&quot;和空字符串&quot;&quot;，&quot;&quot;表示使用当前操作系统默认的区域设置。</p>
+<p>参考资料：<br />
+<a href="http://c.biancheng.net/ref/setlocale.html">setlocale()</a></p>
+<h3 id="为什么需要宽字符类型">为什么需要宽字符类型</h3>
+<p>“你好”对应的Unicode分别为&quot;U+4f60&quot;和&quot;U+597d”，对应的UTF-8编码分别为“0xe4 0xbd 0xa0”和“0xe5 0xa5 0xbd”</p>
+<h4 id="多字节字符串在编译后的可执行文件以utf-8编码保存">多字节字符串在编译后的可执行文件以UTF-8编码保存</h4>
+<pre class="c"><code>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(void) {
+    char s[] = &quot;你好&quot;;
+    size_t len = strlen(s);
+    printf(&quot;len = %d\n&quot;, (int)len);
+    printf(&quot;%s\n&quot;, s);
+    return 0;
+}</code></pre>
+<p>编译后执行，输出如下：</p>
+<pre><code>len = 6
+你好</code></pre>
+<p>od编译后的可执行文件，可以发现&quot;你好&quot;以UFT-8编码保存，也就是“0xe4 0xbd 0xa0”和“0xe5 0xa5 0xbd”6个字节。<br />
+strlen()函数只管结尾的0字节而不管字符串里存的是什么，所以len是6，也就是“你好”的UFT-8编码的字节数。<br />
+<code>printf(&quot;%s\n&quot;, s);</code>相当于将“0xe4 0xbd 0xa0”和“0xe5 0xa5 0xbd”6个字节write到当前终端的设备文件，如果当前终端的驱动程序能识别UTF-8编码就能打印汉字，如果当前字符终端的驱动程序不能识别UTF-8就打印不出汉字。</p>
+<h4 id="宽字符串在编译后可执行文件中以unicode保存">宽字符串在编译后可执行文件中以Unicode保存</h4>
+<pre class="c"><code>#include &lt;wchar.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;locale.h&gt;
+
+int main(void) {
+    setlocale(LC_ALL, &quot;zh_CN.UTF-8&quot;);   //设置locale
+    wchar_t s[] = L&quot;你好&quot;;
+    size_t len = wcslen(s);
+    printf(&quot;len = %d\n&quot;, (int)len);
+    printf(&quot;%ls\n&quot;, s);
+    return 0;
+}</code></pre>
+<p>编译后执行，输出如下：</p>
+<pre><code>len = 2
+你好</code></pre>
+<p>对编译后的可执行文件执行od命令，可以找到如下这些字节：</p>
+<pre><code>193 0003020 001  \0 002  \0   `   O  \0  \0   }   Y  \0  \0  \n  \0  \0  \0
+194                00020001        00004f60        0000597d        0000000a</code></pre>
+<p>00004f60正是“你”对应的Unicode，0000597d是“好”对应的Unicode。所以对于宽字符串是按Unicode保存在可执行文件中的。<br />
+wchar_t是宽字符类型。在字符常量或者字符串前加L就表示宽字符常量或者宽字符串。所以len是2。<br />
+wcslen()和strlen()不同，不是见到0字节就结束而是要遇到UCS编码为0的字符才结束。<br />
+目前宽字符在内存中以Unicode进行保存，但是要write到终端仍然需要以多字节编码输出，这样终端驱动程序才能识别，所以printf在内部把宽字符串转换成多字节字符串，然后write出去。这个转换过程受locale影响，<code>setlocale(LC_ALL, &quot;zh_CN.UTF-8&quot;);</code>设置当前进程的LC_ALL为zh_CN.UTF-8，所以printf将Unicode转成多字节的UTF-8编码，然后write到终端设备。如果将<code>setlocale(LC_ALL, &quot;zh_CN.UTF-8&quot;);</code>改为<code>setlocale(LC_ALL, en_US.iso88591):</code>打印结果中将不会输出&quot;你好&quot;。</p>
+<p>一般来说程序在内存计算时通常以宽字符编码，存盘或者网络发送则用多字节编码。</p>
+<h3 id="多字节字符串和宽字符串相互转换">多字节字符串和宽字符串相互转换</h3>
+<p>c语言中提供了多字节字符串和宽字符串相互转换的函数。</p>
+<pre class="c"><code>#include &lt;stdlib.h&gt;
+size_t mbstowcs(wchar_t *dest, const char *src, size_t n);
+size_t wcstombs(char *dest, const wchar_t *src, size_t n);</code></pre>
+<p>mbstowcs()将多字节字符串转换为宽字符串。<br />
+wcstombs()将宽字符串转换为多字节字符串。<br />
+考虑下面的例子：</p>
+<pre class="c"><code>#include &lt;locale.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;time.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;wchar.h&gt;
+#include &lt;string.h&gt;
+
+wchar_t* str2wstr(const char const* s) {
+    const size_t buffer_size = strlen(s) + 1;
+    wchar_t* dst_wstr = (wchar_t *)malloc(buffer_size * sizeof (wchar_t));
+    wmemset(dst_wstr, 0, buffer_size);
+    mbstowcs(dst_wstr, s, buffer_size); 
+    return dst_wstr;
+}
+
+void printBytes(const unsigned char const* s, int len) {
+    for (int i = 0; i &lt; len; i++) {
+        printf(&quot;0x%02x &quot;, *(s + i));
+    }
+    printf(&quot;\n&quot;);
+}
+
+int main () {
+    char s[10] = &quot;你好&quot;;          //内存中对应0xe4 0xbd 0xa0 0xe5 0xa5 0xbd 0x00 
+    wchar_t ws[10] = L&quot;你好&quot;;  //内存中对应0x60 0x4f 0x00 0x00 0x7d 0x59 0x00 0x00 0x00 0x00 0x00 0x00 
+
+    printf(&quot;Locale is: %s\n&quot;, setlocale(LC_ALL, &quot;zh_CN.UTF-8&quot;)); //Locale is: zh_CN.UTF-8
+    printBytes(s, 7);       //0xe4 0xbd 0xa0 0xe5 0xa5 0xbd 0x00 
+    printBytes((char *)ws, 12);  //0x60 0x4f 0x00 0x00 0x7d 0x59 0x00 0x00 0x00 0x00 0x00 0x00 
+
+    printBytes((char *)str2wstr(s), 12); //0x60 0x4f 0x00 0x00 0x7d 0x59 0x00 0x00 0x00 0x00 0x00 0x00 
+
+    return(0);
+}</code></pre>
+<p>编译后，执行结果如下：</p>
+<pre><code>Locale is: zh_CN.UTF-8
+0xe4 0xbd 0xa0 0xe5 0xa5 0xbd 0x00 
+0x60 0x4f 0x00 0x00 0x7d 0x59 0x00 0x00 0x00 0x00 0x00 0x00 
+0x60 0x4f 0x00 0x00 0x7d 0x59 0x00 0x00 0x00 0x00 0x00 0x00 </code></pre>
+<p>第二行输出也印证了我们之前说的多字节字符串在内存中以UTF-8存储，&quot;0xe4 0xbd 0xa0 0xe5 0xa5 0xbd&quot;正是&quot;你好&quot;的UTF-8编码。<br />
+第三行输出印证了之前说的宽字符串在内存中以Unicode存储，&quot;0x60 0x4f 0x00 0x00 0x7d 0x59 0x00 0x00&quot;正好是宽字符串L&quot;你好&quot;对应的Unicode。<br />
+<code>setlocale(LC_ALL, &quot;zh_CN.UTF-8&quot;)</code>设置locale，程序将以UTF-8解码宽字符串。调用mbstowcs()后，可以看到“你好”的UTF-8编码 &quot;0xe4 0xbd 0xa0 0xe5 0xa5 0xbd 0x00&quot;确实被转换成了“你好”对应的Unicode &quot;0x60 0x4f 0x00 0x00 0x7d 0x59 0x00 0x00 0x00 0x00 0x00 0x00&quot;。<br />
+如果将<code>setlocale(LC_ALL, &quot;zh_CN.UTF-8&quot;)</code>换成<code>setlocale(LC_ALL, &quot;en_US.iso88591 &quot;);</code>那么最后一行的输出也就会不一样。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,618 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修webbench网站测压工具源码分析' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>webbench网站测压工具源码分析</center></div><div class='banquan'>原文出处:本文由博客园博主lanshanxiao提供。<br/>
+原文连接:https://www.cnblogs.com/lanshanxiao/p/11651265.html</div><br>
+    <div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> <span style="color: #008000;">/*</span>
+<span style="color: #008080;">  2</span> <span style="color: #008000;"> * (C) Radim Kolar 1997-2004
+</span><span style="color: #008080;">  3</span> <span style="color: #008000;"> * This is free software, see GNU Public License version 2 for
+</span><span style="color: #008080;">  4</span> <span style="color: #008000;"> * details.
+</span><span style="color: #008080;">  5</span> <span style="color: #008000;"> *
+</span><span style="color: #008080;">  6</span> <span style="color: #008000;"> * Simple forking WWW Server benchmark:
+</span><span style="color: #008080;">  7</span> <span style="color: #008000;"> *
+</span><span style="color: #008080;">  8</span> <span style="color: #008000;"> * Usage:
+</span><span style="color: #008080;">  9</span> <span style="color: #008000;"> *   webbench --help
+</span><span style="color: #008080;"> 10</span> <span style="color: #008000;"> *
+</span><span style="color: #008080;"> 11</span> <span style="color: #008000;"> * Return codes:
+</span><span style="color: #008080;"> 12</span> <span style="color: #008000;"> *    0 - sucess
+</span><span style="color: #008080;"> 13</span> <span style="color: #008000;"> *    1 - benchmark failed (server is not on-line)
+</span><span style="color: #008080;"> 14</span> <span style="color: #008000;"> *    2 - bad param
+</span><span style="color: #008080;"> 15</span> <span style="color: #008000;"> *    3 - internal error, fork failed
+</span><span style="color: #008080;"> 16</span> <span style="color: #008000;"> * 
+</span><span style="color: #008080;"> 17</span>  <span style="color: #008000;">*/</span> 
+<span style="color: #008080;"> 18</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">socket.c</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 19</span> #include &lt;unistd.h&gt;
+<span style="color: #008080;"> 20</span> #include &lt;sys/param.h&gt;
+<span style="color: #008080;"> 21</span> #include &lt;rpc/types.h&gt;
+<span style="color: #008080;"> 22</span> #include &lt;getopt.h&gt;
+<span style="color: #008080;"> 23</span> #include &lt;strings.h&gt;
+<span style="color: #008080;"> 24</span> #include &lt;time.h&gt;
+<span style="color: #008080;"> 25</span> #include &lt;signal.h&gt;
+<span style="color: #008080;"> 26</span> 
+<span style="color: #008080;"> 27</span> <span style="color: #008000;">/*</span><span style="color: #008000;"> values </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 28</span> <span style="color: #0000ff;">volatile</span> <span style="color: #0000ff;">int</span> timerexpired=<span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">判断测压市场是否已经达到设定的时间</span>
+<span style="color: #008080;"> 29</span> <span style="color: #0000ff;">int</span> speed=<span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">记录进程成功得到服务器相应的数量</span>
+<span style="color: #008080;"> 30</span> <span style="color: #0000ff;">int</span> failed=<span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">记录失败的数量（speed表示成功数，failed表示失败数）</span>
+<span style="color: #008080;"> 31</span> <span style="color: #0000ff;">int</span> bytes=<span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">记录进程成功读取的字节数</span>
+<span style="color: #008080;"> 32</span> <span style="color: #008000;">/*</span><span style="color: #008000;"> globals </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 33</span> <span style="color: #0000ff;">int</span> http10=<span style="color: #800080;">1</span>; <span style="color: #008000;">/*</span><span style="color: #008000;"> 0 - http/0.9, 1 - http/1.0, 2 - http/1.1 </span><span style="color: #008000;">*///</span><span style="color: #008000;">HTTP版本</span>
+<span style="color: #008080;"> 34</span> <span style="color: #008000;">/*</span><span style="color: #008000;"> Allow: GET, HEAD, OPTIONS, TRACE </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 35</span> <span style="color: #0000ff;">#define</span> METHOD_GET 0 
+<span style="color: #008080;"> 36</span> <span style="color: #0000ff;">#define</span> METHOD_HEAD 1 
+<span style="color: #008080;"> 37</span> <span style="color: #0000ff;">#define</span> METHOD_OPTIONS 2
+<span style="color: #008080;"> 38</span> <span style="color: #0000ff;">#define</span> METHOD_TRACE 3
+<span style="color: #008080;"> 39</span> <span style="color: #0000ff;">#define</span> PROGRAM_VERSION "1.5"
+<span style="color: #008080;"> 40</span> <span style="color: #0000ff;">int</span> method=METHOD_GET;<span style="color: #008000;">//</span><span style="color: #008000;">定义HTTP请求方法：默认方式GET请求</span>
+<span style="color: #008080;"> 41</span> <span style="color: #0000ff;">int</span> clients=<span style="color: #800080;">1</span>;<span style="color: #008000;">//</span><span style="color: #008000;">并发数目，默认只有一个进程发送请求，通过 -c 参数设置</span>
+<span style="color: #008080;"> 42</span> <span style="color: #0000ff;">int</span> force=<span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">是否需要等待读取从server返回的数据，0表示要等待读取</span>
+<span style="color: #008080;"> 43</span> <span style="color: #0000ff;">int</span> force_reload=<span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">是否使用缓存，1表示不缓存，0表示可以缓存页面</span>
+<span style="color: #008080;"> 44</span> <span style="color: #0000ff;">int</span> proxyport=<span style="color: #800080;">80</span>;<span style="color: #008000;">//</span><span style="color: #008000;">代理服务器的端口</span>
+<span style="color: #008080;"> 45</span> <span style="color: #0000ff;">char</span> *proxyhost=NULL;<span style="color: #008000;">//</span><span style="color: #008000;">代理服务器的端口</span>
+<span style="color: #008080;"> 46</span> <span style="color: #0000ff;">int</span> benchtime=<span style="color: #800080;">30</span>;<span style="color: #008000;">//</span><span style="color: #008000;">测压时间，默认30秒，通过 -t 参数设置</span>
+<span style="color: #008080;"> 47</span> <span style="color: #008000;">/*</span><span style="color: #008000;"> internal </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 48</span> <span style="color: #0000ff;">int</span> mypipe[<span style="color: #800080;">2</span>];<span style="color: #008000;">//</span><span style="color: #008000;">使用管道进行父进程和子进程的通信</span>
+<span style="color: #008080;"> 49</span> <span style="color: #0000ff;">char</span> host[MAXHOSTNAMELEN];<span style="color: #008000;">//</span><span style="color: #008000;">服务器端IP</span>
+<span style="color: #008080;"> 50</span> <span style="color: #0000ff;">#define</span> REQUEST_SIZE 2048
+<span style="color: #008080;"> 51</span> <span style="color: #0000ff;">char</span> request[REQUEST_SIZE];<span style="color: #008000;">//</span><span style="color: #008000;">发送HTTP请求的内容</span>
+<span style="color: #008080;"> 52</span> 
+<span style="color: #008080;"> 53</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">struct</span> option long_options[]=
+<span style="color: #008080;"> 54</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 55</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">force</span><span style="color: #800000;">"</span>,no_argument,&amp;force,<span style="color: #800080;">1</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 56</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">reload</span><span style="color: #800000;">"</span>,no_argument,&amp;force_reload,<span style="color: #800080;">1</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 57</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span>,required_argument,NULL,<span style="color: #800000;">'</span><span style="color: #800000;">t</span><span style="color: #800000;">'</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 58</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">help</span><span style="color: #800000;">"</span>,no_argument,NULL,<span style="color: #800000;">'</span><span style="color: #800000;">?</span><span style="color: #800000;">'</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 59</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">http09</span><span style="color: #800000;">"</span>,no_argument,NULL,<span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 60</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">http10</span><span style="color: #800000;">"</span>,no_argument,NULL,<span style="color: #800000;">'</span><span style="color: #800000;">1</span><span style="color: #800000;">'</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 61</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">http11</span><span style="color: #800000;">"</span>,no_argument,NULL,<span style="color: #800000;">'</span><span style="color: #800000;">2</span><span style="color: #800000;">'</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 62</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">get</span><span style="color: #800000;">"</span>,no_argument,&amp;<span style="color: #000000;">method,METHOD_GET},
+</span><span style="color: #008080;"> 63</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">head</span><span style="color: #800000;">"</span>,no_argument,&amp;<span style="color: #000000;">method,METHOD_HEAD},
+</span><span style="color: #008080;"> 64</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">options</span><span style="color: #800000;">"</span>,no_argument,&amp;<span style="color: #000000;">method,METHOD_OPTIONS},
+</span><span style="color: #008080;"> 65</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">trace</span><span style="color: #800000;">"</span>,no_argument,&amp;<span style="color: #000000;">method,METHOD_TRACE},
+</span><span style="color: #008080;"> 66</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">version</span><span style="color: #800000;">"</span>,no_argument,NULL,<span style="color: #800000;">'</span><span style="color: #800000;">V</span><span style="color: #800000;">'</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 67</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">proxy</span><span style="color: #800000;">"</span>,required_argument,NULL,<span style="color: #800000;">'</span><span style="color: #800000;">p</span><span style="color: #800000;">'</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 68</span>  {<span style="color: #800000;">"</span><span style="color: #800000;">clients</span><span style="color: #800000;">"</span>,required_argument,NULL,<span style="color: #800000;">'</span><span style="color: #800000;">c</span><span style="color: #800000;">'</span><span style="color: #000000;">},
+</span><span style="color: #008080;"> 69</span>  {NULL,<span style="color: #800080;">0</span>,NULL,<span style="color: #800080;">0</span><span style="color: #000000;">}
+</span><span style="color: #008080;"> 70</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 71</span> 
+<span style="color: #008080;"> 72</span> <span style="color: #008000;">/*</span><span style="color: #008000;"> prototypes </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 73</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> benchcore(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>* host,<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> port, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;">request);
+</span><span style="color: #008080;"> 74</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">int</span> bench(<span style="color: #0000ff;">void</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 75</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> build_request(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;">url);
+</span><span style="color: #008080;"> 76</span> 
+<span style="color: #008080;"> 77</span> <span style="color: #008000;">/*</span>
+<span style="color: #008080;"> 78</span> <span style="color: #008000;">     webbench在运行时可以设定压测的持续时间，以秒为单位。
+</span><span style="color: #008080;"> 79</span> <span style="color: #008000;">     例如我们希望测试30秒，也就意味着压测30秒后程序应该退出了。
+</span><span style="color: #008080;"> 80</span> <span style="color: #008000;">     webbench中使用信号（signal）来控制程序结束。
+</span><span style="color: #008080;"> 81</span> <span style="color: #008000;">     函数1是在到达结束时间时运行的信号处理函数。
+</span><span style="color: #008080;"> 82</span> <span style="color: #008000;">     它仅仅是将一个记录是否超时的变量timerexpired标记为true。
+</span><span style="color: #008080;"> 83</span> <span style="color: #008000;">     后面会看到，在程序的while循环中会不断检测此值，
+</span><span style="color: #008080;"> 84</span> <span style="color: #008000;">     只有timerexpired=1，程序才会跳出while循环并返回。
+</span><span style="color: #008080;"> 85</span> <span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 86</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> alarm_handler(<span style="color: #0000ff;">int</span><span style="color: #000000;"> signal)
+</span><span style="color: #008080;"> 87</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 88</span>    timerexpired=<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 89</span> <span style="color: #000000;">}    
+</span><span style="color: #008080;"> 90</span> 
+<span style="color: #008080;"> 91</span> <span style="color: #008000;">/*</span>
+<span style="color: #008080;"> 92</span> <span style="color: #008000;">    教你如何使用webbench的函数，
+</span><span style="color: #008080;"> 93</span> <span style="color: #008000;">    在linux命令行调用webbench方法不对的时候运行，作为提示。
+</span><span style="color: #008080;"> 94</span> <span style="color: #008000;">    有一些比较常用的，比如-c来指定并发进程的多少；
+</span><span style="color: #008080;"> 95</span> <span style="color: #008000;">    -t指定压测的时间，以秒为单位；
+</span><span style="color: #008080;"> 96</span> <span style="color: #008000;">    支持HTTP0.9，HTTP1.0，HTTP1.1三个版本；
+</span><span style="color: #008080;"> 97</span> <span style="color: #008000;">    支持GET，HEAD，OPTIONS，TRACE四种请求方式。
+</span><span style="color: #008080;"> 98</span> <span style="color: #008000;">    不要忘了调用时，命令行最后还应该附上要测的服务端URL。
+</span><span style="color: #008080;"> 99</span> <span style="color: #008000;">*/</span>
+<span style="color: #008080;">100</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> usage(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;">101</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">102</span> <span style="color: #000000;">   fprintf(stderr,
+</span><span style="color: #008080;">103</span>     <span style="color: #800000;">"</span><span style="color: #800000;">webbench [option]... URL\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">104</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  -f|--force               Don't wait for reply from server.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">105</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  -r|--reload              Send reload request - Pragma: no-cache.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">106</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  -t|--time &lt;sec&gt;          Run benchmark for &lt;sec&gt; seconds. Default 30.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">107</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  -p|--proxy &lt;server:port&gt; Use proxy server for request.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">108</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  -c|--clients &lt;n&gt;         Run &lt;n&gt; HTTP clients at once. Default one.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">109</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  -9|--http09              Use HTTP/0.9 style requests.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">110</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  -1|--http10              Use HTTP/1.0 protocol.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">111</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  -2|--http11              Use HTTP/1.1 protocol.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">112</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  --get                    Use GET request method.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">113</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  --head                   Use HEAD request method.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">114</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  --options                Use OPTIONS request method.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">115</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  --trace                  Use TRACE request method.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">116</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  -?|-h|--help             This information.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">117</span>     <span style="color: #800000;">"</span><span style="color: #800000;">  -V|--version             Display program version.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">118</span> <span style="color: #000000;">    );
+</span><span style="color: #008080;">119</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">120</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;">121</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">122</span>  <span style="color: #0000ff;">int</span> opt=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">123</span>  <span style="color: #0000ff;">int</span> options_index=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">124</span>  <span style="color: #0000ff;">char</span> *tmp=<span style="color: #000000;">NULL;
+</span><span style="color: #008080;">125</span> 
+<span style="color: #008080;">126</span>  <span style="color: #0000ff;">if</span>(argc==<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">127</span> <span style="color: #000000;"> {
+</span><span style="color: #008080;">128</span> <span style="color: #000000;">      usage();
+</span><span style="color: #008080;">129</span>           <span style="color: #0000ff;">return</span> <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">130</span> <span style="color: #000000;"> } 
+</span><span style="color: #008080;">131</span> 
+<span style="color: #008080;">132</span>  <span style="color: #0000ff;">while</span>((opt=getopt_long(argc,argv,<span style="color: #800000;">"</span><span style="color: #800000;">912Vfrt:p:c:?h</span><span style="color: #800000;">"</span>,long_options,&amp;options_index))!=<span style="color: #000000;">EOF )
+</span><span style="color: #008080;">133</span> <span style="color: #000000;"> {
+</span><span style="color: #008080;">134</span>   <span style="color: #0000ff;">switch</span><span style="color: #000000;">(opt)
+</span><span style="color: #008080;">135</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">136</span>    <span style="color: #0000ff;">case</span>  <span style="color: #800080;">0</span> : <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">137</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">f</span><span style="color: #800000;">'</span>: force=<span style="color: #800080;">1</span>;<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">138</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">r</span><span style="color: #800000;">'</span>: force_reload=<span style="color: #800080;">1</span>;<span style="color: #0000ff;">break</span><span style="color: #000000;">; 
+</span><span style="color: #008080;">139</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span>: http10=<span style="color: #800080;">0</span>;<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">140</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">1</span><span style="color: #800000;">'</span>: http10=<span style="color: #800080;">1</span>;<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">141</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">2</span><span style="color: #800000;">'</span>: http10=<span style="color: #800080;">2</span>;<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">142</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">V</span><span style="color: #800000;">'</span>: printf(PROGRAM_VERSION<span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span>);exit(<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">143</span>    <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">144</span> <span style="color: #008000;">       *C 库函数 int atoi(const char *str) 把参数 str 所指向的字符串转换为一个整数（类型为 int 型）
+</span><span style="color: #008080;">145</span> <span style="color: #008000;">       *int atoi(const char *str)
+</span><span style="color: #008080;">146</span> <span style="color: #008000;">       *str -- 要转换为整数的字符串。
+</span><span style="color: #008080;">147</span> <span style="color: #008000;">       *该函数返回转换后的长整数，如果没有执行有效的转换，则返回零。
+</span><span style="color: #008080;">148</span>        <span style="color: #008000;">*/</span>
+<span style="color: #008080;">149</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">t</span><span style="color: #800000;">'</span>: benchtime=atoi(optarg);<span style="color: #0000ff;">break</span><span style="color: #000000;">;         
+</span><span style="color: #008080;">150</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">p</span><span style="color: #800000;">'</span><span style="color: #000000;">: 
+</span><span style="color: #008080;">151</span>          <span style="color: #008000;">/*</span><span style="color: #008000;"> proxy server parsing server:port </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">152</span>            <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">153</span> <span style="color: #008000;">           *strrchr() 函数用于查找某字符在字符串中最后一次出现的位置，其原型为：
+</span><span style="color: #008080;">154</span> <span style="color: #008000;">        *char * strrchr(const char *str, int c);
+</span><span style="color: #008080;">155</span> <span style="color: #008000;">        *【参数】str 为要查找的字符串，c 为要查找的字符。
+</span><span style="color: #008080;">156</span> <span style="color: #008000;">        *strrchr() 将会找出 str 字符串中最后一次出现的字符 c 的地址，然后将该地址返回。
+</span><span style="color: #008080;">157</span> <span style="color: #008000;">        *注意：字符串 str 的结束标志 NUL 也会被纳入检索范围，所以 str 的组后一个字符也可以被定位。
+</span><span style="color: #008080;">158</span> <span style="color: #008000;">        *【返回值】如果找到就返回该字符最后一次出现的位置，否则返回 NULL。
+</span><span style="color: #008080;">159</span> <span style="color: #008000;">        *返回的地址是字符串在内存中随机分配的地址再加上你所搜索的字符在字符串位置。设字符在字符串中首次出现的位置为 i，那么返回的地址可以理解为 str + i。
+</span><span style="color: #008080;">160</span>            <span style="color: #008000;">*/</span>
+<span style="color: #008080;">161</span>            <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">162</span> <span style="color: #008000;">           *optarg : char *optarg;  //选项的参数指针
+</span><span style="color: #008080;">163</span>            <span style="color: #008000;">*/</span>
+<span style="color: #008080;">164</span>          tmp=strrchr(optarg,<span style="color: #800000;">'</span><span style="color: #800000;">:</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">165</span>          proxyhost=<span style="color: #000000;">optarg;
+</span><span style="color: #008080;">166</span>          <span style="color: #0000ff;">if</span>(tmp==<span style="color: #000000;">NULL)
+</span><span style="color: #008080;">167</span> <span style="color: #000000;">         {
+</span><span style="color: #008080;">168</span>              <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">169</span> <span style="color: #000000;">         }
+</span><span style="color: #008080;">170</span>          <span style="color: #0000ff;">if</span>(tmp==<span style="color: #000000;">optarg)
+</span><span style="color: #008080;">171</span> <span style="color: #000000;">         {
+</span><span style="color: #008080;">172</span>              fprintf(stderr,<span style="color: #800000;">"</span><span style="color: #800000;">Error in option --proxy %s: Missing hostname.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,optarg);
+</span><span style="color: #008080;">173</span>              <span style="color: #0000ff;">return</span> <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">174</span> <span style="color: #000000;">         }
+</span><span style="color: #008080;">175</span>          <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">176</span> <span style="color: #008000;">         *C 库函数 size_t strlen(const char *str) 计算字符串 str 的长度，直到空结束字符，但不包括空结束字符。
+</span><span style="color: #008080;">177</span> <span style="color: #008000;">         *size_t strlen(const char *str)
+</span><span style="color: #008080;">178</span> <span style="color: #008000;">         *参数：str -- 要计算长度的字符串。
+</span><span style="color: #008080;">179</span> <span style="color: #008000;">         *该函数返回字符串的长度。
+</span><span style="color: #008080;">180</span>          <span style="color: #008000;">*/</span>
+<span style="color: #008080;">181</span>          <span style="color: #0000ff;">if</span>(tmp==optarg+strlen(optarg)-<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">182</span> <span style="color: #000000;">         {
+</span><span style="color: #008080;">183</span>              fprintf(stderr,<span style="color: #800000;">"</span><span style="color: #800000;">Error in option --proxy %s Port number is missing.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,optarg);
+</span><span style="color: #008080;">184</span>              <span style="color: #0000ff;">return</span> <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">185</span> <span style="color: #000000;">         }
+</span><span style="color: #008080;">186</span>          *tmp=<span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span>;<span style="color: #008000;">//</span><span style="color: #008000;">把:替换为\0
+</span><span style="color: #008080;">187</span>          <span style="color: #008000;">//</span><span style="color: #008000;">从\0之后到\0之前</span>
+<span style="color: #008080;">188</span>          proxyport=atoi(tmp+<span style="color: #800080;">1</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">189</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">:</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">190</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">h</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">191</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">?</span><span style="color: #800000;">'</span>: usage();<span style="color: #0000ff;">return</span> <span style="color: #800080;">2</span>;<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">192</span>    <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">c</span><span style="color: #800000;">'</span>: clients=atoi(optarg);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">193</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">194</span> <span style="color: #000000;"> }
+</span><span style="color: #008080;">195</span>  <span style="color: #008000;">//</span><span style="color: #008000;">int optind：argv的当前索引值。当getopt函数在while循环中使用时，剩下的字符串为操作数，下标从optind到argc-1
+</span><span style="color: #008080;">196</span>  <span style="color: #008000;">//</span><span style="color: #008000;">argc,argv 参考：</span><span style="color: #008000; text-decoration: underline;">https://www.cnblogs.com/lanshanxiao/p/11568037.html</span>
+<span style="color: #008080;">197</span>  <span style="color: #008000;">//</span><span style="color: #008000;">getopt_long()中的函数，参考：</span><span style="color: #008000; text-decoration: underline;">https://www.cnblogs.com/xhg940420/p/7016574.html</span>
+<span style="color: #008080;">198</span>  <span style="color: #008000;">//</span><span style="color: #008000;">扫描完毕后，optind指向非长选项和非短选项和非参数的字段，这里应该指向URL</span>
+<span style="color: #008080;">199</span>  <span style="color: #0000ff;">if</span>(optind==<span style="color: #000000;">argc) {
+</span><span style="color: #008080;">200</span>                       fprintf(stderr,<span style="color: #800000;">"</span><span style="color: #800000;">webbench: Missing URL!\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">201</span> <span style="color: #000000;">              usage();
+</span><span style="color: #008080;">202</span>               <span style="color: #0000ff;">return</span> <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">203</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;">204</span> 
+<span style="color: #008080;">205</span>  <span style="color: #0000ff;">if</span>(clients==<span style="color: #800080;">0</span>) clients=<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">206</span>  <span style="color: #0000ff;">if</span>(benchtime==<span style="color: #800080;">0</span>) benchtime=<span style="color: #800080;">60</span><span style="color: #000000;">;
+</span><span style="color: #008080;">207</span>  <span style="color: #008000;">/*</span><span style="color: #008000;"> Copyright </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">208</span>  fprintf(stderr,<span style="color: #800000;">"</span><span style="color: #800000;">Webbench - Simple Web Benchmark </span><span style="color: #800000;">"</span>PROGRAM_VERSION<span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">209</span>      <span style="color: #800000;">"</span><span style="color: #800000;">Copyright (c) Radim Kolar 1997-2004, GPL Open Source Software.\n</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">210</span> <span style="color: #000000;">     );
+</span><span style="color: #008080;">211</span>  <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">212</span> <span style="color: #008000;">  *命令读取完成后，argv[optind]中应该存放着URL，
+</span><span style="color: #008080;">213</span> <span style="color: #008000;">  *建立完整的http请求，http请求存放在变量char request[REQUEST_SIZE]中
+</span><span style="color: #008080;">214</span>   <span style="color: #008000;">*/</span>
+<span style="color: #008080;">215</span> <span style="color: #000000;"> build_request(argv[optind]);
+</span><span style="color: #008080;">216</span>  <span style="color: #008000;">/*</span><span style="color: #008000;"> print bench info </span><span style="color: #008000;">*///</span><span style="color: #008000;">输出平台信息</span>
+<span style="color: #008080;">217</span>  printf(<span style="color: #800000;">"</span><span style="color: #800000;">\nBenchmarking: </span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">218</span>  <span style="color: #0000ff;">switch</span><span style="color: #000000;">(method)
+</span><span style="color: #008080;">219</span> <span style="color: #000000;"> {
+</span><span style="color: #008080;">220</span>      <span style="color: #0000ff;">case</span><span style="color: #000000;"> METHOD_GET:
+</span><span style="color: #008080;">221</span>      <span style="color: #0000ff;">default</span><span style="color: #000000;">:
+</span><span style="color: #008080;">222</span>          printf(<span style="color: #800000;">"</span><span style="color: #800000;">GET</span><span style="color: #800000;">"</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">223</span>      <span style="color: #0000ff;">case</span><span style="color: #000000;"> METHOD_OPTIONS:
+</span><span style="color: #008080;">224</span>          printf(<span style="color: #800000;">"</span><span style="color: #800000;">OPTIONS</span><span style="color: #800000;">"</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">225</span>      <span style="color: #0000ff;">case</span><span style="color: #000000;"> METHOD_HEAD:
+</span><span style="color: #008080;">226</span>          printf(<span style="color: #800000;">"</span><span style="color: #800000;">HEAD</span><span style="color: #800000;">"</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">227</span>      <span style="color: #0000ff;">case</span><span style="color: #000000;"> METHOD_TRACE:
+</span><span style="color: #008080;">228</span>          printf(<span style="color: #800000;">"</span><span style="color: #800000;">TRACE</span><span style="color: #800000;">"</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">229</span> <span style="color: #000000;"> }
+</span><span style="color: #008080;">230</span>  printf(<span style="color: #800000;">"</span><span style="color: #800000;"> %s</span><span style="color: #800000;">"</span>,argv[optind]);<span style="color: #008000;">//</span><span style="color: #008000;">打印出URL</span>
+<span style="color: #008080;">231</span>  <span style="color: #0000ff;">switch</span><span style="color: #000000;">(http10)
+</span><span style="color: #008080;">232</span> <span style="color: #000000;"> {
+</span><span style="color: #008080;">233</span>      <span style="color: #0000ff;">case</span> <span style="color: #800080;">0</span>: printf(<span style="color: #800000;">"</span><span style="color: #800000;"> (using HTTP/0.9)</span><span style="color: #800000;">"</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">234</span>      <span style="color: #0000ff;">case</span> <span style="color: #800080;">2</span>: printf(<span style="color: #800000;">"</span><span style="color: #800000;"> (using HTTP/1.1)</span><span style="color: #800000;">"</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">235</span> <span style="color: #000000;"> }
+</span><span style="color: #008080;">236</span>  printf(<span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">237</span>  <span style="color: #0000ff;">if</span>(clients==<span style="color: #800080;">1</span>) printf(<span style="color: #800000;">"</span><span style="color: #800000;">1 client</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">238</span>  <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">239</span>    printf(<span style="color: #800000;">"</span><span style="color: #800000;">%d clients</span><span style="color: #800000;">"</span><span style="color: #000000;">,clients);
+</span><span style="color: #008080;">240</span> 
+<span style="color: #008080;">241</span>  printf(<span style="color: #800000;">"</span><span style="color: #800000;">, running %d sec</span><span style="color: #800000;">"</span><span style="color: #000000;">, benchtime);
+</span><span style="color: #008080;">242</span>  <span style="color: #0000ff;">if</span>(force) printf(<span style="color: #800000;">"</span><span style="color: #800000;">, early socket close</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">243</span>  <span style="color: #0000ff;">if</span>(proxyhost!=NULL) printf(<span style="color: #800000;">"</span><span style="color: #800000;">, via proxy server %s:%d</span><span style="color: #800000;">"</span><span style="color: #000000;">,proxyhost,proxyport);
+</span><span style="color: #008080;">244</span>  <span style="color: #0000ff;">if</span>(force_reload) printf(<span style="color: #800000;">"</span><span style="color: #800000;">, forcing reload</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">245</span>  printf(<span style="color: #800000;">"</span><span style="color: #800000;">.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">246</span>  <span style="color: #008000;">//</span><span style="color: #008000;">压力测试最后一句话，所有的压力测试都在bench函数中实现</span>
+<span style="color: #008080;">247</span>  <span style="color: #0000ff;">return</span><span style="color: #000000;"> bench();
+</span><span style="color: #008080;">248</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">249</span> 
+<span style="color: #008080;">250</span> <span style="color: #008000;">/*</span>
+<span style="color: #008080;">251</span> <span style="color: #008000;">    函数主要操作全局变量char request[REQUEST_SIZE]，根据url填充其内容。
+</span><span style="color: #008080;">252</span> <span style="color: #008000;">    典型的HTTP的GET请求：
+</span><span style="color: #008080;">253</span> <span style="color: #008000;">    GET /test.jpg HTTP/1.1
+</span><span style="color: #008080;">254</span> <span style="color: #008000;">    User-Agent: WebBench 1.5
+</span><span style="color: #008080;">255</span> <span style="color: #008000;">    Host:192.168.10.1
+</span><span style="color: #008080;">256</span> <span style="color: #008000;">    Pragma: no-cache
+</span><span style="color: #008080;">257</span> <span style="color: #008000;">    Connection: close
+</span><span style="color: #008080;">258</span> 
+<span style="color: #008080;">259</span> <span style="color: #008000;">    build_request函数的目的就是要把
+</span><span style="color: #008080;">260</span> <span style="color: #008000;">    类似于以上这一大坨信息全部存到全局变量request[REQUEST_SIZE]中，
+</span><span style="color: #008080;">261</span> <span style="color: #008000;">    其中换行操作使用的是&rdquo;\r\n&rdquo;。
+</span><span style="color: #008080;">262</span> <span style="color: #008000;">    而以上这一大坨信息的具体内容是要根据命令行输入的参数，以及url来确定的。
+</span><span style="color: #008080;">263</span> <span style="color: #008000;">    该函数使用了大量的字符串操作函数，
+</span><span style="color: #008080;">264</span> <span style="color: #008000;">    例如strcpy，strstr，strncasecmp，strlen，strchr，index，strncpy，strcat。
+</span><span style="color: #008080;">265</span> <span style="color: #008000;">    对这些基础函数不太熟悉的同学可以借这个函数复习一下。
+</span><span style="color: #008080;">266</span> <span style="color: #008000;">*/</span>
+<span style="color: #008080;">267</span> <span style="color: #0000ff;">void</span> build_request(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;">url)
+</span><span style="color: #008080;">268</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">269</span>   <span style="color: #0000ff;">char</span> tmp[<span style="color: #800080;">10</span><span style="color: #000000;">];
+</span><span style="color: #008080;">270</span>   <span style="color: #0000ff;">int</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;">271</span> 
+<span style="color: #008080;">272</span>   bzero(host,MAXHOSTNAMELEN);<span style="color: #008000;">//</span><span style="color: #008000;">bzero():置host(字节字符串)前MAXHOSTNAMELEN个字节为0,包括'\0')</span>
+<span style="color: #008080;">273</span> <span style="color: #000000;">  bzero(request,REQUEST_SIZE);
+</span><span style="color: #008080;">274</span>   
+<span style="color: #008080;">275</span>   <span style="color: #0000ff;">if</span>(force_reload &amp;&amp; proxyhost!=NULL &amp;&amp; http10&lt;<span style="color: #800080;">1</span>) http10=<span style="color: #800080;">1</span>;<span style="color: #008000;">//</span><span style="color: #008000;">满足一定条件，更换HTTP协议</span>
+<span style="color: #008080;">276</span>   <span style="color: #0000ff;">if</span>(method==METHOD_HEAD &amp;&amp; http10&lt;<span style="color: #800080;">1</span>) http10=<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">277</span>   <span style="color: #0000ff;">if</span>(method==METHOD_OPTIONS &amp;&amp; http10&lt;<span style="color: #800080;">2</span>) http10=<span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">278</span>   <span style="color: #0000ff;">if</span>(method==METHOD_TRACE &amp;&amp; http10&lt;<span style="color: #800080;">2</span>) http10=<span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">279</span> 
+<span style="color: #008080;">280</span>   <span style="color: #0000ff;">switch</span><span style="color: #000000;">(method)
+</span><span style="color: #008080;">281</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">282</span>       <span style="color: #0000ff;">default</span><span style="color: #000000;">:
+</span><span style="color: #008080;">283</span>       <span style="color: #008000;">//</span><span style="color: #008000;">strcpy() 函数用于对字符串进行复制（拷贝）。
+</span><span style="color: #008080;">284</span>       <span style="color: #008000;">//</span><span style="color: #008000;">char* strcpy(char* strDestination, const char* strSource);
+</span><span style="color: #008080;">285</span>       <span style="color: #008000;">//</span><span style="color: #008000;">strSource 指向的字符串复制到 strDestination</span>
+<span style="color: #008080;">286</span>       <span style="color: #0000ff;">case</span> METHOD_GET: strcpy(request,<span style="color: #800000;">"</span><span style="color: #800000;">GET</span><span style="color: #800000;">"</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">287</span>       <span style="color: #0000ff;">case</span> METHOD_HEAD: strcpy(request,<span style="color: #800000;">"</span><span style="color: #800000;">HEAD</span><span style="color: #800000;">"</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">288</span>       <span style="color: #0000ff;">case</span> METHOD_OPTIONS: strcpy(request,<span style="color: #800000;">"</span><span style="color: #800000;">OPTIONS</span><span style="color: #800000;">"</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">289</span>       <span style="color: #0000ff;">case</span> METHOD_TRACE: strcpy(request,<span style="color: #800000;">"</span><span style="color: #800000;">TRACE</span><span style="color: #800000;">"</span>);<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">290</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">291</span> 
+<span style="color: #008080;">292</span>   <span style="color: #008000;">//</span><span style="color: #008000;">char*strcat(char* strDestination, const char* strSource);</span>
+<span style="color: #008080;">293</span>   <span style="color: #008000;">/*</span>
+<span style="color: #008080;">294</span> <span style="color: #008000;">      strcat() 函数用来将两个字符串连接（拼接）起来。
+</span><span style="color: #008080;">295</span> <span style="color: #008000;">      strcat() 函数把 strSource 所指向的字符串追加到 strDestination 所指向的字符串的结尾，
+</span><span style="color: #008080;">296</span> <span style="color: #008000;">      所以必须要保证 strDestination 有足够的内存空间来容纳两个字符串，否则会导致溢出错误。
+</span><span style="color: #008080;">297</span> <span style="color: #008000;">      注意：strDestination 末尾的\0会被覆盖，strSource 末尾的\0会一起被复制过去，最终的字符串只有一个\0。
+</span><span style="color: #008080;">298</span>   <span style="color: #008000;">*/</span>
+<span style="color: #008080;">299</span>   strcat(request,<span style="color: #800000;">"</span> <span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">300</span> 
+<span style="color: #008080;">301</span>   <span style="color: #008000;">/*</span>
+<span style="color: #008080;">302</span> <span style="color: #008000;">    char *strstr(const char *haystack, const char *needle) 
+</span><span style="color: #008080;">303</span> <span style="color: #008000;">    在字符串 haystack 中查找第一次出现字符串 needle 的位置，不包含终止符 '\0'。
+</span><span style="color: #008080;">304</span> <span style="color: #008000;">    该函数返回在 haystack 中第一次出现 needle 的地址，如果未找到则返回 null。
+</span><span style="color: #008080;">305</span>   <span style="color: #008000;">*/</span>
+<span style="color: #008080;">306</span>   <span style="color: #0000ff;">if</span>(NULL==strstr(url,<span style="color: #800000;">"</span><span style="color: #800000;">://</span><span style="color: #800000;">"</span><span style="color: #000000;">))
+</span><span style="color: #008080;">307</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">308</span>       fprintf(stderr, <span style="color: #800000;">"</span><span style="color: #800000;">\n%s: is not a valid URL.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,url);
+</span><span style="color: #008080;">309</span>       exit(<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">310</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">311</span> 
+<span style="color: #008080;">312</span>   <span style="color: #008000;">/*</span>
+<span style="color: #008080;">313</span> <span style="color: #008000;">      strlen(char *);
+</span><span style="color: #008080;">314</span> <span style="color: #008000;">      检测字符串实际长度。
+</span><span style="color: #008080;">315</span> <span style="color: #008000;">      strlen(char *)检测的是'\0',strlen(char *)碰到'\0'就返回'\0'以前的字符数(不包括'\0')。
+</span><span style="color: #008080;">316</span> <span style="color: #008000;">      strlen(char*）函数求的是字符串的实际长度，它求得方法是从开始到遇到第一个'\0'，
+</span><span style="color: #008080;">317</span> <span style="color: #008000;">      如果你只定义没有给它赋初值，这个结果是不定的，它会从aa首地址一直找下去，直到遇到'\0'停止。
+</span><span style="color: #008080;">318</span>   <span style="color: #008000;">*/</span>
+<span style="color: #008080;">319</span>   <span style="color: #0000ff;">if</span>(strlen(url)&gt;<span style="color: #800080;">1500</span><span style="color: #000000;">)
+</span><span style="color: #008080;">320</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">321</span>      fprintf(stderr,<span style="color: #800000;">"</span><span style="color: #800000;">URL is too long.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">322</span>      exit(<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">323</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">324</span>   <span style="color: #0000ff;">if</span>(proxyhost==<span style="color: #000000;">NULL)
+</span><span style="color: #008080;">325</span>          <span style="color: #008000;">/*</span>
+<span style="color: #008080;">326</span> <span style="color: #008000;">                 int strncasecmp(const char *s1, const char *s2, size_t n);
+</span><span style="color: #008080;">327</span> <span style="color: #008000;">                 strncasecmp()用来比较参数s1 和s2 字符串前n个字符，比较时会自动忽略大小写的差异。
+</span><span style="color: #008080;">328</span> <span style="color: #008000;">                 若参数s1 和s2 字符串相同则返回0。s1 若大于s2 则返回大于0 的值，s1 若小于s2 则返回小于0 的值。
+</span><span style="color: #008080;">329</span>          <span style="color: #008000;">*/</span>
+<span style="color: #008080;">330</span>        <span style="color: #0000ff;">if</span> (<span style="color: #800080;">0</span>!=strncasecmp(<span style="color: #800000;">"</span><span style="color: #800000;">http://</span><span style="color: #800000;">"</span>,url,<span style="color: #800080;">7</span><span style="color: #000000;">)) 
+</span><span style="color: #008080;">331</span> <span style="color: #000000;">       { 
+</span><span style="color: #008080;">332</span>                fprintf(stderr,<span style="color: #800000;">"</span><span style="color: #800000;">\nOnly HTTP protocol is directly supported, set --proxy for others.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">333</span>             exit(<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">334</span> <span style="color: #000000;">       }
+</span><span style="color: #008080;">335</span>   <span style="color: #008000;">/*</span><span style="color: #008000;"> protocol/host delimiter </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">336</span>   i=strstr(url,<span style="color: #800000;">"</span><span style="color: #800000;">://</span><span style="color: #800000;">"</span>)-url+<span style="color: #800080;">3</span><span style="color: #000000;">;
+</span><span style="color: #008080;">337</span>   <span style="color: #008000;">/*</span><span style="color: #008000;"> printf("%d\n",i); </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">338</span> 
+<span style="color: #008080;">339</span>   <span style="color: #008000;">/*</span>
+<span style="color: #008080;">340</span> <span style="color: #008000;">    char *strchr(const char *str, char c) 
+</span><span style="color: #008080;">341</span> <span style="color: #008000;">    该函数返回在字符串 str 中第一次出现字符 c 的地址，如果未找到该字符则返回 NULL。
+</span><span style="color: #008080;">342</span>   <span style="color: #008000;">*/</span>
+<span style="color: #008080;">343</span>   <span style="color: #0000ff;">if</span>(strchr(url+i,<span style="color: #800000;">'</span><span style="color: #800000;">/</span><span style="color: #800000;">'</span>)==<span style="color: #000000;">NULL) {
+</span><span style="color: #008080;">344</span>                                 fprintf(stderr,<span style="color: #800000;">"</span><span style="color: #800000;">\nInvalid URL syntax - hostname don't ends with '/'.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">345</span>                                 exit(<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">346</span> <span style="color: #000000;">                              }
+</span><span style="color: #008080;">347</span>   <span style="color: #0000ff;">if</span>(proxyhost==<span style="color: #000000;">NULL)
+</span><span style="color: #008080;">348</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">349</span>    <span style="color: #008000;">/*</span><span style="color: #008000;"> get port from hostname </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">350</span>    <span style="color: #0000ff;">if</span>(index(url+i,<span style="color: #800000;">'</span><span style="color: #800000;">:</span><span style="color: #800000;">'</span>)!=NULL &amp;&amp;
+<span style="color: #008080;">351</span>       index(url+i,<span style="color: #800000;">'</span><span style="color: #800000;">:</span><span style="color: #800000;">'</span>)&lt;index(url+i,<span style="color: #800000;">'</span><span style="color: #800000;">/</span><span style="color: #800000;">'</span><span style="color: #000000;">))
+</span><span style="color: #008080;">352</span> <span style="color: #000000;">   {
+</span><span style="color: #008080;">353</span>           <span style="color: #008000;">/*</span>
+<span style="color: #008080;">354</span> <span style="color: #008000;">            char * strncpy(char *s1,char *s2,size_t n);
+</span><span style="color: #008080;">355</span> <span style="color: #008000;">　　            将字符串s2中最多n个字符复制到字符数组s1中，返回指向s1的指针。
+</span><span style="color: #008080;">356</span> <span style="color: #008000;">　　            注意：如果源串长度大于n，则strncpy不复制最后的'\0'结束符，
+</span><span style="color: #008080;">357</span> <span style="color: #008000;">            所以是不安全的，复制完后需要手动添加字符串的结束符才行。
+</span><span style="color: #008080;">358</span>            <span style="color: #008000;">*/</span>
+<span style="color: #008080;">359</span>        strncpy(host,url+i,strchr(url+i,<span style="color: #800000;">'</span><span style="color: #800000;">:</span><span style="color: #800000;">'</span>)-url-<span style="color: #000000;">i);
+</span><span style="color: #008080;">360</span>        bzero(tmp,<span style="color: #800080;">10</span><span style="color: #000000;">);
+</span><span style="color: #008080;">361</span>        strncpy(tmp,index(url+i,<span style="color: #800000;">'</span><span style="color: #800000;">:</span><span style="color: #800000;">'</span>)+<span style="color: #800080;">1</span>,strchr(url+i,<span style="color: #800000;">'</span><span style="color: #800000;">/</span><span style="color: #800000;">'</span>)-index(url+i,<span style="color: #800000;">'</span><span style="color: #800000;">:</span><span style="color: #800000;">'</span>)-<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">362</span>        <span style="color: #008000;">/*</span><span style="color: #008000;"> printf("tmp=%s\n",tmp); </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">363</span> 
+<span style="color: #008080;">364</span>        <span style="color: #008000;">/*</span>
+<span style="color: #008080;">365</span> <span style="color: #008000;">            C语言库函数名: atoi
+</span><span style="color: #008080;">366</span> <span style="color: #008000;">　　            功 能: 把字符串转换成整型数.
+</span><span style="color: #008080;">367</span> <span style="color: #008000;">　　            名字来源:array to integer 的缩写.
+</span><span style="color: #008080;">368</span> <span style="color: #008000;">　　            函数说明: atoi()会扫描参数nptr字符串，如果第一个字符不是数字也不是正负号返回零，
+</span><span style="color: #008080;">369</span> <span style="color: #008000;">            否则开始做类型转换，之后检测到非数字或结束符 \0 时停止转换，返回整型数。
+</span><span style="color: #008080;">370</span> <span style="color: #008000;">　　            原型: int atoi(const char *nptr);
+</span><span style="color: #008080;">371</span>        <span style="color: #008000;">*/</span>
+<span style="color: #008080;">372</span>        proxyport=<span style="color: #000000;">atoi(tmp);
+</span><span style="color: #008080;">373</span>        <span style="color: #0000ff;">if</span>(proxyport==<span style="color: #800080;">0</span>) proxyport=<span style="color: #800080;">80</span><span style="color: #000000;">;
+</span><span style="color: #008080;">374</span>    } <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">375</span> <span style="color: #000000;">   {
+</span><span style="color: #008080;">376</span>         <span style="color: #008000;">/*</span>
+<span style="color: #008080;">377</span> <span style="color: #008000;">        size_t strcspn(const char *s, const char * reject);
+</span><span style="color: #008080;">378</span> <span style="color: #008000;">        函数说明：strcspn()从参数s 字符串的开头计算连续的字符，
+</span><span style="color: #008080;">379</span> <span style="color: #008000;">        而这些字符都完全不在参数reject 所指的字符串中。
+</span><span style="color: #008080;">380</span> <span style="color: #008000;">        简单地说， 若strcspn()返回的数值为n，则代表字符串s 开头连续有n 个字符都不含字符串reject 内的字符。
+</span><span style="color: #008080;">381</span> <span style="color: #008000;">        返回值：返回字符串s 开头连续不含字符串reject 内的字符数目。
+</span><span style="color: #008080;">382</span>          <span style="color: #008000;">*/</span>
+<span style="color: #008080;">383</span>      strncpy(host,url+i,strcspn(url+i,<span style="color: #800000;">"</span><span style="color: #800000;">/</span><span style="color: #800000;">"</span><span style="color: #000000;">));
+</span><span style="color: #008080;">384</span> <span style="color: #000000;">   }
+</span><span style="color: #008080;">385</span>    <span style="color: #008000;">//</span><span style="color: #008000;"> printf("Host=%s\n",host);</span>
+<span style="color: #008080;">386</span>    strcat(request+strlen(request),url+i+strcspn(url+i,<span style="color: #800000;">"</span><span style="color: #800000;">/</span><span style="color: #800000;">"</span><span style="color: #000000;">));
+</span><span style="color: #008080;">387</span>   } <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">388</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">389</span>    <span style="color: #008000;">//</span><span style="color: #008000;"> printf("ProxyHost=%s\nProxyPort=%d\n",proxyhost,proxyport);</span>
+<span style="color: #008080;">390</span> <span style="color: #000000;">   strcat(request,url);
+</span><span style="color: #008080;">391</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">392</span>   <span style="color: #0000ff;">if</span>(http10==<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">393</span>       strcat(request,<span style="color: #800000;">"</span><span style="color: #800000;"> HTTP/1.0</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">394</span>   <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (http10==<span style="color: #800080;">2</span><span style="color: #000000;">)
+</span><span style="color: #008080;">395</span>       strcat(request,<span style="color: #800000;">"</span><span style="color: #800000;"> HTTP/1.1</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">396</span>   strcat(request,<span style="color: #800000;">"</span><span style="color: #800000;">\r\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">397</span>   <span style="color: #0000ff;">if</span>(http10&gt;<span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">398</span>       strcat(request,<span style="color: #800000;">"</span><span style="color: #800000;">User-Agent: WebBench </span><span style="color: #800000;">"</span>PROGRAM_VERSION<span style="color: #800000;">"</span><span style="color: #800000;">\r\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">399</span>   <span style="color: #0000ff;">if</span>(proxyhost==NULL &amp;&amp; http10&gt;<span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">400</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">401</span>       strcat(request,<span style="color: #800000;">"</span><span style="color: #800000;">Host: </span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">402</span> <span style="color: #000000;">      strcat(request,host);
+</span><span style="color: #008080;">403</span>       strcat(request,<span style="color: #800000;">"</span><span style="color: #800000;">\r\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">404</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">405</span>   <span style="color: #0000ff;">if</span>(force_reload &amp;&amp; proxyhost!=<span style="color: #000000;">NULL)
+</span><span style="color: #008080;">406</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">407</span>       strcat(request,<span style="color: #800000;">"</span><span style="color: #800000;">Pragma: no-cache\r\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">408</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">409</span>   <span style="color: #0000ff;">if</span>(http10&gt;<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">410</span>       strcat(request,<span style="color: #800000;">"</span><span style="color: #800000;">Connection: close\r\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">411</span>   <span style="color: #008000;">/*</span><span style="color: #008000;"> add empty line at end </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">412</span>   <span style="color: #0000ff;">if</span>(http10&gt;<span style="color: #800080;">0</span>) strcat(request,<span style="color: #800000;">"</span><span style="color: #800000;">\r\n</span><span style="color: #800000;">"</span><span style="color: #000000;">); 
+</span><span style="color: #008080;">413</span>   <span style="color: #008000;">//</span><span style="color: #008000;"> printf("Req=%s\n",request);</span>
+<span style="color: #008080;">414</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">415</span> 
+<span style="color: #008080;">416</span> <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">417</span> <span style="color: #008000;">*先进行了一次socket连接，确认能连通以后，才进行后续步骤。
+</span><span style="color: #008080;">418</span> <span style="color: #008000;">*调用pipe函数初始化一个管道，用于子进行向父进程汇报测试数据。
+</span><span style="color: #008080;">419</span> <span style="color: #008000;">*子进程根据clients数量fork出来。
+</span><span style="color: #008080;">420</span> <span style="color: #008000;">*每个子进程都调用函数5进行测试，并将结果输出到管道，供父进程读取。
+</span><span style="color: #008080;">421</span> <span style="color: #008000;">*父进程负责收集所有子进程的测试数据，并汇总输出。
+</span><span style="color: #008080;">422</span> <span style="color: #008000;">*/</span>
+<span style="color: #008080;">423</span> <span style="color: #008000;">/*</span><span style="color: #008000;"> vraci system rc error kod </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">424</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">int</span> bench(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;">425</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">426</span>   <span style="color: #0000ff;">int</span><span style="color: #000000;"> i,j,k;    
+</span><span style="color: #008080;">427</span>   pid_t pid=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">428</span>   FILE *<span style="color: #000000;">f;
+</span><span style="color: #008080;">429</span> 
+<span style="color: #008080;">430</span>   <span style="color: #008000;">/*</span><span style="color: #008000;"> check avaibility of target server </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">431</span>   <span style="color: #008000;">//</span><span style="color: #008000;">检测目标服务器的可用性，调用socket.c文件中的函数</span>
+<span style="color: #008080;">432</span>   i=Socket(proxyhost==NULL?<span style="color: #000000;">host:proxyhost,proxyport);
+</span><span style="color: #008080;">433</span>   <span style="color: #0000ff;">if</span>(i&lt;<span style="color: #800080;">0</span>) {<span style="color: #008000;">//</span><span style="color: #008000;">处理错误</span>
+<span style="color: #008080;">434</span>        fprintf(stderr,<span style="color: #800000;">"</span><span style="color: #800000;">\nConnect to server failed. Aborting benchmark.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">435</span>            <span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">436</span> <span style="color: #000000;">         }
+</span><span style="color: #008080;">437</span> <span style="color: #000000;">  close(i);
+</span><span style="color: #008080;">438</span>   <span style="color: #008000;">/*</span><span style="color: #008000;"> create pipe </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">439</span>   <span style="color: #0000ff;">if</span>(pipe(mypipe))<span style="color: #008000;">//</span><span style="color: #008000;">管道用于子进程向父进程回报数据</span>
+<span style="color: #008080;">440</span>   {<span style="color: #008000;">//</span><span style="color: #008000;">错误处理</span>
+<span style="color: #008080;">441</span>       perror(<span style="color: #800000;">"</span><span style="color: #800000;">pipe failed.</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">442</span>       <span style="color: #0000ff;">return</span> <span style="color: #800080;">3</span><span style="color: #000000;">;
+</span><span style="color: #008080;">443</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">444</span> 
+<span style="color: #008080;">445</span>   <span style="color: #008000;">/*</span><span style="color: #008000;"> not needed, since we have alarm() in childrens </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">446</span>   <span style="color: #008000;">/*</span><span style="color: #008000;"> wait 4 next system clock tick </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">447</span>   <span style="color: #008000;">/*</span>
+<span style="color: #008080;">448</span> <span style="color: #008000;">  cas=time(NULL);
+</span><span style="color: #008080;">449</span> <span style="color: #008000;">  while(time(NULL)==cas)
+</span><span style="color: #008080;">450</span> <span style="color: #008000;">        sched_yield();
+</span><span style="color: #008080;">451</span>   <span style="color: #008000;">*/</span>
+<span style="color: #008080;">452</span> 
+<span style="color: #008080;">453</span>   <span style="color: #008000;">/*</span><span style="color: #008000;"> fork childs </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">454</span>   <span style="color: #0000ff;">for</span>(i=<span style="color: #800080;">0</span>;i&lt;clients;i++)<span style="color: #008000;">//</span><span style="color: #008000;">根据clients大小fork出来足够的子进程进行测试</span>
+<span style="color: #008080;">455</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">456</span>        pid=<span style="color: #000000;">fork();
+</span><span style="color: #008080;">457</span>        <span style="color: #0000ff;">if</span>(pid &lt;= (pid_t) <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">458</span> <span style="color: #000000;">       {
+</span><span style="color: #008080;">459</span>            <span style="color: #008000;">/*</span><span style="color: #008000;"> child process or error</span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">460</span>                sleep(<span style="color: #800080;">1</span>); <span style="color: #008000;">/*</span><span style="color: #008000;"> make childs faster </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">461</span>            <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">462</span> <span style="color: #000000;">       }
+</span><span style="color: #008080;">463</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">464</span> 
+<span style="color: #008080;">465</span>   <span style="color: #0000ff;">if</span>( pid&lt; (pid_t) <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">466</span>   {<span style="color: #008000;">//</span><span style="color: #008000;">错误处理</span>
+<span style="color: #008080;">467</span>           fprintf(stderr,<span style="color: #800000;">"</span><span style="color: #800000;">problems forking worker no. %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,i);
+</span><span style="color: #008080;">468</span>       perror(<span style="color: #800000;">"</span><span style="color: #800000;">fork failed.</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">469</span>       <span style="color: #0000ff;">return</span> <span style="color: #800080;">3</span><span style="color: #000000;">;
+</span><span style="color: #008080;">470</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">471</span> 
+<span style="color: #008080;">472</span>   <span style="color: #0000ff;">if</span>(pid== (pid_t) <span style="color: #800080;">0</span>)<span style="color: #008000;">//</span><span style="color: #008000;">若是子进程，调用benchcore进行测试</span>
+<span style="color: #008080;">473</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">474</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> I am a child </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">475</span>     <span style="color: #0000ff;">if</span>(proxyhost==<span style="color: #000000;">NULL)
+</span><span style="color: #008080;">476</span> <span style="color: #000000;">      benchcore(host,proxyport,request);
+</span><span style="color: #008080;">477</span>          <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">478</span> <span style="color: #000000;">      benchcore(proxyhost,proxyport,request);
+</span><span style="color: #008080;">479</span> 
+<span style="color: #008080;">480</span>          <span style="color: #008000;">/*</span><span style="color: #008000;"> write results to pipe </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">481</span>      f=fdopen(mypipe[<span style="color: #800080;">1</span>],<span style="color: #800000;">"</span><span style="color: #800000;">w</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">子进程将测试结果输出到管道</span>
+<span style="color: #008080;">482</span>      <span style="color: #0000ff;">if</span>(f==<span style="color: #000000;">NULL)
+</span><span style="color: #008080;">483</span>      {<span style="color: #008000;">//</span><span style="color: #008000;">错误处理</span>
+<span style="color: #008080;">484</span>          perror(<span style="color: #800000;">"</span><span style="color: #800000;">open pipe for writing failed.</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">485</span>          <span style="color: #0000ff;">return</span> <span style="color: #800080;">3</span><span style="color: #000000;">;
+</span><span style="color: #008080;">486</span> <span style="color: #000000;">     }
+</span><span style="color: #008080;">487</span>      <span style="color: #008000;">/*</span><span style="color: #008000;"> fprintf(stderr,"Child - %d %d\n",speed,failed); </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">488</span>      fprintf(f,<span style="color: #800000;">"</span><span style="color: #800000;">%d %d %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,speed,failed,bytes);
+</span><span style="color: #008080;">489</span> <span style="color: #000000;">     fclose(f);
+</span><span style="color: #008080;">490</span>      <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">491</span>   } <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">492</span>   {<span style="color: #008000;">//</span><span style="color: #008000;">若是父进程，则从管道读取子进程输出，并做汇总</span>
+<span style="color: #008080;">493</span>       f=fdopen(mypipe[<span style="color: #800080;">0</span>],<span style="color: #800000;">"</span><span style="color: #800000;">r</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">494</span>       <span style="color: #0000ff;">if</span>(f==<span style="color: #000000;">NULL) 
+</span><span style="color: #008080;">495</span>       {<span style="color: #008000;">//</span><span style="color: #008000;">错误处理</span>
+<span style="color: #008080;">496</span>           perror(<span style="color: #800000;">"</span><span style="color: #800000;">open pipe for reading failed.</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">497</span>           <span style="color: #0000ff;">return</span> <span style="color: #800080;">3</span><span style="color: #000000;">;
+</span><span style="color: #008080;">498</span> <span style="color: #000000;">      }
+</span><span style="color: #008080;">499</span>       setvbuf(f,NULL,_IONBF,<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">500</span>       speed=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">501</span>           failed=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">502</span>           bytes=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">503</span> 
+<span style="color: #008080;">504</span>       <span style="color: #0000ff;">while</span>(<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">505</span>       {<span style="color: #008000;">//</span><span style="color: #008000;">从管道读取数据，fscanf为阻塞式函数</span>
+<span style="color: #008080;">506</span>           pid=fscanf(f,<span style="color: #800000;">"</span><span style="color: #800000;">%d %d %d</span><span style="color: #800000;">"</span>,&amp;i,&amp;j,&amp;<span style="color: #000000;">k);
+</span><span style="color: #008080;">507</span>           <span style="color: #0000ff;">if</span>(pid&lt;<span style="color: #800080;">2</span><span style="color: #000000;">)
+</span><span style="color: #008080;">508</span>                   {<span style="color: #008000;">//</span><span style="color: #008000;">错误处理</span>
+<span style="color: #008080;">509</span>                        fprintf(stderr,<span style="color: #800000;">"</span><span style="color: #800000;">Some of our childrens died.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">510</span>                        <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">511</span> <span style="color: #000000;">                  }
+</span><span style="color: #008080;">512</span>           speed+=<span style="color: #000000;">i;
+</span><span style="color: #008080;">513</span>           failed+=<span style="color: #000000;">j;
+</span><span style="color: #008080;">514</span>           bytes+=<span style="color: #000000;">k;
+</span><span style="color: #008080;">515</span>           <span style="color: #008000;">/*</span><span style="color: #008000;"> fprintf(stderr,"*Knock* %d %d read=%d\n",speed,failed,pid); </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">516</span>           <span style="color: #0000ff;">if</span>(--clients==<span style="color: #800080;">0</span>) <span style="color: #0000ff;">break</span>;<span style="color: #008000;">//</span><span style="color: #008000;">这句用于记录已经读了多少个子进程的数据，读完就退出</span>
+<span style="color: #008080;">517</span> <span style="color: #000000;">      }
+</span><span style="color: #008080;">518</span> <span style="color: #000000;">      fclose(f);
+</span><span style="color: #008080;">519</span>  <span style="color: #008000;">//</span><span style="color: #008000;">最后将结果打印到屏幕上</span>
+<span style="color: #008080;">520</span>   printf(<span style="color: #800000;">"</span><span style="color: #800000;">\nSpeed=%d pages/min, %d bytes/sec.\nRequests: %d susceed, %d failed.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+</span><span style="color: #008080;">521</span>           (<span style="color: #0000ff;">int</span>)((speed+failed)/(benchtime/<span style="color: #800080;">60.0f</span><span style="color: #000000;">)),
+</span><span style="color: #008080;">522</span>           (<span style="color: #0000ff;">int</span>)(bytes/(<span style="color: #0000ff;">float</span><span style="color: #000000;">)benchtime),
+</span><span style="color: #008080;">523</span> <span style="color: #000000;">          speed,
+</span><span style="color: #008080;">524</span> <span style="color: #000000;">          failed);
+</span><span style="color: #008080;">525</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">526</span>   <span style="color: #0000ff;">return</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;">527</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">528</span> 
+<span style="color: #008080;">529</span> <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">530</span> <span style="color: #008000;">*benchcore是子进程进行压力测试的函数，被每个子进程调用。
+</span><span style="color: #008080;">531</span> <span style="color: #008000;">*这里使用了SIGALRM信号来控制时间，
+</span><span style="color: #008080;">532</span> <span style="color: #008000;">*alarm函数设置了多少时间之后产生SIGALRM信号，一旦产生此信号，将运行alarm_handler()，
+</span><span style="color: #008080;">533</span> <span style="color: #008000;">*使得timerexpired=1，这样可以通过判断timerexpired值来退出程序。
+</span><span style="color: #008080;">534</span> <span style="color: #008000;">*另外，全局变量force表示我们是否在发出请求后需要等待服务器的响应结果
+</span><span style="color: #008080;">535</span> <span style="color: #008000;">*/</span>
+<span style="color: #008080;">536</span> <span style="color: #0000ff;">void</span> benchcore(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *host,<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> port,<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;">req)
+</span><span style="color: #008080;">537</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">538</span>  <span style="color: #0000ff;">int</span><span style="color: #000000;"> rlen;
+</span><span style="color: #008080;">539</span>  <span style="color: #0000ff;">char</span> buf[<span style="color: #800080;">1500</span>];<span style="color: #008000;">//</span><span style="color: #008000;">记录服务器响应请求所返回的数据</span>
+<span style="color: #008080;">540</span>  <span style="color: #0000ff;">int</span><span style="color: #000000;"> s,i;
+</span><span style="color: #008080;">541</span>  <span style="color: #0000ff;">struct</span><span style="color: #000000;"> sigaction sa;
+</span><span style="color: #008080;">542</span> 
+<span style="color: #008080;">543</span>  <span style="color: #008000;">/*</span><span style="color: #008000;"> setup alarm signal handler </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">544</span>  sa.sa_handler=alarm_handler;<span style="color: #008000;">//</span><span style="color: #008000;">将函数alarm_handler地址赋值给sa.alarm_handler,作为信号处理函数</span>
+<span style="color: #008080;">545</span>  sa.sa_flags=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">546</span>  <span style="color: #0000ff;">if</span>(sigaction(SIGALRM,&amp;sa,NULL))<span style="color: #008000;">//</span><span style="color: #008000;">超时会产生信号SIGALRM，用sa中的指定函数处理</span>
+<span style="color: #008080;">547</span>     exit(<span style="color: #800080;">3</span><span style="color: #000000;">);
+</span><span style="color: #008080;">548</span>  alarm(benchtime);<span style="color: #008000;">//</span><span style="color: #008000;">开始计时</span>
+<span style="color: #008080;">549</span> 
+<span style="color: #008080;">550</span>  rlen=<span style="color: #000000;">strlen(req);
+</span><span style="color: #008080;">551</span>  nexttry:<span style="color: #0000ff;">while</span>(<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">552</span> <span style="color: #000000;"> {
+</span><span style="color: #008080;">553</span>     <span style="color: #0000ff;">if</span>(timerexpired)<span style="color: #008000;">//</span><span style="color: #008000;">一旦超时则返回</span>
+<span style="color: #008080;">554</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">555</span>        <span style="color: #0000ff;">if</span>(failed&gt;<span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">556</span> <span style="color: #000000;">       {
+</span><span style="color: #008080;">557</span>           <span style="color: #008000;">/*</span><span style="color: #008000;"> fprintf(stderr,"Correcting failed by signal\n"); </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">558</span>           failed--<span style="color: #000000;">;
+</span><span style="color: #008080;">559</span> <span style="color: #000000;">       }
+</span><span style="color: #008080;">560</span>        <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;">561</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">562</span>     s=Socket(host,port);<span style="color: #008000;">//</span><span style="color: #008000;">调用socket建立TCP连接                          </span>
+<span style="color: #008080;">563</span>     <span style="color: #0000ff;">if</span>(s&lt;<span style="color: #800080;">0</span>) { failed++;<span style="color: #0000ff;">continue</span><span style="color: #000000;">;} 
+</span><span style="color: #008080;">564</span>     <span style="color: #0000ff;">if</span>(rlen!=write(s,req,rlen)) {failed++;close(s);<span style="color: #0000ff;">continue</span>;}<span style="color: #008000;">//</span><span style="color: #008000;">发出请求</span>
+<span style="color: #008080;">565</span>     <span style="color: #0000ff;">if</span>(http10==<span style="color: #800080;">0</span>) <span style="color: #008000;">//</span><span style="color: #008000;">针对http0.9做的特殊处理</span>
+<span style="color: #008080;">566</span>         <span style="color: #0000ff;">if</span>(shutdown(s,<span style="color: #800080;">1</span>)) { failed++;close(s);<span style="color: #0000ff;">continue</span><span style="color: #000000;">;}
+</span><span style="color: #008080;">567</span>     <span style="color: #0000ff;">if</span>(force==<span style="color: #800080;">0</span>) <span style="color: #008000;">//</span><span style="color: #008000;">全局变量force表示是否要等待服务器返回的数据</span>
+<span style="color: #008080;">568</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">569</span>             <span style="color: #008000;">/*</span><span style="color: #008000;"> read all available data from socket </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">570</span>         <span style="color: #0000ff;">while</span>(<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">571</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">572</span>               <span style="color: #0000ff;">if</span>(timerexpired) <span style="color: #0000ff;">break</span><span style="color: #000000;">; 
+</span><span style="color: #008080;">573</span>           i=read(s,buf,<span style="color: #800080;">1500</span>);<span style="color: #008000;">//</span><span style="color: #008000;">从socket读取返回数据</span>
+<span style="color: #008080;">574</span>               <span style="color: #008000;">/*</span><span style="color: #008000;"> fprintf(stderr,"%d\n",i); </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">575</span>           <span style="color: #0000ff;">if</span>(i&lt;<span style="color: #800080;">0</span><span style="color: #000000;">) 
+</span><span style="color: #008080;">576</span> <span style="color: #000000;">              { 
+</span><span style="color: #008080;">577</span>                  failed++<span style="color: #000000;">;
+</span><span style="color: #008080;">578</span> <span style="color: #000000;">                 close(s);
+</span><span style="color: #008080;">579</span>                  <span style="color: #0000ff;">goto</span><span style="color: #000000;"> nexttry;
+</span><span style="color: #008080;">580</span> <span style="color: #000000;">              }
+</span><span style="color: #008080;">581</span>            <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">582</span>                <span style="color: #0000ff;">if</span>(i==<span style="color: #800080;">0</span>) <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">583</span>                <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">584</span>                    bytes+=<span style="color: #000000;">i;
+</span><span style="color: #008080;">585</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">586</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">587</span>     <span style="color: #0000ff;">if</span>(close(s)) {failed++;<span style="color: #0000ff;">continue</span><span style="color: #000000;">;}
+</span><span style="color: #008080;">588</span>     speed++<span style="color: #000000;">;
+</span><span style="color: #008080;">589</span> <span style="color: #000000;"> }
+</span><span style="color: #008080;">590</span> }</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

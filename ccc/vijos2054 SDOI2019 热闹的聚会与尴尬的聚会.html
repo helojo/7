@@ -1,0 +1,157 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修vijos2054 SDOI2019 热闹的聚会与尴尬的聚会' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>vijos2054 SDOI2019 热闹的聚会与尴尬的聚会</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/vijos2054.html</div><br>
+    <p><a href="https://vijos.org/p/2054"><font size = 5>题目链接</font></a></p>
+<h2 id="思路">思路</h2>
+<p>首先观察题目最后的式子<span class="math inline">\(\lfloor \frac{n}{p + 1} \rfloor \le q\)</span> 并且<span class="math inline">\(\lfloor \frac{n}{q+1} \rfloor \le p\)</span>。</p>
+<p>这个式子其实就是告诉我们<span class="math inline">\(p\)</span>和<span class="math inline">\(q\)</span>都要尽量大。</p>
+<p>然后这道题就可以分成两个小题:</p>
+<p>1.求一个子图，使得图中最小度数最大。</p>
+<p>2.求最大独立集。</p>
+<p><strong>先看第一个问题：</strong></p>
+<p>可以贪心的每次将度数最小的点删去。剩下的点中度数最小的那个就是当前图的贡献。然后找一个最大的贡献就是答案。</p>
+<p><strong>第二个问题</strong></p>
+<p>求一般图的最大独立集。。。不太可能。</p>
+<p>但是这个题目的限制并没有这么严格。只要满足<span class="math inline">\(\lfloor \frac{n}{p + 1} \rfloor \le q\)</span>即可。</p>
+<p>每次将度数最小的点加入独立集。然后将与该点所连的点全部删去。</p>
+<p>可以发现，这样加到独立集中点的度数一定小于等于<span class="math inline">\(p\)</span>(否则p就可以更大了)。所以每次最多删去<span class="math inline">\(p\)</span>个点。最少可以删<span class="math inline">\(\lceil \frac{n}{p+1} \rceil\)</span>次。也就是说最少可以加入这些点。所以这种做法肯定是满足<span class="math inline">\(\lfloor \frac{n}{p + 1} \rfloor \le q\)</span>的。</p>
+<h2 id="代码">代码</h2>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-05-11 14:54:21
+* @Last Modified time: 2019-05-11 15:27:46
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 100010;
+#define pi pair&lt;int,int&gt;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+priority_queue&lt;pi,vector&lt;pi&gt;,greater&lt;pi&gt; &gt;q;
+struct node {
+    int v,nxt;
+}e[N &lt;&lt; 1];
+int head[N],ejs;
+void add(int u,int v) {
+    e[++ejs].v = v;e[ejs].nxt = head[u];head[u] = ejs;
+}
+int vis[N],du[N],tsd[N],bz[N],ans[N],anss[N];
+int main() {
+    // freopen(&quot;day2t1.in&quot;,&quot;r&quot;,stdin);
+    int T = read();
+    while(T--) {
+
+        memset(vis,0,sizeof(vis));
+        memset(du,0,sizeof(du));
+        memset(bz,0,sizeof(bz));
+        ejs = 0;memset(head,0,sizeof(head));
+
+        int n = read(),m = read();
+        for(int i = 1;i &lt;= m;++i) {
+            int u = read(),v = read();
+            add(u,v);add(v,u);
+            du[u]++,du[v]++;
+        }
+
+        for(int i = 1;i &lt;= n;++i) tsd[i] = du[i];
+
+
+        for(int i = 1;i &lt;= n;++i) q.push(make_pair(du[i],i));
+
+        int ansjs = 0,js = 0,mx = 0;
+        while(!q.empty()) {
+            int d = q.top().first,u = q.top().second;
+            q.pop();
+            vis[u] = 1;
+            if(du[u] != d) continue;
+            if(d &gt; mx) {
+                // puts(&quot;!!!&quot;);
+                // printf(&quot;%d\n&quot;,js);
+                mx = d;
+                ansjs = js;
+            }
+            ans[++js] = u;
+            for(int i = head[u];i;i = e[i].nxt) {
+                int v = e[i].v;
+                if(vis[v]) continue;
+                du[v]--;q.push(make_pair(du[v],v));
+            }
+        }
+        memset(vis,0,sizeof(vis));
+        for(int i = 1;i &lt;= n;++i) q.push(make_pair(tsd[i],i));
+        js = 0;
+        while(!q.empty()) {
+            int u = q.top().second,d = q.top().first;
+            q.pop();
+            if(vis[u]) continue;
+            vis[u] = 1;
+            anss[++js] = u;
+            if(d != tsd[u]) continue;
+            // puts(&quot;!!!&quot;);
+            for(int i = head[u];i;i = e[i].nxt) {
+                int v = e[i].v;
+                // puts(&quot;!!!&quot;);
+                if(vis[v]) continue;
+                vis[v] = 1;
+                // printf(&quot;%d\n&quot;,v);
+                for(int j = head[v];j;j = e[j].nxt) {
+                    int vv = e[j].v;
+                    if(vis[vv]) continue;
+                    --tsd[vv];q.push(make_pair(tsd[vv],vv));
+                }
+            }
+        }
+        // puts(&quot;!!&quot;);
+        for(int i = 1;i &lt;= ansjs;++i) bz[ans[i]] = 1;
+        printf(&quot;%d &quot;,n - ansjs);
+        for(int i = 1;i &lt;= n;++i) if(!bz[i]) printf(&quot;%d &quot;,i);
+        puts(&quot;&quot;);
+        printf(&quot;%d &quot;,js);
+        for(int i = 1;i &lt;= js;++i) printf(&quot;%d &quot;,anss[i]);
+        puts(&quot;&quot;);
+
+    }
+
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

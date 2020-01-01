@@ -1,0 +1,209 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修车牌识别代码OpenCV' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>车牌识别代码OpenCV</center></div><div class='banquan'>原文出处:本文由博客园博主一只小白two提供。<br/>
+原文连接:https://www.cnblogs.com/hole/p/11311945.html</div><br>
+    <p>#include&lt;opencv2\opencv.hpp&gt;</p>
+<p>#include&lt;iostream&gt; using namespace cv; using namespace std; int areas;</p>
+<p>//该函数用来验证是否是我们想要的区域，车牌定位原理其实就是在图片上寻找矩形，我们可以用长宽比例以及面积来验证是否是我们想要的矩形，宽高比为520/110=4.7272 （车牌的长除以宽），区域面积最小为15个像素，最大为125个像素</p>
+<p>bool VerifySize(RotatedRect candidate) { &nbsp;&nbsp;&nbsp; float error = 0.4; //40%的误差范围</p>
+<p>&nbsp;&nbsp;&nbsp; float aspect = 4.7272;//宽高比例</p>
+<p>&nbsp;&nbsp;&nbsp; int min = 25 * aspect * 25; //最小像素为15</p>
+<p>&nbsp;&nbsp;&nbsp; int max = 125 * aspect * 125;//最大像素为125</p>
+<p>&nbsp;&nbsp;&nbsp; float rmin = aspect - aspect*error;//最小误差</p>
+<p>&nbsp;&nbsp;&nbsp; float rmax = aspect + aspect*error;//最大误差</p>
+<p>&nbsp;&nbsp;&nbsp; int area = candidate.size.height*candidate.size.width;//求面积</p>
+<p>&nbsp;&nbsp;&nbsp; float r = (float)candidate.size.width / (float)candidate.size.height;//长宽比</p>
+<p>&nbsp;&nbsp;&nbsp; if (r &lt; 1)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; r = 1 / r;</p>
+<p>&nbsp;&nbsp;&nbsp; if (area&lt;min || area&gt;max || r&lt;rmin || r&gt;rmax)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return false;</p>
+<p>&nbsp;&nbsp;&nbsp; else</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return true; } int main(int argc, char** argv) {</p>
+<p>&nbsp;&nbsp;&nbsp; Mat src;</p>
+<p>&nbsp;&nbsp;&nbsp; src = imread("D:\\Car1.jpg");//读取含车牌的图片</p>
+<p>&nbsp;&nbsp;&nbsp; if (!src.data) &nbsp;&nbsp;&nbsp; {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout &lt;&lt; "Could not open Car.jph.." &lt;&lt; endl;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return -1;</p>
+<p>&nbsp;&nbsp;&nbsp; }</p>
+<p>&nbsp;&nbsp;&nbsp; Mat img_gray;</p>
+<p>&nbsp;&nbsp;&nbsp; cvtColor(src, img_gray, CV_BGR2GRAY);//灰度转换</p>
+<p>&nbsp;&nbsp;&nbsp; Mat img_blur;</p>
+<p>&nbsp;&nbsp;&nbsp; blur(img_gray, img_blur, Size(5, 5));//用来降噪</p>
+<p>&nbsp;&nbsp;&nbsp; Mat img_sobel;</p>
+<p>&nbsp;&nbsp;&nbsp; Sobel(img_gray, img_sobel, CV_8U, 1, 0, 3);//Sobel滤波，对x进行求导，就是强调y方向，对y进行求导,就是强调x方向，在此我们对x求导，查找图片中的竖直边</p>
+<p>&nbsp;&nbsp;&nbsp; Mat img_threshold;</p>
+<p>&nbsp;&nbsp;&nbsp; threshold(img_sobel, img_threshold, 0, 255, THRESH_BINARY | THRESH_OTSU);</p>
+<p>&nbsp;&nbsp;&nbsp; Mat element = getStructuringElement(MORPH_RECT, Size(21, 5));//这个Size很重要！！不同的图片适应不同的Size,待会在下面放图，大家就知道区别了</p>
+<p>&nbsp;&nbsp;&nbsp; morphologyEx(img_threshold, img_threshold,MORPH_CLOSE,element);//闭操作，就是先膨胀后腐蚀，目的就是将图片联通起来，取决于element的Size</p>
+<p>。 &nbsp;&nbsp;&nbsp; /*接下来就是提取轮廓*/</p>
+<p>&nbsp;&nbsp;&nbsp; vector&lt;vector&lt;Point&gt;&gt;contours;</p>
+<p>&nbsp;&nbsp;&nbsp; findContours(img_threshold, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);</p>
+<p>&nbsp;&nbsp;&nbsp; Mat result = Mat::zeros(src.size(), CV_8U);</p>
+<p>&nbsp;&nbsp;&nbsp; drawContours(result, contours, -1, Scalar(255));</p>
+<p>&nbsp;&nbsp;&nbsp; vector&lt;RotatedRect&gt; rects; //用来存放旋转矩形的容器</p>
+<p>&nbsp;&nbsp;&nbsp; //Mat result1 = Mat::zeros(src.size(), CV_8U);</p>
+<p>&nbsp;&nbsp;&nbsp; Mat result1;</p>
+<p>&nbsp;&nbsp;&nbsp; src.copyTo(result1);</p>
+<p>&nbsp;&nbsp;&nbsp; for (size_t i = 0; i &lt; contours.size(); i++) &nbsp;&nbsp;&nbsp; {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Point2f vertices[4];//用来存放旋转矩形的四个点</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; RotatedRect mr = minAreaRect(Mat(contours[i]));</p>
+<p>&nbsp;&nbsp;&nbsp; //minAreaRect 寻找最小的矩形</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (VerifySize(mr))//筛选是否是我们需要的区域，如果验证成功，就放到rects里，</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //if (mr.angle &gt; -30) {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mr.points(vertices);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (size_t j = 0; j &lt; 4; j++)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; line(result1, vertices[j], vertices[(j + 1) % 4], Scalar(0, 0, 255), 2, 8);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout &lt;&lt; "矩形坐标"&lt;&lt;j&lt;&lt;"为" &lt;&lt; vertices[j] &lt;&lt; endl;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout &lt;&lt; "height:" &lt;&lt; mr.size.height &lt;&lt; endl &lt;&lt; "weight:" &lt;&lt; mr.size.width &lt;&lt; endl;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; rects.push_back(mr);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout &lt;&lt; "矩形角度：" &lt;&lt; mr.angle &lt;&lt; endl; &nbsp;&nbsp;&nbsp; //&nbsp; }</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p>&nbsp;&nbsp;&nbsp; }</p>
+<p>&nbsp;&nbsp;&nbsp; vector&lt;Mat&gt;output;//用于存放识别到的图像</p>
+<p>&nbsp;&nbsp;&nbsp; for (size_t i = 0; i &lt; rects.size(); i++)</p>
+<p>&nbsp;&nbsp;&nbsp; {</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Mat dst_warp;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Mat dst_warp_rotate;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Mat rotMat(2, 3, CV_32FC1);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dst_warp = Mat::zeros(src.size(), src.type());</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; float r = (float)rects[i].size.width / (float)rects[i].size.height;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; float&nbsp; angle = rects[i].angle;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (r &lt; 1)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; angle = angle + 90;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; rotMat = getRotationMatrix2D(rects[i].center,angle, 1);//其中的angle参数，正值表示逆时针旋转，关于旋转矩形的角度，以为哪个是长哪个是宽，在下面会说到</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; warpAffine(src, dst_warp_rotate, rotMat, dst_warp.size());//将矩形修正回来</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Size rect_size = rects[i].size;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (r &lt; 1)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; swap(rect_size.width, rect_size.height);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Mat dst(rects[i].size, CV_8U);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; getRectSubPix(dst_warp_rotate, rect_size, rects[i].center, dst);//裁剪矩形</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; /*以下代码是将裁减到的矩形设置为相同大小，并且提高对比度*/</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Mat resultResized;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; resultResized.create(33, 144, CV_8UC3);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; resize(dst, resultResized, resultResized.size(), 0, 0, INTER_CUBIC);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Mat grayResult;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cvtColor(resultResized, grayResult, CV_BGR2GRAY);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; blur(grayResult, grayResult, Size(3, 3));</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; equalizeHist(grayResult, grayResult); //均值化提高对比度</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; output.push_back(grayResult); //存放图片</p>
+<p>&nbsp;&nbsp;&nbsp; }</p>
+<p>&nbsp;&nbsp;&nbsp; char name[20] = "";</p>
+<p>&nbsp;&nbsp;&nbsp; for (size_t i = 0; i &lt; output.size(); i++)</p>
+<p>&nbsp;&nbsp;&nbsp; {</p>
+<p>&nbsp;&nbsp;if(i==0){</p>
+<p>&nbsp;&nbsp;&nbsp; imwrite("D:\\CCar.jpg",output[0]);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sprintf_s(name, "识别到的第%d个车牌", i+1);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; imshow(name, output[i]);</p>
+<p>&nbsp;&nbsp;}</p>
+<p>&nbsp;&nbsp;&nbsp; }</p>
+<p>&nbsp;&nbsp;&nbsp; waitKey(0);</p>
+<p>&nbsp;&nbsp;&nbsp; return 0;</p>
+<p>}</p>
+<p>#include &lt;iostream&gt; #include &lt;opencv2/opencv.hpp&gt;</p>
+<p>using namespace std; using namespace cv;</p>
+<p>int main(){</p>
+<p>&nbsp;&nbsp;&nbsp; Mat img = imread("D:\\CCar.jpg",1);</p>
+<p>&nbsp; &nbsp;&nbsp;&nbsp; /* &nbsp;第一个参数是图片的绝对地址 &nbsp;第二个参数表示图片读入的方式（flags可以缺省，缺省时flags=1，表示以彩色图片方式读入图片） &nbsp;flags&gt;0时表示以彩色方式读入图片 &nbsp;flags=0时表示以灰度图方式读入图片 &nbsp;flags&lt;0时表示以图片的本来的格式读入图片 &nbsp;&nbsp;&nbsp; */</p>
+<p>&nbsp;&nbsp; imshow("123", img);&nbsp;</p>
+<p>&nbsp;&nbsp; //&ldquo;123&rdquo;是显示框的名字</p>
+<p>&nbsp;&nbsp; int a = waitKey(10000);&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp; //通过整型变量a获取waitKey函数的返回值</p>
+<p>&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; cout &lt;&lt; a &lt;&lt; endl;&nbsp;&nbsp;&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp; /* &nbsp;&nbsp;&nbsp; waitKey(x)&nbsp; 表示等x毫秒，在这期间如果有按键按下，则返回按键的ascii码，等待结束则会返回-1. &nbsp;&nbsp;&nbsp; 如果x=0，那么无限等待下去，直到有按键按下 &nbsp;&nbsp;&nbsp; ！！！另外，在imshow之后如果没有waitKey语句则不会正常显示图像。即imshow不会生效！！！</p>
+<p>&nbsp;&nbsp;&nbsp; */ &nbsp;</p>
+<p>&nbsp; //estroyAllWindows();</p>
+<p>&nbsp;&nbsp; //销毁窗口</p>
+<p>&nbsp;Rect rect1(5,0,17,27);</p>
+<p>&nbsp;&nbsp; //创建一个Rect框，属于cv中的类，四个参数代表x,y,width,height</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_cut1 = Mat(img, rect1);&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp; //从img中按照rect进行切割，此时修改image_cut时image中对应部分也会修改，因此需要copy</p>
+<p>&nbsp;&nbsp; Mat image_copy1 = image_cut1.clone();</p>
+<p>&nbsp; //clone函数创建新的图片</p>
+<p>&nbsp;&nbsp;&nbsp; imshow("1",image_copy1);</p>
+<p>&nbsp;&nbsp;&nbsp; waitKey();&nbsp;&nbsp;</p>
+<p>&nbsp;&nbsp; imwrite( "D:\\Bar1.jpg", image_copy1);&nbsp;</p>
+<p>&nbsp; //保存mat格式的图片成jpg格式，或者png，bmp格式，文件大小依次递增</p>
+<p>&nbsp; Rect rect2(23,0,16,27);</p>
+<p>//创建一个Rect框，属于cv中的类，四个参数代表x,y,width,height</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_cut2 = Mat(img, rect2);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //从img中按照rect进行切割，此时修改image_cut时image中对应部分也会修改，因此需要copy</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_copy2 = image_cut2.clone();&nbsp;</p>
+<p>&nbsp; //clone函数创建新的图片</p>
+<p>&nbsp;&nbsp;&nbsp; imshow("2",image_copy2);</p>
+<p>&nbsp;&nbsp;&nbsp; waitKey();&nbsp;&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp; imwrite( "D:\\Bar2.jpg", image_copy2);&nbsp;</p>
+<p>&nbsp; //保存mat格式的图片成jpg格式，或者png，bmp格式，文件大小依次递增</p>
+<p>Rect rect3(45,0,18,27);</p>
+<p>//创建一个Rect框，属于cv中的类，四个参数代表x,y,width,height</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_cut3 = Mat(img, rect3);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //从img中按照rect进行切割，此时修改image_cut时image中对应部分也会修改，因此需要copy</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_copy3 = image_cut3.clone();</p>
+<p>&nbsp;&nbsp; //clone函数创建新的图片</p>
+<p>&nbsp;&nbsp; imshow("3",image_copy3); &nbsp;&nbsp; waitKey();&nbsp;&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp; imwrite( "D:\\Bar3.jpg", image_copy3);</p>
+<p>&nbsp;&nbsp; //保存mat格式的图片成jpg格式，或者png，bmp格式，文件大小依次递增</p>
+<p>&nbsp;Rect rect4(63,0,16,27);</p>
+<p>//创建一个Rect框，属于cv中的类，四个参数代表x,y,width,height</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_cut4 = Mat(img, rect4);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //从img中按照rect进行切割，此时修改image_cut时image中对应部分也会修改，因此需要copy</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_copy4 = image_cut4.clone();&nbsp;</p>
+<p>&nbsp; //clone函数创建新的图片</p>
+<p>&nbsp;&nbsp; imshow("4",image_copy4);</p>
+<p>&nbsp;&nbsp; waitKey();&nbsp;&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp; imwrite( "D:\\Bar4.jpg", image_copy4);&nbsp;</p>
+<p>&nbsp; //保存mat格式的图片成jpg格式，或者png，bmp格式，文件大小依次递增</p>
+<p>&nbsp;Rect rect5(79,0,16,27);</p>
+<p>//创建一个Rect框，属于cv中的类，四个参数代表x,y,width,height</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_cut5 = Mat(img, rect5);&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp; //从img中按照rect进行切割，此时修改image_cut时image中对应部分也会修改，因此需要copy</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_copy5 = image_cut5.clone();&nbsp;</p>
+<p>&nbsp; //clone函数创建新的图片</p>
+<p>&nbsp;&nbsp; imshow("5",image_copy5);</p>
+<p>&nbsp;&nbsp; waitKey();&nbsp;&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp; imwrite( "D:\\Bar5.jpg", image_copy5);&nbsp;</p>
+<p>&nbsp; //保存mat格式的图片成jpg格式，或者png，bmp格式，文件大小依次递增</p>
+<p>&nbsp;Rect rect6(95,0,16,27);</p>
+<p>//创建一个Rect框，属于cv中的类，四个参数代表x,y,width,height</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_cut6 = Mat(img, rect6);&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp; //从img中按照rect进行切割，此时修改image_cut时image中对应部分也会修改，因此需要copy</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_copy6 = image_cut6.clone();&nbsp;</p>
+<p>&nbsp; //clone函数创建新的图片</p>
+<p>&nbsp;&nbsp; imshow("6",image_copy6);</p>
+<p>&nbsp;&nbsp; waitKey();&nbsp;&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp; imwrite( "D:\\Bar6.jpg", image_copy6);&nbsp;</p>
+<p>&nbsp; //保存mat格式的图片成jpg格式，或者png，bmp格式，文件大小依次递增</p>
+<p>&nbsp;Rect rect7(111,0,16,27);</p>
+<p>//创建一个Rect框，属于cv中的类，四个参数代表x,y,width,height</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_cut7 = Mat(img, rect7);</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //从img中按照rect进行切割，此时修改image_cut时image中对应部分也会修改，因此需要copy</p>
+<p>&nbsp;&nbsp;&nbsp; Mat image_copy7 = image_cut7.clone();&nbsp;</p>
+<p>&nbsp; //clone函数创建新的图片 &nbsp;&nbsp; imshow("7",image_copy7);</p>
+<p>&nbsp;&nbsp; waitKey();&nbsp;&nbsp;</p>
+<p>&nbsp;&nbsp;&nbsp; imwrite( "D:\\Bar7.jpg", image_copy7);&nbsp;</p>
+<p>&nbsp; //保存mat格式的图片成jpg格式，或者png，bmp格式，文件大小依次递增</p>
+<p>&nbsp;&nbsp;&nbsp; return 0;</p>
+<p>}</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

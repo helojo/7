@@ -1,0 +1,213 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修2019牛客暑期多校训练营（第二场）H Second Large Rectangle' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>2019牛客暑期多校训练营（第二场）H Second Large Rectangle</center></div><div class='banquan'>原文出处:本文由博客园博主Aamir_Dan提供。<br/>
+原文连接:https://www.cnblogs.com/Aamir-Dan/p/11221945.html</div><br>
+    <p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/2019牛客暑期多校训练营（第二场）H Second Large Rectangle0.png" alt="" width="1220" height="855" /></p>
+<p>示例一：</p>
+<p>输入&nbsp; ：</p>
+<p>1 2</p>
+<p>01</p>
+<p>输出：</p>
+<p>0</p>
+<p>示例二：</p>
+<p>输入&nbsp; ：</p>
+<p>1 3</p>
+<p>101</p>
+<p>输出：</p>
+<p>1</p>
+<p>示例三（自己自测找错误用的）：</p>
+<p>输入&nbsp; ：</p>
+<p>6 6<br />100111<br />111011<br />111111<br />111111<br />111111<br />101111</p>
+<p>输出：</p>
+<p>16</p>
+<p>题意：在由1和0构成的矩形中找到由仅由1构成的第二大的矩形。（前缀和思维）</p>
+<p>解题思路：（1）这是比赛后看别人代码的解法，比赛中自己也有这思路，但没考虑周到。运用前缀和思想算出每个位置前面到这个位置一共有多少个连续的1，然后从左上角开始往下算，每次记录当前位置的长度和位置（位置后面用来计算矩形的高度），每次算出当前最大矩形的大小和次大矩形的大小，更新答案。</p>
+<p>（2）dfs，感觉自己剪枝做得不够好所以一直超时，还没想出如何不超时的剪枝方法，先留着，复杂度为O（N&sup3;），通过率为95%。</p>
+<p>不说了，贴代码：</p>
+<p>（1）AC代码</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;bits/stdc++.h&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 3</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> maxn=1e3+<span style="color: #800080;">20</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">int</span> a[maxn][maxn],max_1=<span style="color: #800080;">0</span>,max_2=<span style="color: #800080;">0</span>;<span style="color: #808080;">///</span><span style="color: #008000;">a数组记录每个位置的前缀和，max_1和max_2为最大和次大</span>
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">char</span><span style="color: #000000;"> ss[maxn][maxn];
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> node
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> num,ins;
+</span><span style="color: #008080;"> 9</span> }pp[maxn];<span style="color: #808080;">///</span><span style="color: #008000;">记录当前位置的长度和位置</span>
+<span style="color: #008080;">10</span> <span style="color: #0000ff;">void</span> update(<span style="color: #0000ff;">int</span> summ)<span style="color: #808080;">///</span><span style="color: #008000;">更新最大值和次大值</span>
+<span style="color: #008080;">11</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">if</span>(summ&gt;<span style="color: #000000;">max_1){
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">        swap(max_1,max_2);swap(summ,max_1);
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(summ&gt;<span style="color: #000000;">max_2)swap(summ,max_2);
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">17</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> n,m;
+</span><span style="color: #008080;">20</span>     scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;n,&amp;<span style="color: #000000;">m);
+</span><span style="color: #008080;">21</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>; i&lt;=n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">22</span>         scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%s</span><span style="color: #800000;">"</span><span style="color: #000000;">,ss[i]);
+</span><span style="color: #008080;">23</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">){
+</span><span style="color: #008080;">24</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">0</span>;j&lt;m;j++<span style="color: #000000;">){
+</span><span style="color: #008080;">25</span>             <span style="color: #0000ff;">if</span>(ss[i][j]==<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>)a[i][j+<span style="color: #800080;">1</span>]==<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">26</span>             <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(ss[i][j]==<span style="color: #800000;">'</span><span style="color: #800000;">1</span><span style="color: #800000;">'</span>)a[i][j+<span style="color: #800080;">1</span>]=a[i][j]+<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">29</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>; j&lt;=m; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">31</span>         <span style="color: #0000ff;">int</span> r=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">32</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>; i&lt;=n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">34</span>             <span style="color: #0000ff;">int</span> book=<span style="color: #000000;">i;
+</span><span style="color: #008080;">35</span>             <span style="color: #0000ff;">while</span>(r&amp;&amp;pp[r].num&gt;<span style="color: #000000;">a[i][j]){
+</span><span style="color: #008080;">36</span>                 update((i-pp[r].ins)*<span style="color: #000000;">pp[r].num);
+</span><span style="color: #008080;">37</span>                 update((i-pp[r].ins-<span style="color: #800080;">1</span>)*<span style="color: #000000;">pp[r].num);
+</span><span style="color: #008080;">38</span>                 book=<span style="color: #000000;">min(book,pp[r].ins);
+</span><span style="color: #008080;">39</span>                 r--<span style="color: #000000;">;
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">41</span>             pp[++r]=<span style="color: #000000;">{a[i][j],book};
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">43</span>         <span style="color: #0000ff;">while</span><span style="color: #000000;">(r){
+</span><span style="color: #008080;">44</span>                 update(((n+<span style="color: #800080;">1</span>)-pp[r].ins)*<span style="color: #000000;">pp[r].num);
+</span><span style="color: #008080;">45</span>                 update(((n+<span style="color: #800080;">1</span>)-pp[r].ins-<span style="color: #800080;">1</span>)*<span style="color: #000000;">pp[r].num);
+</span><span style="color: #008080;">46</span>                 r--<span style="color: #000000;">;
+</span><span style="color: #008080;">47</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">48</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">49</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,max_2);
+</span><span style="color: #008080;">50</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">51</span> }</code></pre>
+
+<p>&nbsp;</p>
+<p>（2）有剪枝通过的大佬教我一下</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;bits/stdc++.h&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 3</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> maxn=1e3+<span style="color: #800080;">20</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">int</span> a[maxn][maxn],max_1=<span style="color: #800080;">0</span>,max_2=<span style="color: #800080;">0</span>,t;<span style="color: #808080;">///</span><span style="color: #008000;">a数组记录每个位置的前缀和，max_1和max_2为最大和次大</span>
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">int</span> jlen=<span style="color: #800080;">0</span>,ilen=<span style="color: #800080;">0</span>,rec;<span style="color: #808080;">///</span><span style="color: #008000;">用于记录最小长度，最高高度和当前面积</span>
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">char</span><span style="color: #000000;"> ss[maxn][maxn];
+</span><span style="color: #008080;"> 7</span> <span style="color: #0000ff;">void</span> dfs(<span style="color: #0000ff;">int</span> x,<span style="color: #0000ff;">int</span><span style="color: #000000;"> y)
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;">(a[x][y])
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">11</span>         <span style="color: #0000ff;">if</span>(a[x][y]&gt;=<span style="color: #000000;">jlen)
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">13</span>             ilen++<span style="color: #000000;">;
+</span><span style="color: #008080;">14</span>             rec=ilen*<span style="color: #000000;">jlen;
+</span><span style="color: #008080;">15</span>             <span style="color: #0000ff;">if</span>(rec&gt;<span style="color: #000000;">max_1){
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">                swap(max_1,max_2);swap(rec,max_1);}
+</span><span style="color: #008080;">17</span>             <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(rec&gt;<span style="color: #000000;">max_2)
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">                swap(rec,max_2);
+</span><span style="color: #008080;">19</span>             dfs(x-<span style="color: #800080;">1</span><span style="color: #000000;">,y);
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">21</span>         <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(a[x][y]&lt;<span style="color: #000000;">jlen)
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">23</span>             ilen++,jlen=<span style="color: #000000;">a[x][y];
+</span><span style="color: #008080;">24</span>             rec=ilen*<span style="color: #000000;">jlen;
+</span><span style="color: #008080;">25</span>             <span style="color: #0000ff;">if</span>(rec&gt;<span style="color: #000000;">max_1)
+</span><span style="color: #008080;">26</span>                 t=max_1,max_1=rec,max_2=<span style="color: #000000;">t;
+</span><span style="color: #008080;">27</span>             <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(rec&gt;<span style="color: #000000;">max_2)
+</span><span style="color: #008080;">28</span>                 max_2=<span style="color: #000000;">rec;
+</span><span style="color: #008080;">29</span>             dfs(x-<span style="color: #800080;">1</span><span style="color: #000000;">,y);
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">32</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">34</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">36</span>     <span style="color: #0000ff;">int</span> n,m,x,book=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">37</span>     scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;n,&amp;<span style="color: #000000;">m);
+</span><span style="color: #008080;">38</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>; i&lt;=n; i++<span style="color: #000000;">){
+</span><span style="color: #008080;">39</span>         scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%s</span><span style="color: #800000;">"</span><span style="color: #000000;">,ss[i]);
+</span><span style="color: #008080;">40</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">0</span>; j&lt;m; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">42</span>             <span style="color: #0000ff;">if</span>(j==<span style="color: #800080;">0</span>&amp;&amp;ss[i][<span style="color: #800080;">0</span>]==<span style="color: #800000;">'</span><span style="color: #800000;">1</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+</span><span style="color: #008080;">43</span>                 a[i][<span style="color: #800080;">1</span>]=<span style="color: #800080;">1</span>,book++<span style="color: #000000;">;
+</span><span style="color: #008080;">44</span>             <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(ss[i][j]==<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+</span><span style="color: #008080;">45</span>                 a[i][j+<span style="color: #800080;">1</span>]=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">46</span>             <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(ss[i][j]==<span style="color: #800000;">'</span><span style="color: #800000;">1</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+</span><span style="color: #008080;">47</span>                 a[i][j+<span style="color: #800080;">1</span>]=a[i][j]+<span style="color: #800080;">1</span>,book++<span style="color: #000000;">;
+</span><span style="color: #008080;">48</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">50</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>; i&lt;=n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">51</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">52</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>; j&lt;=m; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">54</span>             <span style="color: #0000ff;">if</span><span style="color: #000000;">(a[i][j])
+</span><span style="color: #008080;">55</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">56</span>                 ilen=<span style="color: #800080;">1</span>,jlen=<span style="color: #000000;">a[i][j];
+</span><span style="color: #008080;">57</span>                 rec=ilen*<span style="color: #000000;">jlen;
+</span><span style="color: #008080;">58</span>                 <span style="color: #0000ff;">if</span>(rec&gt;<span style="color: #000000;">max_1)
+</span><span style="color: #008080;">59</span>                     t=max_1,max_1=rec,max_2=<span style="color: #000000;">t;
+</span><span style="color: #008080;">60</span>                 <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(rec&gt;<span style="color: #000000;">max_2)
+</span><span style="color: #008080;">61</span>                     max_2=<span style="color: #000000;">rec;
+</span><span style="color: #008080;">62</span>                 dfs(i-<span style="color: #800080;">1</span><span style="color: #000000;">,j);
+</span><span style="color: #008080;">63</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">64</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">65</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">66</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,max_2);
+</span><span style="color: #008080;">67</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">68</span> }</code></pre>
+
+<p>&nbsp;（3）上面代码改进深搜极限918msAC（PS：试了横着做和竖着做，发现就只有竖着做能A，可能数据太弱的缘故吧）</p>
+<div class="cnblogs_code">
+<pre><code>#include&lt;bits/stdc++.h&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> maxn=1e3+<span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">int</span> a[maxn][maxn],max_1=<span style="color: #800080;">0</span>,max_2=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> rec;
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    </span><span style="color: #0000ff;">int</span> n,m,x,book=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;n,&amp;<span style="color: #000000;">m);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>; i&lt;=n; i++<span style="color: #000000;">)
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>; j&lt;=m; j++<span style="color: #000000;">)
+        {
+            scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%1d</span><span style="color: #800000;">"</span>,&amp;<span style="color: #000000;">a[i][j]);
+                a[i][j]</span>+=a[i-<span style="color: #800080;">1</span>][j]*<span style="color: #000000;">a[i][j];
+        }</span>
+    <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=n; i&gt;=<span style="color: #800080;">1</span>; i--<span style="color: #000000;">)
+    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=m; j&gt;=<span style="color: #800080;">1</span>; j--<span style="color: #000000;">)
+        {
+            </span><span style="color: #0000ff;">if</span>(i*j&lt;=max_2)<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">int</span> ilen=a[i][j],jlen=<span style="color: #800080;">1</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">while</span><span style="color: #000000;">(ilen)
+            {
+                rec</span>=ilen*<span style="color: #000000;">jlen;
+                </span><span style="color: #0000ff;">if</span>(rec&gt;=<span style="color: #000000;">max_1)
+                    max_2</span>=max_1,max_1=<span style="color: #000000;">rec;
+                </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(rec&gt;<span style="color: #000000;">max_2)
+                    max_2</span>=<span style="color: #000000;">rec;
+                ilen</span>=min(ilen,a[i][j-<span style="color: #000000;">jlen]);
+                jlen</span>++<span style="color: #000000;">;
+            }
+        }
+    }
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,max_2);
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></code></pre>
+
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

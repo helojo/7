@@ -1,0 +1,245 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修【C语言】控制台窗口图形界面编程（一）句柄和文本属性' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>【C语言】控制台窗口图形界面编程（一）句柄和文本属性</center></div><div class='banquan'>原文出处:本文由博客园博主沧海一笑_DJ提供。<br/>
+原文连接:https://www.cnblogs.com/szitcast/p/10921574.html</div><br>
+    <src class="toc">
+    <p class="toc-title">目录</p>
+    <src class="toc-list">
+        <ul>
+        <li><a href="#目录">00. 目录</a></li>
+        <li><a href="#句柄">01. 句柄</a></li>
+        <li><a href="#getstdhandle函数">02. GetStdHandle函数</a></li>
+        <li><a href="#closehandle函数">03. CloseHandle函数</a></li>
+        <li><a href="#setconsoletextattribute函数">04. SetConsoleTextAttribute函数</a></li>
+        <li><a href="#十进制颜色对照表">05. 十进制颜色对照表</a></li>
+        <li><a href="#十六进制颜色对照表">06. 十六进制颜色对照表</a></li>
+        </ul>
+    
+
+<h2 id="目录">00. 目录</h2>
+<h2 id="句柄">01. 句柄</h2>
+<p>​ <strong>句柄</strong>是Windows最常用的概念。它通常用来标识Windows资源(如菜单、图标、窗口等)和设备等对象。虽然可以把句柄理解为是一个指针变量类型，但它不是对象所在的地址指针，而是作为Windows系统内部表的索引值来使用的。</p>
+<p>HANDLE在winnt.h中的声明为</p>
+<blockquote>
+<p>typedef void *HANDLE;</p>
+</blockquote>
+<p>​ 从上面可以看出HANDLE是一种无类型指针，句柄是处理对象的一个接口，你可以通过句柄去操作程序中所涉及的对象。在windows中，句柄是和对象一一对应的<strong>32位无符号整数值</strong>，对象可以映射到唯一的句柄，</p>
+<p>​ 句柄也可以映射到唯一的对象windows需要向程序员提供必要地编程接口，在这些接口中，允许程序员访问，创建和销毁对象，但是，出于封装的考虑，windows并不想向程序员返回指针</p>
+<p>​ 如果作数据的话，句柄这种方式则允许你按自己的方式直接操作数据，但windows又不向你直接暴露数据。直接操作数据是程序员需要的，不暴露数据是windows所需要的，句柄封装方式实现了各取所需。</p>
+<p>​ “句柄”是Windows最常用的概念。它通常用来标识Windows资源(如菜单、图标、窗口等)和设备等对象。虽然可以把句柄理解为是一个指针变量类型，但它不是对象所在的地址指针，而是作为Windows系统内部表的索引值来使用的。</p>
+<p>参考示例:</p>
+<pre><code><code>HANDLE hOut = NULL;</code></code></pre>
+<p><a href="https://blog.csdn.net/wenzhou1219/article/details/17659485">深入了解Windows句柄到底是什么</a></p>
+<h2 id="getstdhandle函数">02. GetStdHandle函数</h2>
+<p>函数相关说明</p>
+<pre><code><code>HANDLE WINAPI GetStdHandle(_In_ DWORD nStdHandle);
+功能：
+    获取指定标准设备的句柄（标准输入，标准输出或标准错误）
+参数：
+    nStdHandle 标准设备。此参数可以是以下值之一。
+    STD_INPUT_HANDLE（DWORD）-10  标准输入设备。最初，这是控制台输入缓冲区
+    STD_OUTPUT_HANDLE（DWORD）-11 标准输出设备。最初，这是活动的控制台屏幕缓冲区
+    STD_ERROR_HANDLE（DWORD）-12  标准错误设备。最初，这是活动的控制台屏幕缓冲区
+返回值：
+    如果函数成功，则返回值是指定设备的句柄，或者是先前调用SetStdHandle设置的重定向句柄。该句柄具有GENERIC_READ和GENERIC_WRITE访问权限，除非应用程序使用SetStdHandle设置具有较少访问权限的标准句柄。
+    如果函数失败，则返回值为INVALID_HANDLE_VALUE。要获取扩展错误信息，请调用GetLastError。
+    如果应用程序没有关联的标准句柄，例如在交互式桌面上运行的服务，并且未重定向它们，则返回值为NULL。</code></code></pre>
+<p><strong>在默认情况下：</strong></p>
+<p>标准输入（stdin）----键盘</p>
+<p>标准输出（stdout）----显示器（屏幕）</p>
+<p>标准错误（stderr）----显示器（屏幕）</p>
+<blockquote>
+<p><strong>注意</strong>：标准输出句柄和标准错误句柄默认情况下都是对应的屏幕</p>
+</blockquote>
+<p>参考代码：</p>
+<pre><code><code>    //定义句柄类型的变量
+    HANDLE hOut = NULL;
+    //获取标准输出句柄
+    hOut = GetStdHandle(STD_OUTPUT_HANDLE);</code></code></pre>
+<h2 id="closehandle函数">03. CloseHandle函数</h2>
+<p>函数相关说明</p>
+<pre><code><code>BOOL CloseHandle(HANDLE hObject);
+功能:
+    关闭一个打开的对象句柄
+参数：
+    hObject 打开对象的有效句柄
+返回值：
+    如果函数成功，则返回值为非零值。
+    如果函数失败，则返回值为零。要获取扩展错误信息，请调用 GetLastError。</code></code></pre>
+<p>参考代码:</p>
+<pre><code><code>    //关闭句柄
+    CloseHandle(hOut);</code></code></pre>
+<p><a href="https://docs.microsoft.com/zh-cn/windows/desktop/api/handleapi/nf-handleapi-closehandle">官方参考手册</a></p>
+<h2 id="setconsoletextattribute函数">04. SetConsoleTextAttribute函数</h2>
+<p>设置控制台文本属性（颜色），可以设置前景色<strong>FOREGROUND</strong>（文本颜色）和背景色<strong>BACKGROUND</strong></p>
+<pre><code><code>BOOL WINAPI SetConsoleTextAttribute(HANDLE hConsoleOutput, WORD wAttributes);
+功能：
+    设置控制台文本属性（颜色）
+参数：
+    hConsoleOutput: 控制台屏幕缓冲区的句柄。句柄必须具有GENERIC_READ访问权限。
+    wAttributes: 字符属性
+返回值：
+    如果函数成功，则返回值为非零值。
+    如果函数失败，则返回值为零。要获取扩展错误信息，请调用GetLastError。</code></code></pre>
+<blockquote>
+<p><strong>备注：</strong>要确定屏幕缓冲区的当前颜色属性，请调用<a href="https://docs.microsoft.com/en-us/windows/console/getconsolescreenbufferinfo"><strong>GetConsoleScreenBufferInfo</strong></a>函数。</p>
+</blockquote>
+<p>字符属性可以分为两类：颜色和DBCS。Wincon.h头文件中定义了以下属性。</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">属性</th>
+<th style="text-align: left;">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><strong>FOREGROUND_BLUE</strong></td>
+<td style="text-align: left;">文字颜色包含蓝色。</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>FOREGROUND_GREEN</strong></td>
+<td style="text-align: left;">文字颜色包含绿色。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>FOREGROUND_RED</strong></td>
+<td style="text-align: left;">文字颜色包含红色。</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>FOREGROUND_INTENSITY</strong></td>
+<td style="text-align: left;">文字颜色加强。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>BACKGROUND_BLUE</strong></td>
+<td style="text-align: left;">背景颜色包含蓝色。</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>BACKGROUND_GREEN</strong></td>
+<td style="text-align: left;">背景颜色包含绿色。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>BACKGROUND_RED</strong></td>
+<td style="text-align: left;">背景颜色包含红色。</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>BACKGROUND_INTENSITY</strong></td>
+<td style="text-align: left;">背景颜色加剧。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>COMMON_LVB_LEADING_BYTE</strong></td>
+<td style="text-align: left;">前导字节。</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>COMMON_LVB_TRAILING_BYTE</strong></td>
+<td style="text-align: left;">尾随字节。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>COMMON_LVB_GRID_HORIZONTAL</strong></td>
+<td style="text-align: left;">顶部水平。</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>COMMON_LVB_GRID_LVERTICAL</strong></td>
+<td style="text-align: left;">左垂直。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>COMMON_LVB_GRID_RVERTICAL</strong></td>
+<td style="text-align: left;">正确的垂直。</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><strong>COMMON_LVB_REVERSE_VIDEO</strong></td>
+<td style="text-align: left;">反转前景和背景属性。</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><strong>COMMON_LVB_UNDERSCORE</strong></td>
+<td style="text-align: left;">下划线。</td>
+</tr>
+</tbody>
+</table>
+<p>相关声明</p>
+<pre><code><code>//
+// Attributes flags:
+//
+
+#define FOREGROUND_BLUE      0x0001 // text color contains blue.
+#define FOREGROUND_GREEN     0x0002 // text color contains green.
+#define FOREGROUND_RED       0x0004 // text color contains red.
+#define FOREGROUND_INTENSITY 0x0008 // text color is intensified.
+#define BACKGROUND_BLUE      0x0010 // background color contains blue.
+#define BACKGROUND_GREEN     0x0020 // background color contains green.
+#define BACKGROUND_RED       0x0040 // background color contains red.
+#define BACKGROUND_INTENSITY 0x0080 // background color is intensified.
+#define COMMON_LVB_LEADING_BYTE    0x0100 // Leading Byte of DBCS
+#define COMMON_LVB_TRAILING_BYTE   0x0200 // Trailing Byte of DBCS
+#define COMMON_LVB_GRID_HORIZONTAL 0x0400 // DBCS: Grid attribute: top horizontal.
+#define COMMON_LVB_GRID_LVERTICAL  0x0800 // DBCS: Grid attribute: left vertical.
+#define COMMON_LVB_GRID_RVERTICAL  0x1000 // DBCS: Grid attribute: right vertical.
+#define COMMON_LVB_REVERSE_VIDEO   0x4000 // DBCS: Reverse fore/back ground attribute.
+#define COMMON_LVB_UNDERSCORE      0x8000 // DBCS: Underscore.
+
+#define COMMON_LVB_SBCSDBCS        0x0300 // SBCS or DBCS flag.</code></code></pre>
+<p>测试代码:</p>
+<pre><code><code>#define _CRT_SECURE_NO_WARNINGS
+#include&lt;stdio.h&gt;
+#include&lt;string.h&gt;
+#include&lt;stdlib.h&gt;
+
+#include &lt;Windows.h&gt;
+
+
+int main()
+{
+    //定义句柄类型的变量
+    HANDLE hOut = NULL;
+    //获取标准输出句柄
+    hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    //设置文本属性为青色
+    SetConsoleTextAttribute(hOut, 10);
+    printf(&quot;黑马程序员\n&quot;);
+
+    //设置文本属性为红色
+    SetConsoleTextAttribute(hOut, 12);
+    printf(&quot;黑马程序员\n&quot;);
+
+    //设置文本属性为黄色
+    SetConsoleTextAttribute(hOut, 14);
+    printf(&quot;黑马程序员\n&quot;);
+
+    SetConsoleTextAttribute(hOut, 3);
+    printf(&quot;黑马程序员\n&quot;);
+
+    //关闭句柄
+    CloseHandle(hOut);
+
+    system(&quot;pause&quot;);
+    return 0;
+}</code></code></pre>
+<p>执行结果</p>
+<p><img src="./images/【C语言】控制台窗口图形界面编程（一）句柄和文本属性0.png" /></p>
+<p><a href="https://docs.microsoft.com/en-us/windows/console/setconsoletextattribute">官方参考手册</a></p>
+<h2 id="十进制颜色对照表">05. 十进制颜色对照表</h2>
+<p><img src="./images/【C语言】控制台窗口图形界面编程（一）句柄和文本属性1.png" /></p>
+<h2 id="十六进制颜色对照表">06. 十六进制颜色对照表</h2>
+<p><img src="./images/【C语言】控制台窗口图形界面编程（一）句柄和文本属性2.png" /></p>
+<p>参考博客： <a href="https://www.cnblogs.com/lanhaicode/p/10498497.html" class="uri">https://www.cnblogs.com/lanhaicode/p/10498497.html</a></p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

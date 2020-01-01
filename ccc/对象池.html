@@ -1,0 +1,198 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修对象池' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>对象池</center></div><div class='banquan'>原文出处:本文由博客园博主YHB_DRIVER提供。<br/>
+原文连接:https://www.cnblogs.com/YuHanbo/p/10757399.html</div><br>
+    <h1>背景：</h1>
+<p>&nbsp; &nbsp; 假设有一个Stock类，代表一只股票的价格，且每个股票有std::string唯一标识符。Stock对象是个主动对象，能不断获取股票的最新价格。为节省系统资源，每个程序每只出现的股票只有一个Stock对象。如果多处用到一只股票，那么Stock对象要被共享，如果这只股票没有被用到，那么对应的Stock对象应该被析构，以释放资源。下面设计一个StockFactory。</p>
+<h1>Version1：</h1>
+<h2>代码：</h2>
+<div class="cke_widget_wrapper cke_widget_block cke_widget_codeSnippet cke_widget_wrapper_has cke_widget_selected" data-cke-widget-wrapper="1" data-cke-filter="off" data-cke-display-name="代码段" data-cke-widget-id="4">
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> StockFactory : boost::noncopyable
+</span><span style="color: #008080;">2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">3</span>     <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">4</span>         shared_ptr&lt;Stock&gt; <span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> key);
+</span><span style="color: #008080;">5</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;">6</span> <span style="color: #000000;">        mutable MutexLock mutex_;
+</span><span style="color: #008080;">7</span>         std::map&lt;<span style="color: #0000ff;">string</span>, shared_ptr&lt;Stock&gt;&gt;<span style="color: #000000;"> stocks_;
+</span><span style="color: #008080;">8</span> };</pre>
+</div>
+</div>
+<h2>问题：</h2>
+<p>由于map中存放的市shared_ptr，因此Stock永远不会被析构。</p>
+<h1>Version2：</h1>
+<h2>代码：</h2>
+<div class="cke_widget_wrapper cke_widget_block cke_widget_codeSnippet cke_widget_wrapper_has cke_widget_selected" data-cke-widget-wrapper="1" data-cke-filter="off" data-cke-display-name="代码段" data-cke-widget-id="3">
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">class</span><span style="color: #000000;"> StockFactory : boost::noncopyable
+{
+    </span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+        shared_ptr</span>&lt;Stock&gt; <span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> key);
+    </span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+        mutable MutexLock mutex_;
+        std::map</span>&lt;<span style="color: #0000ff;">string</span>, weak_ptr&lt;Stock&gt;&gt;<span style="color: #000000;"> stocks_;
+};
+
+shared_ptr</span>&lt;Stock&gt; StockFactory::<span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> key)
+{
+    shared_ptr</span>&lt;Stock&gt;<span style="color: #000000;"> pStock;
+    MutexLockGuard </span><span style="color: #0000ff;">lock</span><span style="color: #000000;">(mutex_);
+    weak_ptr</span>&lt;Stock&gt;&amp; wStock =<span style="color: #000000;"> stocks_[key];
+    pStock </span>= wStock.<span style="color: #0000ff;">lock</span><span style="color: #000000;">();
+    </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">pStock)
+    {
+        pStock.reset(</span><span style="color: #0000ff;">new</span><span style="color: #000000;"> Stock(key));
+        wStock </span>=<span style="color: #000000;"> pStock;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> pStock;
+}</span></pre>
+<img class="cke_reset cke_widget_drag_handler" style="background-color: #ffffff; font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px;" title="点击并拖拽以移动" src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==" alt="" width="15" height="15" data-cke-widget-drag-handler="1" /></div>
+</div>
+<h2>问题：</h2>
+<p>造成了内存泄漏，stock_大小只增不减，stock_.size()的大小是曾经被用到的Stock对象的总数。</p>
+<h1>Version3：</h1>
+<h2>代码：</h2>
+<div class="cke_widget_wrapper cke_widget_block cke_widget_codeSnippet cke_widget_wrapper_has cke_widget_selected" data-cke-widget-wrapper="1" data-cke-filter="off" data-cke-display-name="代码段" data-cke-widget-id="2">
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">class</span><span style="color: #000000;"> StockFactory : boost::noncopyable
+{
+    </span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+        shared_ptr</span>&lt;Stock&gt; <span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> key);
+    </span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+        mutable MutexLock mutex_;
+        std::map</span>&lt;<span style="color: #0000ff;">string</span>, weak_ptr&lt;Stock&gt;&gt;<span style="color: #000000;"> stocks_;
+        </span><span style="color: #0000ff;">void</span> deleteStock(Stock*<span style="color: #000000;"> stock)
+        {
+            </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (stock)
+            {
+                MutexLockGuard </span><span style="color: #0000ff;">lock</span><span style="color: #000000;">(mutex_);
+                stocks_.erase(stock</span>-&gt;<span style="color: #000000;">key());
+            }
+            </span><span style="color: #0000ff;">delete</span><span style="color: #000000;"> stock;
+        }
+};
+
+shared_ptr</span>&lt;Stock&gt; StockFactory::<span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> key)
+{
+    shared_ptr</span>&lt;Stock&gt;<span style="color: #000000;"> pStock;
+    MutexLockGuard </span><span style="color: #0000ff;">lock</span><span style="color: #000000;">(mutex_);
+    weak_ptr</span>&lt;Stock&gt;&amp; wStock =<span style="color: #000000;"> stocks_[key];
+    pStock </span>= wStock.<span style="color: #0000ff;">lock</span><span style="color: #000000;">();
+    </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">pStock)
+    {
+        pStock.reset(</span><span style="color: #0000ff;">new</span> Stock(key), [<span style="color: #0000ff;">this</span><span style="color: #000000;">](auto stock) {
+            deleteStock(stock);
+        });
+        wStock </span>=<span style="color: #000000;"> pStock;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> pStock;
+}</span></pre>
+</div>
+</div>
+<h2>问题：</h2>
+<p>出现了线程不安全的问题，this指针被传入lambda的deleteStock中，若StockFactory先于Stock析构，将core dump。</p>
+<h1>Version4：</h1>
+<h2>代码：</h2>
+<div class="cke_widget_wrapper cke_widget_block cke_widget_codeSnippet cke_widget_wrapper_has cke_widget_selected" data-cke-widget-wrapper="1" data-cke-filter="off" data-cke-display-name="代码段" data-cke-widget-id="1">
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">class</span> StockFactory : boost::noncopyable, <span style="color: #0000ff;">public</span> enable_shared_from_this&lt;StockFactory&gt;<span style="color: #000000;">
+{
+    </span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+        shared_ptr</span>&lt;Stock&gt; <span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> key);
+    </span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+        mutable MutexLock mutex_;
+        std::map</span>&lt;<span style="color: #0000ff;">string</span>, weak_ptr&lt;Stock&gt;&gt;<span style="color: #000000;"> stocks_;
+        </span><span style="color: #0000ff;">void</span> deleteStock(Stock*<span style="color: #000000;"> stock)
+        {
+            </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (stock)
+            {
+                MutexLockGuard </span><span style="color: #0000ff;">lock</span><span style="color: #000000;">(mutex_);
+                stocks_.erase(stock</span>-&gt;<span style="color: #000000;">key());
+            }
+            </span><span style="color: #0000ff;">delete</span><span style="color: #000000;"> stock;
+        }
+};
+
+shared_ptr</span>&lt;Stock&gt; StockFactory::<span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> key)
+{
+    shared_ptr</span>&lt;Stock&gt;<span style="color: #000000;"> pStock;
+    MutexLockGuard </span><span style="color: #0000ff;">lock</span><span style="color: #000000;">(mutex_);
+    weak_ptr</span>&lt;Stock&gt;&amp; wStock =<span style="color: #000000;"> stocks_[key];
+    pStock </span>= wStock.<span style="color: #0000ff;">lock</span><span style="color: #000000;">();
+    </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">pStock)
+    {
+        pStock.reset(</span><span style="color: #0000ff;">new</span><span style="color: #000000;"> Stock(key), [shared_from_this()](auto stock) {
+            deleteStock(stock);
+        });
+        wStock </span>=<span style="color: #000000;"> pStock;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> pStock;
+}</span></pre>
+<img class="cke_reset cke_widget_drag_handler" style="background-color: #ffffff; font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px;" title="点击并拖拽以移动" src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==" alt="" width="15" height="15" data-cke-widget-drag-handler="1" /></div>
+</div>
+<h2>问题：</h2>
+<p>虽然能够保证在调用deleteStock时，StockFactory对象仍然&ldquo;存活&rdquo;，但是shared_from_this()使得StockFactory对象的声明周期被延长了。</p>
+<h1>Version5：</h1>
+<h2>代码：</h2>
+<div class="cke_widget_wrapper cke_widget_block cke_widget_codeSnippet cke_widget_wrapper_has cke_widget_selected" data-cke-widget-wrapper="1" data-cke-filter="off" data-cke-display-name="代码段" data-cke-widget-id="0">
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">class</span> StockFactory : boost::noncopyable, <span style="color: #0000ff;">public</span> enable_shared_from_this&lt;StockFactory&gt;<span style="color: #000000;">
+{
+    </span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+        shared_ptr</span>&lt;Stock&gt; <span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> key);
+    </span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+        mutable MutexLock mutex_;
+        std::map</span>&lt;<span style="color: #0000ff;">string</span>, weak_ptr&lt;Stock&gt;&gt;<span style="color: #000000;"> stocks_;
+        </span><span style="color: #0000ff;">void</span> deleteStock(<span style="color: #0000ff;">const</span> weak_ptr&lt;StockFactory&gt;&amp; wFactory, Stock*<span style="color: #000000;"> stock)
+        {
+            shared_ptr</span>&lt;StockFactory&gt; factory(wFactory.<span style="color: #0000ff;">lock</span><span style="color: #000000;">());
+            </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (factory)
+            {
+                </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (stock)
+                {
+                    MutexLockGuard </span><span style="color: #0000ff;">lock</span><span style="color: #000000;">(mutex_);
+                    stocks_.erase(stock</span>-&gt;<span style="color: #000000;">key());
+                }
+            }
+            </span><span style="color: #0000ff;">delete</span><span style="color: #000000;"> stock;
+        }
+};
+
+shared_ptr</span>&lt;Stock&gt; StockFactory::<span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> key)
+{
+    shared_ptr</span>&lt;Stock&gt;<span style="color: #000000;"> pStock;
+    MutexLockGuard </span><span style="color: #0000ff;">lock</span><span style="color: #000000;">(mutex_);
+    weak_ptr</span>&lt;Stock&gt;&amp; wStock =<span style="color: #000000;"> stocks_[key];
+    pStock </span>= wStock.<span style="color: #0000ff;">lock</span><span style="color: #000000;">();
+    </span><span style="color: #0000ff;">if</span> (!<span style="color: #000000;">pStock)
+    {
+        pStock.reset(</span><span style="color: #0000ff;">new</span> Stock(key), [=<span style="color: #000000;">](auto stock) {
+            deleteStock(weak_ptr</span>&lt;StockFactory&gt;<span style="color: #000000;">(shared_from_this()), stock);
+        });
+        wStock </span>=<span style="color: #000000;"> pStock;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> pStock;
+}</span></pre>
+</div>
+<span class="cke_reset cke_widget_drag_handler_container"><img class="cke_reset cke_widget_drag_handler" title="点击并拖拽以移动" src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==" alt="" width="15" height="15" data-cke-widget-drag-handler="1" /></span></div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

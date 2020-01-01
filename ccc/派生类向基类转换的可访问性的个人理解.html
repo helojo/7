@@ -1,0 +1,129 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修派生类向基类转换的可访问性的个人理解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>派生类向基类转换的可访问性的个人理解</center></div><div class='banquan'>原文出处:本文由博客园博主bu2提供。<br/>
+原文连接:https://www.cnblogs.com/nowhszh/p/11193374.html</div><br>
+    <blockquote>
+<p>派生类向基类的转换是否可访问由使用该转换的代码决定 , 同时派生类的派生访问说明符也会有影响. 假定D继承自B:</p>
+<p>1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 只有当D公有继承B时 , 用户代码才能使用派生类向基类的转换;如果D继承B的方式是受到保护的或者是私有的 , 则用户代码不能使用该转换.</p>
+<p>2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 不论D以什么方式继承B , D的成员函数和友元都能使用派生类向基类的转换; 派生类向其直接基类的类型转换对于派生类的成员和友元来说永远是可访问的.</p>
+<p>3&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 如果D继承B的方式是公有的或者受保护的 , 则D的派生类的成员和友元可以使用D向B的类型转换; 反之 , 如果D继承B的方式是私有的 , 则不能使用.</p>
+</blockquote>
+<p>以上节选自C++ Primer P544页</p>
+<p>由于第一次读到的时候感觉非常的难以理解 , 因此记录下个人的理解 , 防止自己忘记　，　文中的代码编译环境为VS2017</p>
+<h1>第一条的个人理解 :</h1>
+<blockquote>
+<p>只有当D公有继承B时 , 用户代码才能使用派生类向基类的转换;如果D继承B的方式是受到保护的或者是私有的 , 则用户代码不能使用该转换.</p>
+</blockquote>
+<p>个人理解: 当派生类以共有方式继承基类时 , 才可以使用基类指针指向派生类来操纵 . 而其他两种继承方式是失败的 . 所以一个<strong>结论即使是发生多态时 , 也必须是公有继承时 , 基类指针才可以指向派生类</strong></p>
+<p>代码示例 :</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;">只有公有继承时 , 基类指针或引用才可以指向派生类对象 , 再发生多态时 ,同样有效</span>
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">#pragma</span> warning (disable:4996)
+<span style="color: #008080;"> 3</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Base
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 7</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span> memPublic() { std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Base公有成员被调用</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl; }
+</span><span style="color: #008080;"> 9</span> <span style="color: #0000ff;">protected</span><span style="color: #000000;">:
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">void</span> memProtected() { std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Base保护成员被调用</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl; }
+</span><span style="color: #008080;">11</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">void</span> memPrivate() { std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Base私有成员被调用</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl; }
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> <span style="color: #0000ff;">class</span> Derive :<span style="color: #0000ff;">public</span><span style="color: #000000;"> Base
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">17</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">18</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span> memPublic() <span style="color: #0000ff;">override</span>{ std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Derive公有成员被调用</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl; }
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> memPri() 
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    { 
+</span><span style="color: #008080;">21</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">Base::memProtected();
+</span><span style="color: #008080;">22</span>         <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">memPublic();
+</span><span style="color: #008080;">23</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Derive的个人函数</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl;
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">26</span> <span style="color: #0000ff;">class</span> Derive_pro : <span style="color: #0000ff;">protected</span><span style="color: #000000;"> Base
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">28</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">29</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span> memPublic() <span style="color: #0000ff;">override</span> { std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Derive_pro公有成员被调用</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl; }
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">31</span> <span style="color: #0000ff;">class</span> Derive_pri : <span style="color: #0000ff;">private</span><span style="color: #000000;"> Base
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">33</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">34</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span> memPublic() <span style="color: #0000ff;">override</span> { std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Derive_pri公有成员被调用</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl; }
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">36</span> 
+<span style="color: #008080;">37</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">39</span>     std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">--派生类--</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl;
+</span><span style="color: #008080;">40</span>     Base * dev = <span style="color: #0000ff;">new</span><span style="color: #000000;"> Derive;
+</span><span style="color: #008080;">41</span>     <span style="color: #008000;">//</span><span style="color: #008000;">Base * dev2 = new Derive_pro;</span><span style="color: #008000;">//</span><span style="color: #008000;">error 编译器报错, 不允许对不可访问的基类的转换
+</span><span style="color: #008080;">42</span>     <span style="color: #008000;">//</span><span style="color: #008000;">Base * dev3 = new Derive_pri;</span><span style="color: #008000;">//</span><span style="color: #008000;">error 编译器报错, 不允许对不可访问的基类的转换</span>
+<span style="color: #008080;">43</span> 
+<span style="color: #008080;">44</span>     system(<span style="color: #800000;">"</span><span style="color: #800000;">pause</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">45</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">46</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<h1>第二条的个人理解 :</h1>
+<p>在理解第二条前 , 首先应该明白一句话 , 同样节选自C++ Primer5 P544页</p>
+<blockquote>
+<p>派生访问说明符对于派生类的成员及友元能否访问其直接基类的成员没有什么影响 .对基类成员的访问权限只与基类中的访问说明符有关</p>
+</blockquote>
+<p>这句话的含义 , 可以理解为不<strong>同的继承方式影响的是派生类的对象对于基类成员的的访问权限 , 而对于派生类内部 (派生类的成员函数中) 对基类成员的访问权限无关</strong>.</p>
+<p>也就是说<span style="text-decoration: underline;">无论是公有继承还是私有继承 , 保护继承 , 在派生类的内部同样可以访问基类的公有成员和保护成员</span></p>
+<p>那么接下来开始理解第二条</p>
+<blockquote>
+<p>不论D以什么方式继承B , D的成员函数和友元都能使用派生类向基类的转换; 派生类向其直接基类的类型转换对于派生类的成员和友元来说永远是可访问的.</p>
+</blockquote>
+<p>什么含义已经很显而易见了 , <strong>无论派生类对于基类的继承方式是什么 , 派生类的成员和友元永远都有对于基类的的保护成员和公有成员的访问权限</strong>&nbsp; , 这里需要注意的是派生类的成员和友元限于派生类内 , 而不是派生类的对象</p>
+<p>代码示例 :</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;">代码中只对私有继承进行了展示 , 可以看出私有继承时 , 并不影响派生类中访问基类的共有成员和保护成员</span>
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Base
+</span><span style="color: #008080;"> 3</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> base_public;
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">protected</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> base_protect;
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> base_private;
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">class</span> Derive :<span style="color: #0000ff;">private</span><span style="color: #000000;"> Base
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">14</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">int</span> dev1 =<span style="color: #000000;"> base_public;
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">int</span> dev2 =<span style="color: #000000;"> base_protect;
+</span><span style="color: #008080;">17</span>     <span style="color: #008000;">//</span><span style="color: #008000;">int dev3 = base_private; </span><span style="color: #008000;">//</span><span style="color: #008000;">error , 编译器警告成员不可访问</span>
+<span style="color: #008080;">18</span> };</pre>
+</div>
+<p>&nbsp;</p>
+<h1>第三条 :</h1>
+<blockquote>
+<p>如果D继承B的方式是公有的或者受保护的 , 则D的派生类的成员和友元可以使用D向B的类型转换; 反之 , 如果D继承B的方式是私有的 , 则不能使用.</p>
+</blockquote>
+<p>理解方式参考第二条 , 第三条并不是第二条的悖论 , 因为这句话有一个关键字 "D的派生类的成员" , 所以本意为</p>
+<p><strong>当派生类以公有和保护的方式继承基类时 , 则派生类的派生类的成员(就是类的内部)和友元才拥有可以访问基类的保护和公有成员的权限 , 而如果是私有的 , 这显然不可以 , 因为基类的所有成员已经变为派生类的私有成员&nbsp; , 所以派生类的派生类并不能访问他们.</strong></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

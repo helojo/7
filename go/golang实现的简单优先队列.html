@@ -1,0 +1,172 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang实现的简单优先队列' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang实现的简单优先队列</center></div><div class='banquan'>原文出处:本文由博客园博主月落无影提供。<br/>
+原文连接:https://www.cnblogs.com/albizzia/p/10772202.html</div><br>
+    <p>下面是golang实现的简单优先队列，参考信息可以查看https://golang.org/pkg/container/heap/或者https://golang.google.cn/pkg/container/heap/，后面这个网址也是官方提供的网址，关于这个网页的说明，可以参考https://blog.golang.org/hello-china。</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package queue
+
+import "container/heap"
+
+// QItem 表示存储到这个队列中需要实现的接口
+type QItem interface {
+	Less(item QItem) bool
+}
+
+// priorityQueueImpl 用于优先队列底层实现
+type priorityQueueImpl []QItem
+
+// Len 获取队列长度
+func (pqi priorityQueueImpl) Len() int {
+	return len(pqi)
+}
+
+// Less 用来进行元素比较
+func (pqi priorityQueueImpl) Less(i, j int) bool {
+	return pqi[i].Less(pqi[j])
+}
+
+// Swap 进行交换
+func (pqi priorityQueueImpl) Swap(i, j int) {
+	pqi[i], pqi[j] = pqi[j], pqi[i]
+}
+
+// Push 用来将一个对象压入队列中
+func (pqi *priorityQueueImpl) Push(x interface{}) {
+	item := x.(QItem)
+	*pqi = append(*pqi, item)
+}
+
+// Pop 将一个对象弹出队列
+func (pqi *priorityQueueImpl) Pop() interface{} {
+	old := *pqi
+	n := len(old)
+	item := old[n-1]
+	*pqi = old[0 : n-1]
+	return item
+}
+
+// PriorityQueue 实现优先队列
+type PriorityQueue struct {
+	priorityQueueImpl
+}
+
+// NewPriorityQueue 用来构建PriorityQueue
+func NewPriorityQueue() *PriorityQueue {
+	var pq PriorityQueue
+	heap.Init(&amp;pq.priorityQueueImpl)
+	return &amp;pq
+}
+
+// Push 用来将一个对象压入到队列中
+func (pq *PriorityQueue) Push(item QItem) {
+	heap.Push(&amp;pq.priorityQueueImpl, item)
+}
+
+// Pop 用来从队列中弹出一个对象
+func (pq *PriorityQueue) Pop() QItem {
+	return heap.Pop(&amp;pq.priorityQueueImpl).(QItem)
+}
+
+// Front 用来获取当前队列中的最小值
+func (pq *PriorityQueue) Front() QItem {
+	// 队列中第一位应该就是最小值
+	return pq.priorityQueueImpl[0]
+}
+
+// Length 用来获取当前队列的长度
+func (pq *PriorityQueue) Length() int {
+	return pq.priorityQueueImpl.Len()
+}
+</pre>
+</div>
+<p>&nbsp;如果希望一个结构可以存储到PriorityQueue中，需要实现QItem接口中的函数，即Less函数。下面给出一个简单的示例：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>type Int int
+
+func (i Int) Less(j QItem) bool {
+	return i &lt; j.(Int)
+}
+</pre>
+</div>
+<p>&nbsp;注意func (i Int) Less(j QItem) bool中的传参是QItem，而不是Int，golang当前还不支持泛型，所以，如果想要实现C++的STL的那种效果，应该是不可能的，就算使用反射来使得更多的类型得到支持，也势必会带来很大的性能开销，这个是我不太乐见的。关于将Int类型作为参数进行使用，可以参考下面的测试代码，这个测试代码不太规范，不过测试效果应该可以实现：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>func Test_NewPriorityQueue(t *testing.T) {
+	pq := NewPriorityQueue()
+	pq.Push(Int(5))
+	pq.Push(Int(8))
+	pq.Push(Int(3))
+
+	first := pq.Front()
+	if first != Int(3) {
+		t.Error("first should be 3")
+		return
+	}
+
+	first = pq.Pop()
+	if first != Int(3) {
+		t.Error("first should be 3")
+		return
+	}
+
+	second := pq.Pop()
+	if second != Int(5) {
+		t.Error("second should be 5")
+		return
+	}
+
+	pq.Push(Int(1))
+	length := pq.Length()
+	if length != 2 {
+		t.Error("length should be 2")
+		return
+	}
+
+	third := pq.Front()
+	if third != Int(1) {
+		t.Error("third should be 1")
+		return
+	}
+
+	third = pq.Pop()
+	if third != Int(1) {
+		t.Error("third should be 1")
+		return
+	}
+
+	fourth := pq.Pop()
+	if fourth != Int(8) {
+		t.Error("fourth should be 8")
+		return
+	}
+
+	length = pq.Length()
+	if length != 0 {
+		t.Error("empty length should be 0")
+		return
+	}
+}
+</pre>
+</div>
+<p>&nbsp;在实际使用中，可能需要对func (pq *PriorityQueue) Pop() QItem函数和func (pq *PriorityQueue) Front() QItem函数获得的值进行类型强转，使用起来更像是面向对象程序设计的那种方式了。对于需要动态修改优先队列中成员值的情况，可以参考实现。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

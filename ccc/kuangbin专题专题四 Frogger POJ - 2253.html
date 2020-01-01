@@ -1,0 +1,154 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修kuangbin专题专题四 Frogger POJ - 2253' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>kuangbin专题专题四 Frogger POJ - 2253</center></div><div class='banquan'>原文出处:本文由博客园博主SSummerZzz提供。<br/>
+原文连接:https://www.cnblogs.com/SSummerZzz/p/11200821.html</div><br>
+    <p>&nbsp;</p>
+<h3>题目链接：<a href="https://vjudge.net/problem/POJ-2253" target="_blank">https://vjudge.net/problem/POJ-2253</a></h3>
+<p>思路：</p>
+<p>从一号到二号石头的所有路线中，每条路线中都个子选出该路线中两点通路的最长距离，并在这些选出的最长距离选出最短路的那个距离X，</p>
+<p>就是青蛙距离，即青蛙至少能跳X米，才能安全的到达二号，因为什么，再看看第一句话。</p>
+<p>再想，我们知道，djikstra中的价值数组存的是从u点到其他所有点的最短距离，way[ 1 ] 是u到1的最短距离， way[ x ] 是u到x的最短距离，</p>
+<p>我们知道djikstra的时间复杂度是O（n^2），这个时间复杂是是因为我们访问了所有的从一个城市出发到其他城市所有情况（除去已经最优的城市），</p>
+<p>有n个城市，去其他（除去最优）的个城市，所有比较次数可以用接近（n^2）表示。</p>
+<p>我为什么要说这个呢，我只想表达。。。我只是想强调dijstra保存了最优路线和不确定路线的价值，访问了其他不确定的路线去更新不确定价值的路线，</p>
+<p>慢慢得到所有最优路线。</p>
+<p>那么，我们可不可以把这个价值数组利用在这个题目上，改变维护方式呢？</p>
+<p>我们可以这么想题目意思，价值数组只存一条路线，那么它一定存的是到该城市的最长距离，然后，我们需要把这个最长距离尽可能变小，即最小化最大距离。</p>
+<p>那么我们就可以用dijkstra算法来求这个问题，那我们需要怎么维护。</p>
+<p>（1）：首先，价值数组初始化一样。</p>
+<p>（2）：我们需要找出最小的价值数组，为什么？（里面存的是起始点到该点的所有路线中最小化的最大距离）</p>
+<p>（3）：我们找出了最小的价值数组，即得到了城市编号，那么，我们用该点去访问其他不确定的城市。</p>
+<p>（4）： 维护方法 :way[ k ] &gt; max( dis[ x ][ k ], way[ x ] ),&nbsp;&nbsp;max( dis[ x ][ k ], way[ x ] )表示，从起始点到x点所有路线的的最小化的最大距离和x到k的距离选出最大的和</p>
+<p>从起始点到k点部分路线的的最小化的最大距离比较，如果k点的从起始点到k点部分路线的的最小化的最大距离比从起始点到x点所有路线的的最小化的最大距离和x到k的距离选出最大的</p>
+<p>的大，说明k可以被优化，那么&nbsp;&nbsp;:way[ k ] =max( dis[ x ][ k ], way[ x ] ),&nbsp;&nbsp;max( dis[ x ][ k ], way[ x ] )。</p>
+<p>（5）：直到最后得到从起始点到其他所有点的最小化最大距离。</p>
+<p>( 代码就不加上注释了，只要上面的理解了，代码很容易理解 )</p>
+<p>这个题目在思维上还是有点难的，可以慢慢理解。</p>
+<hr />
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> #include &lt;iostream&gt;
+<span style="color: #008080;">  2</span> #include &lt;cstring&gt;
+<span style="color: #008080;">  3</span> #include &lt;algorithm&gt;
+<span style="color: #008080;">  4</span> #include &lt;cstdio&gt;
+<span style="color: #008080;">  5</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;">  6</span> #include &lt;cmath&gt;
+<span style="color: #008080;">  7</span> #include &lt;iomanip&gt;
+<span style="color: #008080;">  8</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;">  9</span> 
+<span style="color: #008080;"> 10</span> typedef <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> LL;
+</span><span style="color: #008080;"> 11</span> <span style="color: #0000ff;">#define</span> inf (1LL &lt;&lt; 30) - 1
+<span style="color: #008080;"> 12</span> <span style="color: #0000ff;">#define</span> rep(i,j,k) for(int i = (j); i &lt;= (k); i++)
+<span style="color: #008080;"> 13</span> <span style="color: #0000ff;">#define</span> rep__(i,j,k) for(int i = (j); i &lt; (k); i++)
+<span style="color: #008080;"> 14</span> <span style="color: #0000ff;">#define</span> per(i,j,k) for(int i = (j); i &gt;= (k); i--)
+<span style="color: #008080;"> 15</span> <span style="color: #0000ff;">#define</span> per__(i,j,k) for(int i = (j); i &gt; (k); i--)
+<span style="color: #008080;"> 16</span> 
+<span style="color: #008080;"> 17</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> N = <span style="color: #800080;">210</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 18</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> p_x[N];
+</span><span style="color: #008080;"> 19</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> p_y[N];
+</span><span style="color: #008080;"> 20</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> dis[N][N];
+</span><span style="color: #008080;"> 21</span> <span style="color: #0000ff;">bool</span><span style="color: #000000;"> vis[N];
+</span><span style="color: #008080;"> 22</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> way[N];
+</span><span style="color: #008080;"> 23</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> n,x,y;
+</span><span style="color: #008080;"> 24</span> 
+<span style="color: #008080;"> 25</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> init(){
+</span><span style="color: #008080;"> 26</span>     rep(i,<span style="color: #800080;">1</span>,n) rep(j,<span style="color: #800080;">1</span><span style="color: #000000;">,n){
+</span><span style="color: #008080;"> 27</span>         <span style="color: #0000ff;">if</span>(i == j) dis[i][j] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 28</span>         <span style="color: #0000ff;">else</span> dis[i][j] =<span style="color: #000000;"> inf;
+</span><span style="color: #008080;"> 29</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 30</span>     rep(i,<span style="color: #800080;">1</span>,n) vis[i] = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 31</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 32</span> 
+<span style="color: #008080;"> 33</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> input(){
+</span><span style="color: #008080;"> 34</span> 
+<span style="color: #008080;"> 35</span>     rep(i,<span style="color: #800080;">1</span><span style="color: #000000;">,n){
+</span><span style="color: #008080;"> 36</span>         cin &gt;&gt; p_x[i] &gt;&gt;<span style="color: #000000;"> p_y[i];
+</span><span style="color: #008080;"> 37</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 38</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 39</span> 
+<span style="color: #008080;"> 40</span> inline <span style="color: #0000ff;">double</span> fun_dis(<span style="color: #0000ff;">double</span> x1, <span style="color: #0000ff;">double</span> y1, <span style="color: #0000ff;">double</span> x2, <span style="color: #0000ff;">double</span><span style="color: #000000;"> y2){
+</span><span style="color: #008080;"> 41</span>     <span style="color: #0000ff;">return</span> sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 -<span style="color: #000000;"> y2));
+</span><span style="color: #008080;"> 42</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 43</span> 
+<span style="color: #008080;"> 44</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> calculate_dis(){
+</span><span style="color: #008080;"> 45</span> 
+<span style="color: #008080;"> 46</span>     rep(i,<span style="color: #800080;">1</span><span style="color: #000000;">,n){
+</span><span style="color: #008080;"> 47</span>         rep(j,<span style="color: #800080;">1</span><span style="color: #000000;">,n){
+</span><span style="color: #008080;"> 48</span>             <span style="color: #0000ff;">double</span> tmp_dis =<span style="color: #000000;"> fun_dis(p_x[i],p_y[i],p_x[j],p_y[j]);
+</span><span style="color: #008080;"> 49</span>             <span style="color: #0000ff;">if</span>( tmp_dis &lt;<span style="color: #000000;"> dis[i][j] )
+</span><span style="color: #008080;"> 50</span>                 dis[i][j] = dis[j][i] =<span style="color: #000000;"> tmp_dis;
+</span><span style="color: #008080;"> 51</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 52</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 53</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 54</span> 
+<span style="color: #008080;"> 55</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> dijkstra(){
+</span><span style="color: #008080;"> 56</span> 
+<span style="color: #008080;"> 57</span>     rep(i,<span style="color: #800080;">1</span>,n) way[i] = dis[<span style="color: #800080;">1</span><span style="color: #000000;">][i];
+</span><span style="color: #008080;"> 58</span>     vis[<span style="color: #800080;">1</span>] = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 59</span> 
+<span style="color: #008080;"> 60</span>     rep(i,<span style="color: #800080;">2</span><span style="color: #000000;">,n){
+</span><span style="color: #008080;"> 61</span> 
+<span style="color: #008080;"> 62</span>         <span style="color: #0000ff;">int</span> x = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 63</span>         <span style="color: #0000ff;">double</span> v =<span style="color: #000000;"> inf;
+</span><span style="color: #008080;"> 64</span> 
+<span style="color: #008080;"> 65</span>         rep(j,<span style="color: #800080;">1</span><span style="color: #000000;">,n){
+</span><span style="color: #008080;"> 66</span>             <span style="color: #0000ff;">if</span>(!vis[j] &amp;&amp; v &gt; way[j]) v = way[x =<span style="color: #000000;"> j];
+</span><span style="color: #008080;"> 67</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 68</span> 
+<span style="color: #008080;"> 69</span>         <span style="color: #0000ff;">if</span>(x == -<span style="color: #800080;">1</span>) <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 70</span>         vis[x] = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 71</span> 
+<span style="color: #008080;"> 72</span>         rep(k,<span style="color: #800080;">1</span><span style="color: #000000;">,n){
+</span><span style="color: #008080;"> 73</span>             <span style="color: #0000ff;">if</span>(!vis[k] &amp;&amp; way[k] &gt;<span style="color: #000000;"> max(way[x], dis[x][k])){
+</span><span style="color: #008080;"> 74</span>                 way[k] =<span style="color: #000000;"> max(way[x], dis[x][k]);
+</span><span style="color: #008080;"> 75</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 76</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 77</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 78</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 79</span> 
+<span style="color: #008080;"> 80</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+</span><span style="color: #008080;"> 81</span> 
+<span style="color: #008080;"> 82</span> 
+<span style="color: #008080;"> 83</span>     ios::sync_with_stdio(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 84</span>     cin.tie(<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 85</span> 
+<span style="color: #008080;"> 86</span>     <span style="color: #0000ff;">int</span> cnt = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 87</span>     <span style="color: #0000ff;">while</span>(cin &gt;&gt;<span style="color: #000000;"> n){
+</span><span style="color: #008080;"> 88</span>         <span style="color: #0000ff;">if</span>(n == <span style="color: #800080;">0</span>) <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 89</span> 
+<span style="color: #008080;"> 90</span> <span style="color: #000000;">        init();
+</span><span style="color: #008080;"> 91</span> <span style="color: #000000;">        input();
+</span><span style="color: #008080;"> 92</span> <span style="color: #000000;">        calculate_dis();
+</span><span style="color: #008080;"> 93</span> <span style="color: #000000;">        dijkstra();
+</span><span style="color: #008080;"> 94</span> 
+<span style="color: #008080;"> 95</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Scenario #</span><span style="color: #800000;">"</span> &lt;&lt; ++cnt &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 96</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Frog Distance = </span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #0000ff;">fixed</span> &lt;&lt; setprecision(<span style="color: #800080;">3</span>) &lt;&lt; way[<span style="color: #800080;">2</span>] &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 97</span>         cout &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 98</span> <span style="color: #000000;">    }   
+</span><span style="color: #008080;"> 99</span> 
+<span style="color: #008080;">100</span> <span style="color: #000000;">    getchar();getchar();
+</span><span style="color: #008080;">101</span> 
+<span style="color: #008080;">102</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">103</span> }</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,260 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++中的析构顺序和cosnt对象' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++中的析构顺序和cosnt对象</center></div><div class='banquan'>原文出处:本文由博客园博主子宇24提供。<br/>
+原文连接:https://www.cnblogs.com/dishengAndziyu/p/10906912.html</div><br>
+    <p align="left">1，当程序中存在多个对象的时候，如何确定这些对象的析构顺序？</p>
+<p align="left">&nbsp;</p>
+<p align="left">2，单个对象创建时构造函数的调用顺序（工程经验总结）：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，调用父类的构造过程；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，调用成员变量的构造函数（调用顺序与声明顺序相同）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，某个类的成员是其它类的对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，调用类自身的构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，析构函数与对应构造函数的调用顺序相反；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">3，多个对象析构时：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，构造顺序与析构顺序相反；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">4，构造与析构顺序实例分析：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Member
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> ms;
+</span><span style="color: #008080;"> 6</span>     
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 8</span>     Member(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> s)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">10</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Member(const char* s): %s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, s);
+</span><span style="color: #008080;">11</span>         
+<span style="color: #008080;">12</span>         ms =<span style="color: #000000;"> s;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">14</span>     
+<span style="color: #008080;">15</span>     ~<span style="color: #000000;">Member()
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">17</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">~Member(): %s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, ms);
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">    Member mA;
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    Member mB;
+</span><span style="color: #008080;">25</span>     
+<span style="color: #008080;">26</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">27</span>     Test() : mB(<span style="color: #800000;">"</span><span style="color: #800000;">mB</span><span style="color: #800000;">"</span>), mA(<span style="color: #800000;">"</span><span style="color: #800000;">mA</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">29</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Test()\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">31</span>     
+<span style="color: #008080;">32</span>     ~<span style="color: #000000;">Test()
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">34</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">~Test()\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">36</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">37</span> 
+<span style="color: #008080;">38</span> Member gA(<span style="color: #800000;">"</span><span style="color: #800000;">gA</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">39</span> 
+<span style="color: #008080;">40</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">42</span>     Test t;  <span style="color: #008000;">//</span><span style="color: #008000;"> gA
+</span><span style="color: #008080;">43</span>              <span style="color: #008000;">//</span><span style="color: #008000;"> mA
+</span><span style="color: #008080;">44</span>              <span style="color: #008000;">//</span><span style="color: #008000;"> mB
+</span><span style="color: #008080;">45</span>              <span style="color: #008000;">//</span><span style="color: #008000;"> Test()
+</span><span style="color: #008080;">46</span>              <span style="color: #008000;">//</span><span style="color: #008000;"> ...
+</span><span style="color: #008080;">47</span>              <span style="color: #008000;">//</span><span style="color: #008000;">~Test()
+</span><span style="color: #008080;">48</span>              <span style="color: #008000;">//</span><span style="color: #008000;"> mB
+</span><span style="color: #008080;">49</span>              <span style="color: #008000;">//</span><span style="color: #008000;"> mA
+</span><span style="color: #008080;">50</span>              <span style="color: #008000;">//</span><span style="color: #008000;"> gA</span>
+<span style="color: #008080;">51</span>     
+<span style="color: #008080;">52</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">53</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">5，对于栈对象和全局对象，类似于入栈与出栈的顺序，最后构造的对象最先析构；堆对象的析构发生在使用 delete 的时候，与 delete 的顺序相关；</p>
+<p align="left">&nbsp;&nbsp;</p>
+<p align="left">6，const 关键字能否修饰类的对象？如果可以，有什么特性？</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，const 关键字能够修饰对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，类也是用户自定义的数据类型，类是从 struct 进化而得到的一个全新关键字，struct 专门用来定义结构体，其定义的结构体在 C 语言中依旧是变量，既然是变量，就可以被 cosnt 所修饰；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，对应的，对象在某种角度也是变量，所以也可以被 const 修饰；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，const 修饰的对象为只读对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，这是唯一的可能性；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，只读对象的成员变量不允许被改变；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，对象就是由一系列的成员变量构成的，对象已经是只读的了，也就意味着成员变量是不允许被改变的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，只读对象是编译阶段的概念，运行时无效；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，只读对象起始还是可以被改变的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">7，C++ 中的 const 成员函数：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，const 对象只能调用 const 的员函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，因为 const 对象的 this 指针是底层常量，不能拷贝给非 const 的成员函数的 this 指针，因为后者的 this 是变量，这会改变 const *this 的属性，造成其指向的对象会被改变；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，const 成员函数中只能调用 const 成员函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，底层 const 指针不能拷贝给非 const 指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，const 成员函数中不能直接改写成员变量的值；</p>
+<p align="left">&nbsp; &nbsp; &nbsp; &nbsp;1，const 成员函数只能被 const 对象调用，而此时其成员函数也底层 const 的，不能修改底层 const 指针指向的变量；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，const 成员函数特殊的意义是被只读对象调用；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，底层 const 指针不能拷贝给非 const 指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">8，const 成员函数的定义：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，Type ClassName::function(Type p) const</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，声明之后，函数体之前；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，类中的函数声明与实际函数定义中都必须带 const 关键字；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">9，类的 const 函数初探编程实验：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> mi;
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> mj;
+</span><span style="color: #008080;"> 8</span> 
+<span style="color: #008080;"> 9</span>     Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> i);
+</span><span style="color: #008080;">10</span>     Test(<span style="color: #0000ff;">const</span> Test&amp;<span style="color: #000000;"> t);
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">int</span> getMi() <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">13</span> 
+<span style="color: #008080;">14</span> Test::Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> i)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">16</span>     mi =<span style="color: #000000;"> i;
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">18</span> 
+<span style="color: #008080;">19</span> Test::Test(<span style="color: #0000ff;">const</span> Test&amp;<span style="color: #000000;"> t)
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">21</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> mi = t.getMi(); getMi() 非常函时，t 是对象的常引用，t 这个对象代表的引用代表只读对象，只能调用 const 函数；</span>
+<span style="color: #008080;">22</span>     mi = t.mi;  <span style="color: #008000;">//</span><span style="color: #008000;"> 这个时候可以，mi 是私有的，能够通过点操作符来访问吗？不是说只有对象自己的成员函数才可以访问自己的成员变量吗？这就引出了本文10中的问题；</span>
+<span style="color: #008080;">23</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">24</span>     
+<span style="color: #008080;">25</span> <span style="color: #0000ff;">int</span> Test::getMi() <span style="color: #0000ff;">const</span> 
+<span style="color: #008080;">26</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">27</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> mi = 2; 这里出错，不能够修饰 mi 的值；</span>
+<span style="color: #008080;">28</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> mi;
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">30</span> 
+<span style="color: #008080;">31</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">33</span>     Test t(<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">34</span>     
+<span style="color: #008080;">35</span>     <span style="color: #0000ff;">const</span> Test t1(<span style="color: #800080;">1</span>);  <span style="color: #008000;">//</span><span style="color: #008000;"> 实际工程开发中，并不一定每一个成员函数都是 const 的，这就意味着很少使用 const 对象，所以 一般情况都不用定义 const 成员函数；</span>
+<span style="color: #008080;">36</span>     
+<span style="color: #008080;">37</span>     t1.mj = <span style="color: #800080;">1000</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 不能给只读变量 mj 赋值；const 修饰对象后，得到只读对象，其对应的成员变量值是不可以被改变的；只读变量：编译阶段不能出现在赋值符号左边，运行时能够改变；</span>
+<span style="color: #008080;">38</span>                    
+<span style="color: #008080;">39</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">t.getMi() = %d\n</span><span style="color: #800000;">"</span>, t.getMi());  <span style="color: #008000;">//</span><span style="color: #008000;"> 编译器显示 getMi() 是不可以被调用的，因为这个时候 t 是只读对象，但是 getMi() 这个时候不是 const 函数，加上后则可以了；</span>
+<span style="color: #008080;">40</span>     
+<span style="color: #008080;">41</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">42</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">10，成员函数和成员变量都是隶属于具体对象的吗？</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，每一个对象都拥有自己的一套成员变量，但是所有的对象共享一套成员函数；</p>
+<p align="left">&nbsp;</p>
+<p align="left">11，从面向对象的角度：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，对象由属性（成员变量）和方法（成员函数）构成；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 从程序运行的角度：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; 1，对象由数据和函数构成：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，数据可以位于栈、堆和全局数据区；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，函数只能位于代码段；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，代码段是只读的，在程序运行过程中是不可以被改变的，当编译器将最终的可执行程序编译好之后，代码段就被确定了，不可以被该；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，对象可以动态的创建、动态的删除，对于数据而言，可以做到，栈数据、堆数据都可以动态的创建出来、动态的删除掉，但对于代码不可能；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，在面相对象里面，由于程序的特性，天生的决定了成员函数是不能每个对象都有一套的，只可能是所有的对象共享一套成员函数，因为代码段是不可以动态的添加和删除的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">12，结论：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，每一个对象拥有自己独立的属性（成员变量）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，所有的对象共享类的方法（成员函数）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，方法能够直接访问对对象的属性；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，方法中的隐藏参数 this 用于指代当前对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，所有的对象都可以调用一套成员函数，函数本身如何知道是那个对象调用的呢？</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，成员函数（和普通函数区别在于其多了一个隐藏的参数 this）分辨不同对象通过 this 指针来分辨；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，this 指针通过接受不同的对象传来的地址来给成员函数分辨对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，所以 const 函数只能调用 const 函数是因为要传递个被调用对象的 this 指针，但是调用函数的底层 const this 指针只能拷贝给被调用对象的底层 const this 指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">13，成员函数的秘密编程实验：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> mi;
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> mj;
+</span><span style="color: #008080;"> 8</span>     Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> i);
+</span><span style="color: #008080;"> 9</span>     Test(<span style="color: #0000ff;">const</span> Test&amp;<span style="color: #000000;"> t);
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> getMi();
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">void</span> print();  <span style="color: #008000;">//</span><span style="color: #008000;"> 加这个函数是为了证明所有对象共用一套成员函数；</span>
+<span style="color: #008080;">12</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">13</span> 
+<span style="color: #008080;">14</span> Test::Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> i)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">16</span>     mi =<span style="color: #000000;"> i;
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">18</span> 
+<span style="color: #008080;">19</span> Test::Test(<span style="color: #0000ff;">const</span> Test&amp;<span style="color: #000000;"> t)
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">21</span>     mi = t.mi;  <span style="color: #008000;">//</span><span style="color: #008000;"> 成员函数可以直接访问成员变量，因此拷贝构造函数这个特殊的成员函数就可以直接访问对象的成员变量，所以这里直接访问了 t 这个引用所指代的对象的成员变量是完全合法的；成员函数只有一套，它能直接访问任何所属类对象的成员变量，当然被调用时只传递一个对象的地址；</span>
+<span style="color: #008080;">22</span>                 
+<span style="color: #008080;">23</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">24</span>     
+<span style="color: #008080;">25</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> Test::getMi()
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">27</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> mi;
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">29</span> 
+<span style="color: #008080;">30</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Test::print()
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">32</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">this = %p\n</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">this</span><span style="color: #000000;">);
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">34</span> 
+<span style="color: #008080;">35</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">36</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">37</span>     Test t1(<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">38</span>     Test t2(<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">39</span>     Test t3(<span style="color: #800080;">3</span><span style="color: #000000;">);
+</span><span style="color: #008080;">40</span>     
+<span style="color: #008080;">41</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">t1.getMi() = %d\n</span><span style="color: #800000;">"</span>, t1.getMi());  <span style="color: #008000;">//</span><span style="color: #008000;"> 1</span>
+<span style="color: #008080;">42</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">&amp;t1 = %p\n</span><span style="color: #800000;">"</span>, &amp;t1);  <span style="color: #008000;">//</span><span style="color: #008000;"> t1 的地址</span>
+<span style="color: #008080;">43</span>     t1.print();  <span style="color: #008000;">//</span><span style="color: #008000;"> t1 的地址</span>
+<span style="color: #008080;">44</span>     
+<span style="color: #008080;">45</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">t2.getMi() = %d\n</span><span style="color: #800000;">"</span>, t2.getMi());  <span style="color: #008000;">//</span><span style="color: #008000;"> 2</span>
+<span style="color: #008080;">46</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">&amp;t2 = %p\n</span><span style="color: #800000;">"</span>, &amp;t2);  <span style="color: #008000;">//</span><span style="color: #008000;"> t2 的地址</span>
+<span style="color: #008080;">47</span>     t2.print();  <span style="color: #008000;">//</span><span style="color: #008000;"> t2 的地址</span>
+<span style="color: #008080;">48</span>     
+<span style="color: #008080;">49</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">t3.getMi() = %d\n</span><span style="color: #800000;">"</span>, t3.getMi());  <span style="color: #008000;">//</span><span style="color: #008000;"> 3</span>
+<span style="color: #008080;">50</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">&amp;t3 = %p\n</span><span style="color: #800000;">"</span>, &amp;t3);  <span style="color: #008000;">//</span><span style="color: #008000;"> t3 的地址</span>
+<span style="color: #008080;">51</span>     t3.print();  <span style="color: #008000;">//</span><span style="color: #008000;"> t3 的地址</span>
+<span style="color: #008080;">52</span>     
+<span style="color: #008080;">53</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">54</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，实验说明：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，在类的成员函数当中，有一个隐含的参数，它是一个指针，并且这个指针的值就是调用这个函数所对应的对象的地址；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，也就是 this 指针指向当前对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，成员函数有一个隐含的参数，这个参数是一个 this 指针，其指向当前对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4，每一个对象都有一套自己的成员变量，对象和对象之间的成员变量是独立的、不同的；但是每一个对象都共享一个类的成员函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">14，小结：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，对象的析构顺序与构造顺序相反；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，const 关键字能够修饰对象，得到只读对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，只读对象只能调用 const 成员函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，所有对象共享类的成员函数；</p>
+<p>&nbsp;&nbsp;&nbsp; 5，隐藏的 this 指针用于表示当前对象；</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,638 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修多态' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>多态</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11602813.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#多态的概念和意义">1. 多态的概念和意义</a></li>
+        <li><a href="#c多态的实现原理">2. C++多态的实现原理</a></li>
+        <li><a href="#构造析构与虚函数">3. 构造析构与虚函数</a></li>
+        <li><a href="#c对象模型分析">4. C++对象模型分析</a><ul>
+        <li><a href="#继承对象模型">继承对象模型</a></li>
+        <li><a href="#多态对象模型">多态对象模型</a></li>
+        </ul></li>
+        <li><a href="#用c实现面向对象展现继承与多态本质">5. 用C实现面向对象，展现继承与多态本质</a><ul>
+        <li><a href="#代码实现">代码实现</a></li>
+        <li><a href="#总体设计思路">总体设计思路</a></li>
+        <li><a href="#封装设计分析">封装设计分析</a></li>
+        <li><a href="#继承设计分析">继承设计分析</a></li>
+        <li><a href="#多态设计分析">多态设计分析</a></li>
+        </ul></li>
+        </ul>
+    </div>
+</div>
+<h1 id="多态的概念和意义">1. 多态的概念和意义</h1>
+<hr />
+<p>回忆一下上一节继承（二）函数重写示例代码中的how_to_print()，当时我们所期望的结果是</p>
+<ul>
+<li>根据实际的对象类型判断如何调用重写函数</li>
+<li>父类指针（引用）指向
+<ul>
+<li>父类对象则调用父类中定义的函数</li>
+<li>子类对象则调用子类中定义的重写函数</li>
+</ul></li>
+</ul>
+<p>要实现上述期望结果，需要用到多态的知识。</p>
+<hr />
+<p><font color=red>多态是面向对象理论中的概念</font>，其含义为</p>
+<ul>
+<li><font color=blue>根据实际的对象类型决定函数调用的具体目标</font></li>
+<li><font color=magenta>同样的调用语句在实际运行时有多种不同的表现形态</font></li>
+</ul>
+<p><img src="./images/多态0.png" /></p>
+<p><strong>C++语言直接支持多态的概念</strong></p>
+<ul>
+<li>通过使用<font color=blue>virtual</font>关键字对多态进行支持</li>
+<li>被virtual声明的函数叫做<font color=orange>虚函数</font></li>
+<li><font color=red>虚函数被重写后可表现出多态的特性</font></li>
+</ul>
+<p><strong>静态联编 VS 动态联编</strong></p>
+<ul>
+<li>静态联编：在<font color=irange>程序编译期间就能确定</font>具体的函数调用，如函数重载</li>
+<li>动态联编：在<font color=irange>程序运行期间才能确定</font>具体的函数调用，如重写虚函数</li>
+</ul>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Parent
+{
+public:
+    virtual void print()
+    {
+        cout &lt;&lt; &quot;I&#39;m Parent.&quot; &lt;&lt; endl;
+    }
+};
+
+class Child : public Parent
+{
+public:
+    /* 重写父类虚函数，改变打印语句行为 */
+    void print()
+    {
+        cout &lt;&lt; &quot;I&#39;m Child.&quot; &lt;&lt; endl;
+    }
+};
+
+void how_to_print(Parent *p)
+{
+    p-&gt;print();        // 动态联编，展现多态的行为
+}
+
+int main()
+{
+    Parent p;
+    Child c;
+
+    p.print();         // 静态联编
+    c.print();         // 静态联编
+
+    how_to_print(&amp;p);  // 动态联编，Expected: I&#39;m Parent
+    how_to_print(&amp;c);  // 动态联编，Expected: I&#39;m Child
+
+    return 0;
+}</code></pre>
+<p><img src="./images/多态1.png" /></p>
+<p><strong>多态的意义</strong></p>
+<ul>
+<li>在程序运行过程中展现出<font color=blue>动态的特性</font></li>
+<li><font color=red>函数重写只可能发生在父类与子类之间，且必须多态实现，否则没有意义</font></li>
+<li>多态是<font color=magenta>面向对象组件化程序设计</font>的基础特性</li>
+</ul>
+<p><strong>示例代码：江湖恩怨</strong></p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Boss
+{
+public:
+    int fight()
+    {
+        int ret = 10;
+
+        cout &lt;&lt; &quot;Boss::fight() : &quot; &lt;&lt; ret &lt;&lt; endl;
+
+        return ret;
+    }
+};
+
+class Master
+{
+public:
+    virtual int eightSwordKill()
+    {
+        int ret = 8;
+
+        cout &lt;&lt; &quot;Master::eightSwordKill() : &quot; &lt;&lt; ret &lt;&lt; endl;
+
+        return ret;
+    }
+};
+
+class NewMaster : public Master
+{
+public:
+    int eightSwordKill()
+    {
+        int ret = Master::eightSwordKill() * 2;
+
+        cout &lt;&lt; &quot;NewMaster::eightSwordKill() : &quot; &lt;&lt; ret &lt;&lt; endl;
+
+        return ret;
+    }
+};
+
+void field_pk(Master *master, Boss *boss)
+{
+    int k = master-&gt;eightSwordKill();
+    int b = boss-&gt;fight();
+
+    if( k &lt; b )
+    {
+        cout &lt;&lt; &quot;Master is killed...&quot; &lt;&lt; endl;
+    }
+    else
+    {
+        cout &lt;&lt; &quot;Boss is killed...&quot; &lt;&lt; endl;
+    }
+
+    cout &lt;&lt; endl;
+}
+
+int main()
+{
+    Boss boss;
+    Master master;
+    NewMaster newMaster;
+
+    cout &lt;&lt; &quot;Master vs Boss&quot; &lt;&lt; endl;
+
+    field_pk(&amp;master, &amp;boss);
+
+    cout &lt;&lt; &quot;NewMaster vs Boss&quot; &lt;&lt; endl;
+
+    field_pk(&amp;newMaster, &amp;boss);
+
+    return 0;
+}</code></pre>
+<p><img src="./images/多态2.png" /></p>
+<h1 id="c多态的实现原理">2. C++多态的实现原理</h1>
+<ul>
+<li>当类中声明虚函数时，编译器会在类中生成一个<font color=blue>虚函数表</font></li>
+<li>虚函数表是一个<font color=magenta>存储成员函数地址</font>的数据结构，该数据结构<font color=magenta>由编译器自动生成与维护</font></li>
+<li><font color=irange>虚函数会被编译器放入虚函数表中</font></li>
+<li><font color=red>存在虚函数时，每个类对象中都有一个指向虚函数表的指针</font></li>
+<li><font color=orange>虚函数表指针位于类对象的起始位置，再往后才是成员变量</font></li>
+</ul>
+<h1 id="构造析构与虚函数">3. 构造析构与虚函数</h1>
+<ul>
+<li><font color=red>构造函数不可能成为虚函数，构造函数中不可能发生多态行为</font>
+<ul>
+<li><font color=blue>在构造函数执行结束后，虚函数表指针才会被正确的初始化</font></li>
+</ul></li>
+<li><font color=magenta>析构函数可以成为虚函数，析构函数中不可能发生多态行为</font>
+<ul>
+<li><font color=blue>在析构函数执行时，虚函数表指针已经被销毁</font></li>
+</ul></li>
+<li><font color=orange>建议在设计类时将析构函数声明为虚函数</font></li>
+</ul>
+<pre><code>/*
+ * 1、构造函数不可能成为虚函数，析构函数可以并且建议设计为虚函数
+ * 2、构造函数和析构函数中调用虚函数不能发生多态行为，只会调用当前类中定义的函数版本
+*/
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Base
+{
+public:
+    Base()
+    {
+        cout &lt;&lt; &quot;Base()&quot; &lt;&lt; endl;
+        func();
+    }
+
+    virtual void func()
+    {
+        cout &lt;&lt; &quot;Base::func()&quot; &lt;&lt; endl;
+    }
+
+    virtual ~Base()
+    {
+        func();
+        cout &lt;&lt; &quot;~Base()&quot; &lt;&lt; endl;
+    }
+};
+
+class Derived : public Base
+{
+public:
+    Derived()
+    {
+        cout &lt;&lt; &quot;Derived()&quot; &lt;&lt; endl;
+        func();
+    }
+
+    virtual void func()
+    {
+        cout &lt;&lt; &quot;Derived::func()&quot; &lt;&lt; endl;
+    }
+
+    ~Derived()
+    {
+        func();
+        cout &lt;&lt; &quot;~Derived()&quot; &lt;&lt; endl;
+    }
+};
+
+int main()
+{
+    Base *p = new Derived();
+
+    cout &lt;&lt; endl;
+
+    delete p;
+
+    return 0;
+}</code></pre>
+<p><img src="./images/多态3.png" /></p>
+<h1 id="c对象模型分析">4. C++对象模型分析</h1>
+<h2 id="继承对象模型">继承对象模型</h2>
+<p><strong>在C++编译器的内部，类可以理解为结构体</strong></p>
+<ul>
+<li>在内存中class依旧可以看作变量的集合</li>
+<li><font color=red>class与struct遵循相同的内存对齐规则</font></li>
+<li>class中的成员函数与成员变量的分开存放的</li>
+</ul>
+<p><strong>程序运行时，类对象退化为结构体的形式</strong></p>
+<ul>
+<li>所有成员变量<font color=irange>在内存中依次排布</font></li>
+<li>成员变量间<font color=orange>可能存在内存空隙（结构体字节对齐）</font></li>
+<li><font color=magenta>可以通过内存地址直接访问成员变量</font></li>
+<li><font color=blue>访问权限关键字在运行时失效</font></li>
+</ul>
+<p><strong>子类是由父类成员（包括父类虚函数表指针）叠加子类新成员得到的</strong></p>
+<p><img src="./images/多态4.png" /></p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+using namespace std;
+
+class Demo
+{
+protected:
+    int mi;
+    int mj;
+public:
+    virtual void print()
+    {
+        cout &lt;&lt; &quot;mi = &quot; &lt;&lt; mi &lt;&lt; &quot;, &quot;
+             &lt;&lt; &quot;mj = &quot; &lt;&lt; mj &lt;&lt; endl;
+    }
+};
+
+class Derived : public Demo
+{
+private:
+    int mk;
+public:
+    Derived(int i, int j, int k)
+    {
+        mi = i;
+        mj = j;
+        mk = k;
+    }
+
+    void print()
+    {
+        cout &lt;&lt; &quot;mi = &quot; &lt;&lt; mi &lt;&lt; &quot;, &quot;
+             &lt;&lt; &quot;mj = &quot; &lt;&lt; mj &lt;&lt; &quot;, &quot;
+             &lt;&lt; &quot;mk = &quot; &lt;&lt; mk &lt;&lt; endl;
+    }
+};
+
+struct Test
+{
+    void *pVTable;
+    int mi;
+    int mj;
+    int mk;
+};
+
+int main()
+{
+    cout &lt;&lt; &quot;sizeof(Demo) = &quot; &lt;&lt; sizeof(Demo) &lt;&lt; endl;        //sizeof(Demo) = 12，1个虚函数表指针 + int mi + int mj
+    cout &lt;&lt; &quot;sizeof(Derived) = &quot; &lt;&lt; sizeof(Derived) &lt;&lt; endl;  //sizeof(Derived) = 16，1个虚函数表指针 + int mi + int mj + int mk
+
+    Derived d(1, 2, 3);
+    Test *p = reinterpret_cast&lt;Test *&gt;(&amp;d);
+
+    cout &lt;&lt; endl;
+    cout &lt;&lt; &quot;Before changing ...&quot; &lt;&lt; endl;
+    d.print();
+
+    /*
+     * 通过p指针改变了d对象中成员变量的值，说明Derived的内存模型与struct Test相同：
+     *   1.起始位置为虚函数表指针
+     *   2.再往后为父类成员叠加子类新成员
+    */
+    p-&gt;mi = 4;
+    p-&gt;mj = 5;
+    p-&gt;mk = 6;
+
+    cout &lt;&lt; endl;
+    cout &lt;&lt; &quot;After changing ...&quot; &lt;&lt; endl;
+    d.print();
+
+    return 0;
+}</code></pre>
+<p><img src="./images/多态5.png" /></p>
+<h2 id="多态对象模型">多态对象模型</h2>
+<p><strong>父类子类虚函数表</strong></p>
+<pre><code>class Demo
+{
+protected:
+    int mi;
+    int mj;
+public:
+    virtual int add(int value)
+    {
+        return mi + mj + value;
+    }
+};
+
+class Derived : public Demo
+{
+private:
+    int mk;
+public:
+    virtual int add(int value)
+    {
+        return mk + value;
+    }
+};</code></pre>
+<p><img src="./images/多态6.png" /></p>
+<p><strong>程序运行时展现多态行为</strong></p>
+<pre><code>void run(Demo *p, int v)
+{
+    p-&gt;add(v);
+}</code></pre>
+<p><img src="./images/多态7.png" /></p>
+<ul>
+<li>编译器确认add()是否为虚函数
+<ul>
+<li>Yes：编译器在具体对象VPTR所指向的虚函数表中查找add()的地址</li>
+<li>No：编译器直接可以确定add()成员函数的地址</li>
+</ul></li>
+</ul>
+<h1 id="用c实现面向对象展现继承与多态本质">5. 用C实现面向对象，展现继承与多态本质</h1>
+<h2 id="代码实现">代码实现</h2>
+<p><strong>c_oop.h</strong></p>
+<pre><code>#ifndef _C_OOP_H_
+#define _C_OOP_H_
+
+typedef void Base;
+typedef void Derived;
+
+Base *Base_Create(int i, int j);
+int Base_GetI(Base *pThis);
+int Base_GetJ(Base *pThis);
+int Base_Add(Base *pThis, int value);
+void Base_Free(Base *pThis);
+
+Derived *Derived_Create(int i, int j, int k);
+int Derived_GetK(Derived *pThis);
+int Derived_Add(Derived *pThis, int value);
+void Derived_Free(Derived *pThis);
+
+#endif</code></pre>
+<p><strong>c_oop.c</strong></p>
+<pre><code>#include &quot;c_oop.h&quot;
+#include &lt;stdlib.h&gt;
+
+struct VTabel
+{
+    int (*pAdd)(void *, int);
+};
+
+struct ClassBase
+{
+    struct VTabel *vptr;
+    int mi;
+    int mj;
+};
+
+struct ClassDerived
+{
+    struct ClassBase base;
+    int mk;
+};
+
+static int Base_Virtual_Add(Base *pThis, int value);
+static Derived_Virtual_Add(Derived *pThis, int value);
+
+static struct VTabel Base_vtab =
+{
+    Base_Virtual_Add
+};
+
+static struct VTabel Derived_vtab =
+{
+    Derived_Virtual_Add
+};
+
+
+Base *Base_Create(int i, int j)
+{
+    struct ClassBase *ret = (struct ClassBase *)malloc(sizeof(struct ClassBase));
+
+    if (ret != NULL)
+    {
+        ret-&gt;vptr = &amp;Base_vtab;
+        ret-&gt;mi = i;
+        ret-&gt;mj = j;
+    }
+
+    return ret;
+}
+
+int Base_GetI(Base *pThis)
+{
+    struct ClassBase *pBase = (struct ClassBase *)pThis;
+
+    return pBase-&gt;mi;
+}
+
+int Base_GetJ(Base *pThis)
+{
+    struct ClassBase *pBase = (struct ClassBase *)pThis;
+
+    return pBase-&gt;mj;
+}
+
+static int Base_Virtual_Add(Base *pThis, int value)
+{
+    struct ClassBase *pBase = (struct ClassBase *)pThis;
+
+    return pBase-&gt;mi + pBase-&gt;mj + value;
+}
+
+int Base_Add(Base *pThis, int value)
+{
+    struct ClassBase *pBase = (struct ClassBase *)pThis;
+
+    return pBase-&gt;vptr-&gt;pAdd(pThis, value);
+}
+
+void Base_Free(Base *pThis)
+{
+    if (pThis != NULL)
+    {
+        free(pThis);
+    }
+}
+
+
+Derived *Derived_Create(int i, int j, int k)
+{
+    struct ClassDerived *ret = (struct ClassDerived *)malloc(sizeof(struct ClassDerived));
+
+    if (ret != NULL)
+    {
+        ret-&gt;base.vptr = &amp;Derived_vtab;  //关联子类对象和子类虚函数表
+        ret-&gt;base.mi = i;
+        ret-&gt;base.mj = j;
+        ret-&gt;mk = k;
+    }
+
+    return ret;
+}
+
+int Derived_GetK(Derived *pThis)
+{
+    struct ClassDerived *pDerived = (struct ClassDerived *)pThis;
+
+    return pDerived-&gt;mk;
+}
+
+static Derived_Virtual_Add(Derived *pThis, int value)
+{
+    struct ClassDerived *pDerived = (struct ClassDerived *)pThis;
+
+    return pDerived-&gt;mk + value;
+}
+
+int Derived_Add(Derived *pThis, int value)
+{
+    struct ClassDerived *pDerived = (struct ClassDerived *)pThis;
+
+    return pDerived-&gt;base.vptr-&gt;pAdd(pThis, value);
+}</code></pre>
+<p><strong>main.c</strong></p>
+<pre><code>#include &quot;c_oop.h&quot;
+#include &lt;stdio.h&gt;
+
+void run(Base *p, int v)
+{
+    int r = Base_Add(p, v);
+
+    printf(&quot;r = %d\n&quot;, r);
+}
+
+int main()
+{
+    Base *pb = Base_Create(1, 2);
+    Derived *pd = Derived_Create(3, 4, 5);
+
+    printf(&quot;pb-&gt;Add(3) = %d\n&quot;, Base_Add(pb, 3));
+    printf(&quot;pd-&gt;Add(3) = %d\n&quot;, Derived_Add(pd, 3));
+
+    run(pb, 3);
+    run(pd, 3);
+
+    Base_Free(pb);
+    Base_Free(pd);
+
+    return 0;
+}</code></pre>
+<p><img src="./images/多态8.png" /></p>
+<h2 id="总体设计思路">总体设计思路</h2>
+<p><font color=red><strong>面向对象程序最关键的地方在于必须能够表现三大特性：封装，继承，多态！</strong></font></p>
+<ul>
+<li><font color=blue>封装指的是类中的敏感数据在外界是不能访问的</font></li>
+<li><font color=magenta>继承指的是可以对已经存在的类进行代码复用，并使得类之间存在父子关系</font></li>
+<li><font color=orange>多态指的是相同的调用语句可以产生不同的调用结果</font></li>
+</ul>
+<p>因此，如果希望用C语言完成面向对象的程序，那么必须实现这三个特性；<br />
+否则，最多只算得上基于对象的程序（程序中能够看到对象的影子，但是不完全具备面向对象的三大特性）。</p>
+<h2 id="封装设计分析">封装设计分析</h2>
+<p><font color=red>通过<code>void*</code>指针保证具体的结构体成员不能在外界被访问，以此模拟C++中private和protected。</font>因此，在头文件中定义了如下的语句：</p>
+<pre><code>typedef void Base;
+typedef void Derived;</code></pre>
+<p>用<code>Base*</code>指针和<code>Derived*</code>指针指向具体的对象时，无法访问对象中的成员变量，这样就达到了“外界无法访问类中私有成员” 的封装效果！</p>
+<h2 id="继承设计分析">继承设计分析</h2>
+<p>继承的本质是父类成员与子类成员的叠加，所以在用C语言写面向对象程序的时候，可以直接考虑<font color=magenta>结构体成员的叠加</font>。<br />
+代码中的实现直接将struct ClassBase base作为struct ClassDerived的第一个成员，以此表现两个自定义数据类型间的继承关系，所以有了下面的代码：</p>
+<pre><code>struct ClassBase
+{
+    struct VTabel *vptr;
+    int mi;
+    int mj;
+};
+
+struct ClassDerived
+{
+    struct ClassBase base;
+    int mk;
+};</code></pre>
+<h2 id="多态设计分析">多态设计分析</h2>
+<p>多态在C++中是通过虚函数表完成的，而虚函数表是C++编译器自主产生和维护的数据结构。因此，接下来要解决的问题就是如何在C语言中自定义虚函数表。<br />
+<font color=orange>通过结构体变量模拟C++中的虚函数表</font>是比较理想的一种选择，所以有了下面的代码：</p>
+<pre><code>struct VTabel
+{
+    int (*pAdd)(void *, int);
+};</code></pre>
+<p>有了类型后就可以定义实际的虚函数表了，<font color=irange>在C语言中用具有文件作用域的全局变量表示实际的虚函数表是最合适的</font>，因此有了下面的代码：</p>
+<pre><code>static int Base_Virtual_Add(Base *pThis, int value);
+static Derived_Virtual_Add(Derived *pThis, int value);
+
+static struct VTabel Base_vtab =
+{
+    Base_Virtual_Add
+};
+
+static struct VTabel Derived_vtab =
+{
+    Derived_Virtual_Add
+};</code></pre>
+<p><font color=red>每个对象中都拥有一个指向虚函数表的指针，而所有父类对象都指向Base_vtab，所有子类对象都指向Derived_vtab。</font><br />
+当一切就绪后，实际调用虚函数的过程就是通过虚函数表中的对应指针来完成的。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

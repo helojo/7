@@ -1,0 +1,81 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[NOI2002] 贪吃的九头蛇' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[NOI2002] 贪吃的九头蛇</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/10913030.html</div><br>
+    <p>考虑任意一种划给大头的方案，两端的都给了大头(bel=1)的边产生难受值，剩下n-k个果子分给m-1个头，当m-1=1时，两端都给了这个小头也产生难受值；而m-1&gt;1的情况要好看的多，贪心的，因为未划分的果子构成一个森林，重新计算这些果子在所在树中的深度，把果子按深度排序，前m-1个个分别划分，剩下的节点任意分配，只需要保证与父亲不同即可，显然按这种分配方法能做到“零难受”。</p>
+<p>换而言之，当m=2时只有两端分配不同才不会有难受值(废话！)；否则，只有两端都分配给了1(大头)才会有难受值。然后就能写dp了，设f[x,0/1]表示x子树中，x是否划分给了1的最小难受值之和。</p>
+<p><span class="math display">\[
+f[x,0]=\begin{cases}
+    +\infty &amp;x\text{是最大值点}\\
+    \sum_{x\to y} \min(f[y,0]+len_{x\to y},f[y,1]) &amp;m=2\\
+    \sum_{x\to y} \min(f[y,0],f[y,1]) &amp;m&gt;1
+\end{cases}\\
+f[x,1]=\sum_{x\to y} \min(f[y,0],f[y,1]+len_{x\to y})
+\]</span></p>
+<p>似乎很可信的样子……可行个喘喘，怎么着也得加一位表示子树内已经分配给1的节点总数吧……反正不再列式子了（光速逃</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N=310;
+
+int n,m,k;
+int head[N],to[N&lt;&lt;1],len[N&lt;&lt;1],lst[N&lt;&lt;1];
+int siz[N],f[N][N][2],tmp[N][2];
+
+void ins(int x,int y,int w) {
+    static int cnt=0;
+    to[++cnt]=y,len[cnt]=w,lst[cnt]=head[x],head[x]=cnt;
+    to[++cnt]=x,len[cnt]=w,lst[cnt]=head[y],head[y]=cnt;
+}
+void dfs(int x,int pa) {
+    siz[x]=1;
+    memset(f[x],0x3f,sizeof f[x]);
+    f[x][0][0]=f[x][1][1]=0;
+    for(int i=head[x]; i; i=lst[i]) if(to[i]!=pa) {
+        int y=to[i];
+        dfs(y,x); siz[x]+=siz[y];
+        memcpy(tmp,f[x],sizeof f[x]);
+        memset(f[x],0x3f,sizeof f[x]);
+        for(int s=0; s&lt;=k&amp;&amp;s&lt;=siz[x]; ++s) 
+        for(int t=0; t&lt;=s&amp;&amp;t&lt;=siz[y]; ++t) {
+            f[x][s][0]=min(f[x][s][0],min(f[y][t][0]+(m==2)*len[i],f[y][t][1])+tmp[s-t][0]);
+            f[x][s][1]=min(f[x][s][1],min(f[y][t][0],f[y][t][1]+len[i])+tmp[s-t][1]);
+        }
+    }
+}
+
+int main() {
+    scanf(&quot;%d%d%d&quot;,&amp;n,&amp;m,&amp;k);
+    for(int x,y,w,i=n; --i; ) {
+        scanf(&quot;%d%d%d&quot;,&amp;x,&amp;y,&amp;w);
+        ins(x,y,w);
+    }
+    if(m-1+k&gt;n) {
+        puts(&quot;-1&quot;);
+        return 0;
+    }
+    dfs(1,0);
+    printf(&quot;%d\n&quot;,f[1][k][1]);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

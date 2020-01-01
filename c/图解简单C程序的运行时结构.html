@@ -1,0 +1,51 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修图解简单C程序的运行时结构' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>图解简单C程序的运行时结构</center></div><div class='banquan'>原文出处:本文由博客园博主张以诺提供。<br/>
+原文连接:https://www.cnblogs.com/enochzzg/p/10693530.html</div><br>
+    <p>程序在内存中的存储分为三个区域，分别是动态数据区、静态数据区和代码区。函数存储在代码区，全局变量以及静态变量存储在静态数据区，而在程序执行的时候才会在动态数据区产生数据。程序执行的本质就是代码区的指令不断执行，驱使动态数据区和静态数据区产生数据变化。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-c24671040d941697.jpg" alt="图片发自简书App" /></p>
+<p>代码区与动态数据区由三个寄存器控制，分别是eip、ebp和esp。eip指向代码区下一个要执行的指令，ebp与esp分别指向动态数据区的栈底和栈顶。初始情况下eip默认指向main函数的第一条指令，esp、ebp指向的位置由程序加载时内核的设置决定。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-faf83181c96ac4f5.jpg" alt="图片发自简书App" /></p>
+<p>我们看一下这段代码如何执行的，在执行第一条指令时，考虑到函数调用的问题，ebp会先把当前指向的地址记录到栈中，方便以后返回来继续执行。把地址压进栈时，esp就会自动往栈顶方向移动。说到这里，为避免混淆先科普一下什么是栈顶和栈底，栈只允许在一端做插入和删除操作，这一端就叫栈顶，而另一端叫做栈底，图中下方叫栈顶，上方叫栈底。esp永远在栈顶，也就是图的最下方。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-f03b140e2a1301b4.jpg" alt="图片发自简书App" /></p>
+<p>由于esp指向的地址已经被记录，那么它就被空闲出来了。现在我们开始构建main函数的栈，空闲的esp帮忙看着main函数的栈底。这个时候esp与ebp是重叠的。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-e83b5159644af615.jpg" alt="图片发自简书App" /></p>
+<p>eip继续指向下一条指令，到了局部变量i的初始化，这里将i赋值为4，就将i的初始值压到栈中，esp继续往栈顶移动。下一条指令与本条相同，将局部变量j也压入栈中，如图所示。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-ef7c1fea34aefd80.jpg" alt="图片发自简书App" /></p>
+<p>接下来调用了fun函数，虽然fun函数是独立的函数，但是由于是在main函数中调用的，所以依然将数据压至main函数的栈中。fun函数的传入参数为i、j，但是入栈的顺序正好相反，b先入栈，然后a被压入栈中，如图所示。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-d8d754846b2cb81f.jpg" alt="图片发自简书App" /></p>
+<p>接下来要跳转到fun函数了，在跳转之前，我们要先给fun函数的返回值留个位置，因为要赋值给局部变量m的。然后再将fun函数的返回地址压入栈中，方便执行完fun函数后能继续往下执行。最后再把ebp当前的地址值压入栈中，此时ebp指向的是main函数的栈底（如果这里不做保存，fun函数执行完ebp就回不去了）。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-458d4d13513dba5d.jpg" alt="图片发自简书App" /></p>
+<p>接下来就正式进入了fun函数，像第一次保存完地址值那样，ebp又被闲置了，所以让ebp守住fun函数的栈底。而局部变量b与c的赋值就不再多说，与main函数的执行过程相同，当走到了return时，将计算出的结果赋值写入到刚空出的返回值那里。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-f6e993a0475a0ed1.jpg" alt="图片发自简书App" /></p>
+<p>此时的fun函数就执行完毕了，我们要恢复main函数调用fun函数的现场，继续往下执行，要想往下执行，必须将ebp回到main函数的栈底，并且找到fun函数返回的位置，然后跳转到那里。很简单，由于刚才保存了ebp的地址值，所以将地址值赋值给ebp，ebp就指向了main函数的栈底。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-edfb59258ebe0543.jpg" alt="图片发自简书App" /></p>
+<p>ebp的地址值出栈后，esp就指向了fun函数的返回地址，通过执行ret指令，把该地址值传给eip，使eip指向fun函数执行后的返回地址。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-5147f4bbcebdb765.jpg" alt="图片发自简书App" /></p>
+<p>这样就恢复了现场，然后把fun函数的返回值传递给m，此时局部变量b、a和返回值已经没有价值了，把它们清出栈，现在就剩下干干净净的栈内容了。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-2c3ad76a5708fa9d.jpg" alt="图片发自简书App" /></p>
+<p>现在执行最后一步，main函数就结束了，此时局部变量i、j也没有任何作用，做清栈操作，清理出干净的栈空间。<br />
+<img src="//upload-images.jianshu.io/upload_images/13711841-b5d0155312ffafe7.jpg" alt="图片发自简书App" /></p>
+<p>以上便是一个简单C程序的运行时结构。本文总结于新设计团队的《编译系统透视：图解编译原理》，图侵删。</p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

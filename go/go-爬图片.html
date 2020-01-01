@@ -1,0 +1,121 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go-爬图片' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go-爬图片</center></div><div class='banquan'>原文出处:本文由博客园博主跌倒的小黄瓜提供。<br/>
+原文连接:https://www.cnblogs.com/ygjzs/p/12001379.html</div><br>
+    <h1 id="go语言爬取图片">go语言爬取图片</h1>
+<p>注：动态加载出来的爬取不到，或怕取出来图片出错，代码中的网页是可以正常爬取的</p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    &quot;io&quot;
+    &quot;net/http&quot;
+    &quot;os&quot;
+    &quot;regexp&quot;
+    &quot;strconv&quot;
+    _ &quot;strings&quot;
+)
+
+func SaveImg(idx int, url string, page chan int) {
+    path := &quot;D:/gogogo/src/go-爬虫/图片爬取/main/images/&quot; + strconv.Itoa(idx+1) + &quot;.jpg&quot;
+    f, err := os.Create(path)
+    //  resp, err1 := http.Get(url)
+    if err != nil {
+        fmt.Println(&quot;err:&quot;, err)
+        return
+    }
+
+    defer f.Close()
+    resp, err := http.Get(url)
+    if err != nil {
+        fmt.Println(&quot;err:&quot;, err)
+        return
+    }
+    defer resp.Body.Close()
+
+    buf := make([]byte, 4096)
+    for {
+        n, err2 := resp.Body.Read(buf)
+        if n == 0 {
+            break
+        }
+        if err2 != nil &amp;&amp; err2 != io.EOF {
+            err = err2
+            return
+        }
+        f.Write(buf[:n])
+
+    }
+    page &lt;- idx
+}
+
+func HttpGet(url string) (result string, err error) {
+    resp, err1 := http.Get(url)
+    if err1 != nil {
+        err = err1
+        return
+    }
+    defer resp.Body.Close()
+    buf := make([]byte, 4096)
+    for {
+        n, err2 := resp.Body.Read(buf)
+        if n == 0 {
+            break
+        }
+        if err2 != nil &amp;&amp; err2 != io.EOF {
+            err = err2
+            return
+        }
+        result += string(buf[:n])
+    }
+    return
+}
+
+func main() {
+    url := &quot;http://sc.chinaz.com/tupian/ribenmeinv.html&quot;
+    result, err := HttpGet(url)
+    if err != nil {
+        fmt.Println(&quot;err:&quot;, err)
+        return
+    }
+    //  (?s:(.*?))
+    ret1 := regexp.MustCompile(`&lt;img src2=&quot;(?s:(.*?))&quot;`)
+
+    alls := ret1.FindAllStringSubmatch(result, -1)
+
+    page := make(chan int)
+    n := len(alls)
+
+    for idx, imgURL := range alls {
+        //      fmt.Println(imgURL[1])
+        go SaveImg(idx, imgURL[1], page)
+
+    }
+    for i := 0; i &lt; n; i++ {
+        fmt.Printf(&quot;第%d下载完成\n&quot;, &lt;-page)
+    }
+
+}
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

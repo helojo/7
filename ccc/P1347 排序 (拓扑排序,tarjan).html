@@ -1,0 +1,135 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修P1347 排序 (拓扑排序,tarjan)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>P1347 排序 (拓扑排序,tarjan)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/10985298.html</div><br>
+    <h2 id="题目">题目</h2>
+<p><a href="https://www.luogu.org/problemnew/show/P1347">P1347 排序</a></p>
+<h2 id="解析">解析</h2>
+<p>打开一看拓扑排序，要判环。<br />
+三种情况</p>
+<ul>
+<li>有环（存在矛盾）</li>
+<li>没环但在拓扑排序时存在有两个及以上的点入度为0（关系无法确定）</li>
+<li>除了上两种情况（关系可确定）</li>
+</ul>
+<p>本来懒了一下，直接在排序时判环，然后一直WA，遂怒写tarjan判环，第一个点注意特判两个点相同的情况，注意重边。<br />
+然后就有了这又臭又长的</p>
+<h2 id="代码">代码</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N = 1000;
+int n, m, num, sum, tot;
+int du[N], head[N], in[N], ans[N], dfn[N], low[N], size[N];
+bool vis[N];
+char s[N];
+
+queue&lt;int&gt;q;
+struct node {
+    int v, nx;
+} e[N];
+
+template&lt;class T&gt;inline void read(T &amp;x) {
+    x = 0; int f = 0; char ch = getchar();
+    while (!isdigit(ch)) f |= (ch == &#39;-&#39;), ch = getchar();
+    while (isdigit(ch)) x = x * 10 + ch - &#39;0&#39;, ch = getchar();
+    x = f ? -x : x ;
+    return;
+}
+
+inline void add(int u, int v) {
+    for (int i = head[u]; ~i; i = e[i].nx) if (e[i].v == v) return;
+    e[++num].nx = head[u], e[num].v = v, head[u] = num, in[v]++;
+}
+
+int topo() {
+    int tmp = 0, cnt = 0;
+    for (int i = 1; i &lt;= n; ++i) if (!du[i]) q.push(i), tmp++;
+    if (tmp &gt; 1) return 0;
+    while (!q.empty()) {
+        tmp = 0, cnt++;
+        int u = q.front(); q.pop();
+        ans[cnt] = u;
+        for (int i = head[u]; ~i; i = e[i].nx) {
+            int v = e[i].v;
+            du[v]--;
+            if (!du[v]) q.push(v), tmp++;
+        }
+        if (tmp &gt; 1) return 0;
+    }
+    return 1;
+}
+
+stack&lt;int&gt;sta;
+void tarjan(int u) {
+    dfn[u] = low[u] = ++tot;
+    vis[u] = 1;
+    sta.push(u);
+    for (int i = head[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (!dfn[v]) tarjan(v), low[u] = min(low[u], dfn[u]);
+        else if (vis[v]) low[u] = min(low[u], dfn[v]);
+    }
+    if (dfn[u] == low[u]) {
+        int x = -1; sum++;
+        while (x != u) {
+            x = sta.top(), sta.pop();
+            vis[x] = 0, size[sum]++;
+        }
+    }
+}
+
+int main() {
+    memset(head, -1, sizeof head);
+    read(n), read(m);
+    for (int i = 1; i &lt;= m; ++i) {
+        scanf(&quot;%s&quot;, s);
+        add(s[0] - &#39;A&#39; + 1, s[2] - &#39;A&#39; + 1);
+        if(s[0] == s[2]) {
+            printf(&quot;Inconsistency found after %d relations.&quot;, i);
+            return 0;
+        }
+        sum = tot = 0;
+        memset(dfn, 0, sizeof dfn);
+        memset(low, 0, sizeof low);
+        memset(vis, 0, sizeof vis);
+        memset(size, 0, sizeof size);
+        for (int j = 1; j &lt;= n; ++j) if (!dfn[j]) tarjan(j);
+        for (int j = 1; j &lt;= sum; ++j) if (size[j] &gt; 1) {
+            printf(&quot;Inconsistency found after %d relations.&quot;, i);
+            return 0;
+        }
+        memcpy(du, in, sizeof du);
+        while (!q.empty()) q.pop();
+        int k = topo();
+        if (k == 1) {
+            printf(&quot;Sorted sequence determined after %d relations: &quot;, i);
+            for (int j = 1; j &lt;= n; ++j) printf(&quot;%c&quot;, ans[j] + &#39;A&#39; - 1);
+            printf(&quot;.&quot;);
+            return 0;
+        } else continue;
+    }
+    printf(&quot;Sorted sequence cannot be determined.&quot;);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

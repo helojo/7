@@ -1,0 +1,223 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修构造函数(三) 拷贝构造函数' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>构造函数(三) 拷贝构造函数</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/10631210.html</div><br>
+    <h2 id="什么是拷贝构造函数">什么是拷贝构造函数</h2>
+<p><del>拷贝听起来真高级</del><br />
+拷贝构造函数形如</p>
+<pre><code>class_name(const class_name &amp;object_name)</code></pre>
+<p>拷贝构造函数是一种特殊的构造函数，只有一个参数，这个参数是<strong>本类</strong>中的一个对象，以<strong>引用</strong>的形式传参，一般用const修饰，使参数值不变。</p>
+<p>如果没有定义拷贝构造函数，编译器会自动隐式生成一个拷贝构造函数，用来简单的复制类中每个成员变量。</p>
+<p>一个简单的类对象拷贝</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+class A {
+    private :
+        int a, b;
+    public :
+        A(int x, int y) : a(x), b(y) {}
+        void print() {
+            printf(&quot;%d %d\n&quot;, a, b);
+        }
+};
+
+int main() {
+    A a(10, 20);
+    A b = a;
+    b.print();
+    return 0;
+}</code></pre>
+<p>输出</p>
+<blockquote>
+<p>10 20</p>
+</blockquote>
+<p>具体看一下拷贝构造函数怎么用。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+class A {
+    private :
+        int a, b;
+    public :
+        A(int x, int y) : a(x), b(y) {}
+        A(const A &amp;c) {
+            a = c.a;
+            b = c.b;
+        }
+        void print() {
+            printf(&quot;%d %d\n&quot;, a, b);
+        }
+};
+
+int main() {
+    A a(10, 20);
+    A b = a;
+    b.print();
+    return 0;
+}</code></pre>
+<p>这样手动的写如何复制</p>
+<h2 id="为什么要引用">为什么要引用</h2>
+<p>为什么用引用的方式传参呢。<br />
+举个反例</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+class A {
+    private :
+        int a;
+    public :
+        A(int x) : a(x) {}
+        A(const A c) {
+            a = c.a;
+        }
+        void print() {
+            printf(&quot;%d\n&quot;, a);
+        }
+};
+
+int main() {
+    A a(10);
+    A b = a;
+    b.print();
+    return 0;
+}</code></pre>
+<p><code>A b = a</code>时，调用了传值型的拷贝构造函数，<br />
+相当于<code>b.A(a)</code>，<br />
+因为是传的值，所以要用a的值创建一个副本对象<code>c</code>，让<code>c</code>的值为<code>a</code>，则又需要调用构造函数<code>c.A(a)</code>，这样会无限创造副本对象<code>c</code>，无限调用<code>c.A(a)</code>;<br />
+所以<br />
+<strong><font color = "red">引用是为了防止无限递归。</font></strong><br />
+其实没有加引用的话编译器也是不过编译的。</p>
+<h2 id="拷贝构造函数的调用时机">拷贝构造函数的调用时机</h2>
+<p><strong>1. 对象需要通过另一个对象对其进行赋值</strong></p>
+<pre><code>A a(10, 20);
+A b = a;</code></pre>
+<p><strong>2. 当函数的参数是类的对象</strong></p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+class A {
+    private :
+        int a, b;
+    public :
+        A(int x, int y) : a(x), b(y) {}
+        A(const A &amp;c) {a = c.a, b = c.b;}
+        void print() {printf(&quot;%d\n&quot;, a * b);}
+};
+
+void fun(A c) {     //函数的形参是类的对象 
+    c.print();
+}
+
+int main() {
+    A a(10, 20);
+    fun(a);         //实参是类的对象，调用函数时将复制一个新对象c
+    return 0;
+}</code></pre>
+<p><strong>3. 当函数的返回值是类的对象</strong></p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+class A {
+    private :
+        int a, b;
+    public :
+        A(int x, int y) : a(x), b(y) {}
+        A(const A &amp;c) {a = c.a, b = c.b;}
+        void print() {printf(&quot;%d\n&quot;, a * b);}
+};
+
+A fun() {   
+    A b(20, 10);
+    return b;       //函数的返回值是类的对象 
+}
+
+int main() {
+    A a = fun();    //fun()返回 A 类的临时对象，并赋值给a 
+    a.print();
+    return 0;
+}</code></pre>
+<h2 id="深拷贝和浅拷贝">深拷贝和浅拷贝</h2>
+<p>默认拷贝构造函数可以完成对象的数据值得<strong>简单复制</strong>，这就是浅拷贝。</p>
+<p>对象的成员是指向堆时，浅拷贝只是将指针简单复制一遍，指向了原有的内存，而深拷贝是将新建的指针指向了一块新的内存。</p>
+<h3 id="浅拷贝">浅拷贝</h3>
+<p>浅拷贝就是将数据简单复制一下，就像上面讲的。</p>
+<p>看这段代码</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+class A {
+    private :
+        int *p;
+    public :
+        A(int x) {
+            p = new int(x);
+            printf(&quot;Constructor\n&quot;);
+        }
+        A(const A &amp;oth) {
+            this-&gt;p = new int(*oth.p);
+            printf(&quot;Constructor\n&quot;);
+        }
+        ~A() {
+            if (p != NULL) delete p;
+            printf(&quot;Destructor\n&quot;); 
+        }
+        void print() { printf(&quot;%d\n&quot;, *p); }
+        
+};
+int main() {
+    A a(10);
+    A b = a;
+    return 0;
+}</code></pre>
+<p>这是段代码出错了，为什么？</p>
+<p>如图所示，<br />
+<img src="./images/构造函数(三) 拷贝构造函数0.png" alt="未命名.PNG" /></p>
+<p>b把a的指针简单复制了一遍，两者都指向了同一块内存，释放内存的时候被释放了两次，导致出错。</p>
+<h3 id="深拷贝">深拷贝</h3>
+<p>对于上面的代码，我们手写一个拷贝构造函数，像这样</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+class A {
+    private :
+        int *p;
+    public :
+        A(int x) {
+            p = new int(x);
+            printf(&quot;Constructor\n&quot;);
+        }
+        A(const A &amp;oth) {
+            this-&gt;p = new int(*oth.p);
+            printf(&quot;Constructor\n&quot;);
+        }
+        ~A() {
+            if (p != NULL) delete p;
+            printf(&quot;Destructor\n&quot;); 
+        }
+        void print() { printf(&quot;%d\n&quot;, *p); }
+        
+};
+int main() {
+    A a(10);
+    A b = a;
+    return 0;
+}</code></pre>
+<p>我们给b初始化时，给它新开辟了一段内存空间<br />
+<img src="./images/构造函数(三) 拷贝构造函数1.png" alt="未命名.PNG" /><br />
+这样，深拷贝就没有上述浅拷贝时内存释放两次的情况了。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

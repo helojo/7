@@ -1,0 +1,226 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修sync.Map与Concurrent Map' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>sync.Map与Concurrent Map</center></div><div class='banquan'>原文出处:本文由博客园博主路人Q提供。<br/>
+原文连接:https://www.cnblogs.com/lurenq/p/11940994.html</div><br>
+    <h1 class="md-end-block md-heading"><span class="md-plain">1. sync.Map</span></h1>
+<h2 class="md-end-block md-heading"><span class="md-plain">1.1. map并发不安全</span></h2>
+<blockquote>
+<p class="md-end-block md-p"><span><strong>go1.6以后map有了并发的安全检查，所以如果在并发环境中读写map就会报错</strong></span></p>
+<div class="cnblogs_Highlighter">
+<pre><code>func unsafeMap()  {
+    // 创建一个map对象
+	m := make(map[int]int)
+	go func() {
+		for {
+            // 尝试读取数据
+			_ = m[1]
+		}
+	}()
+	go func() {
+		for {
+            // 尝试写入数据
+			m[2] = 2
+		}
+	}()
+    // 阻塞
+	select {}
+}
+
+// output
+// fatalerror: concurrent map read and map write</pre>
+</div>
+<h2 class="md-end-block md-heading"><span class="md-plain">1.2 安全map</span></h2>
+<p><span class="md-plain">&nbsp;并发环境下面使用安全的map</span></p>
+<h2 class="md-end-block md-heading"><span class="md-plain">1.2.1 <span class=" md-link"><a href="https://blog.golang.org/go-maps-in-action"><span class="md-plain">自定义结构体</span></a></span></span></h2>
+<div class="cnblogs_Highlighter">
+<pre><code>// 通过内嵌读写锁的方式，保证我们使用map的安全性
+type MyMap struct{
+	sync.RWMutex
+    m map[string]int  // 需要一个并发的map[string]int类型
+}
+
+// 封装一个创建map对象的方法
+func NewMyMap()*MyMap{
+    smp:=new(MyMap)
+    smp.m = make(map[string]int)
+    return smp
+}<span class="cm-comment">&nbsp;</span></pre>
+</div>
+<p class="md-end-block md-p md-focus"><span class="md-html-inline"><span style="color: red;"><span class="md-html-inline"><strong>注意：我们定义使用什么类型的map，那么就内置什么类型的map</strong></span></span></span>&nbsp;</p>
+<h2 class="md-end-block md-heading"><span class="md-plain">1.2.2 sync.Map</span></h2>
+<blockquote>
+<p class="md-end-block md-p"><span class="md-plain md-expand">go1.9以后sync包中加入了安全的map对象,，syn.Map不支持普通的map操作，需要使用sync.Map提供的api使用</span></p>
+</blockquote>
+<ul class="ul-list" data-mark="-">
+<ul class="ul-list" data-mark="-">
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">创建sync.Map对象</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code>//1. 不需要通过map的方式进行创建，通过声明的方式或者new创建即可
+var smap sync.Map
+
+//2. 通过new的方式创建
+smap:=new(sync.Map)</pre>
+</div>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">sync.Map 存储数据store方法</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code>//func (m *Map) Store(key, value interface{})
+// key,value 都是接口类型,可以存储任何类型的数据
+smap.Store(1,"MrSun") </pre>
+</div>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">sync.Map读取数据</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code>// func (m *Map) Load(key interface{}) (value interface{}, ok bool)
+// key: 键，value: 如果数据存在则返回对应的值，不存在则返回nil，ok: 表示值知否被找到
+// 记得对数据断言处理
+val,ok:=smap.Load(1)</pre>
+</div>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">sync.Map，存在则读取，不存在存储</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code>// func (m *Map) LoadOrStore(key, value interface{}) (actual interface{}, loaded bool)
+// key,value: 要存储的key与value
+//actual: 如果存在则返回存在的值，如果不存在则存储并返回存储的值
+// laoded: 如果数据存在，则true，如果数据不存在则false
+actual, loaded := smap.LoadOrStore(1, "MrSun")</pre>
+</div>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">sync.Map 遍历</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code>// 创建map
+smap:=new(sync.Map)
+smap.LoadOrStore(1, "MrSun")
+smap.LoadOrStore(2, "hello")
+smap.LoadOrStore(3, "golang")
+smap.LoadOrStore(4, "bilili")
+//func (m *Map) Range(f func(key, value interface{}) bool)
+// 用户处理数据的回调函数,回调函数的参数是key，value，返回值是bool
+smap.Range(func(key, value interface{}) bool {
+		smap.Store(5,"heihei")
+		fmt.Println(key,value)
+		return true
+})<span class="cm-comment">&nbsp;<br /><br /></span><strong>// 注意：Range方法遍历的是map的副本</strong></pre>
+</div>
+</li>
+</ul>
+<li>
+<pre><code>sync.Map 数据删除</pre>
+</li>
+<li>
+<div class="cnblogs_Highlighter">
+<pre><code>// func (m *Map) Delete(key interface{})
+// key: 要删除数据的key值
+smap.Delete(1)
+</pre>
+</div>
+<p>&nbsp;</p>
+</li>
+</ul>
+<h2 class="md-end-block md-heading md-focus"><span class="md-plain md-expand">1.2.3 sync.Map与内置读写锁性能对比</span></h2>
+</blockquote>
+<p><img src="./images/sync.Map与Concurrent Map0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<ul class="ul-list" data-mark="-">
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">4核心以前内置的读写锁map性能要高</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">4核心后，sync.Map 性能要高</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain md-expand">sync.Map 性能稳定</span></p>
+</li>
+</ul>
+<h2 class="md-end-block md-heading md-focus"><span class="md-plain md-expand">1.2.4 sync.Map使用场景</span></h2>
+<blockquote>
+<p class="md-end-block md-p"><span class="md-plain">The Map type is optimized for two common use cases:</span></p>
+<ol class="ol-list" start="">
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">when the entry for a given key is only ever written once but read many times, as in caches that only grow.</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">when multiple goroutines read, write, and overwrite entries for disjoint sets of keys. In these two cases, use of a Map may <span><strong><span class="md-plain">significantly</span></strong><span class="md-plain"> reduce lock contention compared to a Go map paired with a separate Mutex or RWMutex.</span></span></span></p>
+</li>
+</ol></blockquote>
+<ul class="ul-list" data-mark="-">
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">写少读多的情况 </span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">多goroutine，读、写、复写 不同数据的情况 【没遇到过】</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">多核心情况使用</span></p>
+</li>
+</ul>
+<p class="md-end-block md-p"><span><strong>建议：没有特别要求的情况，两者都可以，go1.9以后建议直接使用sync.Map</strong></span></p>
+<p class="md-end-block md-p">&nbsp;</p>
+<h2 class="md-end-block md-heading"><span class="md-plain">1.2.5 sync.Map源码剖析</span></h2>
+<p><span class="md-plain"><a href="https://www.jianshu.com/p/19a7727a45f1"><span class="md-plain">sync.Map</span></a></span></p>
+<h1 class="md-end-block md-heading"><span class="md-plain">2. Concurrent Map</span></h1>
+<blockquote>
+<p class="md-end-block md-p"><span class="md-plain md-expand">并发安全map，类似java下面的java.util.ConcurrentHashMap，适合读写都相对比较频繁的情况</span></p>
+</blockquote>
+<h2 class="md-end-block md-heading"><span class="md-plain">2.1 基本原理</span></h2>
+<p class="md-end-block md-p md-focus"><span class="md-plain">采用分段锁机制，从而提高并发安全的性能</span></p>
+<p><img src="./images/sync.Map与Concurrent Map1.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h2 class="md-end-block md-heading md-focus"><span class="md-plain md-expand">2.2 concurrent map下载</span></h2>
+<p><img src="./images/sync.Map与Concurrent Map2.png" alt="" /></p>
+<p>&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code># github 星标 最高的一个
+go get "github.com/orcaman/concurrent-map"</pre>
+</div>
+<h2 class="md-end-block md-heading"><span class="md-plain">2.2 基本使用</span></h2>
+<p class="md-end-block md-p"><span class="md-plain md-expand">不同的第三方包模块使用API都不一样，<span class="md-expand"><strong><span><em>使用那个模块需要查看对应模块的文档</em></span></strong></span></span></p>
+<div class="cnblogs_Highlighter">
+<pre><code>import "github.com/orcaman/concurrent-map"
+
+func concurrentMap()  {
+	mp:=cmap.New()
+	// 存储值，key只能是string类型，value可以是任意类型
+	mp.Set("1","hello")
+	mp.Set("2","golang")
+    //val: 如果存在则返回值，不存在则返回nil
+    // ok： 表示值如果存在则是true，如果不存在则是false
+	val,ok:=mp.Get("2")
+	if ok{
+		fmt.Println(val.(string))
+	}
+	mp.Remove("1")
+	_,ok=mp.Get("1")
+	if !ok{
+		fmt.Println("data is not exist")
+	}
+}</pre>
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

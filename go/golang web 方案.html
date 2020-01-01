@@ -1,0 +1,275 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang web 方案' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang web 方案</center></div><div class='banquan'>原文出处:本文由博客园博主wang_yb提供。<br/>
+原文连接:https://www.cnblogs.com/wang_yb/p/10859900.html</div><br>
+    <ul>
+<li><a href="#sec-1">概要</a></li>
+<li><a href="#sec-2">开发</a>
+<ul>
+<li><a href="#sec-2-1">web 框架</a></li>
+<li><a href="#sec-2-2">数据库</a></li>
+<li><a href="#sec-2-3">认证</a></li>
+<li><a href="#sec-2-4">日志</a></li>
+<li><a href="#sec-2-5">配置</a></li>
+<li><a href="#sec-2-6">静态文件服务</a></li>
+<li><a href="#sec-2-7">上传/下载</a></li>
+</ul></li>
+<li><a href="#sec-3">发布</a>
+<ul>
+<li><a href="#sec-3-1">docker 打包</a></li>
+<li><a href="#sec-3-2">部署中遇到的问题</a>
+<ul>
+<li><a href="#sec-3-2-1">时区问题</a></li>
+</ul></li>
+</ul></li>
+</ul>
+<h1 id="概要">概要<a id="sec-1"></a></h1>
+<p>轻量的基于 golang 的 web 开发实践.</p>
+<p>golang 上手简单, 第三方库丰富, 对于业务没那么复杂的项目, 作为 API 的后端也是不错的选择. 下面是对 golang 作为 API 后端的 web 开发实践总结.</p>
+<h1 id="开发">开发<a id="sec-2"></a></h1>
+<p>API 后端的功能模块基本已经固定, 基于自己的项目, 主要使用了以下模块:</p>
+<ol>
+<li>web 框架: 整个方案的核心</li>
+<li>数据库: orm 框架</li>
+<li>认证: 访问的安全</li>
+<li>日志: 辅助调试和运维</li>
+<li>配置: 提高服务的灵活性</li>
+<li>静态文件服务: 部署打包后的前端</li>
+<li>上传/下载: 其实也是 web 框架提供的功能, 单独提出来是因为和一般的 JSON API 不太一样</li>
+</ol>
+<h2 id="web-框架">web 框架<a id="sec-2-1"></a></h2>
+<p>golang 的 API 框架有很多, 我在项目中选择了 <a href="https://github.com/gin-gonic/gin">gin</a> 框架. 当时是出于以下几点考虑:</p>
+<ol>
+<li>成熟度: gin 早就进入 v1 稳定版, 使用的项目也很多, 成熟度没有问题</li>
+<li>性能: gin 的性能在众多 golang web 框架中不是最好的, 但也不差, 具体可以参见 gin 的 README</li>
+<li>活跃度: github 上的 commit 可以看出, gin 虽然很稳定, 更新频率还可以</li>
+<li>周边支持: gin 的插件非常多, 还有个 <a href="https://github.com/gin-gonic/contrib">contrib</a> 项目, 常用的各种插件基本都有, 另外, gin 的插件写起来也很简单</li>
+</ol>
+<p>虽然选择了 gin, 但是本文中使用的各个模块都不是强依赖 gin 的, 替换任何一个模块的代价都不会太大.</p>
+<p>gin 的使用很简单, 主要代码如下:</p>
+<pre><code><code>r := gin.Default()
+if gin.Mode() == &quot;debug&quot; {
+  r.Use(cors.Default())  // 在 debug 模式下, 允许跨域访问
+}
+
+// ... 设置路由的代码
+
+if err := r.Run(&quot;:&quot; + strconv.Itoa(port)); err != nil {
+  log.Fatal(err)
+}</code></pre>
+<h2 id="数据库">数据库<a id="sec-2-2"></a></h2>
+<p>数据库这层, 选用了 <a href="https://beego.me/docs/mvc/model/orm.md">beego ORM</a> 框架, 它的文档比较好, 对主流的几种关系数据库也都支持. 表结构的定义:</p>
+<pre><code><code>type User struct {
+  Id       string     `orm:&quot;pk&quot; json:&quot;id&quot;`
+  UserName string     `orm:&quot;unique&quot; json:&quot;username&quot;`
+  Password string     `json:&quot;password&quot;`
+
+  CreateAt time.Time `orm:&quot;auto_now_add&quot;`
+  UpdateAt time.Time `orm:&quot;auto_now&quot;`
+}
+
+func init() {
+  orm.RegisterModel(new(User))
+}</code></pre>
+<p>数据库的初始化:</p>
+<pre><code><code>// mysql 配置, postgresql 或者 sqlite 使用其他驱动
+orm.RegisterDriver(&quot;default&quot;, orm.DRMySQL) // 注册驱动
+var conStr = fmt.Sprintf(&quot;%s:%s@tcp(%s:%d)/%s?charset=utf8&amp;loc=Local&quot;,
+  c.DB.UserName, c.DB.Password, c.DB.Host, c.DB.Port, c.DB.DBName)
+orm.RegisterDataBase(&quot;default&quot;, &quot;mysql&quot;, conStr)
+
+// sync database
+orm.RunSyncdb(&quot;default&quot;, false, false)</code></pre>
+<h2 id="认证">认证<a id="sec-2-3"></a></h2>
+<p>认证采用 jwt token, 使用了 <a href="https://github.com/appleboy/gin-jwt">gin-jwt</a> 中间件. 加了认证中间件之后, 可以配置路由是否需要认证:</p>
+<pre><code><code>authMiddleware := controller.JwtMiddleware()
+
+// *不需要* 认证的路由
+r.POST(&quot;/register&quot;, controller.Register)
+r.POST(&quot;/login&quot;, authMiddleware.LoginHandler)
+
+// *需要* 认证的路由
+authRoute := r.Group(&quot;/auth&quot;)
+authRoute.Use(authMiddleware.MiddlewareFunc())
+{
+  authRoute.GET(&quot;/test&quot;, func(c *gin.Context) { fmt.Println(&quot;hello&quot;) })
+}</code></pre>
+<h2 id="日志">日志<a id="sec-2-4"></a></h2>
+<p>项目不是很复杂, 日志采用了文件的方式, 选择了 <a href="https://beego.me/docs/module/logs.md">beego logs</a> 模块. 虽然使用了 beego logs, 但是为了方便以后替换 logs 模块, 在 beego logs 又封装了一层.</p>
+<pre><code><code>// Logger
+type Logger interface {
+  Debug(format string, v ...interface{})
+  Info(format string, v ...interface{})
+  Warn(format string, v ...interface{})
+  Error(format string, v ...interface{})
+}
+
+// 支持 console 和 file 2 种类型的 log
+func InitLogger(level, logType, logFilePath string) error {
+  consoleLogger = nil
+  fileLogger = nil
+
+  if logType == ConsoleLog {
+    consoleLogger = NewConsoleLogger(level)  // 这里实际是通过 beego logs 来实现功能的
+  } else if logType == FileLog {
+    fileLogger = NewFileLogger(logFilePath, level)  // 这里实际是通过 beego logs 来实现功能的
+  } else {
+    return fmt.Errorf(&quot;Log type is not valid\n&quot;)
+  }
+
+  return nil
+}</code></pre>
+<h2 id="配置">配置<a id="sec-2-5"></a></h2>
+<p>配置采用 <a href="https://github.com/toml-lang/toml">toml</a> 格式, 配置文件中一般存放不怎么改变的内容, 改动比较频繁的配置还是放在数据库比较好.</p>
+<pre><code><code>import (
+  &quot;github.com/BurntSushi/toml&quot;
+)
+
+type Config struct {
+  Server serverConfig `toml:&quot;server&quot;`
+  DB     dbConfig     `toml:&quot;db&quot;`
+  Logger loggerConfig `toml:&quot;logger&quot;`
+  File   fileConfig   `toml:&quot;file&quot;`
+}
+
+type serverConfig struct {
+  Port int `toml:&quot;port&quot;`
+}
+
+type dbConfig struct {
+  Port     int    `toml:&quot;port&quot;`
+  Host     string `toml:&quot;host&quot;`
+  DBName   string `toml:&quot;db_name&quot;`
+  UserName string `toml:&quot;user_name&quot;`
+  Password string `toml:&quot;password&quot;`
+}
+
+type loggerConfig struct {
+  Level   string `toml:&quot;level&quot;`
+  Type    string `toml:&quot;type&quot;`
+  LogPath string `toml:&quot;logPath&quot;`
+}
+
+type fileConfig struct {
+  UploadDir   string `toml:&quot;uploadDir&quot;`
+  DownloadDir string `toml:&quot;downloadDir&quot;`
+}
+
+var conf *Config
+
+func GetConfig() *Config {
+  return conf
+}
+
+func InitConfig(confPath string) error {
+  _, err := toml.DecodeFile(confPath, &amp;conf)
+  return err
+}</code></pre>
+<h2 id="静态文件服务">静态文件服务<a id="sec-2-6"></a></h2>
+<p>本工程中静态文件服务的目的是为了发布前端. 前端采用 react 开发, build 之后的代码放在静态服务目录中. 使用 gin 框架的<a href="https://github.com/gin-contrib/static">静态服务中间件</a>, 很容易实现此功能:</p>
+<pre><code><code>// static files
+r.Use(static.Serve(&quot;/&quot;, static.LocalFile(&quot;./public&quot;, true)))
+
+// 没有路由匹配时, 回到首页
+r.NoRoute(func(c *gin.Context) {
+  c.File(&quot;./public/index.html&quot;)
+})</code></pre>
+<h2 id="上传下载">上传/下载<a id="sec-2-7"></a></h2>
+<p>上传/下载 在 gin 框架中都有支持.</p>
+<ul>
+<li><p>上传</p>
+<pre><code><code>func UploadXls(c *gin.Context) {
+  // ... 省略的处理
+
+  // upload form field name: uploadXls, 这个名字和前端能对上就行
+  // file 就是上传文件的文件流
+  file, header, err := c.Request.FormFile(&quot;uploadXls&quot;)
+  if err != nil {
+    Fail(c, &quot;param error: &quot;+err.Error(), nil)
+    return
+  }
+
+  // ... 省略的处理
+}</code></pre></li>
+<li><p>下载</p>
+<pre><code><code>func DownloadXls(c *gin.Context) {
+  // ... 省略的处理
+
+  c.File(downloadPath)
+}</code></pre></li>
+</ul>
+<h1 id="发布">发布<a id="sec-3"></a></h1>
+<p>基于上面几个模块, 一般业务不是很复杂的小应用都可以胜任. 开发之后, 就是打包发布. 因为这个方案是针对小应用的, 所以把前后端都打包到一起作为一个整体发布.</p>
+<h2 id="docker-打包">docker 打包<a id="sec-3-1"></a></h2>
+<p>之所有采用 docker 方式打包, 是因为这种方式易于分发. docker file 如下:</p>
+<pre><code><code># 编译前端
+FROM node:10.15-alpine as front-builder
+
+WORKDIR /user
+ARG VERSION=no-version
+ADD ./frontend/app-ui .
+RUN yarn
+RUN yarn build
+
+
+# 编译前端
+FROM golang:1.12.5-alpine3.9 as back-builder
+
+WORKDIR /go
+RUN mkdir -p ./src/app-api
+ADD ./backend/src/app-api ./src/app-api
+RUN go install app-api
+
+
+# 发布应用 (这里可以用个更小的 linux image)
+FROM golang:1.12.5-alpine3.9
+
+WORKDIR /app
+COPY --from=front-builder /user/build ./public
+COPY --from=back-builder /go/bin/app-api .
+ADD ./deploy/builder/settings.toml .
+
+CMD [&quot;./app-api&quot;, &quot;-f&quot;, &quot;./settings.toml&quot;, &quot;-prod&quot;]</code></pre>
+<h2 id="部署中遇到的问题">部署中遇到的问题<a id="sec-3-2"></a></h2>
+<h3 id="时区问题">时区问题<a id="sec-3-2-1"></a></h3>
+<p>docker 的官方 image 基本都是 UTC 时区的, 所以插入数据库的时间一般会慢 8 个小时. 所以, 在 docker 启动或者打包的时候, 需要对时区做一些处理.</p>
+<ol>
+<li><p>数据库连接的设置</p>
+<pre><code><code>// 连接字符串中加上: loc=Local
+var conStr = fmt.Sprintf(&quot;%s:%s@tcp(%s:%d)/%s?charset=utf8&amp;loc=Local&quot;,
+  c.DB.UserName, c.DB.Password, c.DB.Host, c.DB.Port, c.DB.DBName)</code></pre></li>
+<li><p>数据库镜像的设置 (环境变量中设置时区)</p>
+<pre class="bash"><code># -e TZ=Asia/Shanghai 就是设置时区
+docker run --name xxx -e TZ=Asia/Shanghai -d mysql:5.7</code></pre></li>
+<li><p>应用镜像的设置 (docker-compose.yml) 在 <strong>volumes</strong> 中设置时区和主机一样</p>
+<pre class="yaml"><code>services:
+user:
+  image: xxx:latest
+  restart: always
+  networks:
+    - nnn
+  volumes:
+    - &quot;/etc/localtime:/etc/localtime:ro&quot;</code></pre></li>
+</ol>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

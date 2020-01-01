@@ -1,0 +1,121 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修在Go中简单实现HTTP服务中间件' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>在Go中简单实现HTTP服务中间件</center></div><div class='banquan'>原文出处:本文由博客园博主封三郎提供。<br/>
+原文连接:https://www.cnblogs.com/codingnote/p/11265527.html</div><br>
+    <p>通常一个简单http服务框架，就是注册一堆路由，然后根据路由调用不同的逻辑去处理。</p>
+<p>但实际上可能有一些统一的处理对几乎所有的路由都涉及到，比如日志，比如权限等等。</p>
+<p>那么这个时候搞一个中间做预处理，是一个不错的想法。</p>
+<p>定义一个中间件单元：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">package main
+</span><span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #000000;">import (
+</span><span style="color: #008080;"> 4</span>     <span style="color: #800000;">"</span><span style="color: #800000;">net/http</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 5</span> <span style="color: #000000;">)
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #008000;">//</span><span style="color: #008000;"> AdaptorHandle middleware func type</span>
+<span style="color: #008080;"> 8</span> type AdaptorHandle func(w http.ResponseWriter, r *http.Request) (next <span style="color: #0000ff;">bool</span><span style="color: #000000;">, err error)
+</span><span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span> <span style="color: #008000;">//</span><span style="color: #008000;"> MiddleWareAdaptor router middlewares mapped by url</span>
+<span style="color: #008080;">11</span> type MiddleWareAdaptor <span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">12</span>     URLs map[<span style="color: #0000ff;">string</span><span style="color: #000000;">][]AdaptorHandle
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> <span style="color: #008000;">//</span><span style="color: #008000;"> MakeMiddleWareAdaptor make a middleware adaptor</span>
+<span style="color: #008080;">16</span> func MakeMiddleWareAdaptor() *<span style="color: #000000;">MiddleWareAdaptor {
+</span><span style="color: #008080;">17</span>     mwa := &amp;<span style="color: #000000;">MiddleWareAdaptor{
+</span><span style="color: #008080;">18</span>         URLs: make(map[<span style="color: #0000ff;">string</span><span style="color: #000000;">][]AdaptorHandle),
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> mwa
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">23</span> 
+<span style="color: #008080;">24</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Regist regist a adaptor</span>
+<span style="color: #008080;">25</span> func (mw *MiddleWareAdaptor) Regist(url <span style="color: #0000ff;">string</span><span style="color: #000000;">, Adaptor ...AdaptorHandle) {
+</span><span style="color: #008080;">26</span>     <span style="color: #0000ff;">for</span> _, adp :=<span style="color: #000000;"> range Adaptor {
+</span><span style="color: #008080;">27</span>         mw.URLs[url] =<span style="color: #000000;"> append(mw.URLs[url], adp)
+</span><span style="color: #008080;">28</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> mw.URLs[url] = adp</span>
+<span style="color: #008080;">29</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">31</span> 
+<span style="color: #008080;">32</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Exec exec middleware adaptor funcs...</span>
+<span style="color: #008080;">33</span> func (mw *MiddleWareAdaptor) Exec(url <span style="color: #0000ff;">string</span>, w http.ResponseWriter, r *http.Request) (<span style="color: #0000ff;">bool</span><span style="color: #000000;">, error) {
+</span><span style="color: #008080;">34</span>     <span style="color: #0000ff;">if</span> adps, ok :=<span style="color: #000000;"> mw.URLs[url]; ok {
+</span><span style="color: #008080;">35</span>         <span style="color: #0000ff;">for</span> _, adp :=<span style="color: #000000;"> range adps {
+</span><span style="color: #008080;">36</span>             <span style="color: #0000ff;">if</span> next, err := adp(w, r); !next || (err !=<span style="color: #000000;"> nil) {
+</span><span style="color: #008080;">37</span>                 <span style="color: #0000ff;">return</span><span style="color: #000000;"> next, err
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">39</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">41</span>     <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">, nil
+</span><span style="color: #008080;">42</span> }</pre>
+</div>
+<p>然后将路由处理函数用中间件入口包裹起来：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">func middlewareHandler(next http.Handler) http.Handler {
+</span><span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">return</span> http.HandlerFunc(func(w http.ResponseWriter, r *<span style="color: #000000;">http.Request) {
+</span><span style="color: #008080;"> 3</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> before call handler</span>
+<span style="color: #008080;"> 4</span>         start :=<span style="color: #000000;"> time.Now()
+</span><span style="color: #008080;"> 5</span>         <span style="color: #0000ff;">do</span>, _ := mwa.Exec(r.URL.Path, w, r) <span style="color: #008000;">//</span><span style="color: #008000;"> exec middleware
+</span><span style="color: #008080;"> 6</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> call next handler</span>
+<span style="color: #008080;"> 7</span>         <span style="color: #0000ff;">if</span> <span style="color: #0000ff;">do</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 8</span>             log.Println(<span style="color: #800000;">"</span><span style="color: #800000;">middleware done. next...</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">            next.ServeHTTP(w, r)
+</span><span style="color: #008080;">10</span>         } <span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">11</span>             log.Println(<span style="color: #800000;">"</span><span style="color: #800000;">middleware done.break...</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">13</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> after call handle</span>
+<span style="color: #008080;">14</span>         log.Printf(<span style="color: #800000;">"</span><span style="color: #800000;">Comleted %s in %v</span><span style="color: #800000;">"</span><span style="color: #000000;">, r.URL.Path, time.Since(start))
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    })
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">17</span> 
+<span style="color: #008080;">18</span> mux.Handle(<span style="color: #800000;">"</span><span style="color: #800000;">/</span><span style="color: #800000;">"</span>, middlewareHandler(&amp;<span style="color: #000000;">uPlusRouterHandler{}))
+</span><span style="color: #008080;">19</span> 
+<span style="color: #008080;">20</span> type uPlusRouterHandler <span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span> func (rh *uPlusRouterHandler) ServeHTTP(w http.ResponseWriter, r *<span style="color: #000000;">http.Request) {
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">...
+</span><span style="color: #008080;">25</span> }</pre>
+</div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">&nbsp;</span></pre>
+</div>
+<p>最后注册你需要的中间件即可：</p>
+<div class="cnblogs_code">
+<pre><code>mwa = MakeMiddleWareAdaptor() <span style="color: #008000;">//</span><span style="color: #008000;"> init middleware</span>
+mwa.Regist(<span style="color: #800000;">"</span><span style="color: #800000;">/</span><span style="color: #800000;">"</span>, testMWAfunc, testMWAfunc2) <span style="color: #008000;">//</span><span style="color: #008000;"> regist middleware</span>
+<span style="color: #000000;">...
+func testMWAfunc(w http.ResponseWriter, r </span>*http.Request) (<span style="color: #0000ff;">bool</span><span style="color: #000000;">, error) {
+    log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">我是第一个中间件...</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    log.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">Started %s %s</span><span style="color: #800000;">"</span><span style="color: #000000;">, r.Method, r.URL.Path)
+    </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">, nil
+}
+
+func testMWAfunc2(w http.ResponseWriter, r </span>*http.Request) (<span style="color: #0000ff;">bool</span><span style="color: #000000;">, error) {
+    log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">我是第二个中间件...</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span>, nil <span style="color: #008000;">//</span><span style="color: #008000;"> return false,break follow-up actions.</span>
+<span style="color: #000000;">}<br /></span></pre>
+</div>
+<p>代码虽然简单，记录一个思路。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

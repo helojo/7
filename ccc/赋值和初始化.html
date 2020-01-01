@@ -1,0 +1,107 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修赋值和初始化' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>赋值和初始化</center></div><div class='banquan'>原文出处:本文由博客园博主菜鸟八号提供。<br/>
+原文连接:https://www.cnblogs.com/CushGuo/p/11844674.html</div><br>
+    <p>　　今天在学习拷贝析构的时候遇到的问题：</p>
+<p>　　</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">using</span> std::cout; <span style="color: #0000ff;">using</span> std::cin; <span style="color: #0000ff;">using</span><span style="color: #000000;"> std::endl;
+</span><span style="color: #008080;"> 3</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">HasPtr.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 7</span>     HasPtr ha(<span style="color: #800000;">"</span><span style="color: #800000;">Halo</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 8</span>     cout&lt;&lt;ha.getPs()&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    HasPtr copy_ha(ha);
+</span><span style="color: #008080;">10</span>     cout&lt;&lt;copy_ha.getPs()&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    HasPtr assign_ha;
+</span><span style="color: #008080;">12</span>     <span style="color: #008000;">//</span><span style="color: #008000;">HasPtr assign_ha = ha;</span>
+<span style="color: #008080;">13</span>     assign_ha =<span style="color: #000000;"> ha;
+</span><span style="color: #008080;">14</span>     cout&lt;&lt;assign_ha.getPs()&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span> }</pre>
+</div>
+<p>　　如果按照第12行那样写的话就是初始化过程，这样的话是不会调用重载的拷贝赋值运算符，而是调用拷贝构造函数。如果按照第11和13行这样写，第13行是赋值操作，所以会调用重载的拷贝赋值运算符。以下是运行结果（图1是直接初始化，图二是先定义assign_ha然后赋值。）：</p>
+<p>　　<img src="./images/赋值和初始化0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>　<img src="./images/赋值和初始化1.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>下面是类的头文件和实现：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;">HasPtr.h</span>
+<span style="color: #008080;"> 2</span> <span style="color: #000000;">#ifndef HASPTR_H
+</span><span style="color: #008080;"> 3</span> <span style="color: #0000ff;">#define</span> HASPTR_H
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 6</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 7</span> 
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> HasPtr
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">11</span>         HasPtr(<span style="color: #0000ff;">const</span> std::<span style="color: #0000ff;">string</span>&amp; s = std::<span style="color: #0000ff;">string</span>()) : ps(<span style="color: #0000ff;">new</span> std::<span style="color: #0000ff;">string</span>(s)), i(<span style="color: #800080;">0</span><span style="color: #000000;">) { }
+</span><span style="color: #008080;">12</span>         HasPtr(<span style="color: #0000ff;">const</span> HasPtr&amp;<span style="color: #000000;">);
+</span><span style="color: #008080;">13</span>         std::<span style="color: #0000ff;">string</span>* getPs() <span style="color: #0000ff;">const</span> { <span style="color: #0000ff;">return</span> ps; } <span style="color: #008000;">//</span><span style="color: #008000;">由于原本就不可以对私有成员进行操作，所以不必返回引用</span>
+<span style="color: #008080;">14</span>         <span style="color: #0000ff;">int</span> getI() <span style="color: #0000ff;">const</span> { <span style="color: #0000ff;">return</span><span style="color: #000000;"> i; }
+</span><span style="color: #008080;">15</span>         HasPtr&amp; <span style="color: #0000ff;">operator</span>=(<span style="color: #0000ff;">const</span> HasPtr&amp;<span style="color: #000000;">);
+</span><span style="color: #008080;">16</span>         ~<span style="color: #000000;">HasPtr();
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;">18</span>         std::<span style="color: #0000ff;">string</span> *<span style="color: #000000;">ps;
+</span><span style="color: #008080;">19</span>         <span style="color: #0000ff;">int</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">21</span> 
+<span style="color: #008080;">22</span> <span style="color: #0000ff;">#endif</span> <span style="color: #008000;">//</span><span style="color: #008000;"> HASPTR_H</span></pre>
+</div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;">HasPtr.cpp</span>
+<span style="color: #008080;"> 2</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">HasPtr.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> HasPtr::HasPtr(<span style="color: #0000ff;">const</span> HasPtr&amp;<span style="color: #000000;"> h)
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span>     ps = <span style="color: #0000ff;">new</span> std::<span style="color: #0000ff;">string</span>(*<span style="color: #000000;">(h.ps));
+</span><span style="color: #008080;"> 7</span>     i =<span style="color: #000000;"> h.i;
+</span><span style="color: #008080;"> 8</span>     std::cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">call the copyCtor.</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">std::endl;
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span> HasPtr::~<span style="color: #000000;">HasPtr()
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">13</span>     std::cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">call the dtor.</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">std::endl;
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> ps;
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">16</span> 
+<span style="color: #008080;">17</span> HasPtr&amp; HasPtr::<span style="color: #0000ff;">operator</span>= (<span style="color: #0000ff;">const</span> HasPtr&amp;<span style="color: #000000;"> rhs)
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">19</span>     std::cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">call the assignment operator.</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">std::endl;
+</span><span style="color: #008080;">20</span>     ps = <span style="color: #0000ff;">new</span> std::<span style="color: #0000ff;">string</span>(*<span style="color: #000000;">(rhs.ps));
+</span><span style="color: #008080;">21</span>     i =<span style="color: #000000;"> rhs.i;
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">return</span> *<span style="color: #0000ff;">this</span><span style="color: #000000;">;
+</span><span style="color: #008080;">23</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>　　</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

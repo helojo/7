@@ -1,0 +1,61 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修用户级线程和内核级线程，你分得清吗？' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>用户级线程和内核级线程，你分得清吗？</center></div><div class='banquan'>原文出处:本文由博客园博主tobe的呓语提供。<br/>
+原文连接:https://www.cnblogs.com/tobe98/p/11664779.html</div><br>
+    <p><em>这篇文章是上一篇博客的补充，旨在把没有讲清楚的「用户级线程和内核级线程」补充完整。希望读者能对线程有更进一步的了解。</em></p>
+<hr />
+<p>小白最近在学习多线程编程。</p>
+<p>网上关于多线程的资料很多，小白很快就把线程的基本概念弄懂了，但关于「用户级线程和内核级线程」的概念，她却怎么也搞不清楚，只好向操作系统基础扎实的小明请教。</p>
+<p>对于小白的问题，小明总会耐心解答：“线程里面这两个概念确实比较难理解，我先给你讲用户级线程吧。”</p>
+<h3 id="用户级线程">用户级线程</h3>
+<p>“既然你说你已经看过线程的基本概念，那我就直接跳过这一部分了。</p>
+<p>很久很久之前，线程的概念是出现了，但操作系统厂商可不能直接就去修改操作系统的内核，因为对他们来说，<strong>稳定性</strong>是最重要的。贸然把未经验证的东西加入内核，出问题了怎么办？所以想要验证线程的可用性，得另想办法。”</p>
+<p>“我知道我知道，那些研究人员就编写了一个关于线程的函数库，<strong>用函数库来实现线程</strong>！”小白得意的说：“这个我刚刚在网上看到了。”</p>
+<p>“是的，他们把<strong>创建线程</strong>、<strong>终止线程</strong>等功能放在了这个<strong>线程库</strong>内，用户就可以通过调用这些函数来实现所需要的功能。”小明找了张纸，写上了几个函数：<code>pthread_creat</code> ，<code>pthread_exit</code> ，<code>pthread_join</code> ，<code>pthread_yield</code> ，接着说：“这是几个重要的函数，你应该能大概猜出这些函数的功能吧？”</p>
+<p>“emmmm，让我想想，<code>pthread_creat</code> 是创建一个新线程，<code>pthread_exit</code> 是结束线程，<code>pthread_join</code> 嘛，我猜是准备运行某一个线程，然后把它加进<strong>就绪队列</strong>。最后一个函数我就不知道了。”</p>
+<p>“不知道也没关系，一会你就清楚了。”小明接着讲：“要知道，刚刚我们说的线程库，是位于用户空间的，<strong>操作系统内核对这个库一无所知</strong>，所以从内核的角度看，它还是按正常的方式管理。”</p>
+<p>小白问道：“也就是说<strong>操作系统眼里还是只有进程</strong>喽？那我用线程库写的一个多线程进程，只能一次在<strong>一个 CPU 核心</strong>上运行？”</p>
+<p>小明点点头，说：“你说的没错，这其实是用户级线程的一个缺点，这些线程只能占用一个核，所以做不到<strong>并行加速</strong>，而且由于用户线程的<strong>透明性</strong>，<strong>操作系统是不能主动切换线程的</strong>，换句话讲，如果 A，B 是同一个进程的两个线程的话， A 正在运行的时候，线程 B 想要运行的话，只能等待 A <strong>主动放弃</strong> CPU，也就是主动调用 <code>pthread_yield</code> 函数。”</p>
+<p><em>tobe 注：对操作系统来说，用户级线程具有<strong>不可见性</strong>，也称<strong>透明性</strong>。</em></p>
+<p>“停一下，让我想一想，”小白飞速思考着小明的话，“是不是说，即使有线程库，用户级线程也做不到像进程那样的<strong>轮转调度</strong>？”</p>
+<p>“非常正确！看来你对进程的概念很清楚嘛。不过呢，虽然不能做到轮转调度，但用户级线程也有他自己的好处——你可以<strong>为你的应用程序定制调度算法</strong>，毕竟什么时候退出线程你自己说了算。刚刚说了，因为操作系统只能看到进程的存在，那如果<strong>某一个线程阻塞</strong>了，你觉得会发生什么？”</p>
+<p>“在操作系统眼里，是进程阻塞了，那么整个进程就会进入<strong>阻塞态</strong>，在阻塞操作结束前，这个进程都无法得到 CPU 资源。那就相当于，<strong>所有的线程都被阻塞</strong>了。”小白得意的回答。</p>
+<p>“没错，所以如果任由线程进行阻塞操作，进程的效率将受到很大的影响，所以在这个过程中，出现了一个替代方案——<strong>jacket</strong>。所谓 jacket，就是把一个产生阻塞的系统调用转化成一个非阻塞的系统调用。”</p>
+<p>小白惊讶地问：“这怎么做得到？该阻塞的调用，还能变得不阻塞？”</p>
+<p>小明答道：“我来举个例子吧，不是直接调用一个系统 I/O 例程，而是调用一个应用级别的 I/O jacket 例程，这个 jacket 例程中的代码会检查并且确定 I/O 设备是不是正忙，如果忙的话，就在<strong>用户态</strong>下将该线程阻塞，然后把控制权交给另一个线程。隔一段时间后再次检查 I/O 设备。就像你说的，最后还是会执行阻塞调用，但使用 jacket 可以缩短被阻塞的时间。不过有些情况下是可以不被阻塞的，取决于具体的实现。”</p>
+<p>小明停顿了一会，说：“用户级线程的概念大概就这么多，我们接下来讲内核级线程吧。”</p>
+<h3 id="内核级线程">内核级线程</h3>
+<p>“有了用户级线程的铺垫，内核级线程就好讲多了。现在我们知道，许多操作系统都已经支持内核级线程了。为了实现线程，内核里就需要有用来记录系统里所有线程的线程表。当需要创建一个新线程的时候，就需要进行一个<strong>系统调用</strong>，然后由<strong>操作系统</strong>进行线程表的更新。当然了，传统的进程表也还是有的。你想想看，如果操作系统「看得见」线程，有什么好处？“</p>
+<p>小白自信的回答：“操作系统内核如果知道线程的存在，就可以像调度多个进程一样，把这些线程放在好几个 CPU 核心上，就能做到实际上的<strong>并行</strong>了。”</p>
+<p>“还有一点你没有说到，如果线程可见，那么<strong>假如线程 A 阻塞了，与他同属一个进程的线程也不会被阻塞</strong>。这是内核级线程的绝对优势。”</p>
+<p>“那内核级线程就没有什么缺点吗？”</p>
+<p>“缺点当然是有的，你想想看，让操作系统进行线程调度，那意味着每次切换线程，就需要「<strong>陷入</strong>」内核态，而操作系统从<strong>用户态到内核态</strong>的转变是有开销的，所以说<strong>内核级线程切换的代价要比用户级线程大</strong>。还有很重要的一点——线程表是存放在操作系统固定的<strong>表格空间</strong>或者<strong>堆栈空间</strong>里，所以内核级线程的数量是有限的，扩展性比不上用户级线程。”</p>
+<p>&quot;内核级线程就这么点东西，我最后给你留一张图，你要是能看得懂，就说明你理解今天的概念了。&quot;</p>
+<p><img src="./images/用户级线程和内核级线程，你分得清吗？0.png" alt="两个线程模型" /></p>
+<p>小白得意地说：“我当然看得懂了，谢谢小明！”</p>
+<hr />
+<p>希望你在看完我的文章之后有所收获。</p>
+<p>感谢你的阅读，我们后会有期！</p>
+<p><strong>声明：原创文章，未经授权，禁止转载</strong></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

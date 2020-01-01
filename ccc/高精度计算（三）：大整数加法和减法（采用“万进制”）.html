@@ -1,0 +1,165 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修高精度计算（三）：大整数加法和减法（采用“万进制”）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>高精度计算（三）：大整数加法和减法（采用“万进制”）</center></div><div class='banquan'>原文出处:本文由博客园博主aTeacher提供。<br/>
+原文连接:https://www.cnblogs.com/cs-whut/p/11198664.html</div><br>
+    <p>&nbsp; &nbsp; &nbsp; 一般我们称基本数据类型无法表示的整数为大整数。而对于那些精度要求很高的数据通常称为高精度数，或称大数。</p>
+<p>&nbsp; &nbsp; &nbsp; 表示和存放大数的一个简单的方法就是：用数组存放和表示大数。一个数组元素，存放大数中的一位。</p>
+<p>&nbsp; &nbsp; &nbsp; 显然，在C/C++语言中，int类型（4个字节/32位计算机）数组元素存储十进制的一位数字非常浪费空间，并且运算量也非常大，因此可将存储优化为万进制，即数组的每个元素存储大整数数字的四位。</p>
+<p>&nbsp; &nbsp; &nbsp; 为什么选择万进制，而不选择更大的进制呢？这是因为万进制中的最大值9999相乘时得到的值是99980001，不会超过4个字节的存储范围，而十万进制中的最大值99999相乘时得到的值是9999800001，超过4个字节的存储范围而溢出，从而导致程序计算错误。</p>
+<p><span style="font-size: 16px;"><strong>【例1】非负大整数加法和减法。</strong></span></p>
+<p>&nbsp; &nbsp; &nbsp; 编写一个程序，求两个不超过200 位的非负整数的和与差。</p>
+<p>&nbsp; &nbsp; &nbsp; （1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; 在编写程序代码过程中作如下定义：</p>
+<p>&nbsp; &nbsp; &nbsp; const int base=10000;</p>
+<p>&nbsp; &nbsp; &nbsp; const int maxlen=50+2;</p>
+<p>&nbsp; &nbsp; &nbsp; int bignum[maxlen];</p>
+<p>&nbsp; &nbsp; &nbsp; 说明：base表示进制为万进制，maxlen表示大整数的长度，1个元素能存储4个十进制位，50个元素就存储200个十进制位，51个元素可以存储204个十进制位，另外加的1表示下标为0的元素另有它用，程序用作存储当前大整数的位数。</p>
+<p>&nbsp; &nbsp; &nbsp; 下面先来讨论大整数的加法和减法运算的实现。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;可以采用小学中曾学习的竖式加法和减法。两个大整数98240567043826400046和3079472005483080794进行加法运算，如图1所示。</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/高精度计算（三）：大整数加法和减法（采用“万进制”）0.png" alt="" /></p>
+<p style="text-align: center;">&nbsp;图1&nbsp; 加法的计算过程</p>
+<p>&nbsp; &nbsp; &nbsp; 从图1中可以得知，做加法运算是从低位向高位进行，如果有进位，下一位进行相加时要加上进位，如果最高位已计算完还有进位，就要增加存储结果的位数，保存起进位来。关于进位的处理，一般定义单独变量carry进行存储。</p>
+<p>&nbsp; &nbsp; &nbsp; 两个大整数98240567043826400046和3079472005483080794进行减法运算，如图2所示。</p>
+<p align="center"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/高精度计算（三）：大整数加法和减法（采用“万进制”）1.png" alt="" />&nbsp;图2&nbsp; 减法的计算过程</p>
+<p>&nbsp; &nbsp; &nbsp; 图2表示出了减法的计算过程，与加法不同的地方是进位变成了借位，另外就是计算结果的位数可能会比被减数的位数少，因此在处理过程中需要确定结果到底是多少位的。</p>
+<p>日常我们做减法时，如果被减数小于减数，我们是把两数反过来进行相减，在前面添加负号标识。因此，程序中在编写减法子函数时是约定bignum1大于bignum2的，调用时首先判断两个大整数的大小，然后根据两数的大小决定如何调用。</p>
+<p>&nbsp; &nbsp; &nbsp; 再来讨论一下万进制大整数的输出问题。</p>
+<p>&nbsp; &nbsp; &nbsp; 采用万进制来进行大整数的加、减运算，虽然提高了程序的执行效率，但在输出时却带来了问题，如在加法示例中的结果从高位到低位分别为1、132、39、493、946、840。如果仍按照平常的输出一样直接输出时，结果为113239493946840，但定义万进制时明确过每一位是占十进制的四位，132这一位应该输出0132而不是132。因此在输出时应首先输出最高位（因最高位前面是不补0的），然后再输出其他位，如果不足四位，用0补充。</p>
+<p>&nbsp; &nbsp; &nbsp; （2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;iostream&gt;</p>
+<p style="margin-left: 30px;">using namespace std;</p>
+<p style="margin-left: 30px;">const int base=10000;</p>
+<p style="margin-left: 30px;">const int maxlen=50+1;</p>
+<p style="margin-left: 30px;">void charTobignum(char *ch,int *bignum)</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int len,i,j,p,num;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;memset(bignum,0,sizeof(int)*maxlen);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;len=strlen(ch);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bignum[0]=len%4==0?len/4:len/4+1;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;i=1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while (i&lt;=len/4)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; num=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; p=len-4*i;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(j=1;j&lt;=4;j++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; num=num*10+(ch[p++]-'0');</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bignum[i]=num;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; i++;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (len%4!=0)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; num=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;=len%4-1;i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; num=num*10+(ch[i]-'0');</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bignum[len/4+1]=num;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">void addition(int *bignum1, int *bignum2, int *bignum_ans)</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int carry=0;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;memset(bignum_ans,0,sizeof(int)*maxlen);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bignum_ans[0]=bignum1[0]&gt;bignum2[0]?bignum1[0]:bignum2[0];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int pos=1; pos&lt;=bignum_ans[0]; pos++){</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; carry+=bignum1[pos]+bignum2[pos];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bignum_ans[pos]=carry%base;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; carry/=base;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(carry)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bignum_ans[++bignum_ans[0]]=carry;</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int bignumcmp( int *bignum1, int *bignum2 )</p>
+<p style="margin-left: 30px;">// 当bignum1&gt;bignum2时返回正整数，bignum1＝＝bignum2返回0，</p>
+<p style="margin-left: 30px;">//&nbsp;&nbsp;&nbsp; bignum1＜bignum2返回负整数。</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (bignum1[0]-bignum2[0]) return bignum1[0]-bignum2[0];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (int pos=bignum1[0]; pos&gt;0; pos--)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if ( bignum1[pos]-bignum2[pos] )&nbsp; return bignum1[pos]-bignum2[pos];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">void subtract( int *bignum1, int *bignum2, int *bignum_ans)</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int borrow=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; memset( bignum_ans, 0, sizeof(int)*maxlen);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bignum_ans[0]=bignum1[0];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int pos=1; pos&lt;=bignum_ans[0]; pos++){</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bignum_ans[pos]=bignum1[pos]-borrow-bignum2[pos];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(bignum_ans[pos]&lt;0){</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bignum_ans[pos]+=base;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; borrow=1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; else{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; borrow=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while( !bignum_ans[bignum_ans[0]] ) --bignum_ans[0];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (bignum_ans[0]&lt;=0)&nbsp; bignum_ans[0]=1;</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">void printbignum(int *bignum)</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int *p=*bignum+bignum;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;*p--;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout.fill('0');&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; // 定义填充字符'0'</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while(p&gt;bignum){ cout.width(4); cout&lt;&lt;*p--; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;endl;</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int bignum1[maxlen],bignum2[maxlen],bignum_result[maxlen];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;char numstr[maxlen];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;"请输入第1个大整数：";</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cin&gt;&gt;numstr;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;charTobignum(numstr,bignum1);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;"请输入第2个大整数：";</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cin&gt;&gt;numstr;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; charTobignum(numstr,bignum2);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; addition(bignum1,bignum2,bignum_result);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; cout&lt;&lt;"两个大整数的和是 ：";</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printbignum(bignum_result);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; if (bignumcmp(bignum1,bignum2)&gt;=0)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;subtract(bignum1,bignum2,bignum_result);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;cout&lt;&lt;"两个大整数的差是 ：";</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;printbignum(bignum_result);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;subtract(bignum2,bignum1,bignum_result);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;cout&lt;&lt;"两个大整数的差是 ：- ";</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; printbignum(bignum_result);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<p><strong><span style="font-size: 16px;">【例2】Integer Inquiry （POJ 1503）。</span></strong></p>
+<p><strong>Description</strong></p>
+<p>One of the first users of BIT's new supercomputer was Chip Diller. He extended his exploration of powers of 3 to go from 0 to 333 and he explored taking various sums of those numbers. <br />``This supercomputer is great,'' remarked Chip. ``I only wish Timothy were here to see these results.'' (Chip moved to a new apartment, once one became available on the third floor of the Lemon Sky apartments on Third Street.) <br /><strong>Input</strong></p>
+<p>The input will consist of at most 100 lines of text, each of which contains a single VeryLongInteger. Each VeryLongInteger will be 100 or fewer characters in length, and will only contain digits (no VeryLongInteger will be negative). </p>
+<p>The final input line will contain a single zero on a line by itself. <br /><strong>Output</strong></p>
+<p>Your program should output the sum of the VeryLongIntegers given in the input.<br /><strong>Sample Input</strong></p>
+<p>123456789012345678901234567890<br />123456789012345678901234567890<br />123456789012345678901234567890<br />0<br /><strong>Sample Output</strong></p>
+<p>370370367037037036703703703670</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;（1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;采用例1的加法函数完成大整数加法。</p>
+<p>&nbsp; &nbsp; &nbsp; （2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;iostream&gt;<br />using namespace std;<br />const int base=10000;<br />const int maxlen=50+2;<br />void charTobignum(char *ch,int *bignum)<br />{<br />&nbsp; &nbsp; &nbsp; int len,i,j,p,num;<br />&nbsp; &nbsp; &nbsp; memset(bignum,0,sizeof(int)*maxlen);<br />&nbsp; &nbsp; &nbsp; len=strlen(ch);<br />&nbsp; &nbsp; &nbsp; bignum[0]=len%4==0?len/4:len/4+1;<br />&nbsp; &nbsp; &nbsp; i=1;<br />&nbsp; &nbsp; &nbsp; while (i&lt;=len/4)<br />&nbsp; &nbsp; &nbsp; {<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;num=0;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;p=len-4*i;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;for(j=1;j&lt;=4;j++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;num=num*10+(ch[p++]-'0');<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;bignum[i]=num;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;i++;<br />&nbsp; &nbsp; &nbsp; }<br />&nbsp; &nbsp; &nbsp; if (len%4!=0)<br />&nbsp; &nbsp; &nbsp; {<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; num=0;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (i=0;i&lt;=len%4-1;i++)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; num=num*10+(ch[i]-'0');<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; bignum[len/4+1]=num;<br />&nbsp; &nbsp; &nbsp; }<br />}<br />void addition(int *bignum1, int *bignum2, int *bignum_ans)<br />{<br />&nbsp; &nbsp; &nbsp; &nbsp;int carry=0;<br />&nbsp; &nbsp; &nbsp; &nbsp;memset(bignum_ans,0,sizeof(int)*maxlen);<br />&nbsp; &nbsp; &nbsp; &nbsp;bignum_ans[0]=bignum1[0]&gt;bignum2[0]?bignum1[0]:bignum2[0];<br />&nbsp; &nbsp; &nbsp; &nbsp;for(int pos=1; pos&lt;=bignum_ans[0]; pos++){<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;carry+=bignum1[pos]+bignum2[pos];<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;bignum_ans[pos]=carry%base;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;carry/=base;<br />&nbsp; &nbsp; &nbsp; &nbsp;}<br />&nbsp; &nbsp; &nbsp; &nbsp;if(carry)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; bignum_ans[++bignum_ans[0]]=carry;<br />}<br />void printbignum(int *bignum)<br />{<br />&nbsp; &nbsp; &nbsp; int *p=*bignum+bignum;<br />&nbsp; &nbsp; &nbsp; cout&lt;&lt;*p--;<br />&nbsp; &nbsp; &nbsp; cout.fill('0');	    // 定义填充字符'0'<br />&nbsp; &nbsp; &nbsp; while(p&gt;bignum){ cout.width(4); cout&lt;&lt;*p--; }<br />&nbsp; &nbsp; &nbsp; cout&lt;&lt;endl;<br />}<br />int main()<br />{<br />&nbsp; &nbsp; &nbsp; int bignum1[maxlen],bignum2[maxlen],bignum_result[maxlen];<br />&nbsp; &nbsp; &nbsp; char numstr[maxlen];<br />&nbsp; &nbsp; &nbsp; numstr[0]='0';<br />&nbsp; &nbsp; &nbsp; numstr[1]='\0';<br />&nbsp; &nbsp; &nbsp; charTobignum(numstr,bignum1);<br />&nbsp; &nbsp; &nbsp; cin&gt;&gt;numstr;<br />&nbsp; &nbsp; &nbsp; while (1)<br />&nbsp; &nbsp; &nbsp; {<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (strlen(numstr)==1 &amp;&amp; numstr[0]=='0') break;<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; charTobignum(numstr,bignum2);<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; addition(bignum1,bignum2,bignum_result);<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; bignum1[0]=bignum_result[0];<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (int i=bignum1[0];i&gt;=1;i--)<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;bignum1[i]=bignum_result[i];<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; cin&gt;&gt;numstr;<br />&nbsp; &nbsp; &nbsp; &nbsp;}<br />&nbsp; &nbsp; &nbsp; &nbsp;printbignum(bignum_result);<br />&nbsp; &nbsp; &nbsp; &nbsp;return 0;<br />}</p>
+<p style="margin-left: 30px;">&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

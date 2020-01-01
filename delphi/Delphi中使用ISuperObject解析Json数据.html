@@ -1,0 +1,104 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Delphi中使用ISuperObject解析Json数据' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Delphi中使用ISuperObject解析Json数据</center></div><div class='banquan'>原文出处:本文由博客园博主黄浩#提供。<br/>
+原文连接:https://www.cnblogs.com/hhmm99/p/10766317.html</div><br>
+    <div>　　Java、Php等语言中都有成熟的框架来解析Json数据，可以让我们使用很少的代码就把格式化好的json数据转换成程序可识别的对象或者属性，同时delphi中也有这样的组件来实现此功能，即IsuperObject。如果还没有这个组件的请在网上搜索下载或者在下面留言处留下你的邮箱向本人索取。</div>
+<p>　　下面先说一下ISuperObject中几个常用的函数</p>
+<ul>
+<li>function&nbsp;<strong>SO</strong>(const s: SOString = &lsquo;{}&rsquo;): ISuperObject; overload;&nbsp;此函数传入json数据字符串，并返回一个ISuperObject对象，这一般是我们解析json时使用的第一个函数，如jObj := SO(jsonstr)。</li>
+<li>property&nbsp;<strong>O</strong>[const path: SOString]: ISuperObject read GetO write PutO; default;&nbsp;如：jobj.O[&lsquo;username&rsquo;]，此函数被一个ISuperObject对象调用，方括号内的字符串为json中的字段名称，返回一个ISuperObject对象。</li>
+<li>property&nbsp;<strong>S</strong>[const path: SOString]: SOString read GetS write PutS;&nbsp;此函数被一个ISuperObject对象调用，和O[&lsquo;username&rsquo;]不同的是，它返回的是一个SoString，即一个字符串，使用方法 str := jObj.S[&lsquo;username&rsquo;]; 同理的还有其他几个类似的函数，如I[&lsquo;age&rsquo;]返回整数，B[&lsquo;isenable&rsquo;]返回布尔型，A[&lsquo;users&rsquo;]返回一个TSuperArray数组</li>
+<li><strong>AsString, AsBoolean, AsInteger,AsArray</strong>，ISuperObject的函数，用来把ISuperObject转换成相应的数据类型。</li>
+</ul>
+<p>　　下面我们看一个演示代码，json数据如下</p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">{</span><span style="color: #008000;">
+    "retcode": "1", 
+    "datafrom": "server",
+    "users": "[{\"id\":1, \"username\": \"liuderu\", \"website\": \"bcoder.com\"</span><span style="color: #008000;">}</span>,<span style="color: #008000;">{</span><span style="color: #008000;">\"id\":2, \"username\": \"Jeoe\", \"website\": \"baidu.com\"</span><span style="color: #008000;">}</span><span style="color: #000000;">]"
+}</span></pre>
+</div>
+<p>Delphi版本2010，代码如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">unit</span><span style="color: #000000;"> uFmMain;
+
+</span><span style="color: #0000ff;">interface</span>
+
+<span style="color: #0000ff;">uses</span><span style="color: #000000;">
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, StdCtrls, ComCtrls, Buttons, superobject;
+
+</span><span style="color: #0000ff;">type</span><span style="color: #000000;">
+  TFmMain </span>= <span style="color: #0000ff;">class</span><span style="color: #000000;">(TForm)
+    Memo1: TMemo;
+    ListView1: TListView;
+    BitBtn1: TBitBtn;
+    Label1: TLabel;
+    </span><span style="color: #0000ff;">procedure</span><span style="color: #000000;"> BitBtn1Click(Sender: TObject);
+  </span><span style="color: #0000ff;">private</span>
+    <span style="color: #008000;">{</span><span style="color: #008000;"> Private declarations </span><span style="color: #008000;">}</span>
+  <span style="color: #0000ff;">public</span>
+    <span style="color: #008000;">{</span><span style="color: #008000;"> Public declarations </span><span style="color: #008000;">}</span>
+  <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  FmMain: TFmMain;
+
+</span><span style="color: #0000ff;">implementation</span>
+
+<span style="color: #008000;">{</span><span style="color: #008000;">$R *.dfm</span><span style="color: #008000;">}</span>
+
+<span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TFmMain.BitBtn1Click(Sender: TObject);
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  jRet, jUsers: ISuperObject;
+  aryUsers: TSuperArray;
+  retCode: integer;
+  strUsers: </span><span style="color: #0000ff;">string</span><span style="color: #000000;">;
+  i: integer;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  jRet :</span>=<span style="color: #000000;"> SO(Memo1.Text);
+  </span><span style="color: #0000ff;">if</span> (jRet.O[<span style="color: #800000;">'</span><span style="color: #800000;">retcode</span><span style="color: #800000;">'</span>] &lt;&gt; <span style="color: #0000ff;">nil</span>) <span style="color: #0000ff;">then</span> <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+    retCode :</span>= jRet.O[<span style="color: #800000;">'</span><span style="color: #800000;">retcode</span><span style="color: #800000;">'</span><span style="color: #000000;">].AsInteger;
+    Label1.Caption :</span>= <span style="color: #800000;">'</span><span style="color: #800000;">返回值：</span><span style="color: #800000;">'</span> + IntToStr(retCode) + <span style="color: #800000;">'</span><span style="color: #800000;">;  数据来源：</span><span style="color: #800000;">'</span> + jRet.O[<span style="color: #800000;">'</span><span style="color: #800000;">datafrom</span><span style="color: #800000;">'</span><span style="color: #000000;">].AsString;
+
+    </span><span style="color: #0000ff;">if</span>(jRet.O[<span style="color: #800000;">'</span><span style="color: #800000;">retcode</span><span style="color: #800000;">'</span>].AsInteger = <span style="color: #800080;">1</span>) <span style="color: #0000ff;">then</span> <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+      strUsers :</span>= jRet.O[<span style="color: #800000;">'</span><span style="color: #800000;">users</span><span style="color: #800000;">'</span><span style="color: #000000;">].AsString;
+      jUsers :</span>=<span style="color: #000000;"> SO(strUsers);
+      aryUsers :</span>=<span style="color: #000000;"> jUsers.AsArray;
+      </span><span style="color: #0000ff;">for</span> I := <span style="color: #800080;">0</span> <span style="color: #0000ff;">to</span> aryUsers.Length - <span style="color: #800080;">1</span> <span style="color: #0000ff;">do</span> <span style="color: #0000ff;">begin</span>
+        <span style="color: #0000ff;">with</span>  ListView1.Items.Add <span style="color: #0000ff;">do</span> <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+          Caption :</span>= aryUsers[i].O[<span style="color: #800000;">'</span><span style="color: #800000;">id</span><span style="color: #800000;">'</span><span style="color: #000000;">].AsString;
+          SubItems.Add(aryUsers[i].O[</span><span style="color: #800000;">'</span><span style="color: #800000;">username</span><span style="color: #800000;">'</span><span style="color: #000000;">].AsString);
+          SubItems.Add(aryUsers[i].O[</span><span style="color: #800000;">'</span><span style="color: #800000;">website</span><span style="color: #800000;">'</span><span style="color: #000000;">].AsString);
+        </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+      </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">end</span>.</pre>
+</div>
+<p>&nbsp;</p>
+<div id="crayon-5cc106b214aa2894604460" class="crayon-syntax crayon-theme-classic crayon-font-monaco crayon-os-mac print-yes notranslate" data-settings=" minimize scroll-mouseover">原文地址：<a href="http://bcoder.com/delphi/parse-json-data-in-delphi-by-using-isuperobject" target="_blank">http://bcoder.com/delphi/parse-json-data-in-delphi-by-using-isuperobject</a>&nbsp;</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

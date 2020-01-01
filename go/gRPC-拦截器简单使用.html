@@ -1,0 +1,187 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修gRPC-拦截器简单使用' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>gRPC-拦截器简单使用</center></div><div class='banquan'>原文出处:本文由博客园博主coloc提供。<br/>
+原文连接:https://www.cnblogs.com/coloc/p/11360071.html</div><br>
+    <h1 id="概述">概述</h1>
+<p>gRPC作为通用RPC框架，内置了拦截器功能。包括服务器端的拦截器和客户端拦截器，使用上大同小异。主要作用是在rpc调用的前后进行额外处理。</p>
+<p>从客户端角度讲，可以在请求发起前，截取到请求参数并修改；也可以修改服务器的响应参数。</p>
+<h1 id="示例">示例</h1>
+<p>以下写一个简单的示例来描述具体的功能实现。以Go语言为例，其它语言的gRPC库应该也有类似功能，具体请参考文档。</p>
+<p>为使示例简单，简化了对错误的处理。并且只展示了部分代码，完整项目请参考GitHub仓库<a href="https://github.com/pnnh/suji-go/tree/interceptor">pnnh/suji-go</a></p>
+<h2 id="接口描述文件">接口描述文件</h2>
+<pre><code><code>syntax = &quot;proto3&quot;;
+
+package suji;
+
+service Suji {
+    rpc Say(SayRequest) returns (SayReply) {}
+}
+
+message SayRequest {
+    string msg = 1;
+}
+
+message SayReply {
+    string msg = 1;
+}
+</code></pre>
+<h1 id="最初实现">最初实现</h1>
+<p>服务器main方法</p>
+<pre class="go"><code>func main() {
+    lis, err := net.Listen(&quot;tcp&quot;, &quot;0.0.0.0:1301&quot;)
+    if err != nil {
+        log.Fatalln(&quot;监听出错&quot;, err)
+        return
+    }
+
+    grpcServer := grpc.NewServer()
+    suji.RegisterSujiServer(grpcServer, &amp;server.SujiServer{})
+
+    if err = grpcServer.Serve(lis); err != nil {
+        log.Fatalln(&quot;服务停止&quot;, err)
+    }
+}</code></pre>
+<p>客户端main方法</p>
+<pre class="go"><code>func main() {
+    addr := &quot;127.0.0.1:1301&quot;
+    c := client.LinkSujiServer(addr)
+    
+    rep := client.Say(c, msg)
+    log.Println(&quot;收到:&quot;, rep.Msg)
+}</code></pre>
+<p>这里通过LinkSujiServer方法来连接至gRPC服务器，调用了Say接口，并打印了服务器返回值。</p>
+<p>LinkSujiServer方法如下</p>
+<pre class="go"><code>func LinkSujiServer(target string) suji.SujiClient {
+    conn, err := grpc.DialContext(context.Background(), target, grpc.WithInsecure())
+    if err != nil {
+        log.Fatalln(&quot;链接至服务出错&quot;, err, target)
+    }
+    return suji.NewSujiClient(conn)
+}</code></pre>
+<p>Say接口客户端调用方式如下：</p>
+<pre class="go"><code>
+func Say(client suji.SujiClient, msg string) *suji.SayReply {
+    request := &amp;suji.SayRequest{Msg: msg}
+
+    reply, err := client.Say(context.Background(), request)
+    if err != nil {
+        log.Fatalln(&quot;调用出错&quot;, err)
+    }
+    return reply
+}
+</code></pre>
+<p>Say接口服务端实现如下，将收到的内容原样返回给调用者：</p>
+<pre class="go"><code>func (s *SujiServer) Say(ctx context.Context, req *suji.SayRequest) (*suji.SayReply, error) {
+    log.Println(&quot;收到:&quot;, req.Msg)
+
+    reply := &amp;suji.SayReply{Msg: req.Msg}
+
+    return reply, nil
+}</code></pre>
+<p>运行这段代码，将分别打印以下结果</p>
+<p>客户端：</p>
+<pre class="bash"><code>2019/08/15 18:19:59 发送: 你好
+2019/08/15 18:19:59 收到: 你好</code></pre>
+<p>服务器：</p>
+<pre class="bash"><code>2019/08/15 18:19:59 收到: 你好
+2019/08/15 18:19:59 回复: 你好</code></pre>
+<h1 id="拦截器实现">拦截器实现</h1>
+<p>原本很简单的接口调用，现在我们通过gRPC客户端拦截器给这段对话加点料。</p>
+<p>我们将通过拦截器，截取并篡改客户端发送给服务器的内容，然后把服务器返回的内容也篡改掉。这一切是悄悄在拦截器中进行的，调用的发起方和接收方并不知晓。</p>
+<p>定义拦截器方法</p>
+<pre class="go"><code>func callInterceptor(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn,
+    invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+
+    if reqParam, ok := req.(*suji.SayRequest); ok {
+        newMsg := strings.Replace(reqParam.Msg, &quot;喜欢&quot;, &quot;讨厌&quot;, 1)
+        req = &amp;suji.SayRequest{Msg: newMsg}
+    }
+
+    err := invoker(ctx, method, req, reply, cc, opts...)
+    if err != nil {
+        log.Println(&quot;接口调用出错&quot;, method, err)
+        return err
+    }
+
+    if replyParam, ok := reply.(*suji.SayReply); ok {
+        newMsg := strings.Replace(replyParam.Msg, &quot;讨厌&quot;, &quot;喜欢&quot;, 1)
+        replyParam.Msg = newMsg
+    }
+
+    return nil
+}</code></pre>
+<p>方法稍后解释，这里先修改连接服务器的方法，加入拦截器选项：</p>
+<pre class="go"><code>
+func LinkSujiServer(target string) suji.SujiClient {
+    conn, err := grpc.DialContext(context.Background(), target, grpc.WithInsecure(),
+        grpc.WithUnaryInterceptor(callInterceptor))
+    if err != nil {
+        log.Fatalln(&quot;链接至服务出错&quot;, err, target)
+    }
+    return suji.NewSujiClient(conn)
+}</code></pre>
+<p>注意新增的<strong>grpc.WithUnaryInterceptor(callInterceptor)</strong>这一行。</p>
+<p>gRPC运行时将会为我们定义的callInterceptor传入几个有用的参数。其中method是调用接口的路径，req和reply分别为对应接口的请求和输出参数。而invoker参数是一个方法，用于执行原本的RPC请求，如果调用这个方法，则RPC请求就不会发到服务器。</p>
+<p>在这里，我们通过判断请求和响应类型，并对参数进行篡改。同时为了使示例更有趣，简单修改了下main函数代码。</p>
+<p>客户端main方法</p>
+<pre class="go"><code>func main() {
+    addr := &quot;127.0.0.1:1301&quot;
+
+    c := client.LinkSujiServer(addr)
+
+    msg := &quot;我喜欢你&quot;
+    log.Println(&quot;发送:&quot;, msg)
+    rep := client.Say(c, msg)
+
+    log.Println(&quot;收到:&quot;, rep.Msg)
+
+    if strings.Contains(rep.Msg, &quot;喜欢&quot;) {
+        log.Println(&quot;内心:&quot;, &quot;好开心啊&quot;)
+    }
+}</code></pre>
+<p>服务器Say方法</p>
+<pre class="go"><code>func (s *SujiServer) Say(ctx context.Context, req *suji.SayRequest) (*suji.SayReply, error) {
+    log.Println(&quot;收到:&quot;, req.Msg)
+
+    reply := &amp;suji.SayReply{}
+    if strings.Contains(req.Msg, &quot;讨厌&quot;) {
+        reply.Msg = &quot;我也讨厌你&quot;
+    }
+    log.Println(&quot;回复:&quot;, reply.Msg)
+    log.Println(&quot;内心:&quot;, &quot;沙雕&quot;)
+
+    return reply, nil
+}</code></pre>
+<p>来看下输出感受下双方的内心吧：</p>
+<p>客户端输出：</p>
+<pre class="bash"><code>2019/08/15 19:07:14 发送: 我喜欢你
+2019/08/15 19:07:14 收到: 我也喜欢你
+2019/08/15 19:07:14 内心: 好开心啊</code></pre>
+<p>服务器输出：</p>
+<pre class="bash"><code>2019/08/15 19:07:14 收到: 我讨厌你
+2019/08/15 19:07:14 回复: 我也讨厌你
+2019/08/15 19:07:14 内心: 沙雕</code></pre>
+<h1 id="最后">最后</h1>
+<p>gRPC除了一元拦截器以外也提供了流拦截器设置方法，通过grpc.WithStreamInterceptor方法在建立连接时设置。流拦截器与一元拦截器功能大致相同，具体应用可参考库源码或相关文档。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

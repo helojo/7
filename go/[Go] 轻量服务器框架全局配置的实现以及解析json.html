@@ -1,0 +1,81 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] 轻量服务器框架全局配置的实现以及解析json' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] 轻量服务器框架全局配置的实现以及解析json</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/12051914.html</div><br>
+    <p>在一个应用中经常需要有一个配置文件，可以对代码中的参数进行配置，可以使用一个json文件来对应一个struct的对象，进行全局配置</p>
+<p>建一个conf/zinx.json作为配置文件</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">{
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">Name</span><span style="color: #800000;">"</span>:<span style="color: #800000;">"</span><span style="color: #800000;">zinxServer</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">Host</span><span style="color: #800000;">"</span>:<span style="color: #800000;">"</span><span style="color: #800000;">0.0.0.0</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">TcpPort</span><span style="color: #800000;">"</span>:<span style="color: #800080;">8888</span><span style="color: #000000;">
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>建一个utils/GlobalObj.go&nbsp; utils包，比如下面这个</p>
+<p>func init()函数可以在导包的同时被执行，并且在这个里面声明一个全局变量作为数据存储var&nbsp;GlobalObject&nbsp;*GlobalObj</p>
+<p>使用ioutil.ReadFile可以直接读取文件</p>
+<p>使用json.Unmarshal可以直接解析json格式并且对应一个struct ,&nbsp; &nbsp;key要一致得对应好</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package utils
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">io/ioutil</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">log</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">encoding/json</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type GlobalObj struct{
+    Name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+    Host </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+    TcpPort </span><span style="color: #0000ff;">int</span><span style="color: #000000;">
+    MaxConn </span><span style="color: #0000ff;">int</span><span style="color: #000000;">
+    Version </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+    MaxPackageSize </span><span style="color: #0000ff;">int</span><span style="color: #000000;">
+}
+var GlobalObject </span>*<span style="color: #000000;">GlobalObj
+func (g </span>*<span style="color: #000000;">GlobalObj)Reload(){
+    confFile:</span>=<span style="color: #800000;">"</span><span style="color: #800000;">conf/zinx.json</span><span style="color: #800000;">"</span><span style="color: #000000;">
+    data,err:</span>=<span style="color: #000000;">ioutil.ReadFile(confFile)
+    </span><span style="color: #0000ff;">if</span> err!=<span style="color: #000000;">nil{
+        log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">reload conf err </span><span style="color: #800000;">"</span><span style="color: #000000;">,err)
+    }
+    err</span>=<span style="color: #000000;">json.Unmarshal(data,GlobalObject)
+    </span><span style="color: #0000ff;">if</span> err!=<span style="color: #000000;">nil{
+        log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">json unmarshal err </span><span style="color: #800000;">"</span><span style="color: #000000;">,confFile,err)
+    }
+}
+func init(){
+    GlobalObject</span>=&amp;<span style="color: #000000;">GlobalObj{
+        Name:</span><span style="color: #800000;">"</span><span style="color: #800000;">zinx</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        Host:</span><span style="color: #800000;">"</span><span style="color: #800000;">0.0.0.0</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        TcpPort: </span><span style="color: #800080;">8999</span><span style="color: #000000;">,
+        MaxConn: </span><span style="color: #800080;">1000</span><span style="color: #000000;">,
+        Version:</span><span style="color: #800000;">"</span><span style="color: #800000;">v0.1</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        MaxPackageSize: </span><span style="color: #800080;">4096</span><span style="color: #000000;">,
+    }
+    GlobalObject.Reload()
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

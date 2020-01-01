@@ -1,0 +1,124 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修luogu5283 异或粽子' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>luogu5283 异或粽子</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/luogu5283.html</div><br>
+    <p><a href="https://www.luogu.org/problemnew/show/P5283"><font size=5>题目链接</font></a></p>
+<h1 id="思路">思路</h1>
+<p>首先求个前缀异或和，这样就可以<span class="math inline">\(O(1)\)</span>的得到区间异或和了。</p>
+<p>然后发现问题转化为</p>
+<blockquote>
+<p>找出不同的<span class="math inline">\(k\)</span>个二元组<span class="math inline">\(x,y\)</span>。使得<span class="math inline">\(a_x \otimes a_y\)</span>的和最大。</p>
+</blockquote>
+<p>有个比较有趣的思路</p>
+<p>设<span class="math inline">\(S_i\)</span>表示前<span class="math inline">\(i\)</span>个元素的异或和。对于每个<span class="math inline">\(S_i\)</span>,我们找出在<span class="math inline">\(S\)</span>数组中与他异或起来最大的数字是多少。假设第<span class="math inline">\(i\)</span>个得到的最大异或和为<span class="math inline">\(t_i\)</span></p>
+<p>然后从这些数字中找出最大的那个。假设是<span class="math inline">\(t_x\)</span>。然后我们就把答案加上<span class="math inline">\(t_x\)</span>，并且把<span class="math inline">\(t_x\)</span>变为与<span class="math inline">\(S_x\)</span>异或起来第<span class="math inline">\(2\)</span>大的异或和。一直这样做下去。</p>
+<p>发现可以用堆维护。</p>
+<p>发现对于每个异或和都被算了两次。所以把<span class="math inline">\(K\)</span>先乘<span class="math inline">\(2\)</span>，并且把最终答案除以<span class="math inline">\(2\)</span>，就可以了。</p>
+<h1 id="代码">代码</h1>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-04-11 19:00:05
+* @Last Modified time: 2019-04-11 19:28:46
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 500000 + 100;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+struct node {
+    ll id;
+    int rk;
+    ll w;
+    node(int x,int y,ll z) {
+        id = x,rk = y,w = z;
+    }
+};
+int trie[N * 32][2],cnt[N * 32],tot;
+ll a[N];
+bool operator &lt; (const node &amp;A,const node &amp;B) {
+    return A.w &lt; B.w;
+}
+priority_queue&lt;node&gt;q;
+void insert(ll x) {
+    int now = 0;
+    for(int i = 31;i &gt;= 0;--i) {
+        int k = (x &gt;&gt; i) &amp; 1;
+        if(!trie[now][k]) trie[now][k] = ++tot;
+        now = trie[now][k];
+        cnt[now]++;
+    }
+}
+ll query(ll x,int y) {
+    int now = 0;
+    ll ret = 0;
+    for(int i = 31;i &gt;= 0;--i) {
+        int k = (x &gt;&gt; i) &amp; 1;
+        if(!trie[now][k ^ 1]) now = trie[now][k];
+        else {
+            if(y &gt; cnt[trie[now][k ^ 1]]) y -= cnt[trie[now][k ^ 1]],now = trie[now][k];
+            else now = trie[now][k ^ 1],ret |= (1ll &lt;&lt; i);
+        }
+    }
+    return ret;
+}
+int main() {
+    ll ans = 0;
+    int n = read(),K = read() &lt;&lt; 1;
+    insert(0);
+    for(int i = 1;i &lt;= n;++i) {
+        a[i] = a[i - 1] ^ read();
+        insert(a[i]);
+    }
+    for(int i = 1;i &lt;= n;++i) q.push(node(a[i],1,query(a[i],1)));
+    q.push(node(0,1,query(0,1)));
+    while(K--) {
+        node tmp = q.top();q.pop();
+        ans += tmp.w;
+        tmp.rk++;
+        tmp.w = query(tmp.id,tmp.rk);
+
+        q.push(tmp);
+    }
+    cout&lt;&lt;(ans &gt;&gt; 1);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

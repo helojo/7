@@ -1,0 +1,252 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修DFS和BFS的比较' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>DFS和BFS的比较</center></div><div class='banquan'>原文出处:本文由博客园博主aTeacher提供。<br/>
+原文连接:https://www.cnblogs.com/cs-whut/p/11149521.html</div><br>
+    <p>&nbsp; &nbsp; &nbsp; &nbsp; DFS（Depth First Search，深度优先搜索）和BFS（Breadth First Search，广度优先搜索）是两种典型的搜索算法。下面通过一个实例来比较一下深度优先搜索和广度优先搜索的搜索过程。</p>
+<p><span style="font-size: 16px;"><strong>【例1】马的行走路径</strong></span></p>
+<p>&nbsp; &nbsp; &nbsp; 设有一个n*m的棋盘（2&lt;=n&lt;=50，2&lt;=m&lt;=50），在棋盘上任一点有一个中国象棋马，如图1（a）所示。马行走的规则为：（1）马走日字；（2）马只能向右走，即如图1（b）所示的4种走法。</p>
+<p>&nbsp; &nbsp; &nbsp; 编写一个程序，输入n和m，找出一条马从棋盘左下角（1，1）到右上角（n，m）的路径。例如：输入n=4、m=4时，输出路径 (1,1)-&gt;(2,3)-&gt;(4,4)。这一路经如图1（c）所示。若不存在路径，则输出"No！"</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/DFS和BFS的比较0.png" alt="" /></p>
+<p>&nbsp; &nbsp; &nbsp; （1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; 将棋盘的横坐标规定为i，纵坐标规定为j，对于一个n&times;m的棋盘，i的值从1到n，j的值从1到m。棋盘上的任意点都可以用坐标（i，j）表示。</p>
+<p>&nbsp; &nbsp; &nbsp; 马有四种移动方向，每种移动方法用偏移值来表示，将这些偏移值分别保存在数组dx和dy中，可定义数组int dx[4]={1,1,2,2}和int dy[4]={-2,2,-1,1}。</p>
+<p>&nbsp; &nbsp; &nbsp; 定义数组int visit[51][51]标记某位置马儿是否已走过，初始时visit数组的所有元素值均为0，visit[i][j]=0表示坐标（i,j）处马儿未走过。同时为了后面输出路径方便，在标记visit[i][j]的值时，可以将其设置为其前一个位置的信息，例如visit[i][j] = x*100+y，它表示马儿由坐标（x,y）走到坐标（i,j）处。</p>
+<p>&nbsp; &nbsp; &nbsp; （2）采用深度优先搜索编写的源程序。</p>
+<p style="margin-left: 30px;">#include &lt;iostream&gt;</p>
+<p style="margin-left: 30px;">using namespace std;</p>
+<p style="margin-left: 30px;">#define N 51</p>
+<p style="margin-left: 30px;">struct Node</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int x;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int y;</p>
+<p style="margin-left: 30px;">};</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int n,m;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int dx[4]={1,1,2,2};</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int dy[4]={-2,2,-1,1};</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int visit[N][N]={0};&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; Node s[N*N],cur,next;&nbsp;&nbsp; // s为栈</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; int&nbsp; top,i,x,y,t;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;// top为栈顶指针</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; cin&gt;&gt;n&gt;&gt;m;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; top=-1;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 栈S初始化</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; cur.x=1;&nbsp; cur.y=1;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; visit[1][1]=-1;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 点(1,1)为出发点，无前驱结点</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; s[++top]=cur;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 初始结点入栈；</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; bool flag= false;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 置搜索成功标志flag为假</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while(top&gt;=0 &amp;&amp; !flag)&nbsp;&nbsp; // 栈不为空</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cur=s[top--];&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 栈顶元素出栈</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (cur.x==n &amp;&amp; cur.y==m)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flag=true;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; x=n;&nbsp; y=m;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while (visit[x][y]!=-1)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;"("&lt;&lt;x&lt;&lt;","&lt;&lt;y&lt;&lt;") &lt;-- ";</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; t=visit[x][y];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; x=t/100;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; y=t%100;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;"(1,1)"&lt;&lt;endl;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;4;i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;x=cur.x+dx[i];&nbsp; y=cur.y+dy[i];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; if(x &gt;=1 &amp;&amp; x&lt;=n &amp;&amp; y&gt;=0 &amp;&amp; y&lt;=m &amp;&amp; visit[x][y]==0)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; visit[x][y] = (cur.x)*100+cur.y;&nbsp; // 映射保存前驱结点信息</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; next.x=x;&nbsp; next.y=y; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// 由cur扩展出新结点next</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; s[++top]=next;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// next结点入栈</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (!flag)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;"No path!"&lt;&lt;endl;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 为理解深度优先搜索的结点访问顺序，可以在上面源程序中的出栈语句后加上一条语句</p>
+<p>cout&lt;&lt;"("&lt;&lt;cur.x&lt;&lt;","&lt;&lt;cur.y&lt;&lt;") -- ";&nbsp;&nbsp;输出结点的出栈访问顺序。</p>
+<p>&nbsp; &nbsp; &nbsp; （3）DFS的搜索过程。</p>
+<p>&nbsp; &nbsp; &nbsp;以输入5,5为例，用树形结构表示马可能走的所有过程（如下图），求从起点到终点的路径，实际上就是从根结点开始搜索这棵树。</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/DFS和BFS的比较1.png" alt="" /></p>
+<p>&nbsp; &nbsp; &nbsp; 马从（1，1）开始，按深度优先搜索法，扩展出两个结点（2,3）和（3,2）依次入栈，之后（3,2）出栈，即走一步到达（3,2），判断是否到达终点，若没有，则继续往前走，扩展出结点（4,4）、（5,1）、（5,3）依次入栈，再走一步到达（5,3），没有到达终点，继续往前走，（5,3）的下一步所走的位置不在棋盘上，则另选一条路径再走；（5,1）出栈，即走到（5,1）；&hellip;，直到到达（5,5），搜索过程结束。</p>
+<p>&nbsp; &nbsp; &nbsp; 以输入5,5为例，输出的深度优先访问顺序为：</p>
+<p>(1,1) -- (3,2) -- (5,3) -- (5,1) -- (4,4) -- (5,2) -- (2,3) -- (4,2) -- (5,4) -- (3,5) -- (4,3) -- (5,5)。</p>
+<p>&nbsp; &nbsp; &nbsp; （4）采用广度优先搜索编写的源程序。</p>
+<p style="margin-left: 30px;">#include &lt;iostream&gt;</p>
+<p style="margin-left: 30px;">using namespace std;</p>
+<p style="margin-left: 30px;">#define N 51</p>
+<p style="margin-left: 30px;">struct Node</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int x;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int y;</p>
+<p style="margin-left: 30px;">};</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int n,m;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int dx[4]={1,1,2,2};</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int dy[4]={-2,2,-1,1};</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int visit[N][N]={0};&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; Node q[N*N],cur,next;&nbsp;&nbsp;&nbsp;&nbsp; // q为队列</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; int&nbsp; front,rear,i,x,y,t;&nbsp; &nbsp; &nbsp; &nbsp; // front为队头指针，rear队尾指针</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; cin&gt;&gt;n&gt;&gt;m;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; front=rear=0;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; // 队列q初始化</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; cur.x=1;&nbsp; cur.y=1;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; visit[1][1]=-1;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;// 点(1,1)为出发点，无前驱结点</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; q[rear++]=cur;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; // 初始结点入队</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; bool flag= false;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; // 置搜索成功标志flag为假</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; cout&lt;&lt;"结点访问顺序为：";</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while(rear!=front &amp;&amp; !flag)&nbsp;&nbsp; // 队列不为空</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cur=q[front++];&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 队头元素出队</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;cout&lt;&lt;"("&lt;&lt;cur.x&lt;&lt;","&lt;&lt;cur.y&lt;&lt;") -- ";</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (cur.x==n &amp;&amp; cur.y==m)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flag=true;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; x=n;&nbsp; y=m;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;cout&lt;&lt;endl;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;cout&lt;&lt;"行走路径为：";</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while (visit[x][y]!=-1)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;"("&lt;&lt;x&lt;&lt;","&lt;&lt;y&lt;&lt;") &lt;-- ";</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; t=visit[x][y];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; x=t/100;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; y=t%100;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;"(1,1)"&lt;&lt;endl;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;4;i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; x=cur.x+dx[i];&nbsp; y=cur.y+dy[i];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; if(x &gt;=1 &amp;&amp; x&lt;=n &amp;&amp; y&gt;=1 &amp;&amp; y&lt;=m &amp;&amp; visit[x][y]==0)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; visit[x][y] = (cur.x)*100+cur.y;&nbsp; // 映射保存前驱结点信息</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; next.x=x;&nbsp; next.y=y;&nbsp; // 由cur扩展出新结点next</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; q[rear++]=next;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // next结点入栈</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (!flag)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;"No path!"&lt;&lt;endl;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp; &nbsp;return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">（5）BFS的搜索过程。</p>
+<p>&nbsp; &nbsp; &nbsp; 结合上面的搜索图，广度优先搜索采用自上而下，从左到右的顺序搜素结点。因此，结点访问顺序为：(1,1) -- (2,3) -- (3,2) -- (3,1) -- (3,5) -- (4,2) -- (4,4) -- (5,1) -- (5,3) -- (4,3) -- (5,2) -- (5,4) -- (5,5)。</p>
+<p>&nbsp;</p>
+<p><span style="font-size: 16px;"><strong>【例2】Knight Moves （POJ 2243）</strong></span></p>
+<p><strong>Description</strong></p>
+<p>A friend of you is doing research on the Traveling Knight Problem (TKP) where you are to find the shortest closed tour of knight moves that visits each square of a given set of n squares on a chessboard exactly once. He thinks that the most difficult part of the problem is determining the smallest number of knight moves between two given squares and that, once you have accomplished this, finding the tour would be easy. <br />Of course you know that it is vice versa. So you offer him to write a program that solves the "difficult" part. </p>
+<p>Your job is to write a program that takes two squares a and b as input and then determines the number of knight moves on a shortest route from a to b.<br /><strong>Input</strong></p>
+<p>The input will contain one or more test cases. Each test case consists of one line containing two squares separated by one space. A square is a string consisting of a letter (a-h) representing the column and a digit (1-8) representing the row on the chessboard.<br /><strong>Output</strong></p>
+<p>For each test case, print one line saying "To get from xx to yy takes n knight moves.".<br /><strong>Sample Input</strong></p>
+<p>e2 e4<br />a1 b2<br />b2 c3<br />a1 h8<br />a1 h7<br />h8 a1<br />b1 c3<br />f6 f6<br /><strong>Sample Output</strong></p>
+<p>To get from e2 to e4 takes 2 knight moves.<br />To get from a1 to b2 takes 4 knight moves.<br />To get from b2 to c3 takes 2 knight moves.<br />To get from a1 to h8 takes 6 knight moves.<br />To get from a1 to h7 takes 5 knight moves.<br />To get from h8 to a1 takes 6 knight moves.<br />To get from b1 to c3 takes 1 knight moves.<br />To get from f6 to f6 takes 0 knight moves.</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;（1）采用深度优先搜索编写的源程序。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">int dx[]={1,1,2,2,-1,-1,-2,-2};</p>
+<p style="margin-left: 30px;">int dy[]={2,-2,1,-1,2,-2,1,-1};</p>
+<p style="margin-left: 30px;">int step[8][8];</p>
+<p style="margin-left: 30px;">void dfs(int si,int sj,int moves)</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; if(si&lt;0||sj&lt;0||si&gt;=8||sj&gt;=8||moves&gt;=step[si][sj])&nbsp; return;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; step[si][sj]=moves;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; for(int i=0;i&lt;8;i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; dfs(si+dx[i],sj+dy[i],moves+1);</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; char src[3],dest[3];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; while(scanf("%s%s",src,dest)!=EOF)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for(int i=0;i&lt;8;i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for(int j=0;j&lt;8;j++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;step[i][j]=10;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; dfs(src[0]-'a',src[1]-'1',0);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; printf("To get from %s to %s ",src,dest);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; printf("takes %d knight moves.\n",step[dest[0]-'a'][dest[1]-'1']);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<p>&nbsp; &nbsp; &nbsp; （2）采用广度优先搜索编写的源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">struct point{</p>
+<p style="margin-left: 60px;">&nbsp;int x,y;</p>
+<p style="margin-left: 60px;">&nbsp;int step;</p>
+<p style="margin-left: 30px;">};</p>
+<p style="margin-left: 30px;">int dx[]={1,1,2,2,-1,-1,-2,-2};</p>
+<p style="margin-left: 30px;">int dy[]={2,-2,1,-1,2,-2,1,-1};</p>
+<p style="margin-left: 30px;">int BFS(char src[],char dest[])</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (src[0]==dest[0] &amp;&amp; src[1]==dest[1])</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;point from,to,cur,next,q[64];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;int front,rear,vis[8][8]={0};</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; front=rear=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; from.x=src[0]-'a';</p>
+<p style="margin-left: 60px;">&nbsp;from.y=src[1]-'1';</p>
+<p style="margin-left: 60px;">&nbsp;from.step=0;</p>
+<p style="margin-left: 60px;">&nbsp;to.x=dest[0]-'a';</p>
+<p style="margin-left: 60px;">&nbsp;to.y=dest[1]-'1';</p>
+<p style="margin-left: 60px;">&nbsp;q[rear++]=from;</p>
+<p style="margin-left: 60px;">&nbsp;while(front&lt;rear)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; cur=q[front++];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for(int i=0;i&lt;8;i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;next.x=cur.x+dx[i];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;next.y=cur.y+dy[i];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if(next.x&lt;0||next.x&gt;7||next.y&lt;0||next.y&gt;7)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; continue;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (next.x==to.x &amp;&amp; next.y==to.y)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; return cur.step+1;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (vis[next.x][next.y]==0)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;next.step=cur.step+1;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;q[rear++]=next;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;vis[next.x][next.y]=1;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return -1;</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;char src[3],dest[3];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; while(scanf("%s%s",src,dest)!=EOF)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;printf("To get from %s to %s ",src,dest);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;printf("takes %d knight moves.\n",BFS(src,dest));</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">（3）上面两种方法的分析比较。</p>
+<p>&nbsp; &nbsp; &nbsp; 在采用DFS搜索时，int step[8][8]数组保存了从某个起点走到棋盘上每个点的最少步数，如step[5][4]就保存了从起点到棋盘第6行第5列方格（即F5）最少步数。</p>
+<p>&nbsp; &nbsp; &nbsp; 递归函数dfs(int si,int sj,int moves)表示第moves歩走到位置（si,sj），可记录step[si][sj]=moves；下一步moves+1可走到（si+dx[i],sj+dy[i]），故递归调用dfs(si+dx[i],sj+dy[i],moves+1)即可。由于在递归调用时，某个位置可能通过多条路径反复到达，因此，若moves&gt;=step[si][sj]，表示位置（si,sj）可用更少的步数到达，当前这条路径不再是最短，直接返回不处理。这样就要求对数组step[][]的每个元素预先赋一个较大的值，以保证第1次访问位置（si,sj）时，出现moves&lt;step[si][sj]，从而可修改step[si][sj]（即step[si][sj]=moves）。</p>
+<p>&nbsp; &nbsp; &nbsp; 在采用BFS搜索时，BFS是按一层一层来访问的，层层搜索每一层就代表了一步。BFS优先访问的是兄弟节点，只有这一层全部访问完才能访问下一层，也就是说BFS第几层就代表从起点最少需要多少歩走到当前层的结点；而DFS是按递归来实现的，它优先搜索深度，到一条路径走不下去了再回溯，优先访问的是没有访问过的子结点。</p>
+<p>&nbsp; &nbsp; &nbsp; 由此可体会：BFS用来搜索最短径路的解是比较合适的，比如求最少步数的解，最少交换次数的解。因为BFS搜索过程中遇到的解一定是离根最近的，所以遇到一个解，一定就是最优解，此时搜索算法可以终止。这个时候一般不适宜使用DFS，因为DFS搜索到的解不一定是离根最近的，只有全局搜索完毕，才能从所有解中找出离根的最近的解。</p>
+<p>&nbsp; &nbsp; &nbsp; DFS适合搜索全部的解，因为要搜索全部的解，那么BFS搜索过程中，遇到离根最近的解，并没有什么用，也必须遍历完整棵搜索树，DFS搜索也会搜索全部，但是相比DFS不用记录过多信息，所以搜素全部解的问题，DFS显然更加合适。</p>
+<p style="margin-left: 30px;">&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

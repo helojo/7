@@ -1,0 +1,407 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++虚函数表原理浅析' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++虚函数表原理浅析</center></div><div class='banquan'>原文出处:本文由博客园博主zhxmdefj提供。<br/>
+原文连接:https://www.cnblogs.com/zhxmdefj/p/11594459.html</div><br>
+    <p>C++中的虚函数实现了多态的机制，也就是<strong>用父类型指针指向其子类的实例</strong>，然后通过父类的指针调用实际子类的成员函数，这种技术可以让父类的指针有“多种形态”，这也是一种泛型技术，也就是<strong>使用不变的代码来实现可变的算法</strong></p>
+<p>本文不再阐述虚函数的使用方法，而是从虚函数的实现机制上做一个清晰的剖析</p>
+<p>参考博文：<a href="https://blog.csdn.net/u012879957/article/details/81027287" class="uri">https://blog.csdn.net/u012879957/article/details/81027287</a></p>
+<p>想了解实现机制，就必须先了解对象的存储方式</p>
+<h2 id="对象数据和函数的存储方式">对象数据和函数的存储方式</h2>
+<p>我们知道，用类去定义对象，系统会为每一个对象分配存储空间</p>
+<p>在你的印象中类的存储可能是下图这样的：</p>
+<p><img src="./images/C++虚函数表原理浅析0.png" /></p>
+<p>上图表示要分别为对象的数据和函数的代码分配存储空间，这样肯定是不行的，内存利用率太低了，所以C++编译系统采用的是以下的方法：</p>
+<p><img src="./images/C++虚函数表原理浅析1.png" /></p>
+<p>每个对象占用存储空间的只是该对象的数据部分（虚函数指针和虚基类指针也属于数据部分），函数代码属于公用部分</p>
+<p>我们常说的“A对象的成员函数”，是从逻辑的角度而言的，而成员函数的物理存储方式其实不是如此</p>
+<h3 id="c内存分区">C++内存分区</h3>
+<p>C++的内存分区大概分成五个部分：</p>
+<ol>
+<li>栈（stack）：是由编译器在需要时自动分配，不需要时自动清除的变量存储区，通常存放局部变量、函数参数等。</li>
+<li>堆（heap）：是由<code>new</code>分配的内存块，由程序员释放（编译器不管），一般一个<code>new</code>与一个<code>delete</code>对应，一个<code>new[]</code>与一个<code>delete[]</code>对应，如果程序员没有释放掉，资源将由操作系统在程序结束后自动回收</li>
+<li>自由存储区：是由<code>malloc</code>等分配的内存块，和堆十分相似，用<code>free</code>来释放</li>
+<li>全局/静态存储区：<strong>全局变量</strong>和<strong>静态变量</strong>被分配到同一块内存中</li>
+<li>常量存储区：这是一块特殊存储区，里边存放常量，不允许修改</li>
+</ol>
+<p>（堆和自由存储区其实不过是同一块区域，new底层实现代码中调用了malloc，new可以看成是malloc智能化的高级版本）</p>
+<p>你可能会问：<strong>静态成员函数和非静态成员函数都是在类的定义时放在内存的代码区</strong>的，因而可以说它们都是属于类的，但是类为什么只能直接调用静态类成员函数，而非静态类成员函数(即使函数没有参数)只有类对象才能调用呢</p>
+<p>原因是：类的非静态类成员函数其实都内含了一个指向类对象的指针型参数(即<strong>this指针</strong>)，因此只有类对象才能调用(此时this指针有实值)</p>
+<h2 id="虚函数表">虚函数表</h2>
+<p>C++通过继承和虚函数来实现多态性，<strong>虚函数</strong>是通过一张<strong>虚函数表</strong>实现的，虚函数表解决了继承、覆盖、添加虚函数的问题，保证其真实反应实际的函数</p>
+<p>不太熟悉的朋友，以下内容可能看的很懵，个人建议上下来回看</p>
+<h3 id="虚函数表原理简述">虚函数表原理简述</h3>
+<p>C++实现虚函数的方法是：为每个类对象添加一个隐藏成员，隐藏成员保存了一个指针，这个指针叫<strong>虚表指针</strong>（vptr），它指向一个<strong>虚函数表</strong>（virtual function table, vtbl）</p>
+<p><strong>虚函数表</strong>就像一个数组，表中有许多的<strong>槽（slot）</strong>，每个槽中存放的是一个虚函数的地址（可以理解为数组里存放着指向每个虚函数的指针）</p>
+<p>即：<strong>每个类使用一个虚函数表，每个类对象用一个虚表指针</strong></p>
+<p>在有虚函数的类的实例对象中，这个表被分配在了这个实例对象的内存中（就和上面说的一样），当我们用父类的指针来操作一个子类的时候，这张表就像一个地图一样，指明了实际所应该调用的函数</p>
+<p>大概结构如下：</p>
+<p><img src="./images/C++虚函数表原理浅析2.png" /></p>
+<p>在上面这个图中，虚函数表的最后多加了一个结点，这是虚函数表的结束结点，就像字符串的结束符<code>/0</code>一样，其标志了虚函数表的结束，这个结束标志的值在不同的编译器下可能是不同的</p>
+<p>举个例子：<br />
+基类对象包含一个虚表指针，指向<u>基类的虚函数表</u><br />
+派生类对象也将包含一个虚表指针，指向<u>派生类虚函数表</u></p>
+<ul>
+<li>如果派生类重写了基类的虚方法，该派生类虚函数表将保存重写的虚函数的地址，而不是基类的虚函数地址</li>
+<li>如果基类中的虚方法没有在派生类中重写，那么派生类将继承基类中的虚方法，而且派生类中虚函数表将保存基类中未被重写的虚函数的地址，但如果派生类中定义了新的虚方法，则该虚函数的地址也将被添加到派生类虚函数表中</li>
+</ul>
+<p>你可能已经晕了，没有关系，接下来我们用实例代码演示一下</p>
+<h3 id="找到虚函数表">找到虚函数表</h3>
+<p>C++的编译器会保证<strong>虚函数表的指针存在于对象实例中最前面的位置</strong>（为了保证取虚函数表有最高的性能，在有多层继承或是多重继承的情况下），这意味着我们通过对象实例的地址得到这张虚函数表的地址，然后就可以遍历其中函数指针，并调用相应的函数</p>
+<p>我们建立一个新类</p>
+<pre><code>class Base 
+{
+public:
+    virtual void f() { cout &lt;&lt; &quot;Base::f&quot; &lt;&lt; endl; }
+    virtual void g() { cout &lt;&lt; &quot;Base::g&quot; &lt;&lt; endl; }
+    virtual void h() { cout &lt;&lt; &quot;Base::h&quot; &lt;&lt; endl; }
+};</code></pre>
+<p>按照上面的说法，我们可以通过Base的实例来得到虚函数表，这个表（数组）存了指向f，g，h这三个函数的指针</p>
+<pre><code>typedef void(*Fun)(void);
+
+int main()
+{
+    Base bObj;
+    Fun pFun = NULL;    
+    //指向void* pf(void)类的函数的指针pFun
+
+    cout &lt;&lt; &quot;虚函数表的地址：&quot; &lt;&lt; (int*)(&amp;bObj) &lt;&lt; endl;
+    cout &lt;&lt; &quot;虚函数表的第一个函数地址：&quot; &lt;&lt; (int*) * (int*)(&amp;bObj) &lt;&lt; endl;
+    //再次取址得到第一个虚函数的地址
+
+    //第一个虚函数
+    pFun = (Fun) * ((int*) * (int*)(&amp;bObj));
+    pFun();
+}</code></pre>
+<p>我们拆分开来慢慢看这段代码</p>
+<pre><code>typedef void(*Fun)(void);</code></pre>
+<p><code>typedef void(*Fun)(void)</code>是利用类型别名声明一个函数指针，指向的地址为NULL，等价于<code>typedef decltype(void) *Fun</code></p>
+<p>现在插入几个断点，以观察指针pFun的变化：</p>
+<p><img src="./images/C++虚函数表原理浅析3.png" /></p>
+<p>Base实例化了对象了bObj，然后<code>Fun pFun=NULL</code>则是声明了一个返回指向函数的指针</p>
+<p><img src="./images/C++虚函数表原理浅析4.png" /></p>
+<p>这里断点断在<code>Fun pFun=NULL</code>之前，可以看到pFun还未被初始化</p>
+<p><img src="./images/C++虚函数表原理浅析5.png" /></p>
+<p>初始化pFun=NULL后值变成了<code>0x00000000</code></p>
+<p><img src="./images/C++虚函数表原理浅析6.png" /></p>
+<p><img src="./images/C++虚函数表原理浅析7.png" /></p>
+<p>实例出对象bObj后，我们用<code>(int*)(&amp;bObj)</code>强行把<code>&amp;bObj</code>转成<code>int*</code>，取得虚函数表的地址，也就是一个指向虚函数表这个数组的首元素的地址的指针，对这个指针<strong>再次取址</strong>就可以得到第一个虚函数（数组首元素）的地址了，也就是第一个虚函数<code>Base::f()</code>的地址</p>
+<pre><code>cout &lt;&lt; &quot;虚函数表的地址：&quot; &lt;&lt; (int*)(&amp;bObj) &lt;&lt; endl;
+cout &lt;&lt; &quot;虚函数表的第一个函数地址：&quot; &lt;&lt; (int*) * (int*)(&amp;bObj) &lt;&lt; endl;
+//再次取址得到第一个虚函数的地址
+
+//第一个虚函数
+pFun = (Fun) * ((int*) * (int*)(&amp;bObj));
+pFun();</code></pre>
+<p>你可能看不太懂这个操作，对<code>(int*) * (int*)(&amp;bObj)</code>可以这样理解，<code>(int*)(&amp;bObj)</code>就是对象bObj被强制转换成了<code>int*</code>了的地址，如果直接调用<code>*(int*)(&amp;bObj)</code>则是指向对象bObj地址所指向的数据，但是此处是个虚函数表，所以指不过去，必须通过<code>(int*)</code>将其转换成<strong>函数指针</strong>来进行指向，<code>(int*) * (int*)(&amp;bObj)</code>的指向就变成了对象bObj中第一个函数的地址</p>
+<p>又因为<code>pFun</code>是由<code>Fun</code>这个函数声明的函数指针，所以相当于是Fun的实体，必须再将这个地址转换成<code>pFun</code>认识的类型，即加上<code>(Fun)*</code>进行强制转换</p>
+<p>整个过程简单来说，就是从bObj地址开始读取四个字节的内容（<code>&amp;bObj</code>），然后将这个内容解释成一个内存地址(<code>(int*)(&amp;bObj)</code>)，再访问这个地址(<code>(int*) * (int*)(&amp;bObj)</code>)，最后将这个地址中存放的值再解释成一个函数的地址(<code>(Fun) * ((int*) * (int*)(&amp;bObj))</code>)</p>
+<p><img src="./images/C++虚函数表原理浅析8.png" /></p>
+<p>可以看到pFun的值已经等于虚函数表首元素（<code>_vfptr[0]</code>）的值<code>0x00b41168</code>了，也就是说pFun这个指向函数的指针已经指向了函数<code>f()</code>（记住虚函数表存的是指向虚函数的指针，所以值就是这些虚函数的地址）</p>
+<p><img src="./images/C++虚函数表原理浅析9.png" /></p>
+<p>控制台的输出：</p>
+<p><img src="./images/C++虚函数表原理浅析10.png" /></p>
+<p>和数组一样，如果要调用<code>Base::g()</code>和<code>Base::h()</code>，我们可以：</p>
+<pre><code>pFun = (Fun) * ((int*) * (int*)(&amp;bObj));
+    // (Fun) * ((int*) * (int*)(&amp;bObj) + 1);    // Base::g()
+    // (Fun) * ((int*) * (int*)(&amp;bObj) + 2);    // Base::h()</code></pre>
+<p>再看一次这张图，是不是更清晰了一点？</p>
+<p><img src="./images/C++虚函数表原理浅析2.png" /></p>
+<p>现在我们来看看出现继承时的情况</p>
+<h3 id="单继承无覆盖">单继承（无覆盖）</h3>
+<pre><code>class Base {
+public:
+    virtual void f() { cout &lt;&lt; &quot;Base::f()&quot; &lt;&lt; endl; }
+    virtual void g() { cout &lt;&lt; &quot;Base::g()&quot; &lt;&lt; endl; }
+    virtual void h() { cout &lt;&lt; &quot;Base::h()&quot; &lt;&lt; endl; }
+};
+
+class Derive :public Base {
+public:
+    virtual void f1() { cout &lt;&lt; &quot;Derive::f1()&quot; &lt;&lt; endl; }
+    virtual void g1() { cout &lt;&lt; &quot;Derive::g1()&quot; &lt;&lt; endl; }
+    virtual void h1() { cout &lt;&lt; &quot;Derive::h1()&quot; &lt;&lt; endl; }
+};</code></pre>
+<p><img src="./images/C++虚函数表原理浅析12.png" /></p>
+<pre><code>typedef void(*Fun)(void);
+
+int main()
+{
+    //Base bObj;
+    Derive dObj;
+    Fun pFun = NULL;
+    cout &lt;&lt; &quot;虚函数表的地址:&quot; &lt;&lt; (int*)(&amp;dObj) &lt;&lt; endl;
+    cout &lt;&lt; &quot;虚函数表的第一个函数地址:&quot; &lt;&lt; (int*) * (int*)(&amp;dObj) &lt;&lt; endl;
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 0);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 1);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 2);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 3);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 4);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 5);
+    pFun();
+    return 0;
+}</code></pre>
+<p>通过vs断点，我们发现到+3时，pFun的值变成了虚函数f1的地址：</p>
+<p><img src="./images/C++虚函数表原理浅析13.png" /><br />
+<img src="./images/C++虚函数表原理浅析14.png" /></p>
+<p>运行结果：</p>
+<p><img src="./images/C++虚函数表原理浅析15.png" /></p>
+<p>这个没有覆盖的继承关系中，子类没有重载任何父类的函数，我们实例化了一个对象dOb，它的虚函数表如下：</p>
+<p><img src="./images/C++虚函数表原理浅析16.png" /></p>
+<h4 id="也就是说">也就是说</h4>
+<ol>
+<li>虚函数按照其声明顺序放于表中</li>
+<li>父类的虚函数在子类的虚函数前</li>
+</ol>
+<h3 id="单继承有覆盖">单继承（有覆盖）</h3>
+<p>现在我们修改下Derive类</p>
+<p><img src="./images/C++虚函数表原理浅析17.png" /></p>
+<pre><code>class Base {
+public:
+    virtual void f() { cout &lt;&lt; &quot;Base::f()&quot; &lt;&lt; endl; }
+    virtual void g() { cout &lt;&lt; &quot;Base::g()&quot; &lt;&lt; endl; }
+    virtual void h() { cout &lt;&lt; &quot;Base::h()&quot; &lt;&lt; endl; }
+};
+
+class Derive :public Base {
+public:
+    virtual void f() { cout &lt;&lt; &quot;Derive::f()&quot; &lt;&lt; endl; }
+    virtual void g1() { cout &lt;&lt; &quot;Derive::g1()&quot; &lt;&lt; endl; }
+    virtual void h1() { cout &lt;&lt; &quot;Derive::h1()&quot; &lt;&lt; endl; }
+};</code></pre>
+<p>这个继承关系中，Derive的<code>f()</code>重载了Base类中的<code>f()</code>，下面我们用同样的方法调试，main函数基本不变</p>
+<pre><code>int main()
+{
+    //Base bObj;
+    Derive dObj;
+    Fun pFun = NULL;
+    cout &lt;&lt; &quot;虚函数表的地址:&quot; &lt;&lt; (int*)(&amp;dObj) &lt;&lt; endl;
+    cout &lt;&lt; &quot;虚函数表的第一个函数地址:&quot; &lt;&lt; (int*) * (int*)(&amp;dObj) &lt;&lt; endl;
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 0);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 1);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 2);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 3);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 4);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 5);
+    pFun();
+    return 0;
+}</code></pre>
+<p><img src="./images/C++虚函数表原理浅析18.png" /></p>
+<p>可以看到第一个函数变成了<code>Derive::f()</code>，并且运行到<code>pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 5)</code>时，pFun的值变成了空</p>
+<p><img src="./images/C++虚函数表原理浅析19.png" /></p>
+<p>也就是说现在虚函数表的结构是这样的：</p>
+<p><img src="./images/C++虚函数表原理浅析20.png" /></p>
+<h4 id="也就是说-1">也就是说</h4>
+<ol>
+<li>覆盖的f()函数被放到了虚表中原来父类虚函数的位置</li>
+<li>没有被覆盖的函数依旧</li>
+</ol>
+<p>因为这个特性，我们就可以看到对于下面这样的程序：</p>
+<pre><code>Base *b = new Derive();
+b-&gt;f();</code></pre>
+<p>由b所指的内存中的虚函数表的f()的位置已经被Derive::f()函数地址所取代，于是在实际调用发生时，是Derive::f()被调用了，这就实现了C++的动态多态</p>
+<h3 id="多重继承无覆盖">多重继承（无覆盖）</h3>
+<p><img src="./images/C++虚函数表原理浅析21.png" /></p>
+<pre><code>class Base1 {
+public:
+    virtual void f() { cout &lt;&lt; &quot;Base1::f()&quot; &lt;&lt; endl; }
+    virtual void g() { cout &lt;&lt; &quot;Base1::g()&quot; &lt;&lt; endl; }
+    virtual void h() { cout &lt;&lt; &quot;Base1::h()&quot; &lt;&lt; endl; }
+};
+
+class Base2 {
+public:
+    virtual void f() { cout &lt;&lt; &quot;Base2::f()&quot; &lt;&lt; endl; }
+    virtual void g() { cout &lt;&lt; &quot;Base2::g()&quot; &lt;&lt; endl; }
+    virtual void h() { cout &lt;&lt; &quot;Base2::h()&quot; &lt;&lt; endl; }
+};
+
+class Base3 {
+public:
+    virtual void f() { cout &lt;&lt; &quot;Base3::f()&quot; &lt;&lt; endl; }
+    virtual void g() { cout &lt;&lt; &quot;Base3::g()&quot; &lt;&lt; endl; }
+    virtual void h() { cout &lt;&lt; &quot;Base3::h()&quot; &lt;&lt; endl; }
+};
+
+class Derive :public Base1, public Base2, public Base3 {
+public:
+    virtual void f1() { cout &lt;&lt; &quot;Derive::f1()&quot; &lt;&lt; endl; }
+    virtual void g1() { cout &lt;&lt; &quot;Derive::g1()&quot; &lt;&lt; endl; }
+};</code></pre>
+<pre><code>typedef void(*Fun)(void);
+
+int main()
+{
+    //Base bObj;
+    Derive dObj;
+    Fun pFun = NULL;
+    cout &lt;&lt; &quot;虚函数表的地址:&quot; &lt;&lt; (int*)(&amp;dObj) &lt;&lt; endl;
+    cout &lt;&lt; &quot;虚函数表的第一个函数地址:&quot; &lt;&lt; (int*) * (int*)(&amp;dObj) &lt;&lt; endl;
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 0);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 1);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 2);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 3);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 4);
+    pFun();
+    pFun = (Fun) * ((int*) * (int*)(&amp;dObj) + 5);
+    pFun();
+    return 0;
+}</code></pre>
+<p>经过断点可以看到，当运行到这里</p>
+<p><img src="./images/C++虚函数表原理浅析22.png" /></p>
+<p>pFun变成了空指针</p>
+<p><img src="./images/C++虚函数表原理浅析23.png" /></p>
+<p>控制台结果</p>
+<p><img src="./images/C++虚函数表原理浅析24.png" /></p>
+<p>为什么+5之后找不到了呢？因为在多继承下，虚函数表存储方式发生了点变化，我们之前说到C++编译器在对象内加入了一个隐藏成员，现在你可以理解为，在多继承时加入了多个隐藏成员，也就是说我们现在有多个虚函数表，具体排列方式如下图：</p>
+<p><img src="./images/C++虚函数表原理浅析25.png" /></p>
+<p>那我们有没有办法访问呢？强大的C++当然是有的，细心的你应该发现了，这个表（数组）其实只是变成了一个二维数组</p>
+<pre><code>int main()
+{
+    Fun pFun = NULL;
+    Derive dObj;
+    int** pVtab = (int**)&amp; dObj;
+    //Base1&#39;s vtable
+    pFun = (Fun)pVtab[0][0];
+    //等价于：pFun = (Fun) * ((int*) * (int*)((int*)&amp; dObj + 0) + 0);
+    pFun();
+    pFun = (Fun)pVtab[0][1];
+    pFun();
+    pFun = (Fun)pVtab[0][2];
+    pFun();
+
+    //Derive&#39;s vtable
+    pFun = (Fun)pVtab[0][3];
+    pFun();
+    //The tail of the vtable
+    pFun = (Fun)pVtab[0][4];
+    cout &lt;&lt; pFun &lt;&lt; endl;
+
+    //Base2&#39;s vtable
+    pFun = (Fun)pVtab[1][0];
+    pFun();
+    pFun = (Fun)pVtab[1][1];
+    pFun();
+    pFun = (Fun)pVtab[1][2];
+    pFun();
+    //The tail of the vtable
+    pFun = (Fun)pVtab[1][3];
+    cout &lt;&lt; pFun &lt;&lt; endl;
+
+    //Base3&#39;s vtable
+    pFun = (Fun)pVtab[2][0];
+    pFun();
+    pFun = (Fun)pVtab[2][1];
+    pFun();
+    pFun = (Fun)pVtab[2][2];
+    pFun();
+    pFun = (Fun)pVtab[2][3];
+    cout &lt;&lt; pFun &lt;&lt; endl;
+    return 0;
+}</code></pre>
+<h4 id="也就是说-2">也就是说</h4>
+<h3 id="多重继承有覆盖">多重继承（有覆盖）</h3>
+<p><img src="./images/C++虚函数表原理浅析26.png" /></p>
+<pre><code>class Base1 {
+public:
+    virtual void f() { cout &lt;&lt; &quot;Base1::f()&quot; &lt;&lt; endl; }
+    virtual void g() { cout &lt;&lt; &quot;Base1::g()&quot; &lt;&lt; endl; }
+    virtual void h() { cout &lt;&lt; &quot;Base1::h()&quot; &lt;&lt; endl; }
+};
+
+class Base2 {
+public:
+    virtual void f() { cout &lt;&lt; &quot;Base2::f()&quot; &lt;&lt; endl; }
+    virtual void g() { cout &lt;&lt; &quot;Base2::g()&quot; &lt;&lt; endl; }
+    virtual void h() { cout &lt;&lt; &quot;Base2::h()&quot; &lt;&lt; endl; }
+};
+
+class Base3 {
+public:
+    virtual void f() { cout &lt;&lt; &quot;Base3::f()&quot; &lt;&lt; endl; }
+    virtual void g() { cout &lt;&lt; &quot;Base3::g()&quot; &lt;&lt; endl; }
+    virtual void h() { cout &lt;&lt; &quot;Base3::h()&quot; &lt;&lt; endl; }
+};
+
+class Derive :public Base1, public Base2, public Base3 {
+public:
+    virtual void f() { cout &lt;&lt; &quot;Derive::f()&quot; &lt;&lt; endl; }
+    virtual void g1() { cout &lt;&lt; &quot;Derive::g1()&quot; &lt;&lt; endl; }
+};</code></pre>
+<p>main函数不再赘述，最终你会发现现在的虚函数表是这样的：</p>
+<p><img src="./images/C++虚函数表原理浅析27.png" /></p>
+<h2 id="安全性问题">安全性问题</h2>
+<p>水能载舟，<del>亦可赛艇</del>亦能覆舟，接下来让我们看看虚函数表可以用来干点什么坏事吧</p>
+<h3 id="通过父类型的指针访问子类自己的虚函数">通过父类型的指针访问子类自己的虚函数</h3>
+<p>虽然在上面的图中我们可以看到Base1的虚表中有Derive的虚函数，但我们根本不可能使用下面的语句来调用子类的自有虚函数：</p>
+<pre><code>Base1 *b1 = new Derive();
+b1-&gt;f1();  //编译出错</code></pre>
+<p>任何妄图使用父类指针调用<strong>子类中的未覆盖父类的成员函数</strong>的行为都会被编译器视为非法，所以，这样的程序根本无法编译通过</p>
+<p>但通过多继承部分的代码你应该已经发现了</p>
+<p>在运行时，我们可以通过指针的方式访问虚函数表来达到违反C++语义的行为（也就是我们在多重继承中使用的代码）</p>
+<pre><code>Fun pFun = NULL;
+Derive dObj;
+int** pVtab = (int**)&amp; dObj;
+//Base1&#39;s vtable
+pFun = (Fun)pVtab[0][0];
+//等价于：pFun = (Fun) * ((int*) * (int*)((int*)&amp; dObj + 0) + 0);
+//Derive&#39;s vtable
+pFun = (Fun)pVtab[0][3];
+pFun();
+//The tail of the vtable
+pFun = (Fun)pVtab[0][4];
+cout &lt;&lt; pFun &lt;&lt; endl;</code></pre>
+<h3 id="访问非public的虚函数">访问非public的虚函数</h3>
+<p>父类非public的虚函数<strong>同样会存在于虚函数表中</strong>，所以，我们同样可以使用访问虚函数表的方式来访问这些non-public的虚函数，这是很容易做到的</p>
+<pre><code>class Base {
+private:
+    virtual void f() { cout &lt;&lt; &quot;Base::f&quot; &lt;&lt; endl; }
+};
+
+class Derive : public Base {
+};
+
+typedef void(*Fun)(void);
+
+void main() {
+    Derive d;
+    Fun  pFun = (Fun) * ((int*) * (int*)(&amp;d) + 0);
+    pFun(); //挖藕？
+}</code></pre>
+<h2 id="最后注意">最后注意</h2>
+<p>虚函数表不一定是存在最开头，但是目前各个编译器大多是这样设置的</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

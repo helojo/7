@@ -1,0 +1,255 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C中的异常处理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C中的异常处理</center></div><div class='banquan'>原文出处:本文由博客园博主子宇24提供。<br/>
+原文连接:https://www.cnblogs.com/dishengAndziyu/p/10919402.html</div><br>
+    <p align="left">1，C 语言崇尚简洁高效，因此语言本身并没有异常处理的相关语法规则，但是异常处理在 C 语言中 是存在的，我们有必要从 C 语言开始先看一看 C 语言中的异常处理是怎样， 然后对比 C++ 里面的异常处理是怎样；</p>
+<p align="left">&nbsp;</p>
+<p align="left">2，异常的概念：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，程序在运行过程中可能产生异常；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，异常是我们在程序开发中必须考虑的一些特殊情况；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，异常（Exception）与 Bug 的区别：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，异常是程序运行时可预料的执行分支；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，例如计算器相关的程序，涉及到除法操作的时候，就应该全面的想想有没有会产生意外的情况，比如除数为 0，这是一种意外情况，但是我们已经预料到这种意外情况，并且这种意外情况在计算器相关的程序里面是不可避免的，因此我们在做开发的时候，就必须有一些代码来处理这样的情况，这些代码就叫做异常处理的代码，而异常是程序运行时可以预料的情况（这就是异常和 Bug 的区别）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，Bug 是程序中的错误，是不被预期的运行方式；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">3，异常和 Bug 的对比：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，异常：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，运行时产生除 0 的情况；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，需要打开的外部文件不存在；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，数组访问的越界；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，Bug：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，使用野指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，堆数组使用结束后未释放；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，内存泄漏一定是 Bug；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，选择排序无法处理长度为 0 的数组；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">4，异常处理的方式：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，C 语言经典处理方式：if ... else ...</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，代码示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> func(...)
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;">( 判断是否产生异常 )
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 5</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> 正常情况代码逻辑；</span>
+<span style="color: #008080;"> 6</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 8</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 9</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> 异常情况代码逻辑；</span>
+<span style="color: #008080;">10</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">11</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，除法操作异常处理编程实验：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">double</span> divide(<span style="color: #0000ff;">double</span> a, <span style="color: #0000ff;">double</span> b, <span style="color: #0000ff;">int</span>*<span style="color: #000000;"> valid)
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">double</span> delta = <span style="color: #800080;">0.000000000000001</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">double</span> ret = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">10</span>     
+<span style="color: #008080;">11</span>     <span style="color: #0000ff;">if</span>( !((-delta &lt; b) &amp;&amp; (b &lt;<span style="color: #000000;"> delta)) )
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">13</span>         ret = a /<span style="color: #000000;"> b;
+</span><span style="color: #008080;">14</span>         
+<span style="color: #008080;">15</span>         *valid = <span style="color: #800080;">1</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 为了处理除数为 0 和本身结果就是 0 之间的区别；</span>
+<span style="color: #008080;">16</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">18</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">19</span>         *valid = <span style="color: #800080;">0</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 异常了；</span>
+<span style="color: #008080;">20</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">21</span>     
+<span style="color: #008080;">22</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">24</span> 
+<span style="color: #008080;">25</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">{   
+</span><span style="color: #008080;">27</span>     <span style="color: #0000ff;">int</span> valid = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">28</span>     <span style="color: #0000ff;">double</span> r = divide(<span style="color: #800080;">1</span>, <span style="color: #800080;">0</span>, &amp;<span style="color: #000000;">valid);
+</span><span style="color: #008080;">29</span>     
+<span style="color: #008080;">30</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;">( valid )
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">32</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">r = </span><span style="color: #800000;">"</span> &lt;&lt; r &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">34</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">35</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">36</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Divided by zero...</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">38</span>     
+<span style="color: #008080;">39</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">40</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，工程上 if 处理正常分支，else 处理异常分支；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，除法操作需要三个参数，而加减乘法都只要两个参数，这样不优雅；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，如果第三个参数没有指向合法的对象（NULL），就会出现段错误；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，缺陷：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，divide 函数有 3 个参数，难以理解其用法；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，降低了代码的可读性，后期的维护成本就会增加；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，改进的方向就是统一除法和加减乘法的调用方式，将三个参数改变为两个参数，并且还有异常处理的代码；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，divide 函数调用后必须判断 valid 代表的结果；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，当 valid 为 true 时，运行结果正常；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，当 valid 为 false 时，运行过程出现异常；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，通过 setjmp() 和 longjmp() 进行优化：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，int setjmp(jmp_buf env)</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，将当前上下文保存在 jmp_buf 结构体中；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，jmp_buf 一般的是全局变量；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，void longjmp(jmp_buf env, int val)</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，从 jmp_buf 结构体中恢复 setjmp() 保存的上下文；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，最终从 setjmp 函数调用点返回，返回值为 val；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，这两个函数不要随便调用，因为它们简单粗暴，它们将破坏结构化程序设计的特性，结构化程序设计三大特性有顺序执行、循环执行、分支执行，如果调用这两个函数，将会有其他的执行方式出来；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 5，除法操作异常处理优化编程实验：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 3</span> #include &lt;csetjmp&gt;
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">static</span> jmp_buf env;  <span style="color: #008000;">//</span><span style="color: #008000;"> 保存程序执行的上下文；</span>
+<span style="color: #008080;"> 8</span> 
+<span style="color: #008080;"> 9</span> <span style="color: #0000ff;">double</span> divide(<span style="color: #0000ff;">double</span> a, <span style="color: #0000ff;">double</span><span style="color: #000000;"> b)
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">double</span> delta = <span style="color: #800080;">0.000000000000001</span><span style="color: #000000;">;
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">double</span> ret = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">13</span>     
+<span style="color: #008080;">14</span>     <span style="color: #0000ff;">if</span>( !((-delta &lt; b) &amp;&amp; (b &lt;<span style="color: #000000;"> delta)) )
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">16</span>         ret = a /<span style="color: #000000;"> b;
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">18</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">19</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">20</span>         longjmp(env, <span style="color: #800080;">1</span>);  <span style="color: #008000;">//</span><span style="color: #008000;"> 当 b = 0 时，跳转回 env 这个全局变量所保存的程序上下文的地方，也就是 main() 中的 if() 语句；此时 divide() 程序的执行立即停止，并从 setjmp() 函数返回，返回值为 longjmp() 中的参数 1；</span>
+<span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span>     
+<span style="color: #008080;">23</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">25</span> 
+<span style="color: #008080;">26</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">{   
+</span><span style="color: #008080;">28</span>     <span style="color: #0000ff;">if</span>( setjmp(env) == <span style="color: #800080;">0</span> ) <span style="color: #008000;">//</span><span style="color: #008000;">调用 setjmp(env) 将程序的上下文保存在 env 里面；</span>
+<span style="color: #008080;">29</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">30</span>         <span style="color: #0000ff;">double</span> r = divide(<span style="color: #800080;">1</span>, <span style="color: #800080;">0</span>);  <span style="color: #008000;">//</span><span style="color: #008000;"> Divided by zero...；</span>
+<span style="color: #008080;">31</span>         <span style="color: #0000ff;">double</span> r = divide(<span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>);  <span style="color: #008000;">//</span><span style="color: #008000;"> 1；</span>
+<span style="color: #008080;">32</span>         
+<span style="color: #008080;">33</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">r = </span><span style="color: #800000;">"</span> &lt;&lt; r &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">35</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">36</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">37</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Divided by zero...</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">39</span>     
+<span style="color: #008080;">40</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">41</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，程序执行过程：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，首先执行到 main() 中的 if() 语句；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，直接调用 setjmp()，这个函数内部就会将当前程序执行的上下文全部保存在这个全局变量里面，因为是直接调用的，所以保存完了返回值就是 0；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，运行到 divide() 后，判断到 b 为 0，则执行 longjum()，它根据 env 这个全局变量里面保存的信息来恢复之前的程序上下文；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4，之前的程序上下文是在 if() 中调用 setjmp() 保存的，所以说&nbsp; longjmp() 函数一旦被调用，则 divide() 函数立即停止，出口在 setjmp()，此时返回值是 longjmp() 中第二个参数 1；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 5，执行到 if...else 语句的 else 语句中；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，这两个函数配合起来破坏了结构化程序设计的三大特性，所以简单的程序理解起来很复杂；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，优雅但理解难，工程应用不多，工程中推荐使用第一种异常处理方式；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 6，改进后缺陷：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，setjmp() 和 longjmp() 的引入：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，必然涉及到使用全局变量；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，暴力跳转导致代码可读性降低；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，本质还是 if ... else ... 异常处理方式；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 7，C 语言中的经典异常处理方式问题：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，会使得编程中逻辑中混入大量的处理异常代码；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，正常逻辑代码和异常处理代码混合在一起，导致代码迅速膨胀，难以维护；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，工程中约定，if 处理正常情况，else 处理异常情况，好歹代码中能够看出正常异常处理代码放在什么地方；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">5，异常处理代码分析实例分析：&nbsp;&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">#define</span> SUCCESS           0 
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">#define</span> INVALID_POINTER   -1
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">#define</span> INVALID_LENGTH    -2
+<span style="color: #008080;"> 9</span> <span style="color: #0000ff;">#define</span> INVALID_PARAMETER -3
+<span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span> <span style="color: #0000ff;">int</span> MemSet(<span style="color: #0000ff;">void</span>* dest, unsigned <span style="color: #0000ff;">int</span> length, unsigned <span style="color: #0000ff;">char</span><span style="color: #000000;"> v)
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">if</span>( dest ==<span style="color: #000000;"> NULL )
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">15</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> INVALID_POINTER;
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">17</span>     
+<span style="color: #008080;">18</span>     <span style="color: #0000ff;">if</span>( length &lt; <span style="color: #800080;">4</span><span style="color: #000000;"> )
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">20</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> INVALID_LENGTH;
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span>     
+<span style="color: #008080;">23</span>     <span style="color: #0000ff;">if</span>( (v &lt; <span style="color: #800080;">0</span>) || (v &gt; <span style="color: #800080;">9</span><span style="color: #000000;">) )
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">25</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> INVALID_PARAMETER;
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">27</span>     
+<span style="color: #008080;">28</span>     unsigned <span style="color: #0000ff;">char</span>* p = (unsigned <span style="color: #0000ff;">char</span>*<span style="color: #000000;">)dest;
+</span><span style="color: #008080;">29</span>     
+<span style="color: #008080;">30</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;length; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">32</span>         p[i] =<span style="color: #000000;"> v;
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">34</span>     
+<span style="color: #008080;">35</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> SUCCESS;
+</span><span style="color: #008080;">36</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">37</span> 
+<span style="color: #008080;">38</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;">39</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">40</span>     <span style="color: #0000ff;">int</span> ai[<span style="color: #800080;">5</span><span style="color: #000000;">];
+</span><span style="color: #008080;">41</span>     <span style="color: #0000ff;">int</span> ret = MemSet(ai, <span style="color: #0000ff;">sizeof</span>(ai), <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">42</span>     
+<span style="color: #008080;">43</span>     <span style="color: #0000ff;">if</span>( ret == SUCCESS )  <span style="color: #008000;">//</span><span style="color: #008000;"> 处理异常代码逻辑；</span>
+<span style="color: #008080;">44</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">45</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">46</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>( ret == INVALID_POINTER )  <span style="color: #008000;">//</span><span style="color: #008000;"> 三个地方处理异常代码逻辑；</span>
+<span style="color: #008080;">47</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">48</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">49</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>( ret ==<span style="color: #000000;"> INVALID_LENGTH )
+</span><span style="color: #008080;">50</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">51</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">52</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>( ret ==<span style="color: #000000;"> INVALID_PARAMETER )
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">54</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">55</span>     
+<span style="color: #008080;">56</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;">57</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，这对于职场新人很痛苦，因为代码逻辑的模块不清晰；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">6，C++ 中有没有更好的异常处理方式？</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，直接通过关键字知道哪些代码处理正常情况的代码，哪些是异常情况的代码；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">7，小结：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，程序中不可避免的会发生异常；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，异常是在开发阶段就可以预见的运行时问题；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，C 语言中通过经典的 if ... else ... 方式处理异常；</p>
+<p>&nbsp;&nbsp;&nbsp; 4，C++ 中存在更好的异常处理方式；</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

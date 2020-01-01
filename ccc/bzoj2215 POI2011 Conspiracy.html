@@ -1,0 +1,147 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修bzoj2215 POI2011 Conspiracy' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>bzoj2215 POI2011 Conspiracy</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/bzoj2215.html</div><br>
+    <h1 id="题意">题意</h1>
+<p>给出一张图，将其分为一个团和一个独立集。问有多少种方案。<strong>团和独立集都不能为空</strong></p>
+<h1 id="思路">思路</h1>
+<p><strong>先考虑找可行方案应该怎么做</strong></p>
+<p>显然是个<span class="math inline">\(2-sat\)</span>。可以将分到团和独立集中分别看为0和1。</p>
+<p>如果两个点之间右边，那么必定不能同时在独立集中。如果两个点之间没有边，那么必定不能同时在团中。然后连边<span class="math inline">\(求2-sat\)</span>即可</p>
+<p><strong>然后考虑统计方案</strong></p>
+<p>可以发现，如果在某个可行方案中两个点都在团中，那么在所有方案中必定不能同时在独立集中。同样，如果两个点在某个个可行方案中都在独立集中，那么在所有方案中必定不能同时出现在团中。</p>
+<p>这说明，一个可行方案调整到另一个可行方案时，最多有一个点从团中到了独立集中。也最多有一个点，从独立集中到了团中。</p>
+<p>我们可以通过对上面的可行方案进行调整得到所有方案。</p>
+<p>注意题目中要求<strong>团和独立集都不能为空</strong></p>
+<h1 id="代码">代码</h1>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-05-02 14:03:51
+* @Last Modified time: 2019-05-02 15:35:29
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 5010;
+#define ote(x) x &gt; n ? x - n : x + n
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+vector&lt;int&gt;e[N &lt;&lt; 1],tmp[N],C[2];
+int n,a[N][N];
+int val[N &lt;&lt; 1],dfn[N &lt;&lt; 1],low[N &lt;&lt; 1],tot,vis[N &lt;&lt; 1],sta[N &lt;&lt; 1],top,coljs,col[N &lt;&lt; 1];
+void tarjan(int u) {
+    int k = e[u].size();
+    dfn[u] = low[u] = ++tot;
+    vis[u] = 1;sta[++top] = u;
+    for(int i = 0;i &lt; k;++i) {
+        int v = e[u][i];
+        if(!dfn[v]) {
+            tarjan(v);low[u] = min(low[u],low[v]);
+        } 
+        else if(vis[v]) low[u] = min(low[u],low[v]);
+    }
+    if(dfn[u] == low[u]) {
+        ++coljs;
+        do {
+            int x = sta[top--];
+            col[x] = coljs;
+            vis[x] = 0;
+        }while(sta[top + 1] != u);
+    }
+}
+int main() {
+    n = read();
+    for(int i = 1;i &lt;= n;++i)
+        for(int j = 1,x = read();j &lt;= x;++j) 
+            a[i][read()] = 1;
+    for(int i = 1;i &lt;= n;++i) {
+        for(int j = i + 1;j &lt;= n;++j) {
+            if(a[i][j]) {
+                e[i].push_back(j + n);
+                e[j].push_back(i + n);
+            }
+            else {
+                e[i + n].push_back(j);
+                e[j + n].push_back(i);
+            }
+        }
+    }
+
+    for(int i =  1;i &lt;= n + n;++i) if(!dfn[i])  tarjan(i);
+
+    for(int i = 1;i &lt;= n;++i) 
+        if(col[i] == col[i + n]) {
+            puts(&quot;0&quot;);return 0;
+        }
+
+    for(int i = 1;i &lt;= n;++i) {
+        val[i] = col[i] &lt; col[ote(i)];//0为团中，1为独立集中
+        C[val[i]].push_back(i);
+    }
+
+    for(int i = 1;i &lt;= n;++i) {
+        for(int j = 1;j &lt;= n;++j) {
+            if(val[i] == val[j]) continue;
+            if(val[i] ^ a[i][j]) tmp[i].push_back(j);
+        }
+    }
+
+    int k1 = C[0].size(),k2 = C[1].size();
+    int ans = k1 &amp;&amp; k2;
+
+    for(int i = 0;i &lt; k1;++i) {
+        int x = C[0][i],z1 = tmp[x].size();
+        if(z1 &gt; 1) continue;
+        for(int j = 0;j &lt; k2;++j) {
+            int y = C[1][j],z2 = tmp[y].size();
+            if(z2 &gt; 1) continue;
+            if((!z1 &amp;&amp; !z2) || (!z1 &amp;&amp; tmp[y][0] == x) || (!z2 &amp;&amp; tmp[x][0] == y) || (tmp[x][0] == y &amp;&amp; tmp[y][0] == x))
+                ans++;
+        }
+    }
+
+    for(int i = 1;i &lt;= n;++i) 
+        if(!tmp[i].size() &amp;&amp; C[val[i]].size() &gt; 1) ans++;
+
+    cout&lt;&lt;ans;
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

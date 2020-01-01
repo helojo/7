@@ -1,0 +1,112 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修科大讯飞语音芯片xfs5152CE，分享遇到的一些坑' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>科大讯飞语音芯片xfs5152CE，分享遇到的一些坑</center></div><div class='banquan'>原文出处:本文由博客园博主尧舜语提供。<br/>
+原文连接:https://www.cnblogs.com/yaoshunyu/p/11358662.html</div><br>
+    <p>首先 芯片手册的I2C地址是写地址，是8位的，真正的地址是7位地址，应该是0x40,最低位是读写位，读置1，为0x81，写置0，为0x80.</p>
+<p>如果是模拟I2C倒无所谓，最坑的是我用的是寄存器，所以必须要用7位地址才可以，这个地方坑了我好几天。</p>
+<p>其次，在用uart串口的是时候，每次上电芯片会返回一个状态值0x4A，但I2C是不会主动返回的，需要你去读取</p>
+<p>我是在写入语音之后接着读取状态字节</p>
+<p><img src="./images/科大讯飞语音芯片xfs5152CE，分享遇到的一些坑0.png" alt="" /></p>
+<p>上电第一次写入数据并读取，会得到0x4A，之后的再读取都是0x41,0x4F</p>
+<p><img src="./images/科大讯飞语音芯片xfs5152CE，分享遇到的一些坑1.png" alt="" /></p>
+<p><span style="font-size: 18px;"><strong>程序部分</strong></span></p>
+<p>我用的是msp430F5438A，I2C3</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">void</span> i2c3_start(unsigned <span style="color: #0000ff;">char</span><span style="color: #000000;"> address)
+</span><span style="color: #008080;">2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">3</span>   UCB3I2CSA =<span style="color: #000000;"> address;
+</span><span style="color: #008080;">4</span>   <span style="color: #0000ff;">while</span>(UCB3CTL1 &amp;<span style="color: #000000;"> UCTXSTP);
+</span><span style="color: #008080;">5</span>   UCB3CTL1 |= (UCTR +<span style="color: #000000;"> UCTXSTT);
+</span><span style="color: #008080;">6</span>   <span style="color: #0000ff;">while</span>(!(UCB3IFG &amp;<span style="color: #000000;"> UCTXIFG));
+</span><span style="color: #008080;">7</span>   UCB3IFG &amp;= ~<span style="color: #000000;">UCTXIFG;
+</span><span style="color: #008080;">8</span> }</code></pre>
+
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">void</span> i2c3_writebyte(unsigned <span style="color: #0000ff;">char</span><span style="color: #000000;"> data)
+</span><span style="color: #008080;">2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">3</span>   UCB3TXBUF =<span style="color: #000000;">data;
+</span><span style="color: #008080;">4</span>   <span style="color: #0000ff;">while</span>(!(UCB3IFG &amp;<span style="color: #000000;"> UCTXIFG));
+</span><span style="color: #008080;">5</span>   UCB3IFG &amp;= ~<span style="color: #000000;">UCTXIFG;
+</span><span style="color: #008080;">6</span> }</code></pre>
+
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">void</span> i2c3_writeNbyte(unsigned <span style="color: #0000ff;">char</span>* data,<span style="color: #0000ff;">int</span><span style="color: #000000;"> len)
+</span><span style="color: #008080;">2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">3</span>   <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;len;i++<span style="color: #000000;">)
+</span><span style="color: #008080;">4</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;">5</span>     i2c3_writebyte(*data++<span style="color: #000000;">);
+</span><span style="color: #008080;">6</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">7</span> }</code></pre>
+
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">void</span> i2c3_readNbyte(unsigned <span style="color: #0000ff;">char</span> *data,unsigned <span style="color: #0000ff;">char</span><span style="color: #000000;"> len)
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span>   UCB3CTL1 &amp;= ~<span style="color: #000000;">UCTR;
+</span><span style="color: #008080;"> 4</span>   UCB3CTL1 |=<span style="color: #000000;"> UCTXSTT;
+</span><span style="color: #008080;"> 5</span>   <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;len;i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">  {
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">while</span>(!(UCB3IFG &amp;<span style="color: #000000;"> UCRXIFG));
+</span><span style="color: #008080;"> 8</span>     UCB3IFG &amp;= ~<span style="color: #000000;">UCRXIFG;
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">if</span>(i==len-<span style="color: #800080;">1</span>)UCB3CTL1 |=<span style="color: #000000;"> UCTXSTP;
+</span><span style="color: #008080;">10</span>     *data++ =<span style="color: #000000;"> UCB3RXBUF;
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">  }
+</span><span style="color: #008080;">12</span> }</code></pre>
+
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">int</span> xfs_set(unsigned <span style="color: #0000ff;">char</span>* cmd,<span style="color: #0000ff;">int</span> len,unsigned <span style="color: #0000ff;">char</span> *data,<span style="color: #0000ff;">int</span><span style="color: #000000;"> n)
+</span><span style="color: #008080;">2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">3</span>   i2c3_start(<span style="color: #800080;">0x40</span><span style="color: #000000;">);
+</span><span style="color: #008080;">4</span> <span style="color: #000000;">  i2c3_writeNbyte(cmd,len);
+</span><span style="color: #008080;">5</span> <span style="color: #000000;">  i2c3_readNbyte(data,n);
+</span><span style="color: #008080;">6</span>   <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">7</span> }</code></pre>
+
+<p>未完待续</p>
+<p>&nbsp;</p>
+<p>8月19号更新</p>
+<p>上面的停止条件处需要加上标志位判断，不然后续i2c控制会卡死</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('a48d7b1d-7c28-4a59-b664-54d3a4bfe4f5')"><img id="code_img_closed_a48d7b1d-7c28-4a59-b664-54d3a4bfe4f5" class="code_img_closed" src="./images/科大讯飞语音芯片xfs5152CE，分享遇到的一些坑2.png" alt="" /><img id="code_img_opened_a48d7b1d-7c28-4a59-b664-54d3a4bfe4f5" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('a48d7b1d-7c28-4a59-b664-54d3a4bfe4f5',event)" src="./images/科大讯飞语音芯片xfs5152CE，分享遇到的一些坑3.png" alt="" />
+<div id="cnblogs_code_open_a48d7b1d-7c28-4a59-b664-54d3a4bfe4f5" class="cnblogs_code_hide">
+<pre><code><span style="color: #0000ff;">void</span> i2c3_readNbyte(unsigned <span style="color: #0000ff;">char</span> *data,unsigned <span style="color: #0000ff;">char</span><span style="color: #000000;"> len)
+{
+  UCB3CTL1 </span>&amp;= ~<span style="color: #000000;">UCTR;
+  UCB3CTL1 </span>|=<span style="color: #000000;"> UCTXSTT;
+  </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;len;i++<span style="color: #000000;">)
+  {
+    </span><span style="color: #0000ff;">while</span>(!(UCB3IFG &amp;<span style="color: #000000;"> UCRXIFG));
+    UCB3IFG </span>&amp;= ~<span style="color: #000000;">UCRXIFG;
+    </span><span style="color: #0000ff;">if</span>(i==len-<span style="color: #800080;">1</span><span style="color: #000000;">)
+    {
+      UCB3CTL1 </span>|=<span style="color: #000000;"> UCTXSTP;
+      </span><span style="color: #0000ff;">while</span>(UCB3CTL1 &amp;<span style="color: #000000;"> UCTXSTP);
+    }
+    </span>*data++ =<span style="color: #000000;"> UCB3RXBUF;
+  }
+}</span></code></pre>
+
+<span class="cnblogs_code_collapse">更新</span>
+<p>&nbsp;</p>
+<p>以上为原创，请勿转载</p>
+<p>欢迎讨论！</p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

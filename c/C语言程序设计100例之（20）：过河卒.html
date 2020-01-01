@@ -1,0 +1,492 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C语言程序设计100例之（20）：过河卒' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C语言程序设计100例之（20）：过河卒</center></div><div class='banquan'>原文出处:本文由博客园博主aTeacher提供。<br/>
+原文连接:https://www.cnblogs.com/cs-whut/p/11971237.html</div><br>
+    <h4><span style="font-size: 18px;">例20&nbsp; 过河卒</span></h4>
+<p><strong>题目描述</strong></p>
+<p>如图1，在棋盘的A点有一个过河卒，需要走到目标B点。卒行走规则：可以向下、或者向右。同时在棋盘上的任一点有一个对方的马（如图1的C点），该马所在的点和所有跳跃一步可达的点称为对方马的控制点。例如，图1中C点上的马可以控制9个点（图中的P1，P2，&hellip;，P8 和C）。卒不能通过对方马的控制点。</p>
+<p>棋盘用坐标表示，A点（0，0）、B点（n,m）（n，m为不超过50的整数，并由键盘输入），同样马的位置坐标通过键盘输入，并约定C&lt;&gt;A，同时C&lt;&gt;B。</p>
+<p>编写程序，计算出卒从A点能够到达B点的路径的条数。</p>
+<p align="center"><img src="./images/C语言程序设计100例之（20）：过河卒0.png" alt="" /></p>
+<p style="text-align: center;">&nbsp;&nbsp; 图1&nbsp; 棋盘上的过河卒和对方的控制马</p>
+<p><strong>输入格式</strong></p>
+<p>一行四个数据，分别表示B点坐标和马的坐标。</p>
+<p><strong>输出格式</strong></p>
+<p>一个数据，表示所有的路径条数。</p>
+<p><strong>输入样例</strong></p>
+<p>6 6 3 3</p>
+<p><strong>输出样例</strong></p>
+<p>6</p>
+<h5><span style="font-size: 16px;">&nbsp; &nbsp; &nbsp; &nbsp; （1）编程思路。</span></h5>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 在棋盘的A点（0，0）的过河卒要到达棋盘上的任意一点，只能从左边和上边两个方向过来。因此，要到达某一点的路径数，等于和它相邻的左、上两个点的路径数和：</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; F[i][j] = F[i-1][j] + F[i][j-1]。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 可以使用逐列（或逐行）递推的方法来求出从起始顶点到终点的路径数目，即使有障碍（将马的控制点称为障碍），这一递推方法也完全适用，只要将到达该点的路径数目设置为0即可，用F[i][j]表示到达点（i，j）的路径数目，g[i][j]表示点（i，j）有无障碍，递推方程如下：</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; F[0][0] = 1&nbsp;&nbsp;&nbsp;&nbsp; 初始点直接可达。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; F[i][0] = F[i-1][0]&nbsp;&nbsp; （i &gt; 0，g[i][0] =0）&nbsp;&nbsp;&nbsp;&nbsp; // 左边界</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; F[0][j] = F[0][j-1]&nbsp;&nbsp; （j &gt; 0，g[0][j] = 0）&nbsp;&nbsp;&nbsp; // 上边界</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; F[i][j] = F[i-1][j] + F[i][j-1]&nbsp;&nbsp; （i &gt; 0，j &gt; 0，g[x, y] = 0） // 递推式</p>
+<h5><span style="font-size: 16px;">&nbsp; &nbsp; &nbsp; &nbsp; （2）源程序。</span></h5>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int i,j,x,y,n,m,forbidden[51][51];&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; long int&nbsp; ans[51][51];&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int dx[8]={-2,-1,1,2,2,1,-1,-2};</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; int dy[8]={1,2,2,1,-1,-2,-2,-1};</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; scanf("%d%d%d%d",&amp;n,&amp;m,&amp;x,&amp;y);&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; for (i=0;i&lt;=n;i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; for (j=0;j&lt;=m;j++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; forbidden[i][j]=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ans[i][j]=0;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; ans[0][0]=1;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp;&nbsp;forbidden[x][y]=1;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; for (i=0;i&lt;8; i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (x+dx[i]&gt;=0 &amp;&amp; x+dx[i]&lt;=n &amp;&amp; y+dy[i]&gt;=0 &amp;&amp; y+dy[i]&lt;=m)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;forbidden[x+dx[i]][y+dy[i]]=1;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp;for (i=1; i&lt;=n; i++)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (forbidden[i][0]==0)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ans[i][0]=1;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else break;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; for (i=1; i&lt;=m; i++)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (forbidden[0][i]==0)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ans[0][i]=1;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else break;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp;for (i=1; i&lt;=n; i++)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (j=1; j&lt;=m; j++)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (forbidden[i][j]==0)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ans[i][j]=ans[i-1][j]+ans[i][j-1];&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; printf("%ld\n",ans[n][m]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;&nbsp;</p>
+<p style="margin-left: 30px;">}</p>
+<h4><span style="font-size: 18px;">习题20</span></h4>
+<h5><span style="font-size: 16px;">20-1&nbsp; 马的行走路径</span></h5>
+<p><strong>问题描述</strong></p>
+<p>设有一个n*m的棋盘（2&lt;=n&lt;=50，2&lt;=m&lt;=50），在棋盘上任一点有一个中国象棋马，如图2（a）所示。马行走的规则为：（1）马走日字；（2）马只能向右走，即如图2（b）所示的4种走法。</p>
+<p>编写一个程序，输入n和m，找出一条马从棋盘左下角（1，1）到右上角（n，m）的路径。例如：输入n=4、m=4时，输出路径 (1,1)-&gt;(2,3)-&gt;(4,4)。这一路经如图2（c）所示。若不存在路径，则输出"No！"</p>
+<p align="center"><img src="./images/C语言程序设计100例之（20）：过河卒1.png" alt="" />&nbsp;&nbsp;&nbsp;</p>
+<p style="text-align: center;">&nbsp;图2&nbsp; 棋盘及马儿的行走</p>
+<p><strong>输入格式</strong></p>
+<p>一行两个数据，表示终点的位置坐标。</p>
+<p><strong>输出格式</strong></p>
+<p>一条可行的行走路径。如果可行的行走路径有多条，任意输出一条即可。若不存在路径，则输出"No！"。</p>
+<p><strong>输入样例</strong></p>
+<p>10 10</p>
+<p><strong>输出样例</strong></p>
+<p>(1,1)-&gt;(2,3)-&gt;(3,5)-&gt;(4,7)-&gt;(5,9)-&gt;(6,7)-&gt;(7,9)-&gt;(9,8)-&gt;(10,10)</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; （1）编程思路</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 先将棋盘的横坐标规定为i，纵坐标规定为j，对于一个n&times;m的棋盘，i的值从1到n，j的值从1到m。棋盘上的任意点都可以用坐标（i，j）表示。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 对于马的移动方法，用变量k来表示四种移动方向（1、2、3、4）；而每种移动方法用偏移值来表示，并将这些偏移值分别保存在数组dx和dy中，如表1所示。</p>
+<p align="center">表1&nbsp; 4种移动方法对应偏移值</p>
+<table style="margin-left: auto; margin-right: auto;" border="1" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td valign="top" width="107">
+<p align="center">K</p>
+</td>
+<td valign="top" width="107">
+<p align="center">Dx[k]</p>
+</td>
+<td valign="top" width="107">
+<p align="center">Dy[k]</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="107">
+<p align="center">1</p>
+</td>
+<td valign="top" width="107">
+<p align="center">2</p>
+</td>
+<td valign="top" width="107">
+<p align="center">1</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="107">
+<p align="center">2</p>
+</td>
+<td valign="top" width="107">
+<p align="center">2</p>
+</td>
+<td valign="top" width="107">
+<p align="center">-1</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="107">
+<p align="center">3</p>
+</td>
+<td valign="top" width="107">
+<p align="center">1</p>
+</td>
+<td valign="top" width="107">
+<p align="center">2</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="107">
+<p align="center">4</p>
+</td>
+<td valign="top" width="107">
+<p align="center">1</p>
+</td>
+<td valign="top" width="107">
+<p align="center">-2</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 根据马走的规则，马可以由（i-dx[k]，j-dy[k]）走到（i，j）。只要马能从（1，1）走到（i-dx[k]，j-dy[k]），就一定能走到（i，j），当然，马走的坐标必须保证在棋盘上。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 以（n，m）为起点向左递推，当递推到（i-dx[k]，j-dy[k]）的位置是（1，1）时，就找到了一条从（1，1）到（n，m）的路径。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 程序中可用一个二维数组a表示棋盘，使用倒推法，从终点（n，m）往左递推，设初始值a[n][m]为（-1，-1）（表示终点），如果从（i，j）一步能走到（n，m），就将（n，m）存放在a[i][j]中。如表2所示，a[3][2]和a[2][3]的值是（4，4），表示从这两个点都可以到达坐标（4，4）。从（1，1）可到达（2，3）、（3，2）两个点，所以a[1][1]存放两个点中的任意一个即可。递推结束以后，如果a[1][1]值为（0，0）说明不存在路径，否则a[1][1]值就是马走下一步的坐标，以此顺推输出路径。</p>
+<p align="center">表2&nbsp; N=4，M=4时，数组a的赋值情况</p>
+<div align="center">
+<table border="1" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+<td valign="top" width="113">
+<p align="center">A[4][4]={-1,-1}</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+<td valign="top" width="113">
+<p align="center">A[2][3]={4,4}</p>
+</td>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+<td valign="top" width="113">
+<p align="center">A[3][2]={4,4}</p>
+</td>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="113">
+<p align="center">A[1][1]={2,3}</p>
+</td>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+<td valign="top" width="113">
+<p align="center">&nbsp;</p>
+</td>
+</tr>
+</tbody>
+</table>
+
+<p>&nbsp; &nbsp; &nbsp; &nbsp; （2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int dx[5]={0,2,2,1,1},dy[5]={0,1,-1,2,-2};</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; struct point</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; int x;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; int y;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;};</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; struct point a[51][51];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; int i,j,n,m,k;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; for(i=0;i&lt;51;i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; for (j=0;j&lt;51;j++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; a[i][j].x=a[i][j].y=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; scanf("%d%d",&amp;n,&amp;m);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; a[n][m].x=-1;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 标记为终点</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; a[n][m].y=-1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; for (i=n;i&gt;=2;i--)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 倒推</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (j=1;j&lt;=m;j++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (a[i][j].x!=0)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (k=1;k&lt;=4;k++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;a[i-dx[k]][j-dy[k]].x=i;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; a[i-dx[k]][j-dy[k]].y=j;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (a[1][1].x==0)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("No!\n");</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; else&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 存在路径</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp;{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; i=1;&nbsp; j=1;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;printf("(%d,%d)",i,j);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;while (a[i][j].x!=-1)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; k=i;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; i=a[i][j].x;&nbsp; j=a[k][j].y;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; printf("-&gt;(%d,%d)",i,j);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; printf("\n");</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<h5><span style="font-size: 16px;">20-2&nbsp; 方格取数（一）</span></h5>
+<p><strong>题目描述</strong></p>
+<p>设有N&times;N的方格图(N&le;9)，我们将其中的某些方格中填入正整数，而其他的方格中则放入数字0。如下所示（见样例）:</p>
+<p style="text-align: center;"><img src="./images/C语言程序设计100例之（20）：过河卒2.png" alt="" /></p>
+<p>某人从图的左上角的A点出发，可以向下行走，也可以向右走，直到到达右下角的B点。在走过的路上，他可以取走方格中的数（取走后的方格中将变为数字0）。</p>
+<p>此人从A点走到B点，试找出1条这样的路径，使得取得的数之和为最大。</p>
+<p><strong>输入格式</strong></p>
+<p>输入的第一行为一个整数N（表示N&times;N的方格图），接下来的每行有三个整数，前两个表示位置，第三个数为该位置上所放的数。一行单独的0表示输入结束。</p>
+<p><strong>输出格式</strong></p>
+<p>只需输出一个整数，表示找出的1条路径上取得的最大的和。</p>
+<p><strong>输入样例</strong></p>
+<p>8</p>
+<p>2 3 13</p>
+<p>2 6 6</p>
+<p>3 5 7</p>
+<p>4 4 14</p>
+<p>5 2 21</p>
+<p>5 6 4</p>
+<p>6 3 15</p>
+<p>7 2 14</p>
+<p>0 0 0</p>
+<p>输出样例</p>
+<p>36</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; （1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 因为行走的方向是：可以向下行走，也可以向右走。因此，位置（i,j）可以由上边的格子（i-1,j）走到，也可以由左边的格子（i,j-1）走到。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 设f[i][j]表示走到格子（i,j）处所取方格数的最大值，a[x][y]表示格子(x,y)上的数字。显然有</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; f[i][j]=max（f[i-1][j],f[i][j-1]）+a[i][j];</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 初始时&nbsp;&nbsp; f[1][1]=a[1][1]。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;（2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">int max(int a,int b)</p>
+<p style="margin-left: 30px;">{return a&lt;b?b:a;}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int f[10][10]={0}, a[10][10]={0};</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int n;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; scanf("%d",&amp;n);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp;while(1)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int x, y, w;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d%d%d",&amp;x,&amp;y,&amp;w);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (x==0 &amp;&amp; y==0 &amp;&amp; w==0) break;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; a[x][y]=w;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; f[1][1]=a[1][1];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int i, j;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; for (i=1;i&lt;=n;i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;for (j=1;j&lt;=n;j++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; f[i][j]=max(f[i-1][j],f[i][j-1])+a[i][j];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;printf("%d\n",f[n][n]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<h5><span style="font-size: 16px;">20-3&nbsp; 方格取数（二）</span></h5>
+<p><strong>题目描述</strong></p>
+<p>设有N&times;N的方格图(N&le;9)，我们将其中的某些方格中填入正整数，而其他的方格中则放入数字0。如下所示（见样例）:</p>
+<p style="text-align: center;"><img src="./images/C语言程序设计100例之（20）：过河卒3.png" alt="" /></p>
+<p>某人从图的左上角的A点出发，可以向下行走，也可以向右走，直到到达右下角的B点。在走过的路上，他可以取走方格中的数（取走后的方格中将变为数字0）。</p>
+<p>此人从A点到B点共走两次，试找出2条这样的路径，使得取得的数之和为最大。</p>
+<p><strong>输入格式</strong></p>
+<p>输入的第一行为一个整数N（表示N&times;N的方格图），接下来的每行有三个整数，前两个表示位置，第三个数为该位置上所放的数。一行单独的0表示输入结束。</p>
+<p><strong>输出格式</strong></p>
+<p>只需输出一个整数，表示2条路径上取得的最大的和。</p>
+<p><strong>输入样例</strong></p>
+<p>8</p>
+<p>2 3 13</p>
+<p>2 6 6</p>
+<p>3 5 7</p>
+<p>4 4 14</p>
+<p>5 2 21</p>
+<p>5 6 4</p>
+<p>6 3 15</p>
+<p>7 2 14</p>
+<p>0 0 0</p>
+<p>输出样例</p>
+<p>67</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; （1）编程思路1。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 本题要求找到2条从（1，1）到（n,n）的路径，被取走的格子里的数变为0，使得在两条路径上格子中数之和最大时，就成为了&ldquo;二取方格数&rdquo;问题。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 最容易想到的就是先后做两次单条路径&ldquo;方格取数&rdquo;，这一算法的本质是贪心，但这是错误的，反例如下：</p>
+<div align="center">
+<table border="1" cellspacing="0" cellpadding="0">
+<tbody>
+<tr>
+<td valign="top" width="38">
+<p align="center">3</p>
+</td>
+<td valign="top" width="38">
+<p align="center">4&ensp;</p>
+</td>
+<td valign="top" width="38">
+<p align="center">5</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="38">
+<p align="center">0&ensp;</p>
+</td>
+<td valign="top" width="38">
+<p align="center">0&ensp;</p>
+</td>
+<td valign="top" width="38">
+<p align="center">0</p>
+</td>
+</tr>
+<tr>
+<td valign="top" width="38">
+<p align="center">2&ensp;</p>
+</td>
+<td valign="top" width="38">
+<p align="center">8&ensp;</p>
+</td>
+<td valign="top" width="38">
+<p align="center">2</p>
+</td>
+</tr>
+</tbody>
+</table>
+
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 贪心：第一路径：3-&gt;4-&gt;8-&gt;2&ensp;&ensp;(17)&ensp;&ensp;&ensp;&ensp;第二路径：5&ensp;（5）&ensp;&ensp;&ensp;总和为22&ensp;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 事实上我们可以将所有的数都取完，总和为24。&ensp;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 解决&ldquo;二取方格数&rdquo;问题需要用到&ldquo;多进程DP&rdquo;。即解决本题时，由于此人从A点到B点共走两次，要找出2条这样的路径，因此可以考虑为两个人同时从A走到B。</p>
+<p style="margin-left: 30px;">设f[i][j][k][l]为第一个人走到(i,j)，第二个人走到(k,l)时方格取数能达到的最大值，a[x][y]表示格子(x,y)上的数字。</p>
+<p style="margin-left: 30px;">状态转移情况如下：</p>
+<p style="margin-left: 30px;">1）两个人同时向右走</p>
+<p style="margin-left: 30px;">f[i][j][k][l]=max(f[i][j][k][l],f[i-1][j][k-1][l]+a[i][j]+a[k][l]);</p>
+<p style="margin-left: 30px;">2）两个人同时向下走</p>
+<p style="margin-left: 30px;">f[i][j][k][l]=max(f[i][j][k][l],f[i][j-1][k][l-1]+a[i][j]+a[k][l]);</p>
+<p style="margin-left: 30px;">3）两个人分别向右和向下走</p>
+<p style="margin-left: 30px;">f[i][j][k][l]=max(f[i][j][k][l],f[i-1][j][k][l-1]+a[i][j]+a[k][l]);</p>
+<p style="margin-left: 30px;">4）两个人分别向下和向右走</p>
+<p style="margin-left: 30px;">f[i][j][k][l]=max(f[i][j][k][l],f[i][j-1][k-1][l]+a[i][j]+a[k][l]);</p>
+<p style="margin-left: 30px;">当然，若两人走到了同一个格子，即(i,j)和(k,l)是同一个点，f[i][j][k][l]值还要减去a[i][j]。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;两个人都走到（n,n）格子时，得到答案，即f[n][n][n][n]为所求。</p>
+<p>&nbsp; &nbsp; &nbsp;（2）源程序1。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">int max(int a,int b)</p>
+<p style="margin-left: 30px;">{return a&lt;b?b:a;}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int f[10][10][10][10]={0}, a[10][10]={0};</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int n;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; scanf("%d",&amp;n);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; while(1)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int x, y, w;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d%d%d",&amp;x,&amp;y,&amp;w);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (x==0 &amp;&amp; y==0 &amp;&amp; w==0) break;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; a[x][y]=w;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; f[1][1][1][1]=a[1][1];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int i, j, k, l;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; for (i=1;i&lt;=n;i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (j=1;j&lt;=n;j++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (k=1;k&lt;=n;k++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (l=1;l&lt;=n;l++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; f[i][j][k][l]=max(f[i][j][k][l],f[i-1][j][k-1][l]+a[i][j]+a[k][l]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; f[i][j][k][l]=max(f[i][j][k][l],f[i][j-1][k][l-1]+a[i][j]+a[k][l]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; f[i][j][k][l]=max(f[i][j][k][l],f[i-1][j][k][l-1]+a[i][j]+a[k][l]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; f[i][j][k][l]=max(f[i][j][k][l],f[i][j-1][k-1][l]+a[i][j]+a[k][l]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(i==k &amp;&amp; j==l)f[i][j][k][l]-=a[i][j];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;printf("%d\n",f[n][n][n][n]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; （3）编程思路2。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 按思路1的方法，由于状态总共有n^4种，所以时间复杂度为O(n^4)。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 如果让两个人同时从(1,1)处出发，并同时向前延伸，那么当两个人都走了k步，两条路径都已经各自包含k个方格时，两条路径的末端必同在整个矩阵的第k条对角线上。如下图3所示。</p>
+<div align="center"><img src="./images/C语言程序设计100例之（20）：过河卒4.png" alt="" />
+<p align="center">图3&nbsp; 行走对角线示意图</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 由图3可知，走1步可到达（1,1）格子（标注为2），走两步可到达（1,2）或（2,1）格子（标注为2），走三步可到达（1,3）、（2,2）或（3,1）格子（标注为4），&hellip;&hellip;。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;由图可知，对于每一条路径，向右延伸的格子数+向下延伸的格子数=k（定值），也就是末端两个格子的纵横坐标之和=k。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 所以我们只需要知道两路径末端所在的行编号x1,x2以及两末端所在对角线编号k，就可以确定末端节点的位置（x1,k-x1），(x2,k-x2)。这样，可以只枚举对角线、x1和x2。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 设状态f[l][x1][x2]第一个人横坐标为x1（即第一个路径末端在第x1行），第二个人横坐标为x2（即第二路径末端在第x2行），且两末端同在第k条对角线上时的最优解。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 到达状态f[l][x1][x2]有有4种可能：</p>
+<p style="margin-left: 30px;">1）第1人从x1的左边向右到达x1，第2人从x2的左边向右到达x2，其前一状态应为f[k-1][x1-1][x2-1]；</p>
+<p style="margin-left: 30px;">2）第1人从x1的上边向下到达x1，第2人从x2的上边向下到达x2，其前一状态应为f[k-1][x1][x2]；</p>
+<p style="margin-left: 30px;">3）第1人从x1的左边向右到达x1，第2人从x2的上边向下到达x2，其前一状态应为f[k-1][x1-1][x2]；</p>
+<p style="margin-left: 30px;">4）第1人从x1的上边向下到达x1，第2人从x2的左边向右到达x2，其前一状态应为f[k-1][x1][x2-1]；</p>
+<p style="margin-left: 30px;">这样，可以得到状态转移方程：</p>
+<p style="margin-left: 30px;">tmp=max(max(f[k-1][x1-1][x2-1],f[k-1][x1][x2]),max(f[k-1][x1-1][x2],f[k-1][x1][x2-1]));</p>
+<p style="margin-left: 30px;">f[k][x1][x2]=max(f[k][x1][x2],tmp+a[x1][k-x1]+a[x2][k-x2]);</p>
+<p style="margin-left: 30px;">同样，如果点（x1，k-x1）和（x2，k-x2）重合了，需要减去一个点中的数（每个点只能取一次）。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;（4）源程序2。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">int max(int a,int b)</p>
+<p style="margin-left: 30px;">{return a&lt;b?b:a;}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int f[19][10][10]={0}, a[10][10]={0};</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int n;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; scanf("%d",&amp;n);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; while(1)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int x, y, w;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d%d%d",&amp;x,&amp;y,&amp;w);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (x==0 &amp;&amp; y==0 &amp;&amp; w==0) break;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; a[x][y]=w;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; int d=n*2;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; f[2][1][1]=a[1][1];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; for (int i=3;i&lt;=d;i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int c=i&lt;n+1?i:n+1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int s=i&gt;n?i-n:1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int j=s;j&lt;c;j++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int k=s;k&lt;c;k++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int x1=j,x2=k,y1=i-j,y2=i-k;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int tmp=max(max(f[i-1][x1-1][x2-1],f[i-1][x1][x2]),</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; max(f[i-1][x1-1][x2],f[i-1][x1][x2-1]));</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; f[i][x1][x2]=max(f[i][x1][x2],tmp+a[x1][y1]+a[x2][y2]);</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (x1==x2&amp;&amp;y1==y2)&nbsp; f[i][x1][x2]=f[i][x1][x2]-a[x1][y1];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp;printf("%d\n",f[d][n][n]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

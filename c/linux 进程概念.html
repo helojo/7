@@ -1,0 +1,389 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修linux 进程概念' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>linux 进程概念</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/10788716.html</div><br>
+    <h3 id="pcb进程控制块结构体usrsrclinux-headers-4.15.0-29includelinuxsched.h">1，pcb：进程控制块结构体：/usr/src/linux-headers-4.15.0-29/include/linux/sched.h</h3>
+<ul>
+<li><p>进程id：系统中每个进程有唯一的id，在c语言中用pid_t类型表示，是个非负整数。</p></li>
+<li><p>进程状态：就绪，运行，挂起，停止等状态</p></li>
+<li><p>描述虚拟地址空间的信息</p></li>
+<li><p>描述控制终端的信息</p></li>
+<li><p>进程执行时的当前工作目录（current working directory）</p></li>
+<li><p>umask掩码</p></li>
+<li><p>文件描述符表，包含很多指向file结构体的指针</p></li>
+<li><p>和信号相关的信息</p></li>
+<li><p>用户id和组id</p></li>
+<li><p>会话（session）和进程组</p></li>
+<li><p>进程可以使用的资源上限（Resource Limit）</p>
+<p>用【ulimit -a】查看：</p>
+<pre><code><code>ys@ys:~$ ulimit -a
+core file size          (blocks, -c) 0
+data seg size           (kbytes, -d) unlimited
+scheduling priority             (-e) 0
+file size               (blocks, -f) unlimited
+pending signals                 (-i) 7743
+max locked memory       (kbytes, -l) 16384
+max memory size         (kbytes, -m) unlimited
+open files                      (-n) 1024
+pipe size            (512 bytes, -p) 8
+POSIX message queues     (bytes, -q) 819200
+real-time priority              (-r) 0
+stack size              (kbytes, -s) 8192
+cpu time               (seconds, -t) unlimited
+max user processes              (-u) 7743
+virtual memory          (kbytes, -v) unlimited
+file locks                      (-x) unlimited</code></code></pre></li>
+</ul>
+<h3 id="环境变量">2，环境变量</h3>
+<p>查看所有的环境变量：env</p>
+<p>环境写法：等号前后没有空格</p>
+<p>KEY=VALUE</p>
+<p>常用的环境变量：</p>
+<ul>
+<li>PATH：可执行文件的搜索路径。比如可以直接敲ls，那是因为ls的可执行文件在环境变量PATH里，所以系统找得到。但是比如a.out执行文件，就不能直接敲a.out，因为a.out不在PATH里。</li>
+<li>SHELL：当前使用的shell程序，通常是：/bin/bash</li>
+<li>TERM：当前使用的终端类型，如果是图像界面的话，一般为：xterm-256color</li>
+<li>LANG：当前的语言和字符编码，一般为：en_US.UTF-8</li>
+<li>HOME：当前用户所在的绝对路径。</li>
+</ul>
+<p>获取环境变量：getenv</p>
+<pre class="c"><code>#include &lt;stdlib.h&gt;
+char *getenv(const char *name);
+</code></code></pre>
+<p>返回值：</p>
+<ul>
+<li><p>成功：返回指针</p></li>
+<li><p>失败：返回NULL</p></li>
+</ul>
+<p>设置环境变量：setenv</p>
+<pre class="c"><code>#include &lt;stdlib.h&gt;
+int setenv(const char *name, const char *value, int overwrite);
+</code></code></pre>
+<p>删除环境变量：unsetenv</p>
+<pre class="c"><code>#include &lt;stdlib.h&gt;
+int unsetenv(const char *name);</code></code></pre>
+<p>设置环境变量和删除环境变量一般不用系统函数，而是编辑【~/.bashrc】文件。</p>
+<p>使用【exprot key=value】。</p>
+<h3 id="进程概念">3，进程概念</h3>
+<p>创建进程：fork</p>
+<pre class="c"><code>#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+pid_t fork(void);</code></code></pre>
+<ul>
+<li>返回值
+<ul>
+<li>失败：-1</li>
+<li>成功：返回2次
+<ul>
+<li>父进程中返回：子进程的ID</li>
+<li>子进程返回：0</li>
+</ul></li>
+</ul></li>
+</ul>
+<p>获得当前进程自己id：getpid</p>
+<p>获得当前进程的父进程的id：getppid</p>
+<pre class="c"><code>ss
+#include &lt;unistd.h&gt;
+
+pid_t getpid(void);
+pid_t getppid(void);
+</code></code></pre>
+<p>理解fork的小例子：</p>
+<pre class="c"><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(){
+  //char* val = getenv(&quot;HOME&quot;);
+  printf(&quot;begin...\n&quot;);
+  pid_t pid = fork();
+  printf(&quot;end...\n&quot;);
+}</code></code></pre>
+<p>执行结果：</p>
+<pre><code><code>ys@ys:~/test$ ./en 
+begin...
+end...
+ys@ys:~/test$ end...</code></code></pre>
+<p>从执行结果发下：</p>
+<p>1，【begin】被打印出1次；【end】被打印出2次。</p>
+<p>2，第二个【end】跑到了shell的后面。</p>
+<p>分析：</p>
+<ul>
+<li>从执行结果1可以看出来，fork后，从1个进程，又分出了一个子进程。并且子进程不是从程序的开头开始执行，而是从fork后面开始执行，这个理解至关重要。</li>
+<li>执行结果2现象的解释，根本原因是父进程比子进程先执行结束了，导致了子进程成为了孤儿进程。最开始shell进程把执行权交给程序，也就是父进程，当父进程结束后，shell又接管终端，可是这个时间点，子进程还没结束，子进程的打印语句就把【end】打印到了shell后面。</li>
+</ul>
+<p>下面的例子可以了解，getpid和getppid的用法：</p>
+<pre class="c"><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(){
+  //char* val = getenv(&quot;HOME&quot;);
+  printf(&quot;begin...\n&quot;);
+  pid_t pid = fork();
+
+  //child process
+  if(pid == 0){
+    printf(&quot;child: pid=%d, ppid=%d\n&quot;, getpid(), getppid());
+  }
+  //parent proces
+  else if(pid &gt; 0){
+    printf(&quot;parent: pid=%d, child id:%d\n&quot;, getpid(), pid);
+    sleep(1);//为了让子进程先结束
+  }
+  printf(&quot;end...\n&quot;);
+}</code></code></pre>
+<p>查看进程的命名：ps</p>
+<ul>
+<li>选项a：显示更多信息</li>
+<li>选项u：显示用户信息</li>
+<li>选项x：和选项a一起使用</li>
+<li>选项j：能看到父进程</li>
+</ul>
+<pre><code><code>ys@ys:~$ ps aux
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+root         1  0.0  0.3 159928  7536 ?        Ss   13:53   0:02 /sbin/init spla
+root         2  0.0  0.0      0     0 ?        S    13:53   0:00 [kthreadd]
+ys        4029  0.0  0.0   4508   812 pts/0    S+   16:30   0:00 ./en
+ys        4030  0.0  0.0   4508    80 pts/0    S+   16:30   0:00 ./en
+ys        4043  0.1  0.2  29560  4936 pts/1    Ss   16:30   0:00 bash
+ys        4051  0.0  0.1  44472  3700 pts/1    R+   16:30   0:00 ps aux
+</code></code></pre>
+<p>从下图可以看出子进程4030的父进程是4029，父进程4029的父进程是1671，进程1671是bash(shell)程序。所以的进程都是从进程1：【/sbin/init splash】衍生出来的。</p>
+<pre><code><code>ys@ys:~$ ps ajx
+ PPID   PID  PGID   SID TTY      TPGID STAT   UID   TIME COMMAND
+    0     1     1     1 ?           -1 Ss       0   0:02 /sbin/init splash
+ 1661  1671  1671  1671 pts/0     4029 Ss    1000   0:00 bash
+ 1671  4029  4029  1671 pts/0     4029 S+    1000   0:00 ./en
+ 4029  4030  4029  1671 pts/0     4029 S+    1000   0:00 ./en
+ 1661  4043  4043  4043 pts/1     4055 Ss    1000   0:00 bash
+ 4043  4055  4055  4043 pts/1     4055 R+    1000   0:00 ps ajx
+</code></code></pre>
+<p>给进程发送信号：kill</p>
+<p>使用【kill -l】查看信号列表，发现9号信号就杀死进程的信号。</p>
+<pre><code><code>ys@ys:~$ kill -l
+ 1) SIGHUP   2) SIGINT   3) SIGQUIT  4) SIGILL   5) SIGTRAP
+ 6) SIGABRT  7) SIGBUS   8) SIGFPE   9) SIGKILL 10) SIGUSR1
+11) SIGSEGV 12) SIGUSR2 13) SIGPIPE 14) SIGALRM 15) SIGTERM
+16) SIGSTKFLT   17) SIGCHLD 18) SIGCONT 19) SIGSTOP 20) SIGTSTP
+21) SIGTTIN 22) SIGTTOU 23) SIGURG  24) SIGXCPU 25) SIGXFSZ
+26) SIGVTALRM   27) SIGPROF 28) SIGWINCH    29) SIGIO   30) SIGPWR
+31) SIGSYS  34) SIGRTMIN    35) SIGRTMIN+1  36) SIGRTMIN+2  37) SIGRTMIN+3
+38) SIGRTMIN+4  39) SIGRTMIN+5  40) SIGRTMIN+6  41) SIGRTMIN+7  42) SIGRTMIN+8
+43) SIGRTMIN+9  44) SIGRTMIN+10 45) SIGRTMIN+11 46) SIGRTMIN+12 47) SIGRTMIN+13
+48) SIGRTMIN+14 49) SIGRTMIN+15 50) SIGRTMAX-14 51) SIGRTMAX-13 52) SIGRTMAX-12
+53) SIGRTMAX-11 54) SIGRTMAX-10 55) SIGRTMAX-9  56) SIGRTMAX-8  57) SIGRTMAX-7
+58) SIGRTMAX-6  59) SIGRTMAX-5  60) SIGRTMAX-4  61) SIGRTMAX-3  62) SIGRTMAX-2
+63) SIGRTMAX-1  64) SIGRTMAX</code></code></pre>
+<p>由父进程创建5个子进程的例子：</p>
+<pre class="c"><code>#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(){
+  int i = 0;
+  pid_t pid = 0;
+  for(i = 0; i &lt; 5; ++i){
+    pid = fork();
+    if(pid == 0){
+      //child process
+      //printf(&quot;child: pid=%d, ppid=%d\n&quot;, getpid(), getppid());
+      break;
+    }
+    else if (pid &gt; 0){
+      //parent process
+      //printf(&quot;parent: pid=%d, ppid=%d\n&quot;, getpid(), getppid());
+    }
+  }
+
+  sleep(i);
+  printf(&quot;proces:%d will die:pid=%d,ppid=%d\n&quot;, i,getpid(), getppid());
+  
+}</code></code></pre>
+<p>执行结果：</p>
+<pre class="c"><code>ys@ys:~/test$ ./fo
+proces:0 will die:pid=2139,ppid=2138
+proces:1 will die:pid=2140,ppid=2138
+proces:2 will die:pid=2141,ppid=2138
+proces:3 will die:pid=2142,ppid=2138
+proces:4 will die:pid=2143,ppid=2138
+proces:5 will die:pid=2138,ppid=1704</code></code></pre>
+<p>要点在【break】和【sleep(i)】这2个地方。</p>
+<p>不加break的话，子进程也会创建子进程。</p>
+<p>观察【sleep(i);]这行，执行到这行的时间点，如果i=0，则说明是第一创建的子进程；</p>
+<p>如果i=4，说明是最后创建的子进程，如果i=5，说明是父进程。所以根据i的值，进行sleep，就能够实现先创建的子进程先执行完，后创建的后执行完，最后才是父进程执行完。</p>
+<p>在当进程调用别的程序：execl和execlp</p>
+<pre class="c"><code>#include &lt;unistd.h&gt;
+int execl(const char *path, const char *arg, .../* (char  *) NULL */);
+int execlp(const char *file, const char *arg, .../* (char  *) NULL */);
+</code></code></pre>
+<ul>
+<li>execl
+<ul>
+<li>path：目标程序的所在路径和程序名。例：【/bin/ls】</li>
+<li>arg：目标程序的参数。注意第一个参数必须是程序自己的名字。</li>
+<li>NULL：最后一个参数必须是NULL，告诉它参数列表到这里结束了。</li>
+<li>返回值：
+<ul>
+<li>成功：就不返回了，直接走了，也就是说，调用execl的语句之后的代码都不被执行了。</li>
+<li>失败：-1</li>
+</ul></li>
+</ul></li>
+<li>execlp：多了个p的含义就是：这个函数自己会去搜索环境变量PATH。
+<ul>
+<li>file：目标程序名，不用加路径。例：【ls】</li>
+<li>arg：目标程序的参数。注意第一个参数必须是程序自己的名字。</li>
+<li>NULL：最后一个参数必须是NULL，告诉它参数列表到这里结束了。</li>
+<li>返回值：
+<ul>
+<li>成功：就不返回了，直接走了，也就是说，调用execl的语句之后的代码都不被执行了。</li>
+<li>失败：-1</li>
+</ul></li>
+</ul></li>
+</ul>
+<p>调用ls的例子：</p>
+<pre class="c"><code>#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+int main(){
+  execl(&quot;/bin/ls&quot;, &quot;ls&quot;, &quot;-l&quot;, &quot;--color=auto&quot;, NULL);
+  perror(&quot;ls&quot;);
+  printf(&quot;not back\n&quot;);
+}</code></code></pre>
+<p>孤儿进程和僵尸进程</p>
+<p>孤儿进程：父进死了，被init进程领养，变成孤儿进程。</p>
+<p>僵尸进程：子进程死了，但父进程没有回收子进程的资源（pcb（大结构体）），变成僵尸进程。</p>
+<p>回收僵尸进程的方法：不能再用kill去杀，杀死父进程，让init领养，init负责回收。</p>
+<p>查看僵尸进程：</p>
+<pre><code><code> PPID   PID  PGID   SID TTY      TPGID STAT   UID   TIME COMMAND
+ 1704  2683  2683  1704 pts/0     2683 S+    1000   0:00 ./zo
+ 2683  2684  2683  1704 pts/0     2683 Z+    1000   0:00 [zo] &lt;defunct&gt;
+</code></code></pre>
+<p>发现有【Z+】和《defunct》就是僵尸进程。</p>
+<p>回收子进程：wait函数</p>
+<pre class="c"><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+pid_t wait(int *wstatus);
+</code></code></pre>
+<ul>
+<li><p>作用：</p>
+<ul>
+<li>阻塞等待（如果子线程还没有死亡，则一直等到它死亡）</li>
+<li>回收子进程的资源（PCB结构体）</li>
+<li>查看死亡的原因</li>
+</ul></li>
+<li><p>wstatus：传出参数，里面有子进程死亡的原因。</p>
+<p>查看wstatus的方法：使用下面2组宏。</p>
+<pre class="c"><code>WIFEXITED(wstatus)
+WEXITSTATUS(wstatus)
+
+WIFSIGNALED(wstatus)
+WTERMSIG(wstatus)</code></code></pre>
+<ul>
+<li><p>正常死亡：WIFEXITED(wstatus)返回真，使用WEXITSTATUS(wstatus)得到退出状态。</p>
+<p>退出状态的具体含义：return 后面的数字；或者exit 括号里的数字。</p></li>
+<li><p>非正常死亡（被信号杀死）：WIFSIGNALED(wstatus)返回真，使用WTERMSIG(wstatus)得到杀死它的信号（kill -l 显示出来的数字)。</p></li>
+</ul></li>
+<li><p>返回值：</p>
+<ul>
+<li>成功：返回死亡子进程的pid</li>
+<li>失败：-1</li>
+</ul></li>
+</ul>
+<p>wait的例子：</p>
+<pre class="c"><code>#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;wait.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(){
+  int i = 0;
+  pid_t pid = 0;
+
+  pid = fork();
+  if(pid == 0){
+    //child process
+    while(1){
+      printf(&quot;child: pid=%d, ppid=%d\n&quot;, getpid(), getppid());
+      sleep(3);
+      //return 101;
+      //exit(111);
+      //sleep(2);
+    }
+  }
+  else if (pid &gt; 0){
+    //parent process
+    printf(&quot;parent: pid=%d, ppid=%d\n&quot;, getpid(), getppid());
+    int wstatus;
+    pid_t pid = wait(&amp;wstatus);
+    if(WIFEXITED(wstatus)){
+      printf(&quot;child die pid=%d, status=%d\n&quot;,pid, WEXITSTATUS(wstatus));
+    }
+    if(WIFSIGNALED(wstatus)){
+      printf(&quot;child die pid=%d, status=%d\n&quot;,pid, WTERMSIG(wstatus));
+    }
+  }
+}
+</code></code></pre>
+<p>分析：</p>
+<ul>
+<li>正常死亡，代码用return和exit来模拟的</li>
+<li>被信号杀死：在另一终端里使用【kill pid】后，返回的WTERMSIG(wstatus)为15（SIGTERM）；如果用【kill -9 pid】则WTERMSIG(wstatus)为9（SIGKILL）</li>
+</ul>
+<p>回收子进程：waitpid</p>
+<pre class="c"><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+pid_t waitpid(pid_t pid, int *wstatus, int options);</code></code></pre>
+<ul>
+<li>pid
+<ul>
+<li>&lt; -1：回收组ID为-pid的子进程</li>
+<li>-1：回收所有的子进程</li>
+<li>0：回收和调用进程的组id相同的组id的所有子进程。</li>
+<li>》0：回收指定pid的子进程</li>
+</ul></li>
+<li>wstatus：和wait一样</li>
+<li>options：
+<ul>
+<li>0：与wait功能相同。</li>
+<li>WNOHANG：如果执行waitpid的时点，子进程还没结束，会立刻返回，不阻塞。</li>
+</ul></li>
+<li>返回值：返回状态发生了变化的子进程的id。
+<ul>
+<li>调用时设置了WNOHANG并且还指定了1个或者多个子进程
+<ul>
+<li>如果有子进程退出了，返回退出了的子进程的pid</li>
+<li>如果没有子进程退出，返回0</li>
+</ul></li>
+<li>失败：-1（没有子进程了，子进程都被回收完了）</li>
+</ul></li>
+</ul>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/linux 进程概念0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,210 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修《大话设计模式》之简单工厂模式' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>《大话设计模式》之简单工厂模式</center></div><div class='banquan'>原文出处:本文由博客园博主orejia提供。<br/>
+原文连接:https://www.cnblogs.com/orejia/p/11876000.html</div><br>
+    <p>问题背景：</p>
+<p>　　编程初学者都会有这样的问题，碰到问题就直觉地用计算机能够理解的逻辑来描述待解决的问题以及具体的求解过程，但这样的程序只为满足当前的需求，不容易维护和拓展。</p>
+<p>问题解决思路：</p>
+<ol>
+<li>设计一段代码之前，首先需要考虑到其<strong>可维护</strong>、<strong>可拓展性</strong>；</li>
+<li>将<strong>面向对象特性</strong>充分融入到代码设计过程中；</li>
+</ol>
+<p>&nbsp;</p>
+<p>calculator.h</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('a4cf6cc7-6986-4278-a224-05eb9966c838')"><img id="code_img_closed_a4cf6cc7-6986-4278-a224-05eb9966c838" class="code_img_closed" src="./images/《大话设计模式》之简单工厂模式0.png" alt="" /><img id="code_img_opened_a4cf6cc7-6986-4278-a224-05eb9966c838" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('a4cf6cc7-6986-4278-a224-05eb9966c838',event)" src="./images/《大话设计模式》之简单工厂模式1.png" alt="" />
+<div id="cnblogs_code_open_a4cf6cc7-6986-4278-a224-05eb9966c838" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">#ifndef _CALCULATOR_H_
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">#define</span> _CALCULATOR_H_
+<span style="color: #008080;"> 3</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> Calculator {
+</span><span style="color: #008080;"> 6</span>     Calculator() = <span style="color: #0000ff;">default</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 7</span>     Calculator(<span style="color: #0000ff;">double</span> lNum, <span style="color: #0000ff;">double</span><span style="color: #000000;"> rNum) 
+</span><span style="color: #008080;"> 8</span>         :leftNumber(lNum), rightNumber(rNum), result(<span style="color: #800080;">0</span><span style="color: #000000;">){}
+</span><span style="color: #008080;"> 9</span>     ~<span style="color: #000000;">Calculator(){}
+</span><span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">double</span> getResult() = <span style="color: #800080;">0</span>; <span style="color: #008000;">//</span><span style="color: #008000;">基类中可实现也可不实现</span>
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">protected</span><span style="color: #000000;">:
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">double</span><span style="color: #000000;"> leftNumber;
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">double</span><span style="color: #000000;"> rightNumber;
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">double</span><span style="color: #000000;"> result;
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">17</span> 
+<span style="color: #008080;">18</span> <span style="color: #008000;">/*</span>
+<span style="color: #008080;">19</span> <span style="color: #008000;">关于继承方式：
+</span><span style="color: #008080;">20</span> <span style="color: #008000;">    public     -- 属性不变
+</span><span style="color: #008080;">21</span> <span style="color: #008000;">    protected  -- public变成protected
+</span><span style="color: #008080;">22</span> <span style="color: #008000;">    private    -- 都变成private
+</span><span style="color: #008080;">23</span> <span style="color: #008000;">*/</span>
+<span style="color: #008080;">24</span> <span style="color: #0000ff;">class</span> CalculatorAdd :<span style="color: #0000ff;">public</span><span style="color: #000000;"> Calculator
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">26</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">27</span>     CalculatorAdd() = <span style="color: #0000ff;">default</span><span style="color: #000000;">;
+</span><span style="color: #008080;">28</span>     CalculatorAdd(<span style="color: #0000ff;">double</span> lNum, <span style="color: #0000ff;">double</span><span style="color: #000000;"> rNum) 
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">        :Calculator(lNum, rNum){}
+</span><span style="color: #008080;">30</span>     ~<span style="color: #000000;">CalculatorAdd(){};
+</span><span style="color: #008080;">31</span>     <span style="color: #008000;">//</span><span style="color: #008000;">加</span>
+<span style="color: #008080;">32</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> getResult();
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">34</span> <span style="color: #0000ff;">class</span> CalculatorSub :<span style="color: #0000ff;">public</span><span style="color: #000000;"> Calculator
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">36</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">37</span>     CalculatorSub() = <span style="color: #0000ff;">default</span><span style="color: #000000;">;
+</span><span style="color: #008080;">38</span>     CalculatorSub(<span style="color: #0000ff;">double</span> lNum, <span style="color: #0000ff;">double</span><span style="color: #000000;"> rNum) 
+</span><span style="color: #008080;">39</span> <span style="color: #000000;">        :Calculator(lNum, rNum){}
+</span><span style="color: #008080;">40</span>     ~<span style="color: #000000;">CalculatorSub(){};
+</span><span style="color: #008080;">41</span>     <span style="color: #008000;">//</span><span style="color: #008000;">减</span>
+<span style="color: #008080;">42</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> getResult();
+</span><span style="color: #008080;">43</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">44</span> <span style="color: #0000ff;">class</span> CalculatorMul :<span style="color: #0000ff;">public</span><span style="color: #000000;"> Calculator
+</span><span style="color: #008080;">45</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">46</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">47</span>     CalculatorMul() = <span style="color: #0000ff;">default</span><span style="color: #000000;">;
+</span><span style="color: #008080;">48</span>     CalculatorMul(<span style="color: #0000ff;">double</span> lNum, <span style="color: #0000ff;">double</span><span style="color: #000000;"> rNum) 
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">        :Calculator(lNum, rNum){}
+</span><span style="color: #008080;">50</span>     ~<span style="color: #000000;">CalculatorMul(){};
+</span><span style="color: #008080;">51</span>     <span style="color: #008000;">//</span><span style="color: #008000;">乘</span>
+<span style="color: #008080;">52</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> getResult();
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">54</span> <span style="color: #0000ff;">class</span> CalculatorDiv :<span style="color: #0000ff;">public</span><span style="color: #000000;"> Calculator
+</span><span style="color: #008080;">55</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">56</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">57</span>     CalculatorDiv() = <span style="color: #0000ff;">default</span><span style="color: #000000;">;
+</span><span style="color: #008080;">58</span>     CalculatorDiv(<span style="color: #0000ff;">double</span> lNum, <span style="color: #0000ff;">double</span><span style="color: #000000;"> rNum)
+</span><span style="color: #008080;">59</span> <span style="color: #000000;">        :Calculator(lNum, rNum){}
+</span><span style="color: #008080;">60</span>     ~<span style="color: #000000;">CalculatorDiv(){};
+</span><span style="color: #008080;">61</span>     <span style="color: #008000;">//</span><span style="color: #008000;">除</span>
+<span style="color: #008080;">62</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> getResult();
+</span><span style="color: #008080;">63</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">64</span> 
+<span style="color: #008080;">65</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> FactoryCalculator {
+</span><span style="color: #008080;">66</span>     FactoryCalculator() = <span style="color: #0000ff;">default</span><span style="color: #000000;">;
+</span><span style="color: #008080;">67</span>     FactoryCalculator(std::<span style="color: #0000ff;">string</span> op, <span style="color: #0000ff;">double</span> num1, <span style="color: #0000ff;">double</span><span style="color: #000000;"> num2);
+</span><span style="color: #008080;">68</span>     <span style="color: #0000ff;">double</span> getResult(){ <span style="color: #0000ff;">return</span> p-&gt;getResult(); }<span style="color: #008000;">//</span><span style="color: #008000;">简短函数默认inline</span>
+<span style="color: #008080;">69</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;">70</span>     std::<span style="color: #0000ff;">string</span><span style="color: #000000;"> operate;
+</span><span style="color: #008080;">71</span>     <span style="color: #0000ff;">double</span><span style="color: #000000;"> number1;
+</span><span style="color: #008080;">72</span>     <span style="color: #0000ff;">double</span><span style="color: #000000;"> number2;
+</span><span style="color: #008080;">73</span>     Calculator *<span style="color: #000000;">p;
+</span><span style="color: #008080;">74</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">75</span> 
+<span style="color: #008080;">76</span> <span style="color: #0000ff;">#endif</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>calculator.cpp</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('023a59de-4095-4e06-a31a-29184a6d1e63')"><img id="code_img_closed_023a59de-4095-4e06-a31a-29184a6d1e63" class="code_img_closed" src="./images/《大话设计模式》之简单工厂模式0.png" alt="" /><img id="code_img_opened_023a59de-4095-4e06-a31a-29184a6d1e63" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('023a59de-4095-4e06-a31a-29184a6d1e63',event)" src="./images/《大话设计模式》之简单工厂模式1.png" alt="" />
+<div id="cnblogs_code_open_023a59de-4095-4e06-a31a-29184a6d1e63" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">calculator.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 2</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span> std; <span style="color: #008000;">//</span><span style="color: #008000;">通常，using只出现在源文件中，而不出现在头文件中</span>
+<span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> Calculator::getResult()
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">message print in Calculator::getResult</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0.0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> CalculatorAdd::getResult()
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">14</span>     Calculator::getResult();<span style="color: #008000;">//</span><span style="color: #008000;">我曾经来过</span>
+<span style="color: #008080;">15</span> 
+<span style="color: #008080;">16</span>     result = leftNumber +<span style="color: #000000;"> rightNumber;
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> result;
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">19</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> CalculatorSub::getResult()
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    Calculator::getResult();
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span>     result = leftNumber -<span style="color: #000000;"> rightNumber;
+</span><span style="color: #008080;">24</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> result;
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">26</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> CalculatorMul::getResult()
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">    Calculator::getResult();
+</span><span style="color: #008080;">29</span> 
+<span style="color: #008080;">30</span>     result = leftNumber *<span style="color: #000000;"> rightNumber;
+</span><span style="color: #008080;">31</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> result;
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">33</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> CalculatorDiv::getResult()
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">    Calculator::getResult();
+</span><span style="color: #008080;">36</span> 
+<span style="color: #008080;">37</span>     <span style="color: #0000ff;">if</span> (rightNumber == <span style="color: #800080;">0</span><span style="color: #000000;">){
+</span><span style="color: #008080;">38</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">division cannot be zero</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">39</span>         <span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">41</span>     result = leftNumber /<span style="color: #000000;"> rightNumber;
+</span><span style="color: #008080;">42</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> result;
+</span><span style="color: #008080;">43</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">44</span> 
+<span style="color: #008080;">45</span> <span style="color: #008000;">//</span><span style="color: #008000;">如果函数体太长，则初始化列表就写在源文件（初始化列表必须跟函数体）</span>
+<span style="color: #008080;">46</span> FactoryCalculator::FactoryCalculator(<span style="color: #0000ff;">string</span> op, <span style="color: #0000ff;">double</span> num1, <span style="color: #0000ff;">double</span><span style="color: #000000;"> num2) 
+</span><span style="color: #008080;">47</span> <span style="color: #000000;">    :operate(op), number1(num1), number2(num2)
+</span><span style="color: #008080;">48</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">49</span>     <span style="color: #0000ff;">char</span> flag = operate[<span style="color: #800080;">0</span><span style="color: #000000;">];
+</span><span style="color: #008080;">50</span>     <span style="color: #0000ff;">switch</span><span style="color: #000000;"> (flag)
+</span><span style="color: #008080;">51</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">52</span>     <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">+</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">53</span>         p = <span style="color: #0000ff;">new</span><span style="color: #000000;"> CalculatorAdd(number1, number2);
+</span><span style="color: #008080;">54</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">55</span>     <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">56</span>         p = <span style="color: #0000ff;">new</span><span style="color: #000000;"> CalculatorSub(number1, num2);
+</span><span style="color: #008080;">57</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">58</span>     <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">*</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">59</span>         p = <span style="color: #0000ff;">new</span><span style="color: #000000;"> CalculatorMul(number1, number2);
+</span><span style="color: #008080;">60</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">61</span>     <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">/</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">62</span>         p = <span style="color: #0000ff;">new</span><span style="color: #000000;"> CalculatorDiv(number1, number2);
+</span><span style="color: #008080;">63</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">64</span>     <span style="color: #0000ff;">default</span><span style="color: #000000;">:
+</span><span style="color: #008080;">65</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">66</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">67</span> }</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>main.cpp</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('73090bde-3957-40c0-8a83-a1e3ff7ed7cd')"><img id="code_img_closed_73090bde-3957-40c0-8a83-a1e3ff7ed7cd" class="code_img_closed" src="./images/《大话设计模式》之简单工厂模式0.png" alt="" /><img id="code_img_opened_73090bde-3957-40c0-8a83-a1e3ff7ed7cd" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('73090bde-3957-40c0-8a83-a1e3ff7ed7cd',event)" src="./images/《大话设计模式》之简单工厂模式1.png" alt="" />
+<div id="cnblogs_code_open_73090bde-3957-40c0-8a83-a1e3ff7ed7cd" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">calculator.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 2</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     FactoryCalculator *factoryCalculaotr = <span style="color: #0000ff;">new</span> FactoryCalculator(<span style="color: #800000;">"</span><span style="color: #800000;">+</span><span style="color: #800000;">"</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 9</span>     FactoryCalculator *factoryCalculaotr2 = <span style="color: #0000ff;">new</span> FactoryCalculator(<span style="color: #800000;">"</span><span style="color: #800000;">-</span><span style="color: #800000;">"</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">10</span>     FactoryCalculator *factoryCalculaotr3 = <span style="color: #0000ff;">new</span> FactoryCalculator(<span style="color: #800000;">"</span><span style="color: #800000;">*</span><span style="color: #800000;">"</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">11</span>     FactoryCalculator *factoryCalculaotr4 = <span style="color: #0000ff;">new</span> FactoryCalculator(<span style="color: #800000;">"</span><span style="color: #800000;">/</span><span style="color: #800000;">"</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">12</span>     cout &lt;&lt; factoryCalculaotr-&gt;getResult() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">13</span>     cout &lt;&lt; factoryCalculaotr2-&gt;getResult() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">14</span>     cout &lt;&lt; factoryCalculaotr3-&gt;getResult() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">15</span>     cout &lt;&lt; factoryCalculaotr4-&gt;getResult() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">16</span> 
+<span style="color: #008080;">17</span>     system(<span style="color: #800000;">"</span><span style="color: #800000;">pause</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">18</span> }</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

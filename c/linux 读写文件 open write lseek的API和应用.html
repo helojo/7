@@ -1,0 +1,197 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修linux 读写文件 open write lseek的API和应用' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>linux 读写文件 open write lseek的API和应用</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/10758224.html</div><br>
+    <h2 id="linux下的文件读写">linux下的文件读写</h2>
+<h3 id="open">1, open</h3>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+
+int open(const char *pathname, int flags);
+int open(const char *pathname, int flags, mode_t mode);</code></code></pre>
+<ul>
+<li>pathname：文件路径和名</li>
+<li>flags
+<ul>
+<li>必选项
+<ul>
+<li>O_RDONLY：只读</li>
+<li>O_WRONLY：只写</li>
+<li>O_RDWR：读写</li>
+</ul></li>
+<li>可选项
+<ul>
+<li>O_APPEND</li>
+<li>O_CREAT
+<ul>
+<li>O_EXCL</li>
+<li>mode：如果是创建文件，则必须指定文件的权限，最好算出来的权限：mode &amp; ~umask</li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li>返回值：返回最小的可用文件描述符，失败返回-1，并设置errno</li>
+</ul>
+<p>例子：模拟touch命令</p>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char* argv[]){
+  int fd = open(argv[1], O_RDONLY|O_CREAT|O_EXCL, 0666);
+  close(fd);
+  return 0;
+}</code></code></pre>
+<p>0666 &amp; ~0002 = 0664，所以创建出来的文件的权限是：-rw-rw-r--</p>
+<h3 id="read">2,read</h3>
+<pre><code><code>#include &lt;unistd.h&gt;
+
+ssize_t read(int fd, void *buf, size_t count);</code></code></pre>
+<ul>
+<li>fd：文件描述符</li>
+<li>buf：读到哪里</li>
+<li>conut：读多少个字节</li>
+<li>返回值
+<ul>
+<li>失败返回-1，并设置errno</li>
+<li>如果文件描述符是非阻塞的时候，read不到的时候，返回值也是-1，这个-1不代表read失败，所以要判断errno的值，这时errno的值为【11】，用perror打印出的错误信息是【Resource temporarily unavailable】</li>
+<li>成功返回实际读到的字节数</li>
+<li>0代表读到文件的末尾了</li>
+</ul></li>
+</ul>
+<h3 id="write">3，write</h3>
+<pre><code><code>#include &lt;unistd.h&gt;
+
+ssize_t write(int fd, const void *buf, size_t count);</code></code></pre>
+<ul>
+<li>fd：文件描述符</li>
+<li>buf：从哪里写</li>
+<li>conut：写多少个字节</li>
+<li>返回值
+<ul>
+<li>失败返回-1，并设置errno</li>
+<li>成功返回实际写出去的字节数</li>
+<li>0代表什么也没写进去</li>
+</ul></li>
+</ul>
+<p>例子：模拟cat命令</p>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char* argv[]){
+  int fd = open(argv[1], O_RDONLY);
+  char buf[64] = {0};
+  int ret = 0;
+  
+  while((ret = read(fd, buf, sizeof buf)) &gt; 0){
+    write(STDOUT_FILENO, buf, ret);
+  }
+  close(fd);
+  return 0;
+}</code></code></pre>
+<h3 id="lseek">4,lseek</h3>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+
+off_t lseek(int fd, off_t offset, int whence);</code></code></pre>
+<ul>
+<li>fd：文件描述符</li>
+<li>offset：偏移的数量</li>
+<li>whence：从哪里开始偏移
+<ul>
+<li>SEEK_SET：文件描述符的开始位置</li>
+<li>SEEK_CUR：文件描述符的当前位置</li>
+<li>SEEK_END：文件描述符的末尾位置</li>
+</ul></li>
+<li>返回值
+<ul>
+<li>成功：返回当前位置到开始位置的长度</li>
+<li>失败：返回-1，并设置errno</li>
+</ul></li>
+</ul>
+<p>例子1：把字符串“helloworld”写入一个文件，然后读取这个文件，把“helloworld”从文件中读取出来，并打印到终端。</p>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char* argv[]){
+  int fd = open(argv[1], O_RDWR|O_CREAT, 0666);
+  write(fd, &quot;helloworld\n&quot;, 11);
+
+  //这里必须使用lseek，来调整文件指针的位置，设置文件指针设置到文件的开始位置。
+  lseek(fd, 0, SEEK_SET);
+  char buf[20] = {0};
+  int ret = read(fd, buf, sizeof buf);
+  write(STDOUT_FILENO, buf, ret);
+  
+  close(fd);
+  return 0;
+}
+</code></code></pre>
+<h3 id="read和write的内幕虽然read和write的参数里没有文件指针所在位置的参数但是执行read或者write后文件指针所在位置会被自动调整到当前位置读入或者写入的字节数的位置"><font color="red">read和write的内幕：虽然read和write的参数里没有，文件指针所在位置的参数，但是，执行read或者write后，文件指针所在位置会被自动调整到：【当前位置+读入或者写入的字节数】的位置。</font></h3>
+<p>例子2：计算文件的大小</p>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char* argv[]){
+  int fd = open(argv[1], O_RDWR);
+    
+  //open后，文件指针的位置在文件开头
+  //因为：lseek返回当前位置到开始位置的长度
+  //所以用lseek移动到了文件末尾，这时lseek的返回值就是文件的大小
+  int ret = lseek(fd, 0, SEEK_END);
+  printf(&quot;file size:%d\n&quot;, ret);
+  close(fd);
+}
+</code></code></pre>
+<p>例子3：创建文件大小为1024的文件</p>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char* argv[]){
+
+  int fd = open(argv[1], O_WRONLY|O_CREAT, 0666);
+  //打开后文件指针在文件的开始位置，然后从开始位置移动1023个字节，然后再调用write，
+  //注意不调用后面的write的话，创建的文件的大小是为0的。
+  lseek(fd, 1023, SEEK_SET);
+  write(fd, &quot;a&quot;, 1);
+  close(fd);
+  
+}</code></code></pre>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/linux 读写文件 open write lseek的API和应用0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

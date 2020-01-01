@@ -1,0 +1,86 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修进程调度， 一个调度器的自白' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>进程调度， 一个调度器的自白</center></div><div class='banquan'>原文出处:本文由博客园博主tobe的呓语提供。<br/>
+原文连接:https://www.cnblogs.com/tobe98/p/11604483.html</div><br>
+    <p>我是一个进程调度器。</p>
+<p>我的职责是调度计算机内所有的进程，为他们分配 CPU 资源。</p>
+<h2 id="批处理时代">1. 批处理时代</h2>
+<p>想当初，操作系统创造我时，只是打算让我用 <strong>FCFS</strong> 调度算法，简单维护下进程的秩序。但我后来的发展，远远超过了他的想象。</p>
+<h3 id="fcfs">1.1 FCFS</h3>
+<p>所谓 FCFS 就是「<strong>先来先服务</strong>（First Come First Serve）」，每个进程按进入内存的时间先后排成一队。每当 CPU 上的进程运行完毕或者阻塞，我就会选择队伍最前面的进程，带着他前往 CPU 执行。</p>
+<p>就拿这几个进程来说吧：</p>
+<p><img src="./images/进程调度， 一个调度器的自白0.png" /></p>
+<p>按照 FCFS 算法，我就会就按 A，B，C，D，E这样的顺序来将他们送往 CPU：</p>
+<p><img src="./images/进程调度， 一个调度器的自白1.png" /></p>
+<p>这一算法听起来简单又公平，然而好景不长，我收到了一个短进程的抱怨：”上次我前面排了一个长进程，等了足足 200 秒他才运行完。我只用 1 秒就运行结束了，就因为等他，我多花了这么长时间，太不值得了。”</p>
+<p>我仔细一想， FCFS 算法确实有这个缺陷——短进程的响应时间太长了，用户交互体验会变差。</p>
+<p>所以我决定，更换调度算法。</p>
+<h3 id="spn">1.2 SPN</h3>
+<p>这次我设计的算法叫做「<strong>短任务优先</strong>」（Shortest Process Next，SPN）。每次选择预计处理时间最短的进程。因此，在排队的时候，我会把短进程从队列里提到前面。</p>
+<p>这一次，短进程得到了很好的照顾，进程的平均响应时间大大降低，我和操作系统都很满意。</p>
+<p>但长进程们不干了：那些短进程天天插队，导致他们经常得不到 CPU 资源，造成了「<strong>饥饿</strong>」现象。</p>
+<p>取消 SPN 算法的呼声越来越高。</p>
+<p>这可是个大问题。FCFS 虽然响应时间长，但最后所有进程一定有使用 CPU 资源的机会。但 SPN 算法就不一样了，如果短进程源源不断加入队列，长进程们将永远得不到执行的机会——太可怕了。</p>
+<p>因此，短任务优先算法需要得到改进。有什么方法既能照顾短进程，又能照顾长进程呢？</p>
+<h3 id="hrrn">1.3 HRRN</h3>
+<p>经过和操作系统的讨论，我们决定综合考量进程的两个属性：<strong>等待时间</strong>和<strong>要求服务时间</strong>——等待时间长，要求服务时间短（就是短进程）的进程更容易被选中。</p>
+<p>为了量化，我们制定了一个公式：响应比 = （等待时间+要求服务时间）/ 要求服务时间。响应比高的算法会先执行。我们称之为「<strong>高响应比优先</strong>」（Highest Response Ratio Next，HRRN）。</p>
+<p><img src="./images/进程调度， 一个调度器的自白2.png" /></p>
+<p>这个算法得到了长短进程的一致好评。虽然我的工作量增加了（每次调度前，我都要重新计算所有等待进程的响应比）但为了进程们的公平性，这一切都是值得的。</p>
+<h2 id="并发时代">2. 并发时代</h2>
+<p>新时代到了。</p>
+<p>随着计算机的普及，个人用户大量增长，<strong>并发</strong>，即一次运行多个程序的需求出现了。这可难倒我了——处理器只有一个，怎么运行多个程序？</p>
+<p>所幸 CPU 点醒了我：“我现在的运算速度既然这么快，何不发挥这项长处，弄一个「伪并行」出来？“</p>
+<p>“伪并行？什么意思”</p>
+<p>“就是看起来像并行，实际上还是串行。每个进程短时间交替使用我的资源，但在人类看来，这些进程就像在「同时」运行。”</p>
+<p>我恍然大悟。</p>
+<h3 id="rr">2.1 RR</h3>
+<p>经过 CPU 的提醒，我很快制定出了新的调度算法——<strong>时间片轮转算法</strong>（Round Robin，RR）。</p>
+<p>在这个算法里，每个进程将轮流使用 CPU 资源，只不过在他们开始运行时，我会为他们打开<strong>定时器</strong>，如果定时器到时间（或者执行阻塞操作），进程将被迫「下机」，切换至下一个进程。至于下一个进程的选择嘛，直接用 FCFS 就好了。</p>
+<p><img src="./images/进程调度， 一个调度器的自白3.png" /></p>
+<p>新的算法必然会面临新的问题，现在我的问题就是，时间片的长度怎么设计？</p>
+<p>直观来看，时间片越短，固定时间里可运行的进程就越多，可 CPU 说过，切换进程是要消耗他不少指令周期的，时间片过短会导致大量 CPU 资源浪费在<strong>切换上下文</strong>上。时间片过长，短交互指令响应会变慢。所以具体怎么取，还得看交互时间大小（感觉像没说一样，但至少给了个标准嘛）。</p>
+<p>这一阶段，我的工作量大大提升——以前十几秒都不用切换一次程序，现在倒好，一秒钟就得切换数十次。</p>
+<h3 id="vrr">2.2 VRR</h3>
+<p>时间片轮转算法看起来十分公平——所有的进程时间片都是一样的。但事实真是这样吗？</p>
+<p>I/O 密集型进程不这么认为，他对我说：“调度器大哥，时间片轮转没有照顾到我们这类进程啊！我们经常在 CPU 没呆到一半时间片，就遇到了阻塞操作，被你赶下去。而且我们在<strong>阻塞队列</strong>，往往要停留很长时间。等阻塞操作结束，我们还得在<strong>就绪队列</strong>排好长时间队。那些处理器密集型进程，使用了大部分的处理器时间，导致我们性能降低，响应时间跟不上”</p>
+<p>考虑到这些进程的要求，我决定为他们创建一个新的辅助队列。阻塞解除的进程，将进入这个辅助队列，进行进程调度时，优先选择辅助队列里的进程。</p>
+<p>这就是「<strong>虚拟轮转法</strong>」（Virtual Round Robin，VRR）。</p>
+<p><img src="./images/进程调度， 一个调度器的自白4.png" /></p>
+<p>从后来实际性能结果来看，这种方法确实优于轮转法。我颇为自豪。</p>
+<h3 id="优先级调度">2.3 优先级调度</h3>
+<p>有一天，操作系统忽然找到我，神神秘秘的说：“调度器啊，你是知道的，我要给整个系统提供服务，可最近用户进程太多，导致我的服务进程有时候响应跟不上。我有点担心这会给系统稳定性造成影响。”</p>
+<p>我一听，这可是个大事，系统不稳定那还得了？调度算法得换！</p>
+<p>既然要让操作系统的服务得到足够的运行资源，那就，干脆让他们具有最高的 CPU 使用优先权吧。</p>
+<p><strong>优先级调度算法</strong>就此产生了。</p>
+<p>我向大家做出了规定——每个进程将被赋予一个<strong>优先级</strong>，自己根据自己的情况确定优先级数值，但是，用户进程的优先级<strong>不准高于</strong>内核进程的优先级。</p>
+<p>切换程序的时候，我会从优先级 1 的队列里选择一个进程，如果优先级 1 队列为空，才会选择优先级 2 中的进程，以此类推。</p>
+<p>当然，为了保证低优先级进程不会<strong>饥饿</strong>，我会调高等待时间长的进程的优先级。</p>
+<p><img src="./images/进程调度， 一个调度器的自白5.png" /></p>
+<p>使用这个算法，我更忙碌了，不仅需要大量切换进程，还需要动态调节优先级。可能这就是能力越大，责任越大吧。</p>
+<p>不过我知道，正是因为我的存在，人类才能在计算机上运行多道程序——这令我感到自豪。</p>
+<p>希望你在看完我的文章之后有所收获。</p>
+<p>感谢你的阅读，我们后会有期！</p>
+<p><strong>声明：原创文章，未经授权，禁止转载</strong></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

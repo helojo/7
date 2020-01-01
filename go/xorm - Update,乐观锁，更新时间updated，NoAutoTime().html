@@ -1,0 +1,261 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修xorm - Update,乐观锁，更新时间updated，NoAutoTime()' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>xorm - Update,乐观锁，更新时间updated，NoAutoTime()</center></div><div class='banquan'>原文出处:本文由博客园博主j_x_x提供。<br/>
+原文连接:https://www.cnblogs.com/jiangxiangxiang/p/10937385.html</div><br>
+    <ul>
+<li><p>更新数据使用Update方法</p></li>
+<li>Update方法的第一个参数为需要更新的内容,可以为一个结构体指针或者一个Map[string]interface{}类型。
+<ul>
+<li>当传入的为结构体指针时，只有非nil和非0的field才会被作为更新的字段，也就是说结构体至少要有一个字段被赋予非0值</li>
+<li>当传入的为Map类型时，key为数据库Column的名字，value为要更新的内容。</li>
+</ul></li>
+<li>Update方法将返回两个参数:
+<ul>
+<li>第一个为更新的记录数，需要注意的是 SQLITE 数据库返回的是根据更新条件查询的记录数而不是真正受更新的记录数。</li>
+</ul></li>
+<li>如果需要更新一个值为0，有两种选择：
+<ul>
+<li>通过添加Cols函数指定需要更新结构体中的哪些值，未指定的将不更新，指定了的即使为0也会更新。</li>
+<li>通过传入map[string]interface{}来进行更新，但这时需要额外指定更新到哪个表，因为通过map是无法自动检测更新哪个表的。</li>
+</ul></li>
+</ul>
+<pre><code><code>package main
+
+import (
+  &quot;fmt&quot;
+  _ &quot;github.com/go-sql-driver/mysql&quot;
+  &quot;github.com/go-xorm/xorm&quot;
+  &quot;log&quot;
+  &quot;time&quot;
+)
+
+var engine *xorm.Engine
+
+type User struct {
+  Name      string    `xorm:&quot;varchar(25) &#39;name&#39;&quot;`
+  Id        int       `xorm:&quot;pk &#39;id&#39; autoincr&quot;`
+  Money     int       `xorm:&quot; &#39;money&#39; &quot;`
+  Age       int       `xorm:&quot;age&quot;`
+  CreatedAt time.Time `xorm:&quot;created&quot;`
+}
+
+func main() {
+  var err error
+  engine, err = xorm.NewEngine(&quot;mysql&quot;, &quot;root:123456@/test&quot;)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+  //创建表和插入数据
+/*    err = engine.CreateTables(User{})
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+
+  u := make([]User, 3)
+  u[0].Name = &quot;u0&quot;
+  u[0].Money = 1
+  u[0].Age = 1
+  u[1].Name = &quot;u1&quot;
+  u[1].Money = 2
+  u[1].Age = 1
+  u[2].Name = &quot;u2&quot;
+  u[2].Money = 3
+  u[2].Age = 1
+
+  _, err = engine.Insert(u)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }*/
+
+
+  u1 := new(User)
+  u1.Money = 2
+  affected, err := engine.Id(1).Update(u1)
+  if err != nil {
+      log.Fatal(err)
+  }
+  fmt.Println(&quot;第一个参数为结构体指针，结构体中更新的数据不是0值时，受影响的行数:&quot;, affected)
+
+
+  u2 := new(User)
+  u2.Money = 0
+  affected, err = engine.Id(1).Cols(&quot;money&quot;).Update(u2)
+  if err != nil {
+      log.Fatal(err)
+  }
+  fmt.Println(&quot;第一个参数为结构体指针，结构体中更新的数据是0值，Cols函数指定需要更新结构体中的哪些值时，受影响的行数:&quot;, affected)
+
+  affected, err = engine.Table(new(User)).Id(2).Update(map[string]interface{}{&quot;age&quot;:0})
+  fmt.Println(&quot;第一个参数为map，0值，受影响的行数:&quot;, affected)
+
+  u3 := new(User)
+  u3.Money = 0
+  affected, err = engine.Id(1).Update(u3)
+  if err != nil {
+      log.Fatal(err)
+  }
+  fmt.Println(&quot;第一个参数为结构体指针，结构体中更新的数据是0值时，受影响的行数:&quot;, affected)
+
+
+/*
+    如果传入的数据和数据库原有的数据相同时上面第一个方法受影响的行数就是0行,不同时上面第一个方法受影响的行数就是1行,输出：
+      第一个参数为结构体指针，结构体中更新的数据不是0值时，受影响的行数: 1
+      第一个参数为结构体指针，结构体中更新的数据是0值，Cols函数指定需要更新结构体中的哪些值时，受影响的行数: 1
+    第一个参数为map，0值，受影响的行数: 1
+      2019/05/28 11:51:35 No content found to be updated
+*/
+
+}</code></pre>
+<ul>
+<li><p>乐观锁/更新时间update/不自动更新时间NoAutoTime()</p>
+<pre><code><code>package main
+
+import (
+  &quot;fmt&quot;
+  _ &quot;github.com/go-sql-driver/mysql&quot;
+  &quot;github.com/go-xorm/xorm&quot;
+  &quot;log&quot;
+  &quot;time&quot;
+)
+
+var engine *xorm.Engine
+
+type User struct {
+  Name      string    `xorm:&quot;varchar(25) &#39;name&#39;&quot;`
+  Id        int       `xorm:&quot;pk &#39;id&#39; autoincr&quot;`
+  Version   int       `xorm:&quot;version&quot;`
+  UpdatedAt time.Time `xorm:&quot;updated&quot;`
+}
+
+func main() {
+  var err error
+  engine, err = xorm.NewEngine(&quot;mysql&quot;, &quot;root:123456@/test&quot;)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+  //创建表和插入数据
+/*    err = engine.CreateTables(User{})
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+
+  u := make([]User, 3)
+  u[0].Name = &quot;u0&quot;
+  u[1].Name = &quot;u1&quot;
+  u[2].Name = &quot;u2&quot;
+
+  _, err = engine.Insert(u)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }*/
+
+  /*
+      要使用乐观锁，需要使用version标记
+      在Insert时，version标记的字段将会被设置为1，在Update时，Update的内容必须包含version原来的值。
+  */
+
+      var user User
+      has, err := engine.Id(1).Get(&amp;user)
+      if err != nil {
+          log.Fatal(err)
+          return
+      }
+      if has {
+          fmt.Println(&quot;乐观锁，初始的userName:&quot;, user.Name, &quot;  初始的version:&quot;, user.Version, &quot;更新时间：&quot;, user.UpdatedAt)
+      }
+
+      user.Name = &quot;version2Name&quot;
+      affected, err := engine.Id(1).Update(&amp;user)
+      if err != nil {
+          log.Fatal(err)
+          return
+      }
+      fmt.Println(&quot;乐观锁，改变了的数据库记录数:&quot;, affected, &quot;  改变后的userName:&quot;, user.Name,
+          &quot;  改变后的version:&quot;, user.Version, &quot;更新时间：&quot;, user.UpdatedAt)
+
+      /*
+    更新时间Updated可以让您在记录插入或每次记录更新时自动更新数据库中的标记字段为当前时间，
+      需要在xorm标记中使用updated标记，对应的字段可以为time.Time或者自定义的time.Time或者int,int64等int类型。
+      在Insert(), InsertOne(), Update()方法被调用时，updated标记的字段将会被自动更新为当前时间
+      */
+
+      var user1 User
+      has, err = engine.Id(2).Get(&amp;user1)
+      if err != nil {
+          log.Fatal(err)
+          return
+      }
+      if has {
+          fmt.Println(&quot;更新时间Updated，初始的userName:&quot;, user1.Name, &quot;  初始的version:&quot;, user1.Version, &quot;更新时间：&quot;, user1.UpdatedAt)
+      }
+      affected, err = engine.Id(2).Update(&amp;user1)
+      if err != nil {
+          log.Fatal(err)
+          return
+      }
+      fmt.Println(&quot;更新时间Updated，改变了的数据库记录数:&quot;, affected, &quot;  改变后的userName:&quot;, user1.Name,
+          &quot;  改变后的version:&quot;, user1.Version, &quot;更新时间：&quot;, user1.UpdatedAt)
+
+
+  /*  如果你希望临时不自动插入时间，则可以组合NoAutoTime()方法：
+      engine.NoAutoTime().Insert(&amp;user)
+      这个在从一张表拷贝字段到另一张表时比较有用。
+  */
+
+      var user2 User
+      has, err = engine.Id(3).Get(&amp;user2)
+      if err != nil {
+          log.Fatal(err)
+          return
+      }
+      if has {
+          fmt.Println(&quot;临时不自动插入时间，初始的userName:&quot;, user2.Name, &quot;  初始的version:&quot;, user2.Version, &quot;更新时间：&quot;, user2.UpdatedAt)
+      }
+      affected, err = engine.Id(3).NoAutoTime().Update(&amp;user2)
+      if err != nil {
+          log.Fatal(err)
+          return
+      }
+      fmt.Println(&quot;临时不自动插入时间，改变了的数据库记录数:&quot;, affected, &quot;  改变后的userName:&quot;, user2.Name,
+          &quot;  改变后的version:&quot;, user2.Version, &quot;更新时间：&quot;, user2.UpdatedAt)
+
+
+/*输出：
+  乐观锁，初始的userName: version2Name   初始的version: 2 更新时间： 2019-05-28 14:41:24 +0800 CST
+  乐观锁，改变了的数据库记录数: 1   改变后的userName: version2Name   改变后的version: 3 更新时间： 2019-05-28 14:44:02.386965 +0800 CST
+  更新时间Updated，初始的userName: u1   初始的version: 2 更新时间： 2019-05-28 14:41:24 +0800 CST
+  更新时间Updated，改变了的数据库记录数: 1   改变后的userName: u1   改变后的version: 3 更新时间： 2019-05-28 14:44:02.395314 +0800 CST
+  临时不自动插入时间，初始的userName: u2   初始的version: 2 更新时间： 2019-05-28 14:41:24 +0800 CST
+  临时不自动插入时间，改变了的数据库记录数: 1   改变后的userName: u2   改变后的version: 3 更新时间： 2019-05-28 14:41:24 +0800 CST
+*/
+
+}</code></pre></li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,143 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修P2472 [SCOI2007]蜥蜴 (最大流)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>P2472 [SCOI2007]蜥蜴 (最大流)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/10803539.html</div><br>
+    <h2 id="题目">题目</h2>
+<p><a href="https://www.luogu.org/problemnew/show/P2472">P2472 [SCOI2007]蜥蜴</a></p>
+<h2 id="解析">解析</h2>
+<p>这个题思路比较清晰，本(qi)来(shi)以(jiu)为(shi)无脑建图跑最大流，结果挂了，整了一个小时后重新建图才过的。</p>
+<p>建立一个超级源点和一个超级汇点，<br />
+每个石柱都有其固定的通过的次数，也就是说我们要限制其通过次数，怎么限制呢，<strong>拆点</strong>，把每个有石柱的点拆成两个，相连的边流量为其高度，这样就做到了限制其通过次数<br />
+对于<span class="math inline">\((i,j)\)</span>位置</p>
+<ol>
+<li>如果有石柱，连一条<span class="math inline">\((i,j)-&gt;(i,j)+n\times c\)</span>，流量为石柱高度的边，来表示石柱可以通过几次</li>
+<li>如果有蜥蜴，连一条<span class="math inline">\(s-&gt;(i,j)\)</span>，流量为<span class="math inline">\(1\)</span>的边，来表示这一只蜥蜴</li>
+<li>如果有能到达的石柱<span class="math inline">\((x,y)\)</span>，连一条<span class="math inline">\((i,j)+n\times c -&gt; (x,y)\)</span>，流量为<span class="math inline">\(INF\)</span>的边</li>
+<li>如果能出界，连一条<span class="math inline">\((i,j)-&gt;t\)</span>的流量为<span class="math inline">\(INF\)</span>的边</li>
+</ol>
+<p>后两种情况的边只是起连接作用，所以流量为<span class="math inline">\(INF\)</span>.</p>
+<p>注意：后面三条都是在满足第一条的条件下进行的。<br />
+通过上面的建图方法，我们就求出了可以出界的蜥蜴，然后我们用蜥蜴的总数<span class="math inline">\(-\)</span>可以逃出的蜥蜴数就是最后的答案。</p>
+<p>思路不难，就是建图麻烦的一批。</p>
+<h2 id="代码">代码</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N = 1e6 + 10;
+const int INF = 0x3f3f3f3f;
+int n, c, d, s, t, sum, num = 1;
+int head[N], cur[N], dep[N];
+int a[50][50];
+char S[50];
+class node {
+    public :
+        int v, nx, w;
+} e[N];
+
+template&lt;class T&gt;inline void read(T &amp;x) {
+    x = 0; int f = 0; char ch = getchar();
+    while (!isdigit(ch)) f |= (ch == &#39;-&#39;), ch = getchar();
+    while (isdigit(ch)) x = x * 10 + ch - &#39;0&#39;, ch = getchar();
+    x = f ? -x : x;
+    return;
+}
+
+int bian_hao(int i, int j) {
+    return (i - 1) * c + j;
+}
+
+inline void add(int u, int v, int w) {
+    e[++num].nx = head[u], e[num].v = v, e[num].w = w, head[u] = num;
+    e[++num].nx = head[v], e[num].v = u, e[num].w = 0, head[v] = num;
+}
+
+queue&lt;int&gt;q;
+bool bfs() {
+    memset(dep, 0, sizeof dep);
+    memcpy(cur, head, sizeof cur);
+    dep[s] = 1;
+    q.push(s);
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        for (int i = head[u]; ~i; i = e[i].nx) {
+            int v = e[i].v;
+            if (e[i].w &amp;&amp; !dep[v]) dep[v] = dep[u] + 1, q.push(v);
+        }
+    }
+    return dep[t];
+}
+
+int dfs(int u, int flow) {
+    if (u == t) return flow;
+    int use = 0;
+    for (int &amp;i = cur[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (e[i].w &amp;&amp; dep[v] == dep[u] + 1) {
+            int di = dfs(v, min(flow, e[i].w));
+            e[i].w -= di, e[i ^ 1].w += di;
+            use += di, flow -= di;
+            if (flow &lt;= 0) break;
+        }           
+    } 
+    return use;
+}
+
+int dinic() {
+    int ans = 0;
+    while (bfs()) ans += dfs(s, INF);
+    return ans;
+}
+
+int main() {
+    memset(head, -1, sizeof head);
+    read(n), read(c), read(d);
+    s = (n * c) * 3 + 1, t = s + 1;
+    for (int i = 1; i &lt;= n; ++i) {
+        scanf(&quot;%s&quot;, S + 1);
+        for (int j = 1; j &lt;= c; ++j) {
+            a[i][j] = S[j] - &#39;0&#39;;
+            if (a[i][j]) {
+                add(bian_hao(i, j), bian_hao(i, j) + n * c, a[i][j]);   //有石柱 
+                if (i &lt;= d || i &gt;= n - d + 1 || j &lt;= d || j &gt;= c - d + 1) add(bian_hao(i, j) + n * c, t, INF);  //可以出界 
+            }
+        }
+    }
+    for (int i = 1; i &lt;= n; ++i) {
+        scanf(&quot;%s&quot;, S + 1);
+        for (int j = 1; j &lt;= c; ++j) if (S[j] == &#39;L&#39;) 
+            add(s, bian_hao(i, j), 1), sum++;           //有蜥蜴 
+    }
+    for (int dx = -d; dx &lt;= d; ++dx)
+        for (int dy = -d; dy &lt;= d; ++dy) {
+            if (dx * dx + dy * dy &gt; d * d) continue;
+            for (int i = 1; i &lt;= n; ++i) 
+                for (int j = 1; j &lt;= c; ++j) {
+                    int x = i + dx, y = j + dy;
+                    if (x &lt; 1 || x &gt; n || y &lt; 1 || y &gt; c || !a[i][j]) continue;
+                    add(bian_hao(i, j) + n * c, bian_hao(x, y), INF);           //能到别的石柱 
+                }
+        }
+    printf(&quot;%d\n&quot;, sum - dinic());
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

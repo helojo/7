@@ -1,0 +1,358 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang-Json编码解码' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang-Json编码解码</center></div><div class='banquan'>原文出处:本文由博客园博主布史提供。<br/>
+原文连接:https://www.cnblogs.com/Hollson/p/11248460.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一.-类型映射">一. 类型映射</a></li>
+        <li><a href="#二.-输出控制">二. 输出控制</a></li>
+        <li><a href="#三.-类型编码">三. 类型编码</a></li>
+        <li><a href="#四.-类型解码">四. 类型解码</a></li>
+        <li><a href="#五.-输出重写">五. 输出重写</a></li>
+        <li><a href="#六.-扩展功能">六. 扩展功能</a></li>
+        <li><a href="#七.-bson编码">七. Bson编码</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>在线工具：<a href="https://www.json.cn" class="uri">https://www.json.cn</a></strong></p>
+<h1 id="一.-类型映射">一. 类型映射</h1>
+<ul>
+<li>golang和json的数据类型不一致，在编码或解码的过程中必然需要做类型映射。</li>
+</ul>
+<p><strong>1.从golang到json：</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">golang</th>
+<th style="text-align: left;">json</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">bool</td>
+<td style="text-align: left;">Boolean</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">int、float等数字</td>
+<td style="text-align: left;">Number</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">string</td>
+<td style="text-align: left;">String</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">[]byte(base64编码)</td>
+<td style="text-align: left;">String</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">struct</td>
+<td style="text-align: left;">Object，再递归打包</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">array/slice</td>
+<td style="text-align: left;">Array</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">map</td>
+<td style="text-align: left;">Object</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">interface{}</td>
+<td style="text-align: left;">按实际类型转换</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nil</td>
+<td style="text-align: left;">null</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">channel,func</td>
+<td style="text-align: left;">UnsupportedTypeError</td>
+</tr>
+</tbody>
+</table>
+<p><strong>2.从json到golang：</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: left;">json</th>
+<th style="text-align: left;">golang</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Boolean</td>
+<td style="text-align: left;">bool</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Number</td>
+<td style="text-align: left;">float64</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">String</td>
+<td style="text-align: left;">string</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Array</td>
+<td style="text-align: left;">[]interface{}</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Object</td>
+<td style="text-align: left;">map[string]interface{}</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">null</td>
+<td style="text-align: left;">nil</td>
+</tr>
+</tbody>
+</table>
+<p><br/></p>
+<h1 id="二.-输出控制">二. 输出控制</h1>
+<ul>
+<li>第一个标签为别名,后面控制标签可叠加。</li>
+<li>编码或解码的<code>中间数据状态为字节数组</code>。</li>
+</ul>
+<pre><code><code>type User struct {
+   Name string `json:&quot;user_name&quot;` //修改别名
+   Age uint8 `json:&quot;,string&quot;` //修改类型
+   Addr string `json:&quot;-&quot;` //忽略字段
+   Vip bool `json:&quot;,omitempty&quot;` //排除缺省值
+   Asset int64 `json:&quot;amount,string,omitempty&quot;` //标签叠加
+   Skill []string `json:&quot;skill&quot;` //复杂类型
+}
+
+func main() {
+   obj :=User{Name:&quot;tom&quot;,Age:18,Addr:&quot;BJ&quot;,Vip:false,Asset:888,Skill:[]string{&quot;golang&quot;,&quot;python&quot;}}
+   bts, _ := json.MarshalIndent(obj,&quot;&quot;,&quot;\t&quot;) //缩进
+   fmt.Println(string(bts))
+}</code></pre>
+<p><br/></p>
+<h1 id="三.-类型编码">三. 类型编码</h1>
+<p><strong>1.结构体/结构体指针：</strong> 映射为<code>Object</code></p>
+<pre><code><code>func main() {
+   obj := struct {A string;B int64}{&quot;a&quot;, 1}
+   bts, _ := json.Marshal(obj) //结构体
+   fmt.Println(string(bts))
+
+   ptr := &amp;obj //结构体指针
+   bts, _ = json.Marshal(ptr)
+   fmt.Println(string(bts))
+}</code></pre>
+<p><strong>2.数组/切片：</strong> 映射为<code>Array</code></p>
+<pre><code><code>func main() {
+   arr := []string{&quot;a&quot;,&quot;b&quot;,&quot;c&quot;}
+   bts, _ := json.Marshal(arr) 
+   fmt.Println(string(bts))
+}</code></pre>
+<p><strong>3.字典：</strong> 映射为<code>Object</code></p>
+<pre><code><code>func main() {
+   mp := map[int]string{1:&quot;a&quot;,2:&quot;b&quot;,3:&quot;c&quot;}
+   bts, _ := json.Marshal(mp)
+   fmt.Println(string(bts))
+}</code></pre>
+<p><br/></p>
+<h1 id="四.-类型解码">四. 类型解码</h1>
+<p><strong>1.对象解码</strong></p>
+<pre><code><code>func main() {
+   str := `{&quot;A&quot;:&quot;a&quot;,&quot;B&quot;:1}`
+   obj := new(struct {A string;B int64})
+   _ = json.Unmarshal([]byte(str), &amp;obj )
+   fmt.Println(obj)
+}</code></pre>
+<p><strong>2.数组解码</strong></p>
+<pre><code><code>func main() {
+   arr := `[&quot;a&quot;,&quot;b&quot;,&quot;c&quot;]`
+
+   slise:=make([]string,0)
+   _ = json.Unmarshal([]byte(arr),&amp;slise)
+   fmt.Println(slise)
+}</code></pre>
+<p><strong>3.字典解码</strong></p>
+<pre><code><code>func main() {
+   str := `{&quot;1&quot;:&quot;a&quot;,&quot;2&quot;:&quot;b&quot;,&quot;3&quot;:&quot;c&quot;}`
+
+   mp := make(map[int]string)
+   _ = json.Unmarshal([]byte(str), &amp;mp)
+   fmt.Println(mp)
+}</code></pre>
+<p><br/></p>
+<h1 id="五.-输出重写">五. 输出重写</h1>
+<ul>
+<li><code>Marshal函数</code>将会递归遍历整个对象，并根据类型数据的<code>MarshalJSON</code>方法打印输出格式。</li>
+</ul>
+<pre><code><code>//自定义的Json时间格式
+type Jtime time.Time
+
+//实现了encoding/json/encode.go的Marshaler接口
+func (p Jtime) MarshalJSON() ([]byte, error) {
+   var stamp = fmt.Sprintf(&quot;%d&quot;, time.Time(p).Unix())
+   //var stamp = fmt.Sprintf(&quot;\&quot;%s\&quot;&quot;, time.Time(p).Format(&quot;2006-01-02 15:04:05&quot;))
+   return []byte(stamp), nil
+}
+
+func main() {
+   obj := struct {
+      Name string `json:&quot;nick_name&quot;`
+      Date Jtime `json:&quot;create_at&quot;`
+   }{&quot;Jack&quot;, Jtime(time.Date(2018, 1, 1, 00, 00, 00, 00, time.Local))}
+
+   //编码
+   bts, _ := json.MarshalIndent(obj, &quot;&quot;, &quot;\t&quot;)
+   fmt.Println(string(bts))
+
+   //解码
+   _ = json.Unmarshal(bts, obj)
+   fmt.Printf(&quot;%s %q&quot;, obj.Name, time.Time(obj.Date))
+}</code></pre>
+<p><br/></p>
+<h1 id="六.-扩展功能">六. 扩展功能</h1>
+<p><strong>1. Json格式验证：</strong><code>json.Valid()</code></p>
+<pre><code><code>func main() {
+   str := `{&quot;nick_name&quot;:&quot;Lucy&quot;,&quot;user_age&quot;:28}` //Object
+   str = `[&quot;a&quot;,&quot;b&quot;]` //Array
+   ok := json.Valid([]byte(str))
+   fmt.Println(ok)
+}</code></pre>
+<p><strong>2. 自定义编码器:</strong><code>json.NewEncoder()</code></p>
+<pre class="golang"><code>func main() {
+   obj := struct {
+      Name string `json:&quot;nick_name&quot;`
+      Age uint `json:&quot;user_age&quot;`
+   }{&quot;Lucy&quot;, 28}
+
+   outer, _ := os.Create(&quot;json.txt&quot;) //文件输出
+   outer = os.Stdout //标准输出
+   encoder := json.NewEncoder(outer)
+   encoder.SetIndent(&quot;&quot;, &quot;\t&quot;)
+   encoder.Encode(obj)
+}</code></pre>
+<p><strong>3. 缩进处理:</strong><code>json.Indent()</code>,对已编码对字节数组进行缩进</p>
+<pre><code><code>func main() {
+   obj := struct {Name string;Age uint}{&quot;Lucy&quot;, 28}
+   bts, _ := json.Marshal(obj)
+   
+   var buf bytes.Buffer
+   _=json.Indent(&amp;buf,bts,&quot;&quot;,&quot;\t&quot;)
+   buf.WriteTo(os.Stdout)
+}</code></pre>
+<p><strong>4. Json字符串压缩:</strong><code>json.Compact()</code></p>
+<pre><code><code>func main() {
+   str := `
+{
+   &quot;nick_name&quot;: &quot;Lucy&quot;,
+   &quot;user_age&quot;: 28
+}`
+
+   var buf bytes.Buffer
+   _ = json.Compact(&amp;buf, []byte(str)) //压缩
+   buf.WriteTo(os.Stdout)
+}</code></pre>
+<p><strong>5. Html编码处理:</strong><code>json.HTMLEscape()</code></p>
+<pre><code><code>func main() {
+   str := `{&quot;content&quot;: &quot;&lt;a src=\&quot;http://www.xxx.com\&quot;&gt;Link&lt;/a&gt;&quot;}`
+   var buf bytes.Buffer
+   json.HTMLEscape(&amp;buf, []byte(str)) 
+   buf.WriteTo(os.Stdout)
+}</code></pre>
+<p><strong>6. 二次解码：</strong><code>json.RawMessage</code>,根据json数据包的某个标识，分别解码成不同类型的对象。</p>
+<pre><code><code>type Student struct {
+   Sno string //学号
+   Name string //姓名
+   Major string //专业
+}
+
+type Teacher struct {
+   Name string //姓名
+   Subject string //学科
+}
+
+// 任何对象都能装的数据容器，具体类型根据Type字段区分
+type JsonObject struct {
+   Type int //对象类型
+   Obj interface{} //对象数据
+}
+
+func main() {
+   user := `{&quot;Type&quot;:1,&quot;Obj&quot;:{&quot;Sno&quot;:&quot;S001&quot;,&quot;Name&quot;:&quot;Tom&quot;,&quot;Major&quot;:&quot;computer&quot;}}` //Student
+   user = `{&quot;Type&quot;:2,&quot;Obj&quot;:{&quot;Name&quot;:&quot;Bob&quot;,&quot;Subject&quot;:&quot;quantum mechanics&quot;}}` //Teacher
+
+   var obj json.RawMessage
+   pkg := JsonObject{Obj: &amp;obj}
+
+   //第一次解码: 先解码外部包装数据对象，获取类型依据
+   if err := json.Unmarshal([]byte(user), &amp;pkg); err != nil {
+      panic(err)
+   }
+
+   //第二次解码: 根据第一次的解码结果,再次对内部对象Obj进行解码
+   switch pkg.Type {
+   case 1:
+      var stu = Student{}
+      _ = json.Unmarshal(obj, &amp;stu)
+      fmt.Println(stu)
+   case 2:
+      var tch = Teacher{}
+      _ = json.Unmarshal(obj, &amp;tch)
+      fmt.Println(tch)
+   }
+}</code></pre>
+<p><br/></p>
+<h1 id="七.-bson编码">七. Bson编码</h1>
+<ul>
+<li>Bson基于json格式，是mongoDB的数据存储格式。</li>
+<li>1.速度快：json以字符串形式存储，需要文件扫描，结构匹配。bson是按结构存储，可以精准定位，高效读写。</li>
+<li>2.操作简单：json无数据类型，是基于字符的操作，面临很大的操作开销。bson可以指定数据类型。</li>
+<li>3.字节数组：二进制的存储不再需要先base64转换后再存成json，大大减少了计算开销和数据大小。</li>
+</ul>
+<pre><code><code>import &quot;gopkg.in/mgo.v2/bson&quot;
+type Person struct {
+   Name string `bson:&quot;nick_name&quot;`
+   Age int32 `bson:&quot;-&quot;`
+   Phone string `bson:&quot;,omitempty&quot;`
+}
+func main() {
+   p := &amp;Person{&quot;Bob&quot;, 18, &quot;&quot;}
+
+   bytes, _ := bson.Marshal(p) //Bson编码
+   fmt.Printf(&quot;%q\n&quot;, bytes)
+
+   um := &amp;Person{}
+   bson.Unmarshal(bytes, &amp;um) //strust解码
+   fmt.Println(um)
+
+   mp := bson.M{}
+   bson.Unmarshal(bytes, mp) //map解码
+   fmt.Println(mp)
+}</code></pre>
+<p><br/></p>
+<blockquote>
+<p>参考：<br />
+<a href="http://www.cnblogs.com/chuanheng/p/go_bson_struct.html" class="uri">http://www.cnblogs.com/chuanheng/p/go_bson_struct.html</a><br />
+<a href="http://blog.csdn.net/tiaotiaoyly/article/details/38942311" class="uri">http://blog.csdn.net/tiaotiaoyly/article/details/38942311</a><br />
+<a href="https://studygolang.com/articles/2552" class="uri">https://studygolang.com/articles/2552</a><br />
+<a href="http://labix.org/gobson" class="uri">http://labix.org/gobson</a><br />
+<a href="http://blog.csdn.net/hengyunabc/article/details/6897540" class="uri">http://blog.csdn.net/hengyunabc/article/details/6897540</a><br />
+<a href="https://godoc.org/gopkg.in/mgo.v2/bson" class="uri">https://godoc.org/gopkg.in/mgo.v2/bson</a></p>
+</blockquote>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

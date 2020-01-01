@@ -1,0 +1,151 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Luogu - P1018 乘积最大 - 题解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Luogu - P1018 乘积最大 - 题解</center></div><div class='banquan'>原文出处:本文由博客园博主hao_qing233提供。<br/>
+原文连接:https://www.cnblogs.com/hao-qing233/p/11828874.html</div><br>
+    <p><strong>原文：<em><a href="https://www.luogu.org/problemnew/solution/P1018?page=7" target="_blank">h</a><a href="https://www.luogu.org/problemnew/solution/P1018?page=7" target="_blank">ttps://www.luogu.org/problemnew/solution/P1018?page=7</a></em></strong></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 18px;"><strong>题目：<a href="https://www.luogu.org/problem/P1018" target="_blank">P1018【乘积最大】</a></strong></span></p>
+<hr />
+<p>&nbsp;</p>
+<p><span style="font-size: 18px;"><strong>前言：</strong></span></p>
+<ul>
+<li><span style="font-size: 16px; font-family: Microsoft YaHei;">这题的正解理论上说是DP，可是由于<span style="text-decoration: line-through;">民间数据太水</span>，用暴力过并不难</span></li>
+</ul>
+<p><span style="font-size: 18px;"><strong><span style="font-family: Microsoft YaHei;">整体思路：</span></strong></span></p>
+<ol>
+<li><span style="font-size: 16px;"><span style="font-family: Microsoft YaHei;">利用一个b数组标记每一位之间是否分割（1位分割，0为连接）。</span></span></li>
+<li><span style="font-size: 16px;"><span style="font-family: Microsoft YaHei;">利用STL里的 next_permutation 求出b的各种排列（即暴力枚举每种情况）。</span></span></li>
+<li><span style="font-size: 16px;"><span style="font-family: Microsoft YaHei;">由于本题数据规模大，所以要使用高精度计算每种分割的最后结果，并找出最大。</span></span></li>
+</ol>
+<p>&nbsp;</p>
+<h4><span style="font-size: 18px;">next_permutation函数:</span></h4>
+<ul>
+<li><span style="font-size: 18px;"><span style="font-size: 16px;">即STL里的求<a href="https://baike.baidu.com/item/%E5%85%A8%E6%8E%92%E5%88%97/4022220">全排列</a>函数,所求的数组必须是升序，否则将无法求出全部的排列方式（这和它生成群排列的方式有关），next_permutation正常和sort一样，有2个参数，分别是数组的首地址和尾地址，并返回一个bool量，即能否求出下一个全排列，可以的话返回true，并将指定数组变为下一个排列方式，如1 2 3的下一个排列方式就是 1 3 2。</span></span></li>
+</ul>
+<hr />
+<p>&nbsp;</p>
+<p><span style="font-size: 18px;"><strong>上代码：</strong></span></p>
+<div class="cnblogs_code">
+<pre>#include&lt;algorithm&gt; <span style="color: #008000;">//</span><span style="color: #008000;">使用next_permutation需要调用的头文件</span>
+#include&lt;cstdio&gt;  <span style="color: #008000;">//</span><span style="color: #008000;">c语言读入输出</span>
+#include&lt;cstring&gt;  <span style="color: #008000;">//</span><span style="color: #008000;">处理高精度字符串时需要用到</span>
+
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+
+</span><span style="color: #0000ff;">struct</span> BigN{  <span style="color: #008000;">//</span><span style="color: #008000;">高精度（即大整数）运算</span>
+    <span style="color: #0000ff;">int</span> num[<span style="color: #800080;">1001</span>]={<span style="color: #800080;">0</span><span style="color: #000000;">},len;
+    BigN(</span><span style="color: #0000ff;">char</span> s[])  <span style="color: #008000;">//</span><span style="color: #008000;">构造函数，用于给新定义的大整数赋值</span>
+<span style="color: #000000;">    {
+        len</span>=<span style="color: #000000;">strlen(s);
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=len-<span style="color: #800080;">1</span>;i&gt;=<span style="color: #800080;">0</span>;i--<span style="color: #000000;">)
+            num[i]</span>=s[len-i-<span style="color: #800080;">1</span>]-<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">void</span> clean()  <span style="color: #008000;">//</span><span style="color: #008000;">用于清零</span>
+<span style="color: #000000;">    {
+        memset(num,</span><span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(num));
+    }
+    </span><span style="color: #0000ff;">void</span> f(<span style="color: #0000ff;">int</span> n)  <span style="color: #008000;">//</span><span style="color: #008000;">将一个普通整数压到大整数的开头，这个在后面分割每一位时会用到</span>
+<span style="color: #000000;">    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=len;i&gt;<span style="color: #800080;">0</span>;i--<span style="color: #000000;">)
+            num[i]</span>=num[i-<span style="color: #800080;">1</span><span style="color: #000000;">];
+        len</span>++<span style="color: #000000;">;
+        num[</span><span style="color: #800080;">0</span>]=<span style="color: #000000;">n;
+    }
+    </span><span style="color: #0000ff;">void</span> cheng(BigN n)<span style="color: #008000;">//</span><span style="color: #008000;">高精度乘法，这里就不过多解释了，有疑问可以前往 P1303 了解更多</span>
+<span style="color: #000000;">    {
+        BigN c(</span><span style="color: #800000;">"</span><span style="color: #800000;">0</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">int</span> s=<span style="color: #800080;">0</span>,g=<span style="color: #800080;">0</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;=len;i++<span style="color: #000000;">)
+            </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">0</span>;j&lt;=n.len;j++<span style="color: #000000;">)
+            {
+                </span><span style="color: #0000ff;">int</span> w=i+<span style="color: #000000;">j;
+                s</span>=num[i]*<span style="color: #000000;">n.num[j];
+                c.num[w]</span>+=s%<span style="color: #800080;">10</span><span style="color: #000000;">;
+                c.num[w</span>+<span style="color: #800080;">1</span>]+=s/<span style="color: #800080;">10</span>+c.num[w]/<span style="color: #800080;">10</span><span style="color: #000000;">;
+                c.num[w]</span>%=<span style="color: #800080;">10</span><span style="color: #000000;">;
+            }
+        c.len</span>=len+<span style="color: #000000;">n.len;
+        </span><span style="color: #0000ff;">while</span>(c.num[c.len]==<span style="color: #800080;">0</span>&amp;&amp;c.len&gt;=<span style="color: #800080;">0</span>)c.len--<span style="color: #000000;">;
+        fz(c);
+    }
+    </span><span style="color: #0000ff;">void</span> fz(BigN n) <span style="color: #008000;">//</span><span style="color: #008000;">将一个大整数赋值给例外一个大整数，相当于'='</span>
+<span style="color: #000000;">    {
+        len</span>=<span style="color: #000000;">n.len;
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;=n.len;i++<span style="color: #000000;">)
+            num[i]</span>=<span style="color: #000000;">n.num[i];
+    }
+    </span><span style="color: #0000ff;">bool</span> bj(BigN n)  <span style="color: #008000;">//</span><span style="color: #008000;">判断两个大整数的大小，用于找出最大结果</span>
+<span style="color: #000000;">    {
+        </span><span style="color: #0000ff;">if</span>(len&gt;<span style="color: #000000;">n.len)
+            </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(len&lt;<span style="color: #000000;">n.len)
+            </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+        {
+            </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=len;i&gt;=<span style="color: #800080;">0</span>;i--<span style="color: #000000;">)
+                </span><span style="color: #0000ff;">if</span>(num[i]&lt;<span style="color: #000000;">n.num[i])
+                    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+                </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(num[i]&gt;<span style="color: #000000;">n.num[i])
+                    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+        }
+    }
+    </span><span style="color: #0000ff;">void</span> <span style="color: #0000ff;">out</span>() <span style="color: #008000;">//</span><span style="color: #008000;">输出</span>
+<span style="color: #000000;">    {
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=len;i&gt;=<span style="color: #800080;">0</span>;i--<span style="color: #000000;">)
+            printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d</span><span style="color: #800000;">"</span><span style="color: #000000;">,num[i]);
+    }
+};
+
+</span><span style="color: #0000ff;">int</span> n,k,sum[<span style="color: #800080;">55</span>],b[<span style="color: #800080;">55</span>],i,j; <span style="color: #008000;">//</span><span style="color: #008000;">常规定义，不多做解释</span>
+BigN mmax(<span style="color: #800000;">"</span><span style="color: #800000;">0</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    </span><span style="color: #0000ff;">char</span> s[<span style="color: #800080;">101</span>];  <span style="color: #008000;">//</span><span style="color: #008000;">s用于读入一个大整数</span>
+    scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%d%d%s</span><span style="color: #800000;">"</span>,&amp;n,&amp;k,&amp;<span style="color: #000000;">s);
+    </span><span style="color: #0000ff;">for</span>(i=<span style="color: #800080;">0</span>;i&lt;strlen(s);i++)  <span style="color: #008000;">//</span><span style="color: #008000;">在sum中备份一份原数</span>
+        sum[i]=s[i]-<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(i=n-<span style="color: #800080;">2</span>;i&gt;=(n-k)-<span style="color: #800080;">1</span>;i--)  <span style="color: #008000;">//</span><span style="color: #008000;">将b数组中的后k个数赋1,因为使用next_permutation需要让数组升序，否则可能无法找出所有排列方式</span>
+        b[i]=<span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">do</span><span style="color: #000000;">{
+        BigN temp(</span><span style="color: #800000;">"</span><span style="color: #800000;">0</span><span style="color: #800000;">"</span>),all(<span style="color: #800000;">"</span><span style="color: #800000;">1</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">temp用于存放分割后的每一节，all用于计算每种排列方式的结果</span>
+        i=<span style="color: #800080;">0</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">while</span>(i&lt;n)<span style="color: #008000;">//</span><span style="color: #008000;">分割</span>
+<span style="color: #000000;">        {
+            </span><span style="color: #0000ff;">if</span>(i!=<span style="color: #800080;">0</span><span style="color: #000000;">)
+                </span><span style="color: #0000ff;">if</span>(b[i-<span style="color: #800080;">1</span>]==<span style="color: #800080;">1</span>)<span style="color: #008000;">//</span><span style="color: #008000;">如果b[i-1]为1，那么就要在这一位加上一个乘号，即将原数分割</span>
+                    all.cheng(temp),temp.clean();<span style="color: #008000;">//</span><span style="color: #008000;">总数乘上分割后的每一位,并将temp清空，用于储存下一节.</span>
+            temp.f(sum[i]),i++; <span style="color: #008000;">//</span><span style="color: #008000;">将原数的下一位压到temp的最前面</span>
+<span style="color: #000000;">        }
+        all.cheng(temp);</span><span style="color: #008000;">//</span><span style="color: #008000;">由于temp还没有乘all就退出循环，所以要再乘一次</span>
+        <span style="color: #0000ff;">if</span>(mmax.bj(all)==<span style="color: #800080;">0</span>)<span style="color: #008000;">//</span><span style="color: #008000;">如果这种排列顺序的结果大于之前最大的结果，刷新最大结果</span>
+<span style="color: #000000;">            mmax.fz(all);
+    }</span><span style="color: #0000ff;">while</span>(next_permutation(b,b+n-<span style="color: #800080;">1</span>));<span style="color: #008000;">//</span><span style="color: #008000;">调用next_permutation</span>
+    mmax.<span style="color: #0000ff;">out</span>();<span style="color: #008000;">//</span><span style="color: #008000;">输出</span>
+    <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

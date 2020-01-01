@@ -1,0 +1,94 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go语言调度器源代码情景分析之一：开篇语' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go语言调度器源代码情景分析之一：开篇语</center></div><div class='banquan'>原文出处:本文由博客园博主爱写程序的阿波张提供。<br/>
+原文连接:https://www.cnblogs.com/abozhang/p/10766628.html</div><br>
+    <p><span style="font-size: 18px; font-family: 'Microsoft YaHei';"><strong>专题简介</strong></span></p>
+<p><span style="font-family: 'Microsoft YaHei';">本专题以精心设计的情景为线索，结合go语言最新1.12版源代码深入细致的分析了goroutine调度器实现原理。</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">&nbsp;</span></p>
+<p><span style="font-family: 'Microsoft YaHei';"><strong><span style="font-size: 18px;">适宜读者</span></strong></span></p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei';">go语言开发人员</span></li>
+<li><span style="font-family: 'Microsoft YaHei';">对线程调度器工作原理感兴趣的工程师</span></li>
+<li><span style="font-family: 'Microsoft YaHei';">对计算机底层运行原理感兴趣的工程师</span></li>
+</ul>
+<p><span style="font-family: 'Microsoft YaHei';">&nbsp;</span></p>
+<p><span style="font-size: 18px; font-family: 'Microsoft YaHei';"><strong>专题目标</strong></span></p>
+<p><span style="font-family: 'Microsoft YaHei';">笔者希望即使是从未接触过计算机底层原理的读者，通过对本专栏的认真学习，都可以完全掌握go语言调度器的实现原理及细节，从而可以充分利用go调度器的特性写出更加优秀的并发程序和解决一些与调度相关的疑难杂症；另外，读者还可以学到大量与程序运行相关的基础知识，比如汇编代码，CPU如何执行指令以及并发无锁编程等等非常重要的编程内功心法，有了这些基础理论，在今后的学习和工作中，读者就完全有能力对其它一些自己感兴趣的底层实现原理做深入的分析。</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">&nbsp;</span></p>
+<p><span style="font-family: 'Microsoft YaHei';"><strong><span style="font-size: 18px;">如何学习本专栏</span></strong></span></p>
+<p><span style="font-family: 'Microsoft YaHei';">编程是一门实践性很强的技术，所以建议读者在阅读本专栏时多注重实践练习，特别是在学习第一部分的汇编指令及函数调用栈等知识的时候，读者可以自己写一些小程序然后用调试工具单步执行来跟踪寄存器以及栈的变化，从而更好的理解这些内容。</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">&nbsp;</span></p>
+<p><span style="font-family: 'Microsoft YaHei';"><strong><span style="font-size: 18px;">专栏模块</span></strong></span></p>
+<p><span style="font-family: 'Microsoft YaHei';">本专栏主要分为两大部分：</span></p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei';">第一部分包括第一章，主要介绍理解调度器工作原理所必须的预备知识，比如汇编指令，函数调用过程，操作系统线程调度原理以及线程本地存储等重要理论知识。这部分内容主要是为从未接触过底层知识的读者准备的，如果读者对这部分已经很熟了，则完全可以跳过这部分的阅读。</span></li>
+<li><span style="font-family: 'Microsoft YaHei';">第二部分包括第2到第6章，主要分析goroutine调度器的实现，包括调度器的初始化，调度策略以及主动被动和抢占调度等，在分析过程中我们不仅会介绍调度器在干什么，更重要的是我们还会详细说明为什么要这么做，让读者知其然也知其所以然。</span></li>
+</ul>
+<p><span style="font-family: 'Microsoft YaHei';">&nbsp;</span></p>
+<p><span style="font-family: 'Microsoft YaHei';"><strong><span style="font-size: 18px;">专栏章节（初稿已经全部完成，逐渐放上来）</span></strong></span></p>
+<p><span style="font-family: 'Microsoft YaHei';">开篇语</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">第一章 预备知识</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">1. CPU寄存器</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">2. 内存</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">3. 函数调用栈</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">4. 汇编指令</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">5. go语言汇编</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">6. 函数调用过程</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">7. 系统调用</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">8. 操作系统线程及调度</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">9. 线程本地存储</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">&nbsp;</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">第二章&nbsp;初始化和调度循环</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">1. 调度器概述</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">2. 程序启动和调度器初始化</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">3. 创建main goroutine</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">4. 启动main goroutine&nbsp;</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">&nbsp;</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">第三章 调度策略</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">1. goroutine的退出与调度循环</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">2. 再探schedule函数与寻找可运行的goroutine</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">3. 盗取goroutine与工作线程睡眠</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">&nbsp;</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">第四章 被动调度</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">1. goroutine进入运行队列</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">2. goroutine进入睡眠</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">3. 唤醒睡眠中的goroutine与工作线程</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">4. 创建工作线程</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">&nbsp;</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">第五章 主动调度</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">1. 主动调度</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">&nbsp;</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">第六章 抢占调度</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">1. 抢占运行时间过长的goroutine</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">2. goroutine进入系统调用以及从系统调用返回</span></p>
+<p><span style="font-family: 'Microsoft YaHei';">3. 抢占进入系统调用的goroutine</span></p>
+<p>&nbsp;</p>
+<p><strong><span style="font-size: 18px;"><span style="font-family: 'Microsoft YaHei';">作者简介</span></span></strong></p>
+<p>&nbsp;</p>
+<p><span>爱写程序的阿波张，男，程序员，高级技术专家。</span></p>
+<p><span>15年软件开发经验，做过应用层软件，也玩过操作系统内核，目前专注于K12在线教育。</span></p>
+<p><span>对计算机底层运行原理很感兴趣，熟悉X86汇编/C/C++/Go。</span></p>
+<p>&nbsp;</p>
+<p>最后，欢迎关注个人微信公众号：<strong><span style="color: #000000;">go语言核心编程技术</span></strong></p>
+<p>&nbsp;<img src="./images/go语言调度器源代码情景分析之一：开篇语0.png" alt="" /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

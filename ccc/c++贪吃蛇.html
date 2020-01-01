@@ -1,0 +1,181 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++贪吃蛇' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++贪吃蛇</center></div><div class='banquan'>原文出处:本文由博客园博主Dark怪怪提供。<br/>
+原文连接:https://www.cnblogs.com/DarkMario/p/11012663.html</div><br>
+    <p>显示方式：清屏打印二位数组，数组即游戏地图，包括墙面（用&lsquo;W&rsquo;表示），蛇（&lsquo;H&rsquo;表蛇头，&lsquo;B&rsquo;表身体）和食物（用&lsquo;f&rsquo;表示）。</p>
+<p><img src="./images/c++贪吃蛇0.png" alt="" /></p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> MaxMap = <span style="color: #800080;">20</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">char</span> map[MaxMap][MaxMap];</pre>
+</div>
+<p>边缘为墙面：</p>
+<div class="cnblogs_code">
+<pre>    <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; MaxMap; i++<span style="color: #000000;">){
+        map[</span><span style="color: #800080;">0</span>][i] = <span style="color: #800000;">'</span><span style="color: #800000;">W</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+        map[MaxMap </span>- <span style="color: #800080;">1</span>][i] = <span style="color: #800000;">'</span><span style="color: #800000;">W</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt; MaxMap-<span style="color: #800080;">1</span>; i++<span style="color: #000000;">){
+        map[i][</span><span style="color: #800080;">0</span>] = <span style="color: #800000;">'</span><span style="color: #800000;">W</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+        map[i][MaxMap </span>- <span style="color: #800080;">1</span>] = <span style="color: #800000;">'</span><span style="color: #800000;">W</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    }</span></pre>
+</div>
+<p>蛇的身体用结构体连接：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">struct</span><span style="color: #000000;"> snake{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> x;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> y;
+    </span><span style="color: #0000ff;">struct</span> snake *<span style="color: #000000;">next;
+}head,body1,body2,tail;</span></pre>
+</div>
+<p>初始蛇长为4，head表示蛇头，其next指向NULL；tail表示蛇尾，进食后增加的身体加到tail之前。</p>
+<div class="cnblogs_code">
+<pre>    <span style="color: #0000ff;">int</span> centerpoint = MaxMap / <span style="color: #800080;">2</span><span style="color: #000000;">;
+    head </span>=<span style="color: #000000;"> { centerpoint, centerpoint, NULL };
+    body1 </span>= { centerpoint, centerpoint-<span style="color: #800080;">1</span>, &amp;<span style="color: #000000;">head };
+    body2 </span>= { centerpoint, centerpoint - <span style="color: #800080;">2</span>, &amp;<span style="color: #000000;">body1 };
+    tail </span>= { centerpoint, centerpoint - <span style="color: #800080;">3</span>, &amp;<span style="color: #000000;">body2 };
+
+    </span><span style="color: #0000ff;">struct</span> snake *p = &amp;<span style="color: #000000;">tail;
+    </span><span style="color: #0000ff;">while</span> (p !=<span style="color: #000000;"> NULL){
+        map[p</span>-&gt;x][p-&gt;y] = <span style="color: #800000;">'</span><span style="color: #800000;">B</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+        p </span>= p-&gt;<span style="color: #000000;">next;
+    }
+    map[head.x][head.y] </span>= <span style="color: #800000;">'</span><span style="color: #800000;">H</span><span style="color: #800000;">'</span>;</pre>
+</div>
+<p>引入一个随机种子，生成食物：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span><span style="color: #000000;"> food(){
+    </span><span style="color: #0000ff;">int</span> x = <span style="color: #800080;">0</span>, y = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    srand(time(</span><span style="color: #800080;">0</span><span style="color: #000000;">));
+    </span><span style="color: #0000ff;">while</span> (map[x][y]!=<span style="color: #800000;">'</span> <span style="color: #800000;">'</span><span style="color: #000000;">){
+        x </span>= rand() % (MaxMap - <span style="color: #800080;">1</span>) + <span style="color: #800080;">1</span><span style="color: #000000;">;
+        y </span>= rand() % (MaxMap - <span style="color: #800080;">1</span>) + <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    map[x][y] </span>= <span style="color: #800000;">'</span><span style="color: #800000;">f</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>蛇的移动：</p>
+<p>首先定义蛇的默认移动方向，这里默认为右（WSAD）。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">char</span> direction = <span style="color: #800000;">'</span><span style="color: #800000;">d</span><span style="color: #800000;">'</span>;</pre>
+</div>
+<p>接收键盘输入的移动方向，并将其替换为默认方向；如果键盘未输入，则为默认方向。</p>
+<p>（蛇不能向身体方向移动，此方向无效。）</p>
+<p>（nextX，nextY表示蛇头下一个位置与此时的相对位置。）</p>
+<p>计算蛇头应出现的下一个位置。蛇的身体跟随移动，清除原蛇尾。</p>
+<div class="cnblogs_code">
+<pre>    <span style="color: #0000ff;">char</span> letter =<span style="color: #000000;"> direction;
+    </span><span style="color: #0000ff;">struct</span> snake *p = &amp;<span style="color: #000000;">tail;
+    </span><span style="color: #0000ff;">int</span> nextX = <span style="color: #800080;">0</span>, nextY = <span style="color: #800080;">0</span>, tailX = p-&gt;x, tailY = p-&gt;<span style="color: #000000;">y;
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (_kbhit()){
+        letter </span>=<span style="color: #000000;"> _getch();
+        </span><span style="color: #0000ff;">if</span> (letter == <span style="color: #800000;">'</span><span style="color: #800000;">w</span><span style="color: #800000;">'</span> || letter == <span style="color: #800000;">'</span><span style="color: #800000;">s</span><span style="color: #800000;">'</span> || letter == <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span> || letter == <span style="color: #800000;">'</span><span style="color: #800000;">d</span><span style="color: #800000;">'</span><span style="color: #000000;">){
+            </span><span style="color: #0000ff;">if</span> (<span style="color: #800080;">0</span> != (direction -<span style="color: #000000;"> letter)){
+                </span><span style="color: #0000ff;">if</span> (!((letter == <span style="color: #800000;">'</span><span style="color: #800000;">w</span><span style="color: #800000;">'</span> &amp;&amp; direction == <span style="color: #800000;">'</span><span style="color: #800000;">s</span><span style="color: #800000;">'</span>) ||<span style="color: #000000;">
+                    (letter </span>== <span style="color: #800000;">'</span><span style="color: #800000;">s</span><span style="color: #800000;">'</span> &amp;&amp; direction == <span style="color: #800000;">'</span><span style="color: #800000;">w</span><span style="color: #800000;">'</span>) ||<span style="color: #000000;">
+                    (letter </span>== <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span> &amp;&amp; direction == <span style="color: #800000;">'</span><span style="color: #800000;">d</span><span style="color: #800000;">'</span>) ||<span style="color: #000000;">
+                    (letter </span>== <span style="color: #800000;">'</span><span style="color: #800000;">d</span><span style="color: #800000;">'</span> &amp;&amp; direction == <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span><span style="color: #000000;">)))
+                    direction </span>=<span style="color: #000000;"> letter;
+            }
+        }
+    }
+    </span><span style="color: #0000ff;">switch</span><span style="color: #000000;"> (direction){
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">w</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+        nextX </span>= -<span style="color: #800080;">1</span><span style="color: #000000;">;
+        nextY </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">s</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+        nextX </span>= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        nextY </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+        nextX </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+        nextY </span>= -<span style="color: #800080;">1</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">d</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+        nextX </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+        nextY </span>= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">default</span><span style="color: #000000;">:
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    }
+    map[p-&gt;x][p-&gt;y] = ' ';<br />    </span></pre>
+</div>
+<p>蛇身的移动，蛇头位置的计算</p>
+<div class="cnblogs_code">
+<pre>    <span style="color: #0000ff;">while</span> (p-&gt;next !=<span style="color: #000000;"> NULL){
+        
+        p</span>-&gt;x = p-&gt;next-&gt;<span style="color: #000000;">x;
+        p</span>-&gt;y = p-&gt;next-&gt;<span style="color: #000000;">y;
+        map[p</span>-&gt;x][p-&gt;y] = <span style="color: #800000;">'</span><span style="color: #800000;">B</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+        p </span>= p-&gt;<span style="color: #000000;">next;
+    }
+    
+    map[head.x][head.y] </span>= <span style="color: #800000;">'</span><span style="color: #800000;">B</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    head.x </span>+=<span style="color: #000000;"> nextX;
+    head.y </span>+= nextY;</pre>
+</div>
+<p>&nbsp;</p>
+<p>吃食和游戏结束判定：</p>
+<p>蛇头出现的下一个位置如果为墙面或自己的身体，游戏结束。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">bool</span> gameover(<span style="color: #0000ff;">int</span> x,<span style="color: #0000ff;">int</span><span style="color: #000000;"> y){
+    </span><span style="color: #0000ff;">if</span> (map[x][y] == <span style="color: #800000;">'</span><span style="color: #800000;">W</span><span style="color: #800000;">'</span> || map[x][y] == <span style="color: #800000;">'</span><span style="color: #800000;">B</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">else</span>
+        <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>蛇头出现的下一个位置如果有食物，蛇长加1。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">bool</span> eat(<span style="color: #0000ff;">int</span> x,<span style="color: #0000ff;">int</span><span style="color: #000000;"> y){
+    </span><span style="color: #0000ff;">if</span> (map[x][y] == <span style="color: #800000;">'</span><span style="color: #800000;">f</span><span style="color: #800000;">'</span><span style="color: #000000;">){
+        food();
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">{
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+    }
+}</span></pre>
+</div>
+<p>进食后，new一个新身体：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">if</span><span style="color: #000000;"> (eat(head.x, head.y)){
+        snake </span>*newBody = <span style="color: #0000ff;">new</span><span style="color: #000000;"> snake;
+        newBody</span>-&gt;x = tail.x; newBody-&gt;y = tail.y; newBody-&gt;next =<span style="color: #000000;"> tail.next;
+        tail.x </span>= tailX, tail.y =<span style="color: #000000;"> tailY;
+        tail.next </span>=<span style="color: #000000;"> newBody;
+        map[tailX][tailY] </span>= <span style="color: #800000;">'</span><span style="color: #800000;">B</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+        snakeLength</span>++<span style="color: #000000;">;
+    }
+    map[head.x][head.y] </span>= <span style="color: #800000;">'</span><span style="color: #800000;">H</span><span style="color: #800000;">'</span>;</pre>
+</div>
+<p>&nbsp;</p>
+<p>显示：</p>
+<p>循环执行蛇的移动过程，并清屏打印地图。</p>
+<p>&nbsp;</p>
+<p>完整代码：<a href="https://github.com/shuiguai/games/blob/master/snake.cpp">https://github.com/shuiguai/games/blob/master/snake.cpp</a></p>
+<p>环境：win64，VS2010</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

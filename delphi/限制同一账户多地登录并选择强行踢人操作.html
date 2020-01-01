@@ -1,0 +1,185 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修限制同一账户多地登录并选择强行踢人操作' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>限制同一账户多地登录并选择强行踢人操作</center></div><div class='banquan'>原文出处:本文由博客园博主忠诚卫士提供。<br/>
+原文连接:https://www.cnblogs.com/adsoft/p/11867546.html</div><br>
+    <p>软件类型：CS</p>
+<p>开发工具：Delphi</p>
+<p>功能：限制同一账户多地登录并选择强行踢人操作。</p>
+<p>1、&nbsp; 采用临时表判断当前账户是否已经登录。创建一个全局临时表CREATE TABLE ##UserID (ID int);其中##UserID为表名，UserID为当前用户的唯一ID。关于临时表，可以百度一下，本地临时表，全局临时表。这里创建为全局临时表。</p>
+<p>2、&nbsp; 通过判断该临时表是否存在读取当前用户是否在登录的状态。</p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">function</span> TLoginFrm.UserLogined(AdoConn: TADOConnection; AUserID: <span style="color: #0000ff;">string</span><span style="color: #000000;">): Boolean;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  Qry: TADOQuery;
+  strSQL: </span><span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">begin</span>
+  <span style="color: #0000ff;">try</span><span style="color: #000000;">
+    QryCreate(Qry,AdoConn);
+    </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+      strSQL :</span>= Format(<span style="color: #800000;">'</span><span style="color: #800000;">SELECT OBJECT_ID(N''tempdb..##%s'', N''U'') AS TabID</span><span style="color: #800000;">'</span><span style="color: #000000;">, [AUserID]);
+      Qry.SQL.Text :</span>=<span style="color: #000000;"> strSQL;
+      Qry.Open;
+      result :</span>= <span style="color: #0000ff;">not</span> Qry.FieldByName(<span style="color: #800000;">'</span><span style="color: #800000;">TabID</span><span style="color: #800000;">'</span><span style="color: #000000;">).IsNull;
+    </span><span style="color: #0000ff;">finally</span><span style="color: #000000;">
+      Qry.Free;
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">except</span><span style="color: #000000;">
+    Result :</span>=<span style="color: #000000;"> False;
+    Exit;
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>&nbsp;</p>
+<p>3、&nbsp; 当前登录用户表增加用户在线状态字段&rdquo;online&rdquo;默认值为0。登录成功时，创建临时表并更新当前用户状态为1。注：0离线，1在线；</p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">function</span> TLoginFrm.RegUserLogined(AdoConn: TADOConnection; AUserID: <span style="color: #0000ff;">string</span><span style="color: #000000;">): Boolean;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  Qry, QryComm: TADOQuery;
+  strSQL: </span><span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">begin</span>
+  <span style="color: #0000ff;">try</span><span style="color: #000000;">
+    QryCreate(Qry,AdoConn);
+    QryCreate(QryComm, adocCommon);
+    </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+      strSQL :</span>= Format(<span style="color: #800000;">'</span><span style="color: #800000;">CREATE TABLE ##%s(ID int); </span><span style="color: #800000;">'</span><span style="color: #000000;">, [AUserID]);
+      Qry.SQL.Text :</span>=<span style="color: #000000;"> strSQL;
+      Qry.ExecSQL;
+      strSQL :</span>= Format(<span style="color: #800000;">'</span><span style="color: #800000;">update Personnel_set set online=1 where Per_id=%S</span><span style="color: #800000;">'</span><span style="color: #000000;">, [QuotedStr(AUserID)]);
+      QryComm.SQL.Text :</span>=<span style="color: #000000;"> strSQL;
+      QryComm.ExecSQL;
+    </span><span style="color: #0000ff;">finally</span><span style="color: #000000;">
+      Qry.Free;
+      QryComm.Free;
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">except</span><span style="color: #000000;">
+    Result :</span>=<span style="color: #000000;"> False;
+    Exit;
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  Result :</span>=<span style="color: #000000;"> True;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>&nbsp;</p>
+<p>4、&nbsp; 点击确定按钮登录界面</p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">判断 当前登录用户是否已经登记</span>
+  <span style="color: #0000ff;">if</span> <span style="color: #0000ff;">not</span> UserLogined(adocWMS, adoqPersonnal.FieldByName(<span style="color: #800000;">'</span><span style="color: #800000;">EmployeeCode</span><span style="color: #800000;">'</span>).AsString) <span style="color: #0000ff;">then</span>
+  <span style="color: #0000ff;">begin</span>
+    <span style="color: #008000;">//</span><span style="color: #008000;">针对 异常退出未更新人员在线状态的情况，更新人员状态为0</span>
+    <span style="color: #0000ff;">if</span> GetUserOnline(adocCommon, adoqPersonnal.FieldByName(<span style="color: #800000;">'</span><span style="color: #800000;">EmployeeCode</span><span style="color: #800000;">'</span>).AsString) <span style="color: #0000ff;">then</span><span style="color: #000000;">
+      UpdateOnline(adocCommon, adoqPersonnal.FieldByName(</span><span style="color: #800000;">'</span><span style="color: #800000;">EmployeeCode</span><span style="color: #800000;">'</span><span style="color: #000000;">).AsString);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">创建临时表记录当前人员的登录状态</span>
+    RegUserLogined(adocWMS, adoqPersonnal.FieldByName(<span style="color: #800000;">'</span><span style="color: #800000;">EmployeeCode</span><span style="color: #800000;">'</span><span style="color: #000000;">).AsString)
+  </span><span style="color: #0000ff;">end</span> <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">begin</span>
+    <span style="color: #0000ff;">if</span> MessageBox(Handle, <span style="color: #800000;">'</span><span style="color: #800000;">当前用户已经在登录中, 是否强行登录？</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">提示</span><span style="color: #800000;">'</span>, MB_YESNO)=id_yes <span style="color: #0000ff;">then</span>
+    <span style="color: #0000ff;">begin</span>
+      <span style="color: #008000;">//</span><span style="color: #008000;">更新登录状态 = 0</span>
+      UpdateOnline(adocCommon, adoqPersonnal.FieldByName(<span style="color: #800000;">'</span><span style="color: #800000;">EmployeeCode</span><span style="color: #800000;">'</span><span style="color: #000000;">).AsString);
+      </span><span style="color: #008000;">//</span><span style="color: #008000;">设置timer事件监控人员状态为0且临时表存在的情况直接踢下线。等用户下线/</span>
+      <span style="color: #0000ff;">while</span> UserLogined(adocWMS, adoqPersonnal.FieldByName(<span style="color: #800000;">'</span><span style="color: #800000;">EmployeeCode</span><span style="color: #800000;">'</span>).AsString) <span style="color: #0000ff;">do</span>
+      <span style="color: #0000ff;">begin</span>
+        <span style="color: #008000;">//
+</span>      <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+      </span><span style="color: #008000;">//</span><span style="color: #008000;">重新注册 临时表。</span>
+      RegUserLogined(adocWMS, adoqPersonnal.FieldByName(<span style="color: #800000;">'</span><span style="color: #800000;">EmployeeCode</span><span style="color: #800000;">'</span><span style="color: #000000;">).AsString);
+    </span><span style="color: #0000ff;">end</span> <span style="color: #0000ff;">else</span><span style="color: #000000;">
+      Exit;
+  </span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>&nbsp;</p>
+<p>5、&nbsp; 监控人员登录状态，人员状态为0且临时表存在的情况直接踢下线。这里涉及了一个非阻塞式的弹出提示框。</p>
+<p>&nbsp;&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">function</span><span style="color: #000000;"> WTSSendMessage(Server: HWND; SessionId: DWORD; Title: PChar;
+  TitleLength: DWORD; AMessage: PChar; MessageLength: DWORD; Style: DWORD;
+  Timeout: DWORD; </span><span style="color: #0000ff;">var</span> Response: DWORD; Wait: Boolean): Boolean; <span style="color: #0000ff;">stdcall</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">external</span> <span style="color: #800000;">'</span><span style="color: #800000;">wtsapi32.dll</span><span style="color: #800000;">'</span> name <span style="color: #800000;">'</span><span style="color: #800000;">WTSSendMessageA</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">function</span> WTSGetActiveConsoleSessionId: DWORD; <span style="color: #0000ff;">stdcall</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">external</span> kernel32 name <span style="color: #800000;">'</span><span style="color: #800000;">WTSGetActiveConsoleSessionId</span><span style="color: #800000;">'</span><span style="color: #000000;">;  
+
+
+</span><span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TLoginFrm.Timer1Timer(Sender: TObject);
+</span><span style="color: #0000ff;">const</span><span style="color: #000000;">
+  WTS_CURRENT_SERVER_HANDLE </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  nTitle, nMessage: </span><span style="color: #0000ff;">string</span><span style="color: #000000;">;
+  nResponse: DWORD;
+</span><span style="color: #0000ff;">begin</span>
+  <span style="color: #0000ff;">if</span> UserLogined(adocCommon, Parameter[<span style="color: #800080;">4</span>]) <span style="color: #0000ff;">and</span> <span style="color: #0000ff;">not</span> GetUserOnline(adocCommon, Parameter[<span style="color: #800080;">4</span>]) <span style="color: #0000ff;">then</span>
+  <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+    Timer1.Enabled :</span>=<span style="color: #000000;"> False;
+</span>    nTitle := <span style="color: #800000;">'</span><span style="color: #800000;">提示</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    nMessage :</span>= <span style="color: #800000;">'</span><span style="color: #800000;">当前用户已在其它地方登录, 您已被踢下线！</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    WTSSendMessage(WTS_CURRENT_SERVER_HANDLE, WTSGetActiveConsoleSessionId,
+        PChar(nTitle), Length(nTitle), PChar(nMessage), Length(nMessage),
+        MB_OK, </span><span style="color: #800080;">0</span><span style="color: #000000;">, nResponse, False);
+    TerminateProcess(GetCurrentProcess, </span><span style="color: #800080;">0</span><span style="color: #000000;">);
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>&nbsp;</p>
+<p>6、&nbsp; 获取、更新人员状态函数。</p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">function</span> TLoginFrm.GetUserOnline(AdoConn: TADOConnection; AUserID: <span style="color: #0000ff;">string</span><span style="color: #000000;">): Boolean;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  QryComm: TADOQuery;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Result :</span>=<span style="color: #000000;"> False;
+  QryCreate(QryComm, AdoConn);
+  </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+    QryComm.SQL.Text :</span>= Format(<span style="color: #800000;">'</span><span style="color: #800000;">select online from Personnel_set where per_id=%S</span><span style="color: #800000;">'</span><span style="color: #000000;">, [QuotedStr(AUserID)]);
+    QryComm.Open;
+    </span><span style="color: #0000ff;">if</span> QryComm.FieldByName(<span style="color: #800000;">'</span><span style="color: #800000;">online</span><span style="color: #800000;">'</span>).AsInteger = <span style="color: #800080;">1</span> <span style="color: #0000ff;">then</span><span style="color: #000000;">
+      Result :</span>=<span style="color: #000000;"> True;
+  </span><span style="color: #0000ff;">finally</span><span style="color: #000000;">
+    QryComm.Free;
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">function</span> TLoginFrm.UpdateOnline(AdoConn: TADOConnection; AUserID: <span style="color: #0000ff;">string</span><span style="color: #000000;">; online: Integer): Boolean;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  T: TADOQuery;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  QryCreate(T, AdoConn);
+  </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+    T.SQL.Text :</span>= Format(<span style="color: #800000;">'</span><span style="color: #800000;">update Personnel_set set online=%D where Per_id=%S</span><span style="color: #800000;">'</span><span style="color: #000000;">, [online, QuotedStr(AUserID)]);
+    T.ExecSQL;
+  </span><span style="color: #0000ff;">finally</span><span style="color: #000000;">
+    T.Free;
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>&nbsp;</p>
+<p>效果</p>
+<p><img src="./images/限制同一账户多地登录并选择强行踢人操作0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><img src="./images/限制同一账户多地登录并选择强行踢人操作1.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+</div>
+</div></div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

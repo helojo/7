@@ -1,0 +1,128 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修网络流之最大流EK --- poj 1459' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>网络流之最大流EK --- poj 1459</center></div><div class='banquan'>原文出处:本文由博客园博主茶飘香~提供。<br/>
+原文连接:https://www.cnblogs.com/chen9510/p/10902343.html</div><br>
+    <p><a href="http://poj.org/problem?id=1459" target="_blank">题目链接</a></p>
+<p>&nbsp;</p>
+<p>本篇博客延续<a href="https://www.cnblogs.com/chen9510/p/10846876.html" target="_blank">上篇博客</a>（最大流Dinic算法）的内容，此次使用EK算法解决最大流问题。</p>
+<p>EK算法思想：在图中搜索一条从源点到汇点的扩展路，需要记录这条路径，将这条路径的最大可行流量 liu 增加到结果ans中，然后反向从汇点到源点更新这条路径上的每条边的权值（减去此次的liu），同时反向边的权值也需要更新（加上此次的liu）。然后再搜索新的扩展路&hellip;&hellip;，循环，直到找不到新的扩展路，此时的ans就是最大流了。</p>
+<p>注：EK算法解决最大流时，我看别人都是使用矩阵建立的图，这样反向更新扩展路径上的边权时，只需要之前记录每个点的父亲节点即可。我是在前一篇的Dinic的前向星代码上修改为EK算法，由父亲和孩子节点编号不能直接得出连接的边号，所以需要另外用一个变量&nbsp;edgeIndex[v] 记录从 u 到 v 的边号，这样方便反向修改边权值。</p>
+<p>&nbsp;</p>
+<p>代码如下：</p>
+<div class="cnblogs_code">
+<pre>#include &lt;iostream&gt;<span style="color: #000000;">
+#include </span>&lt;algorithm&gt;<span style="color: #000000;">
+#include </span>&lt;cstring&gt;<span style="color: #000000;">
+#include </span>&lt;cstdio&gt;<span style="color: #000000;">
+#include </span>&lt;cstdlib&gt;<span style="color: #000000;">
+#include </span>&lt;queue&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> N = <span style="color: #800080;">105</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> MAXN = <span style="color: #800080;">0x3fffffff</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> Edge {
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> to;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> value;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> next;
+}e[</span><span style="color: #800080;">2</span> * N*<span style="color: #000000;">N];
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> head[N], cnt;
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> p[N], fa[N], edgeIndex[N];
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> n, np, nc, m;
+
+</span><span style="color: #0000ff;">void</span> insert(<span style="color: #0000ff;">int</span> u, <span style="color: #0000ff;">int</span> v, <span style="color: #0000ff;">int</span><span style="color: #000000;"> value) {
+    e[</span>++cnt].to =<span style="color: #000000;"> v;
+    e[cnt].value </span>=<span style="color: #000000;"> value;
+    e[cnt].next </span>=<span style="color: #000000;"> head[u];
+    head[u] </span>=<span style="color: #000000;"> cnt;
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> init() {
+    memset(head, </span>-<span style="color: #800080;">1</span>, <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(head));
+    cnt </span>= -<span style="color: #800080;">1</span><span style="color: #000000;">;
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> BFS() {
+    </span><span style="color: #0000ff;">int</span> ans = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span> (<span style="color: #800080;">1</span><span style="color: #000000;">)
+    {
+        memset(p, </span>-<span style="color: #800080;">1</span>, <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(p));
+        queue</span>&lt;<span style="color: #0000ff;">int</span>&gt;<span style="color: #000000;"> Q;
+        Q.push(</span><span style="color: #800080;">0</span><span style="color: #000000;">);
+        p[</span><span style="color: #800080;">0</span>] =<span style="color: #000000;"> MAXN;
+        </span><span style="color: #0000ff;">while</span> (!<span style="color: #000000;">Q.empty()) {
+            </span><span style="color: #0000ff;">int</span> u =<span style="color: #000000;"> Q.front();
+            Q.pop();
+            </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> edge = head[u]; edge != -<span style="color: #800080;">1</span>; edge =<span style="color: #000000;"> e[edge].next) {
+                </span><span style="color: #0000ff;">int</span> v =<span style="color: #000000;"> e[edge].to;
+                </span><span style="color: #0000ff;">if</span> (p[v] ==-<span style="color: #800080;">1</span> &amp;&amp; e[edge].value &gt; <span style="color: #800080;">0</span><span style="color: #000000;">) {
+                    p[v] </span>=<span style="color: #000000;"> min(p[u], e[edge].value);
+                    fa[v] </span>=<span style="color: #000000;"> u;
+                    edgeIndex[v] </span>=<span style="color: #000000;"> edge;
+                    Q.push(v);
+                    </span><span style="color: #0000ff;">if</span> (v == n + <span style="color: #800080;">1</span>) <span style="color: #0000ff;">goto</span><span style="color: #000000;"> endw;
+                }
+            }
+        }
+    endw:;
+        </span><span style="color: #0000ff;">if</span> (p[n+<span style="color: #800080;">1</span>] == -<span style="color: #800080;">1</span>) <span style="color: #0000ff;">return</span><span style="color: #000000;"> ans;
+        </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+            ans </span>+= p[n + <span style="color: #800080;">1</span><span style="color: #000000;">];
+            </span><span style="color: #0000ff;">int</span> x = n + <span style="color: #800080;">1</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">while</span><span style="color: #000000;"> (x) {
+                </span><span style="color: #0000ff;">int</span> edge =<span style="color: #000000;"> edgeIndex[x];
+                e[edge].value </span>-= p[n + <span style="color: #800080;">1</span><span style="color: #000000;">];
+                e[edge </span>^ <span style="color: #800080;">1</span>].value += p[n + <span style="color: #800080;">1</span><span style="color: #000000;">];
+                x </span>=<span style="color: #000000;"> fa[x];
+            }
+        }
+    }
+}
+
+
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    </span><span style="color: #0000ff;">while</span> (scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%d%d%d%d</span><span style="color: #800000;">"</span>, &amp;n, &amp;np, &amp;nc, &amp;m) !=<span style="color: #000000;"> EOF) {
+        init();
+        </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> u, v, z;
+        </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; m; i++<span style="color: #000000;">) {
+            scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;"> (%d,%d)%d</span><span style="color: #800000;">"</span>, &amp;u, &amp;v, &amp;<span style="color: #000000;">z);
+            insert(u </span>+ <span style="color: #800080;">1</span>, v + <span style="color: #800080;">1</span><span style="color: #000000;">, z);
+            insert(v </span>+ <span style="color: #800080;">1</span>, u + <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span><span style="color: #000000;">);
+        }
+        </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; np; i++<span style="color: #000000;">) {
+            scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;"> (%d)%d</span><span style="color: #800000;">"</span>, &amp;u, &amp;<span style="color: #000000;">z);
+            insert(</span><span style="color: #800080;">0</span>, u + <span style="color: #800080;">1</span><span style="color: #000000;">, z);
+            insert(u </span>+ <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">);
+        }
+        </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; nc; i++<span style="color: #000000;">) {
+            scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;"> (%d)%d</span><span style="color: #800000;">"</span>, &amp;u, &amp;<span style="color: #000000;">z);
+            insert(u </span>+ <span style="color: #800080;">1</span>, n + <span style="color: #800080;">1</span><span style="color: #000000;">, z);
+            insert(n </span>+ <span style="color: #800080;">1</span>, u + <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span><span style="color: #000000;">);
+        }
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, BFS());
+    }
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,57 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修(转)go新建文件权限与设置不符' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>(转)go新建文件权限与设置不符</center></div><div class='banquan'>原文出处:本文由博客园博主feiquan提供。<br/>
+原文连接:https://www.cnblogs.com/feiquan/p/11429065.html</div><br>
+    <p>原文：<a href="https://blog.csdn.net/lipengfeihb/article/details/54415283">https://blog.csdn.net/lipengfeihb/article/details/54415283</a></p>
+<p>一. 问题</p>
+<div class="cnblogs_code">
+<pre><code>fileName := <span style="color: #800000;">"</span><span style="color: #800000;">/Users/my/tests/perm_file</span><span style="color: #800000;">"</span><span style="color: #000000;">
+f, _ :</span>= os.OpenFile(fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, <span style="color: #800080;">0666</span><span style="color: #000000;">)
+</span><span style="color: #008000;">//</span><span style="color: #008000;">代码</span>
+f.Close()</pre>
+</div>
+<p><br />上述代码是打开一个文件，如果文件不存在则创建一个新文件，同时权限设置为0666(-rw-rw-rw-)，但实际生成的文件权限可能与你认为的不一致:</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">bogon:tests didi$ ll perm_file
+</span>-rw-r--r-- <span style="color: #800080;">1</span> my staff <span style="color: #800080;">0</span> <span style="color: #800080;">1</span> <span style="color: #800080;">12</span> <span style="color: #800080;">16</span>:<span style="color: #800080;">06</span> perm_file</pre>
+</div>
+<p>这个跟umask值相关，下面说明下umask</p>
+<p>功能说明：指定在建立文件时预设的权限掩码。 <br /><strong>语　　法</strong>：umask [-S][权限掩码] <br />补充说明：umask可用来设定[权限掩码]。[权限掩码]是由3个八进制的数字所组成，将现有的存取权限减掉权限掩码后，即可产生建立文件时预设的权限。 <br /><strong>参　　数：</strong> <br />-S 　以文字的方式来表示权限掩码。 <br />文件：用八进制基数666，即无x位（可执行位）rw- rw- rw-.执行位需由用户自行加入。</p>
+<p>umask就是系统的一个安全机制，通过设置不同的权限，可以达到限制用户操作的目的，有效地保证了文件的完整性。</p>
+<p>接着说上面的例子 <br />需要的权限是-rw-rw-rw-，但实际生成的文件权限是-rw-r&ndash;r&ndash;，用户组和其他用户的w权限被去掉了，查看下系统的umask值</p>
+<p>bogon:tests my$ umask</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">bogon:tests my$ umask
+</span><span style="color: #800080;">0022</span></pre>
+</div>
+<p><br />umask值是0022，r是4，w是2，x是1，对应如下</p>
+<p>说明 所属用户 所属用户组 其他用户<br />需要的	-rw-	rw-	rw-<br />减去umask	0	2(w)	2(w)<br />得到	-rw-	r&ndash;	r&ndash;<br /><strong>二. 解决方法</strong><br />1.设定umask值</p>
+<div class="cnblogs_code">
+<pre><code>syscall.Umask(<span style="color: #800080;">0</span>)</pre>
+</div>
+<p>2.通过chmod重新赋权限</p>
+<div class="cnblogs_code">
+<pre><code>os.Chmod(fileName, <span style="color: #800080;">0666</span>)</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,402 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修fhq_treap 小结' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>fhq_treap 小结</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/fhq_treap.html</div><br>
+    <h1 id="简介">简介</h1>
+<p><span class="math inline">\(fhq\_treap\)</span>是一种非旋平衡树。在学习这篇文章之前，还是先学习一下<a href="https://www.cnblogs.com/wxyww/p/10041118.html">普通<span class="math inline">\(treap\)</span></a>吧</p>
+<h2 id="优点">优点</h2>
+<p>相比于普通的<span class="math inline">\(treap\)</span>，它可以处理区间操作。<br />
+相比于<span class="math inline">\(splay\)</span>，它简洁易懂，代码也较短。</p>
+<h2 id="缺点">缺点</h2>
+<p>要比<span class="math inline">\(splay\)</span>和<span class="math inline">\(treap\)</span>慢</p>
+<h1 id="基础操作">基础操作</h1>
+<p><span class="math inline">\(fhq\_treap\)</span>最基本的两个操作就是分裂和合并。</p>
+<h2 id="分裂">分裂</h2>
+<p>即把一个<span class="math inline">\(treap\)</span>分为两个。有按照权值分和按照大小分两种方式。<br />
+具体方法:<br />
+比着代码划拉划拉就知道了(<del>懒</del>)。<br />
+按权值分</p>
+<pre><code>void split(int rt,int val,int &amp;x,int &amp;y) {
+    if(!rt) {
+        x = y = 0;
+        return;
+    }
+    if(TR[rt].w &lt;= val) {
+        x = rt;split(rs,val,rs,y);
+    }
+    else {
+        y = rt;split(ls,val,x,ls);
+    }
+    update(rt);
+}</code></pre>
+<p>按大小分</p>
+<pre><code>void split(int rt,int K,int &amp;x,int &amp;y) {
+    if(!rt) {
+        x = y = 0;return;
+    }
+    down(rt);
+    if(K &lt;= TR[ls].siz) {
+        y = rt;split(ls,K,x,ls);
+    }
+    else {
+        x = rt;split(rs,K - TR[ls].siz - 1,rs,y);
+    }
+    update(rt);
+}</code></pre>
+<h2 id="合并">合并</h2>
+<p>即把两个<span class="math inline">\(treap\)</span>合并为一个。<br />
+注意要让id形成一个堆，且合并的两个树满足其中一个中的权值全部小于另一个。<br />
+具体方法:<br />
+比较简单，参考代码吧。。</p>
+<pre><code>int merge(int x,int y) {
+    if(!x || !y) return x + y;
+    if(TR[x].id &lt; TR[y].id) {
+        TR[x].son[1] = merge(TR[x].son[1],y);
+        update(x);
+        return x;
+    }
+    TR[y].son[0] = merge(x,TR[y].son[0]);
+    update(y);
+    return y;
+}</code></pre>
+<h1 id="其他操作">其他操作</h1>
+<h2 id="插入">插入</h2>
+<p>插入一个权值为<span class="math inline">\(x\)</span>的数。<br />
+只需要将原来的<span class="math inline">\(treap\)</span>按权值<span class="math inline">\(x\)</span>分为<span class="math inline">\(L,R\)</span>两棵树。<br />
+然后把<span class="math inline">\(x\)</span>节点当成一个<span class="math inline">\(treap\)</span>与<span class="math inline">\(L\)</span>合并起来。然后再整体和<span class="math inline">\(R\)</span>合并起来。</p>
+<pre><code>void insert(int x) {
+    int L,R;
+    split(root,x,L,R);
+    root = merge(merge(L,new_node(x)),R);
+}</code></pre>
+<h2 id="删除">删除</h2>
+<p>删除一个权值为<span class="math inline">\(x\)</span>的数。<br />
+将原来的<span class="math inline">\(treap\)</span>按权值<span class="math inline">\(x\)</span>分为<span class="math inline">\(L,R\)</span>两棵子树。再按权值<span class="math inline">\(x-1\)</span>将<span class="math inline">\(L\)</span>分为<span class="math inline">\(L,rt\)</span>两棵子树。<br />
+这时<span class="math inline">\(rt\)</span>中就全都是权值为x的点了。删除根节点(也就是将根的两个孩子合并起来)。<br />
+操作完成别忘了合并回去。</p>
+<pre><code>void del(int x) {
+    int L,R,rt;
+    split(root,x,L,R);
+    split(L,x - 1,L,rt);
+    rt = merge(ls,rs);
+    root = merge(merge(L,rt),R);
+}</code></pre>
+<h2 id="查询排名">查询排名</h2>
+<p>查询权值<span class="math inline">\(x\)</span>的排名(定义为比<span class="math inline">\(x\)</span>小的数的数量+1)。<br />
+将原<span class="math inline">\(treap\)</span>按权值<span class="math inline">\(x-1\)</span>分为<span class="math inline">\(L,R\)</span>两棵子树。<span class="math inline">\(L\)</span>的大小+1就是答案了。<br />
+操作完成别忘了合并回去。</p>
+<pre><code>int Rank(int x) {
+    int L,R;
+    split(root,x - 1,L,R);
+    int ret = TR[L].siz + 1;
+    root = merge(L,R);
+    return ret;
+}</code></pre>
+<h2 id="查询第k大">查询第k大</h2>
+<p>查询排名为<span class="math inline">\(k\)</span>的数字。<br />
+如果排名小于等于左子树大小就查询左子树。<br />
+如果排名大于左子树大小+1就查询右子树，并且<span class="math inline">\(k-=\)</span>左子树大小<br />
+否则返回当前节点。</p>
+<pre><code>int kth(int rt,int x) {
+    while(1) {
+        if(x == TR[ls].siz + 1) return rt; 
+        if(x &lt;= TR[ls].siz) rt = ls;
+        else {
+            x -= TR[ls].siz + 1;
+            rt = rs;
+        }
+    }
+}</code></pre>
+<h2 id="前驱">前驱</h2>
+<p>查询比<span class="math inline">\(x\)</span>小的数中最大的数。<br />
+按权值<span class="math inline">\(x-1\)</span>将原<span class="math inline">\(treap\)</span>分为<span class="math inline">\(L,R\)</span>两棵子树。<br />
+<span class="math inline">\(L\)</span>子树中最大的那个就是答案。<br />
+操作完成别忘了合并回去。</p>
+<pre><code>int pre(int x) {
+    int L,R;
+    split(root,x - 1,L,R);
+    int ret = kth(L,TR[L].siz);
+    root = merge(L,R);return ret;
+}</code></pre>
+<h2 id="后继">后继</h2>
+<p>查询比<span class="math inline">\(x\)</span>大的数中最小的数。<br />
+按权值<span class="math inline">\(x\)</span>将原<span class="math inline">\(treap\)</span>分为<span class="math inline">\(L,R\)</span>两棵子树。<br />
+<span class="math inline">\(R\)</span>子树中最小的就是答案。<br />
+操作完成别忘了合并回去。</p>
+<pre><code>int nxt(int x) {
+    int L,R;
+    split(root,x,L,R);
+    int ret = kth(R,1);
+    root = merge(L,R);return ret;
+}</code></pre>
+<h2 id="处理区间">处理区间</h2>
+<p>对区间<span class="math inline">\(l,r\)</span>进行处理。<br />
+先按<strong>大小</strong><span class="math inline">\(r\)</span>将原<span class="math inline">\(treap\)</span>分为<span class="math inline">\(L,R\)</span>两棵子树。<br />
+再按<strong>大小</strong><span class="math inline">\(l-1\)</span>将<span class="math inline">\(L\)</span>分为<span class="math inline">\(L1,L2\)</span>两棵子树。<br />
+<span class="math inline">\(L2\)</span>子树就是要处理的区间了。<br />
+操作完成别忘了合并回去。</p>
+<pre><code>void reverse(int l,int r) {
+    int L,R,rt,tmp;
+    split(root,r + 1,L,R);
+    split(L,l,tmp,rt);
+    TR[rt].rev ^= 1;
+    root = marge(marge(tmp,rt),R);
+}</code></pre>
+<h1 id="例题">例题</h1>
+<p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=3224">bzoj3224</a></p>
+<pre class="cpp"><code>/*
+* @Author: wxyww
+* @Date:   2019-04-13 08:47:22
+* @Last Modified time: 2019-04-13 11:24:25
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+#define ls TR[rt].son[0]
+#define rs TR[rt].son[1]
+const int N = 100000 + 100;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+struct node {
+    int w,id,siz,son[2];
+}TR[N];
+int root,tot;
+int new_node(int val) {
+    ++tot;
+    TR[tot].w = val,TR[tot].id = rand(),TR[tot].siz = 1;
+    return tot;
+}
+void update(int rt) {
+    TR[rt].siz = TR[ls].siz + TR[rs].siz + 1;
+}
+int merge(int x,int y) {
+    if(!x || !y) return x + y;
+    if(TR[x].id &lt; TR[y].id) {
+        TR[x].son[1] = merge(TR[x].son[1],y);
+        update(x);
+        return x;
+    }
+    TR[y].son[0] = merge(x,TR[y].son[0]);
+    update(y);
+    return y;
+}
+void split(int rt,int val,int &amp;x,int &amp;y) {
+    if(!rt) {
+        x = y = 0;
+        return;
+    }
+    if(TR[rt].w &lt;= val) {
+        x = rt;split(rs,val,rs,y);
+    }
+    else {
+        y = rt;split(ls,val,x,ls);
+    }
+    update(rt);
+}
+void insert(int x) {
+    int L,R;
+    split(root,x,L,R);
+    root = merge(merge(L,new_node(x)),R);
+}
+void del(int x) {
+    int L,R,rt;
+    split(root,x,L,R);
+    split(L,x - 1,L,rt);
+    rt = merge(ls,rs);
+    root = merge(merge(L,rt),R);
+}
+int Rank(int x) {
+    int L,R;
+    split(root,x - 1,L,R);
+    int ret = TR[L].siz + 1;
+    root = merge(L,R);
+    return ret;
+}
+int kth(int rt,int x) {
+    while(1) {
+        if(x == TR[ls].siz + 1) return rt; 
+        if(x &lt;= TR[ls].siz) rt = ls;
+        else {
+            x -= TR[ls].siz + 1;
+            rt = rs;
+        }
+    }
+}
+int pre(int x) {
+    int L,R;
+    split(root,x - 1,L,R);
+    int ret = kth(L,TR[L].siz);
+    root = merge(L,R);return ret;
+}
+int nxt(int x) {
+    int L,R;
+    split(root,x,L,R);
+    int ret = kth(R,1);
+    root = merge(L,R);return ret;
+}
+int main() {
+    srand(time(0));
+    int n = read();
+    while(n--) {
+        int opt = read(),x = read();
+        if(opt == 1) insert(x);
+        else if(opt == 2) del(x);
+        else if(opt == 3) printf(&quot;%d\n&quot;,Rank(x));
+        else if(opt == 4) printf(&quot;%d\n&quot;,TR[kth(root,x)].w);
+        else if(opt == 5) printf(&quot;%d\n&quot;,TR[pre(x)].w);
+        else printf(&quot;%d\n&quot;,TR[nxt(x)].w);
+    }
+    return 0;
+}</code></pre>
+<p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=3223">bzoj3223</a></p>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-04-13 10:46:59
+* @Last Modified time: 2019-04-13 11:24:56
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+#define ls TR[rt].son[0]
+#define rs TR[rt].son[1]
+const int N = 100000 + 100;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+struct node {
+    int w,id,siz,rev,son[2];
+}TR[N];
+int tot;
+int root,n,m;
+void update(int rt) {
+    TR[rt].siz = TR[ls].siz + TR[rs].siz + 1;
+}
+void down(int rt) {
+    if(TR[rt].rev) {
+        TR[ls].rev ^= 1;
+        TR[rs].rev ^= 1;
+        swap(ls,rs);
+        TR[rt].rev ^= 1;
+    }
+}
+int new_node(int x) {
+    ++tot;
+    TR[tot].id = rand();TR[tot].siz = 1;TR[tot].w = x;TR[tot].rev = 0;
+    return tot;
+}
+int marge(int x,int y) {
+    if(!x || !y) return x + y;
+    down(x),down(y);
+    if(TR[x].id &lt; TR[y].id) {
+        TR[x].son[1] = marge(TR[x].son[1],y);
+        update(x);
+        return x;
+    }
+    else {
+        TR[y].son[0] = marge(x,TR[y].son[0]);
+        update(y);
+        return y;
+    }
+}
+
+void split(int rt,int K,int &amp;x,int &amp;y) {
+    if(!rt) {
+        x = y = 0;return;
+    }
+    down(rt);
+    if(K &lt;= TR[ls].siz) {
+        y = rt;split(ls,K,x,ls);
+    }
+    else {
+        x = rt;split(rs,K - TR[ls].siz - 1,rs,y);
+    }
+    update(rt);
+}
+void reverse(int l,int r) {
+    int L,R,rt,tmp;
+    split(root,r + 1,L,R);
+    split(L,l,tmp,rt);
+    TR[rt].rev ^= 1;
+    root = marge(marge(tmp,rt),R);
+}
+int build(int l,int r) {
+    if(l &gt; r) return 0;
+    int mid = (l + r) &gt;&gt; 1;
+    int rt = new_node(mid - 1);
+    ls = build(l,mid - 1);
+    rs = build(mid + 1,r);
+    update(rt);
+    return rt;
+}
+void print(int rt) {
+    if(!rt) return;
+    down(rt);
+    print(ls);
+    if(TR[rt].w &gt;= 1 &amp;&amp; TR[rt].w &lt;= n) printf(&quot;%d &quot;,TR[rt].w);
+    print(rs);
+}
+int main() {
+    n = read(),m = read();
+    root = build(1,n + 2);
+    while(m--) {
+        int l = read(),r = read();
+        reverse(l,r);
+    }
+    print(root);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

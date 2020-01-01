@@ -1,0 +1,181 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修洛谷P2763题解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>洛谷P2763题解</center></div><div class='banquan'>原文出处:本文由博客园博主nth_element提供。<br/>
+原文连接:https://www.cnblogs.com/nth-element/p/11313897.html</div><br>
+    <p>吐槽一下：蜜汁<a href="https://www.luogu.org/record/22272395">UKE</a>是什么玩意？！</p>
+<hr />
+<h2 id="题目分析">题目分析：</h2>
+<ol>
+<li><p>观察题面，<code>对于给定的组卷要求，计算满足要求的组卷方案</code>，可以发现这是一道明显的<strong>有条件</strong>的<strong>二分图匹配</strong>问题，于是考虑建模。</p>
+<ul>
+<li><p>建一个超级源点，一个超级汇点；源点与试题相连，汇点与类型相连。</p></li>
+<li><p>重点是<strong>类型的题数</strong>的建模。可以从感性来理解一下，其实这有一点限流的意思，每个类型只要求有这么多的题量，不能超出，于是考虑在类型与汇点相连的时候将容量设为类型的题数，在算最大流的时候将题量限制住，就能满足题面的要求了。(希望大家能明白我的意思 <span class="math inline">\(QwQ\)</span> )</p></li>
+<li>最后的图即为：超级源点与试题相连，容量为1；类型与对应的试题相连，容量为1；类型与超级汇点相连，容量为类型的题数。具体来说，超级源点 <span class="math inline">\(S\)</span> 为节点 <span class="math inline">\(1\)</span> ,试题为节点 <span class="math inline">\(2—n+1\)</span>，类型为节点 <span class="math inline">\(n+2—n+k+1\)</span> 超级汇点 <span class="math inline">\(T\)</span> 为节点 <span class="math inline">\(n+k+2\)</span> 。</li>
+</ul></li>
+<li>建模完成之后，考虑记录方案。
+<ul>
+<li>因为 <span class="math inline">\(Dinic\)</span> 算法是通过 <span class="math inline">\(Xor\;1\)</span> 来完成正向边与反向边的转变的，故正向边的 <span class="math inline">\(e[i].to\)</span> 为路径终点，反向边的 <span class="math inline">\(e[i\;Xor\;1].to\)</span> 为路径起点， 所以可以通过枚举每一条边来找到相应的节点。</li>
+<li>又因为反向边的 <span class="math inline">\(e[i\;Xor\;1].v\)</span> 的初始化为0，当 <span class="math inline">\(e[i\;Xor\;1].v\neq0\)</span> 时，即代表这条边是最大流跑过的边，也相当于这条边被匹配了。</li>
+<li>最后排除掉超级源点与超级汇点的情况。</li>
+</ul></li>
+<li><p>如果 <span class="math inline">\(Dinic\)</span> 跑一遍下来，ans(即最大流)依然为0，则本数据没有答案(即输出&quot;No Solution!&quot;)。</p></li>
+</ol>
+<hr />
+<h2 id="code带详细注释">code(带详细注释):</h2>
+<pre><code>#include&lt;bits/stdc++.h&gt;
+#define Maxn 4010
+#define Maxm 10010
+#define int long long 
+using namespace std;
+int k,n;
+inline void read(int &amp;x)
+{
+    int f=1;x=0;char s=getchar();
+    while(s&lt;&#39;0&#39;||s&gt;&#39;9&#39;){if(s==&#39;-&#39;)f=-1;s=getchar();}
+    while(s&gt;=&#39;0&#39;&amp;&amp;s&lt;=&#39;9&#39;){x=x*10+s-&#39;0&#39;;s=getchar();}
+    x*=f;
+}
+int S,T;
+int ans=0,dep[Maxn];
+struct edge
+{
+    int to,next,v;
+}e[Maxm&lt;&lt;1];//一定注意要开两倍空间(正反两条边) 
+int head[Maxn],ei=1;//一定注意这里的ei为奇数 
+void add(int x,int y,int v)
+{
+    ei++;
+    e[ei].to=y;
+    e[ei].v=v;
+    e[ei].next=head[x];
+    head[x]=ei;
+}
+int bfs()
+{
+    queue&lt;int&gt;qu;
+    memset(dep,0,sizeof(dep));
+    dep[S]=1;
+    qu.push(S);
+    while(!qu.empty())
+    {
+        int fr=qu.front();
+        qu.pop();
+        for(int i=head[fr];i;i=e[i].next)
+        {
+            int to=e[i].to;
+            if(dep[to]!=0||e[i].v==0) continue;
+            qu.push(to);
+            dep[to]=dep[fr]+1;
+        }
+    }
+    return dep[T]!=0;
+}
+int dfs(int from,int maxflow)
+{
+    if(from==T) return maxflow;
+    int flow=0;
+    for(int i=head[from];i;i=e[i].next)
+    {
+        int to=e[i].to;
+        if(dep[to]!=dep[from]+1||e[i].v==0) continue;
+        int rst=dfs(to,min(maxflow-flow,e[i].v));
+        if(rst==0) dep[to]=0;
+        e[i].v-=rst;
+        e[i^1].v+=rst;
+        flow+=rst;
+        if(flow==maxflow) break;
+    }
+    return flow;
+}
+void dinic()
+{
+    while(bfs())
+    {
+        ans+=dfs(S,LLONG_MAX);
+    }
+}
+signed main()
+{
+    read(k),read(n);
+    S=1,T=k+n+2;//超级源点与超级汇点 
+    for(int i=1;i&lt;=n;i++)
+    {
+        add(S,i+1,1);
+        add(i+1,S,0);
+        //超级源点与试题相连，容量为1 
+    }
+    for(int i=1,x;i&lt;=k;i++)
+    {
+        read(x);
+        add(i+n+1,T,x);
+        add(T,i+n+1,0);
+        //类型与超级汇点相连，容量为类型的题数 
+    }
+    for(int i=1,p;i&lt;=n;i++)
+    {
+        read(p);
+        for(int j=1,x;j&lt;=p;j++)
+        {
+            read(x);
+            add(i+1,x+n+1,1);
+            add(x+n+1,i+1,0);
+            //类型与对应的试题相连，容量为1
+        }
+    }
+    dinic();//跑dinic 
+    if(ans==0)//没有答案 
+    {
+        puts(&quot;No Solution!&quot;);
+        return 0;
+    } 
+    for(int num=1;num&lt;=k;num++)//枚举所有类型 
+    {
+        printf(&quot;%lld:&quot;,num);
+        for(int i=2;i&lt;=ei;i+=2)//枚举每一条边来找到相应的节点 
+        {
+            if(e[i].to!=S&amp;&amp;e[i].to!=T&amp;&amp;e[i^1].to!=S&amp;&amp;e[i^1].to!=T)//排除掉超级源点与超级汇点的情况
+            {
+                if(e[i^1].v!=0)//这条边已经被匹配了 
+                {
+                    if(e[i].to-n-1==num)//判断是否为当前类型 
+                    {
+                        printf(&quot;%lld &quot;,e[i^1].to-1);
+                    }
+                }
+            }
+        }
+        printf(&quot;\n&quot;);
+    }
+    return 0;
+}</code></pre>
+<hr />
+<h2 id="网络流注意事项">网络流注意事项：</h2>
+<blockquote>
+<ol>
+<li>网络流关键在于建模，精髓也在建模。像本题一样的二分图匹配问题可采取我使用的建模方式：<strong>最大匹配=最大流</strong>。</li>
+<li>前向星的计数器初始化时，一定要为<strong>奇数</strong>。因为第n条边为正向边，第n+1条边为反向边，要实现 <span class="math inline">\(e[i]\)</span> 为正向边，<span class="math inline">\(e[i\;Xor\;1]\)</span> 为反向边，就要保证正向边的i为奇数，即计数器要初始化为奇数。</li>
+<li>前向星边数一定要<strong>开两倍空间</strong>，因为正向边一条，反向边一条。</li>
+</ol>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

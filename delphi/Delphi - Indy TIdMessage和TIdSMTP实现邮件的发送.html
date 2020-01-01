@@ -1,0 +1,176 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Delphi - Indy TIdMessage和TIdSMTP实现邮件的发送' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Delphi - Indy TIdMessage和TIdSMTP实现邮件的发送</center></div><div class='banquan'>原文出处:本文由博客园博主Jeremy.Wu提供。<br/>
+原文连接:https://www.cnblogs.com/jeremywucnblog/p/11427658.html</div><br>
+    <p><strong>idMessage / idSMTP</strong></p>
+<p>首先对idMessage类的各种属性进行赋值（邮件的基本信息，如收件人、邮件主题、邮件正文等），其次通过idSMTP连接邮箱服务器，最后通过idSMTP的Send方法将idMessage发送出去。</p>
+<p>界面布局如下：&nbsp;</p>
+<p><img src="./images/Delphi - Indy TIdMessage和TIdSMTP实现邮件的发送0.png" alt="" /></p>
+<p>代码如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> <span style="color: #0000ff;">unit</span><span style="color: #000000;"> uMain;
+</span><span style="color: #008080;">  2</span> 
+<span style="color: #008080;">  3</span> <span style="color: #0000ff;">interface</span>
+<span style="color: #008080;">  4</span> 
+<span style="color: #008080;">  5</span> <span style="color: #0000ff;">uses</span>
+<span style="color: #008080;">  6</span> <span style="color: #000000;">  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+</span><span style="color: #008080;">  7</span> <span style="color: #000000;">  Dialogs, ExtCtrls, RzPanel, RzShellDialogs, IdMessage, IdBaseComponent,
+</span><span style="color: #008080;">  8</span> <span style="color: #000000;">  IdComponent, IdTCPConnection, IdTCPClient, IdMessageClient, IdSMTP,
+</span><span style="color: #008080;">  9</span> <span style="color: #000000;">  RzButton, StdCtrls, RzEdit, RzBtnEdt, Mask, RzLabel;
+</span><span style="color: #008080;"> 10</span> 
+<span style="color: #008080;"> 11</span> <span style="color: #0000ff;">type</span>
+<span style="color: #008080;"> 12</span>   TMainFrm = <span style="color: #0000ff;">class</span><span style="color: #000000;">(TForm)
+</span><span style="color: #008080;"> 13</span> <span style="color: #000000;">    gbMsgSet: TRzGroupBox;
+</span><span style="color: #008080;"> 14</span> <span style="color: #000000;">    gbSrvSet: TRzGroupBox;
+</span><span style="color: #008080;"> 15</span> <span style="color: #000000;">    lbSubject: TRzLabel;
+</span><span style="color: #008080;"> 16</span> <span style="color: #000000;">    lbRsd: TRzLabel;
+</span><span style="color: #008080;"> 17</span> <span style="color: #000000;">    lbCc: TRzLabel;
+</span><span style="color: #008080;"> 18</span> <span style="color: #000000;">    lbBCc: TRzLabel;
+</span><span style="color: #008080;"> 19</span> <span style="color: #000000;">    lbAth: TRzLabel;
+</span><span style="color: #008080;"> 20</span> <span style="color: #000000;">    lbBdy: TRzLabel;
+</span><span style="color: #008080;"> 21</span> <span style="color: #000000;">    lbUserName: TRzLabel;
+</span><span style="color: #008080;"> 22</span> <span style="color: #000000;">    lbHost: TRzLabel;
+</span><span style="color: #008080;"> 23</span> <span style="color: #000000;">    lbPsd: TRzLabel;
+</span><span style="color: #008080;"> 24</span> <span style="color: #000000;">    edtSub: TRzEdit;
+</span><span style="color: #008080;"> 25</span> <span style="color: #000000;">    edtRsd: TRzEdit;
+</span><span style="color: #008080;"> 26</span> <span style="color: #000000;">    edtCc: TRzEdit;
+</span><span style="color: #008080;"> 27</span> <span style="color: #000000;">    edtBCc: TRzEdit;
+</span><span style="color: #008080;"> 28</span> <span style="color: #000000;">    beAth: TRzButtonEdit;
+</span><span style="color: #008080;"> 29</span> <span style="color: #000000;">    mmBdy: TRzMemo;
+</span><span style="color: #008080;"> 30</span> <span style="color: #000000;">    btnSendMail: TRzBitBtn;
+</span><span style="color: #008080;"> 31</span> <span style="color: #000000;">    edtUN: TRzEdit;
+</span><span style="color: #008080;"> 32</span> <span style="color: #000000;">    edtHst: TRzEdit;
+</span><span style="color: #008080;"> 33</span> <span style="color: #000000;">    edtPsd: TRzEdit;
+</span><span style="color: #008080;"> 34</span> <span style="color: #000000;">    IdSMTP: TIdSMTP;
+</span><span style="color: #008080;"> 35</span> <span style="color: #000000;">    IdMessage: TIdMessage;
+</span><span style="color: #008080;"> 36</span> <span style="color: #000000;">    odMain: TRzOpenDialog;
+</span><span style="color: #008080;"> 37</span>     <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> beAthButtonClick(Sender: TObject);
+</span><span style="color: #008080;"> 38</span>     <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> btnSendMailClick(Sender: TObject);
+</span><span style="color: #008080;"> 39</span>   <span style="color: #0000ff;">private</span>
+<span style="color: #008080;"> 40</span>     <span style="color: #008000;">{</span><span style="color: #008000;"> Private declarations </span><span style="color: #008000;">}</span>
+<span style="color: #008080;"> 41</span>   <span style="color: #0000ff;">public</span>
+<span style="color: #008080;"> 42</span>     <span style="color: #008000;">{</span><span style="color: #008000;"> Public declarations </span><span style="color: #008000;">}</span>
+<span style="color: #008080;"> 43</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 44</span> 
+<span style="color: #008080;"> 45</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;"> 46</span> <span style="color: #000000;">  MainFrm: TMainFrm;
+</span><span style="color: #008080;"> 47</span> 
+<span style="color: #008080;"> 48</span> <span style="color: #0000ff;">implementation</span>
+<span style="color: #008080;"> 49</span> 
+<span style="color: #008080;"> 50</span> <span style="color: #008000;">{</span><span style="color: #008000;">$R *.dfm</span><span style="color: #008000;">}</span>
+<span style="color: #008080;"> 51</span> 
+<span style="color: #008080;"> 52</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TMainFrm.beAthButtonClick(Sender: TObject);
+</span><span style="color: #008080;"> 53</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 54</span>   <span style="color: #0000ff;">with</span> odMain <span style="color: #0000ff;">do</span>
+<span style="color: #008080;"> 55</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 56</span> <span style="color: #000000;">    Execute;
+</span><span style="color: #008080;"> 57</span>     <span style="color: #0000ff;">if</span> FileName &lt;&gt; <span style="color: #800000;">''</span> <span style="color: #0000ff;">then</span>
+<span style="color: #008080;"> 58</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 59</span>       beAth.Text :=<span style="color: #000000;"> FileName;
+</span><span style="color: #008080;"> 60</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 61</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 62</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 63</span> 
+<span style="color: #008080;"> 64</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TMainFrm.btnSendMailClick(Sender: TObject);
+</span><span style="color: #008080;"> 65</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 66</span>   <span style="color: #0000ff;">try</span>
+<span style="color: #008080;"> 67</span>     <span style="color: #0000ff;">if</span> (Trim(edtCc.Text) = <span style="color: #800000;">''</span>) <span style="color: #0000ff;">and</span> (Trim(edtRsd.Text) = <span style="color: #800000;">''</span>) <span style="color: #0000ff;">and</span> (Trim(edtBCc.Text) = <span style="color: #800000;">''</span>) <span style="color: #0000ff;">then</span>
+<span style="color: #008080;"> 68</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 69</span>       MessageDlg(<span style="color: #800000;">'</span><span style="color: #800000;">You should input Rsd, please check,thanks!</span><span style="color: #800000;">'</span>, mtInformation, [mbOK], <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 70</span> <span style="color: #000000;">      edtRsd.SetFocus;
+</span><span style="color: #008080;"> 71</span> <span style="color: #000000;">      Exit;
+</span><span style="color: #008080;"> 72</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 73</span>     <span style="color: #0000ff;">with</span> IdMessage <span style="color: #0000ff;">do</span>
+<span style="color: #008080;"> 74</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 75</span> <span style="color: #000000;">      Clear;
+</span><span style="color: #008080;"> 76</span>       Subject :=<span style="color: #000000;"> edtSub.Text;
+</span><span style="color: #008080;"> 77</span>       From.Text :=<span style="color: #000000;"> edtUN.Text;
+</span><span style="color: #008080;"> 78</span>       Recipients.EMailAddresses :=<span style="color: #000000;"> edtRsd.Text;
+</span><span style="color: #008080;"> 79</span>       CCList.EMailAddresses :=<span style="color: #000000;"> edtCC.Text;
+</span><span style="color: #008080;"> 80</span>       BccList.EMailAddresses :=<span style="color: #000000;"> edtBCc.Text;
+</span><span style="color: #008080;"> 81</span>       Priority := TIdMessagePriority(<span style="color: #800080;">4</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 82</span>       <span style="color: #0000ff;">if</span> Trim(beAth.Text) &lt;&gt; <span style="color: #800000;">''</span> <span style="color: #0000ff;">then</span>
+<span style="color: #008080;"> 83</span>       <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 84</span>         TIdAttachment.<span style="color: #0000ff;">Create</span><span style="color: #000000;">(MessageParts, Trim(beAth.Text));
+</span><span style="color: #008080;"> 85</span>       <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 86</span> <span style="color: #000000;">      Body.Assign(mmBdy.Lines);
+</span><span style="color: #008080;"> 87</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 88</span>   <span style="color: #0000ff;">except</span>
+<span style="color: #008080;"> 89</span>     on E: Exception <span style="color: #0000ff;">do</span>
+<span style="color: #008080;"> 90</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 91</span>       MessageDlg(<span style="color: #800000;">'</span><span style="color: #800000;">Msg Set Failed with Err information [</span><span style="color: #800000;">'</span> + E.Message + <span style="color: #800000;">'</span><span style="color: #800000;">]</span><span style="color: #800000;">'</span>, mtWarning, [mbOK], <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 92</span> <span style="color: #000000;">      Exit;
+</span><span style="color: #008080;"> 93</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 94</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 95</span>   <span style="color: #0000ff;">try</span>
+<span style="color: #008080;"> 96</span>     <span style="color: #0000ff;">if</span> (Trim(edtUN.Text) = <span style="color: #800000;">''</span>) <span style="color: #0000ff;">or</span> (Trim(edtHst.Text) = <span style="color: #800000;">''</span>) <span style="color: #0000ff;">or</span> (Trim(edtPsd.Text) = <span style="color: #800000;">''</span>) <span style="color: #0000ff;">then</span>
+<span style="color: #008080;"> 97</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 98</span>       MessageDlg(<span style="color: #800000;">'</span><span style="color: #800000;">You should input UN, please check,thanks!</span><span style="color: #800000;">'</span>, mtInformation, [mbOK], <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 99</span> <span style="color: #000000;">      edtUN.SetFocus;
+</span><span style="color: #008080;">100</span> <span style="color: #000000;">      Exit;
+</span><span style="color: #008080;">101</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">102</span>     <span style="color: #0000ff;">with</span> IdSMTP <span style="color: #0000ff;">do</span>
+<span style="color: #008080;">103</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">104</span>       <span style="color: #0000ff;">if</span> Connected <span style="color: #0000ff;">then</span><span style="color: #000000;"> Disconnect;
+</span><span style="color: #008080;">105</span>       AuthenticationType :=<span style="color: #000000;"> atLogin;
+</span><span style="color: #008080;">106</span>       Port := <span style="color: #800080;">25</span><span style="color: #000000;">;
+</span><span style="color: #008080;">107</span>       UserName :=<span style="color: #000000;"> edtUN.Text;
+</span><span style="color: #008080;">108</span>       Password :=<span style="color: #000000;"> edtPsd.Text;
+</span><span style="color: #008080;">109</span>       Host :=<span style="color: #000000;"> edtHst.Text;
+</span><span style="color: #008080;">110</span> <span style="color: #000000;">      Connect;
+</span><span style="color: #008080;">111</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">112</span>   <span style="color: #0000ff;">except</span>
+<span style="color: #008080;">113</span>     on E: Exception <span style="color: #0000ff;">do</span>
+<span style="color: #008080;">114</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">115</span>       MessageDlg(<span style="color: #800000;">'</span><span style="color: #800000;">Srv Set Failed with Err information [</span><span style="color: #800000;">'</span> + E.Message + <span style="color: #800000;">'</span><span style="color: #800000;">]</span><span style="color: #800000;">'</span>, mtWarning, [mbOK], <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">116</span> <span style="color: #000000;">      Exit;
+</span><span style="color: #008080;">117</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">118</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">119</span> 
+<span style="color: #008080;">120</span>   <span style="color: #0000ff;">try</span>
+<span style="color: #008080;">121</span> <span style="color: #000000;">    IdSMTP.Send(IdMessage);
+</span><span style="color: #008080;">122</span> <span style="color: #000000;">    IdSMTP.Disconnect;
+</span><span style="color: #008080;">123</span>     MessageDlg(<span style="color: #800000;">'</span><span style="color: #800000;">OK!</span><span style="color: #800000;">'</span>, mtInformation, [mbOK], <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">124</span>   <span style="color: #0000ff;">except</span>
+<span style="color: #008080;">125</span>     on E: Exception <span style="color: #0000ff;">do</span>
+<span style="color: #008080;">126</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">127</span>       MessageDlg(<span style="color: #800000;">'</span><span style="color: #800000;">Send Failed with Err information [</span><span style="color: #800000;">'</span> + E.Message + <span style="color: #800000;">'</span><span style="color: #800000;">]</span><span style="color: #800000;">'</span>, mtWarning, [mbOK], <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">128</span> <span style="color: #000000;">      Exit;
+</span><span style="color: #008080;">129</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">130</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">131</span> 
+<span style="color: #008080;">132</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">133</span> 
+<span style="color: #008080;">134</span> <span style="color: #0000ff;">end</span>.</pre>
+</div>
+<p>&nbsp;</p>
+<div id="AllanboltSignature">
+<p id="PSignature" style="padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 60px; background: url('https://images.cnblogs.com/cnblogs_com/jeremywucnblog/1607637/o_191206011825obs.png') #e5f1f4 no-repeat 1% 50%; font-family: 微软雅黑; font-size: 11px; border: #e0e0e0 1px dashed;">&nbsp; 作者：<a href="https://www.cnblogs.com/jeremywucnblog/" target="_blank">Jeremy.Wu</a> <br />&nbsp; 出处：<a href="https://www.cnblogs.com/jeremywucnblog/" target="_blank">https://www.cnblogs.com/jeremywucnblog/</a>
+            <br />&nbsp; 本文版权归作者和博客园共有，欢迎转载，但未经作者同意必须保留此段声明，且在文章页面明显位置给出原文连接，否则保留追究法律责任的权利。
+        </p>
+
+
+
+
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

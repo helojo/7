@@ -1,0 +1,181 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修CF1207G Indie Album' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>CF1207G Indie Album</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/CF1207G.html</div><br>
+    <p><a href="http://codeforces.com/contest/1207/problem/G">题目链接</a></p>
+<h2 id="problem">problem</h2>
+<p>有<span class="math inline">\(n\)</span>个字符串,对于第<span class="math inline">\(i\)</span>个字符串通过以下两种方式中的一个给出。</p>
+<ol>
+<li><p><span class="math inline">\(1\; c\)</span>，该字符串只含一个字符<span class="math inline">\(c\)</span>。</p></li>
+<li><p><span class="math inline">\(2\ x\ c\)</span>,该字符串为第<span class="math inline">\(x(1\le x &lt; i)\)</span>个字符串末尾添加一个字符<span class="math inline">\(c\)</span>得到。</p></li>
+</ol>
+<p>有<span class="math inline">\(m\)</span>次询问，每次询问给出一个字符串<span class="math inline">\(s\)</span>和位置编号<span class="math inline">\(x\)</span>,问在上述第<span class="math inline">\(x\)</span>个字符串中，字符串<span class="math inline">\(s\)</span>出现了几次。</p>
+<h2 id="solution">solution</h2>
+<p>需要用到<span class="math inline">\(AC\)</span>自动机，树状数组，<span class="math inline">\(dfs\)</span>序。</p>
+<p>首先将询问离线下来，对于所有询问的字符串建立一个<span class="math inline">\(AC\)</span>自动机，从而求出<span class="math inline">\(fail\)</span>树。然后利用<span class="math inline">\(fail\)</span>树的性质:一个字符串在母串中出现的次数为将母串在AC自动机上跑一遍并将走到的位置权值+1，该字符串所对应的<span class="math inline">\(fail\)</span>节点的子树权值和。</p>
+<p>还有一个需要解决的问题，如果将母串在AC自动机上跑，如果暴力跑显然不行。所以我们发现他给出这<span class="math inline">\(n\)</span> 个字符串的方式也是一棵树的形式。所以我们就可以用以下方式跑。</p>
+<pre><code>dfs(u,p) {//u为当前节点，p为其父亲在AC自动机上所跑到的节点
+    将p移向u在AC自动机上跑到的节点
+    将p所对应的的节点权值+1
+    for(v是u的儿子) dfs(v,p)
+    统计所有对于u这个串的查询的答案。
+    将p所对应的节点权值-1
+}</code></pre>
+<p>发现通过上面的方式，就可以保证每次查询的时候只有所查询的字符串在<span class="math inline">\(AC\)</span>自动机上产生了贡献。</p>
+<p>在<span class="math inline">\(fail\)</span>树上查询子树权值和,可以用<span class="math inline">\(dfs\)</span>序+树状数组完成。</p>
+<h2 id="code">code</h2>
+<pre><code>//@Author: wxyww
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+#include&lt;cmath&gt;
+#include&lt;map&gt;
+#include&lt;string&gt;
+using namespace std;
+typedef long long ll;
+const int N =  400010;
+ll read() {
+    ll x = 0,f = 1; char c = getchar();
+    while(c &lt; &#39;0&#39; || c &gt; &#39;9&#39;) {if(c == &#39;-&#39;) f = -1;c = getchar();}
+    while(c &gt;= &#39;0&#39; &amp;&amp; c &lt;= &#39;9&#39;) {x = x * 10 + c - &#39;0&#39;,c = getchar();}
+    return x * f;
+}
+char ss[N],s[N];
+int fail[N],trie[N][30];
+struct node {
+    int v,nxt;
+}e[N];
+int idtot,siz[N],tree[N],fa[N],bh[N],ans[N],head[N],ejs,tot;
+void add(int u,int v) {
+    e[++ejs].v = v;e[ejs].nxt = head[u];head[u] = ejs;
+}
+vector&lt;pair&lt;int,int&gt; &gt;que[N];
+void update(int pos,int c) {
+    while(pos &lt;= idtot) {
+        tree[pos] += c;
+        pos += pos &amp; -pos;
+    }
+}
+int query(int pos) {
+    int ret = 0;
+    while(pos) {
+        ret += tree[pos];
+        pos -= pos &amp; -pos;
+    }
+    return ret;
+}
+int add(char *t) {
+    int n = strlen(t + 1),p = 0;
+    for(int i = 1;i &lt;= n;++i) {
+        if(!trie[p][t[i] - &#39;a&#39;]) trie[p][t[i] - &#39;a&#39;] = ++tot;
+        p = trie[p][t[i] - &#39;a&#39;];
+    }
+    // printf(&quot;!!!%d\n&quot;,p);
+    return p;
+}
+queue&lt;int&gt;q;
+vector&lt;int&gt;E[N];
+void build() {
+    for(int i = 0;i &lt; 26;++i) if(trie[0][i]) q.push(trie[0][i]);
+
+    while(!q.empty()) {
+        int u = q.front();q.pop();
+        E[fail[u]].push_back(u);
+        for(int i = 0;i &lt; 26;++i) {
+            if(!trie[u][i]) trie[u][i] = trie[fail[u]][i];
+            else fail[trie[u][i]] = trie[fail[u]][i],q.push(trie[u][i]);
+        }
+    }
+}
+void AC_dfs(int u) {
+    int k = E[u].size();
+    bh[u] = ++idtot;siz[u] = 1;
+    for(int i = 0;i &lt; k;++i) {
+        int v = E[u][i];
+        AC_dfs(v);
+        siz[u] += siz[v];
+    }
+}
+int getans(int p) {
+    // printf(&quot;!!!%d %d\n&quot;,bh[p] + siz[p] - 1,bh[p]);
+    return query(bh[p] + siz[p] - 1) - query(bh[p] - 1);
+}
+void dfs(int u,int p) {
+    p = trie[p][s[u] - &#39;a&#39;];
+    // if(u == 2) printf(&quot;!!!%d\n&quot;,u);
+    
+    update(bh[p],1);
+    // printf(&quot;!!%d %d\n&quot;,u,s[u] - &#39;a&#39;);
+    // printf(&quot;!!!%d %d\n&quot;,u,p);
+    for(int i = head[u];i;i = e[i].nxt) dfs(e[i].v,p);
+    
+    int k = que[u].size();
+    for(int i = 0;i &lt; k;++i) ans[que[u][i].second] = getans(que[u][i].first);
+
+    update(bh[p],-1);
+
+}
+int main() {
+    int n = read();
+    for(int i = 1;i &lt;= n;++i) {
+        int opt = read();
+        if(opt == 2) fa[i] = read();
+        add(fa[i],i);
+        // cin&gt;&gt;s[i];
+        scanf(&quot;%s&quot;,&amp;s[i]);
+    }
+
+    int m = read();
+    for(int i = 1;i &lt;= m;++i) {
+        int id = read();
+        scanf(&quot;%s&quot;,ss + 1);
+        que[id].push_back(make_pair(add(ss),i));
+    }
+
+    build();
+
+    // for(int i = 0;i &lt; 26;++i) printf(&quot;!!%d\n&quot;,trie[0][i]);
+
+    // for(int i = 1;i &lt;= tot;++i) printf(&quot;!!%d\n&quot;,fail[i]);
+
+    // printf(&quot;!!%d\n&quot;,trie[1][0]);
+
+    AC_dfs(0);
+
+    // printf(&quot;!!!%d %d\n&quot;,tot,idtot);
+
+    for(int i = 1;i &lt;= n;++i) if(!fa[i]) dfs(i,0);
+
+    
+
+    for(int i = 1;i &lt;= m;++i) printf(&quot;%d\n&quot;,ans[i]);
+
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

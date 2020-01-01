@@ -1,0 +1,136 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修bzoj1997 Planar' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>bzoj1997 Planar</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/bzoj1997.html</div><br>
+    <p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=1997"><font size=5>题目链接</font></a></p>
+<h1 id="思路">思路</h1>
+<p>首先以那个环为框架，把所有的边连出来。如果有两条边相交，那么就把其中一条放到环外面去。</p>
+<p>如图：<br />
+<img src="./images/bzoj1997 Planar0.png" /></p>
+<p><span class="math inline">\((1,3)\)</span>与<span class="math inline">\((2,5)相交，\)</span>(1,4)<span class="math inline">\(与\)</span>(2,5)相交。所以我们把<span class="math inline">\((2,5)\)</span>这条边放到外面去。<br />
+就成了这样</p>
+<p><img src="./images/bzoj1997 Planar1.png" /></p>
+<p>就不会有边相交了。</p>
+<p>显然如果两条边在环内相交，那么全部挪到环外也会相交。所以只要是相交的两条边必定是一个在环内，一个在环外。</p>
+<p>然后就是2-sat模型了。</p>
+<h1 id="坑点">坑点。。。</h1>
+<p>犯了一些很zz的错误。<br />
+1.如果边的数量&gt;点的数量乘3-6，即<span class="math inline">\((m &gt; n \times 3 - 6)\)</span>，可以证明必定无解。这个需要判断掉。</p>
+<p>2.<img src="./images/bzoj1997 Planar2.png" />没错，这个bug我调了很久233。。。</p>
+<p>4.特判的地方要放到全部数据读入之后。。。也调了很久(好zz啊啊啊)</p>
+<h1 id="代码">代码</h1>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-04-27 19:06:04
+* @Last Modified time: 2019-04-27 21:28:17
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int M = 300010;
+#define pi pair&lt;int,int&gt;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+struct node {
+    int v,nxt;
+}e[M];
+int head[M],ejs;
+void add(int u,int v) {
+    e[++ejs].v = v;e[ejs].nxt = head[u];head[u] = ejs;
+}
+int n,m,pos[M];
+pi tmp[M];
+bool pd(int l,int r,int L,int R) {
+    if(l &gt; r) swap(l,r);if(L &gt; R) swap(L,R);
+    if((l &lt;= L &amp;&amp; r &gt;= R) || (L &lt;= l &amp;&amp; R &gt;= r)) return 0;
+    if(l &gt;= R || L &gt;= r) return 0;
+    return 1;
+}
+int tot,vis[M],coljs,sta[M],col[M],top,dfn[M],low[M];
+void tarjan(int u) {
+    dfn[u] = low[u] = ++tot;
+    sta[++top] = u;vis[u] = 1;
+    for(int i = head[u];i;i = e[i].nxt) {
+        int v = e[i].v;
+        if(!dfn[v]) {
+            tarjan(v);
+            low[u] = min(low[u],low[v]);
+        }
+        else if(vis[v]) low[u] = min(low[u],low[v]);
+    }
+    if(low[u] == dfn[u]) {
+        ++coljs;
+        do {
+            int x = sta[top--];
+            col[x] = coljs;
+            vis[x] = 0;
+        }while(sta[top + 1] != u);
+    }
+}
+int main() {
+    int T = read();
+    while(T--) {
+        memset(head,0,sizeof(head));
+        ejs = 0;
+        memset(pos,0,sizeof(pos));
+        coljs = 0;memset(col,0,sizeof(col));
+        memset(dfn,0,sizeof(dfn));memset(low,0,sizeof(low));
+        tot = 0;top = 0;
+
+        n = read(),m = read();
+        for(int i = 1;i &lt;= m;++i) tmp[i].first = read(),tmp[i].second = read();
+        for(int i = 1;i &lt;= n;++i) pos[read()] = i;
+        if(m &gt; 3 * n - 6) {
+            puts(&quot;NO&quot;);continue;
+        }
+        for(int i = 1;i &lt;= m;++i)
+            for(int j = i + 1;j &lt;= m;++j)
+                if(pd(pos[tmp[i].first],pos[tmp[i].second],pos[tmp[j].first],pos[tmp[j].second]))
+                    add(i,j + m),add(i + m,j),add(j,i + m),add(j + m,i);
+        for(int i = 1;i &lt;= m + m;++i) if(!dfn[i]) tarjan(i);
+        int bz = 0;
+        for(int i = 1;i &lt;= m;++i) if(col[i] == col[i + m]) bz = 1;
+        if(bz) puts(&quot;NO&quot;);else puts(&quot;YES&quot;);
+    }
+
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

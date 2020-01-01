@@ -1,0 +1,224 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修QRowTable表格控件(五)-重写表头排序、支持第三次单击恢复默认排序' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>QRowTable表格控件(五)-重写表头排序、支持第三次单击恢复默认排序</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11519796.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一原生表格">一、原生表格</a></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三实现方式">三、实现方式</a><ul>
+        <li><a href="#排序列定制">1、排序列定制</a></li>
+        <li><a href="#排序交互修改">2、排序交互修改</a></li>
+        </ul></li>
+        <li><a href="#四相关文章">四、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11519796.html">QRowTable表格控件(五)-重写表头排序、支持第三次单击恢复默认排序</a></p>
+<h2 id="一原生表格">一、原生表格</h2>
+<p>开发客户端程序的方式越来越多了，现在很流行的libcef、electron等等都可以作为快速开发客户端软件的方案，但是如果需要一个好的用户体验，还是离不开原生化的开发，虽然慢，但是性能好啊。</p>
+<p>说到原生化开发，那对应的UI库相对较多，流行的就有Qt、soui、duilib、还有老掉牙的MFC和其他一些第三方公司开源维护的directUI库等等。网上找到一篇整理的文章，有兴趣的同学可以参考<a href="https://blog.csdn.net/yb0022/article/details/98317326">C++界面库</a>。</p>
+<p>目前C++客户端使用最广泛的就是UI框架就是Qt，它不仅包含了GUI控件，更多的其实是一种解决方案，使用过Qt的同学都比较清楚，Qt的安装动态库有几十个之多，可是如果你只想使用Qt的GUi模块的话，就只需要包含3个动态库即可，他们分别是核心模块QtCore、Gui模块QtGui和QtWidget。</p>
+<p>当我们将Qt作为我们的开发SDK时，大多数时候原生的控件+qss美化就可以完成我们的需求，然而总有一些特殊情况，比如产品经理脑残的时候、或者说是业务场景傻逼了，总是需要完成一些奇奇怪怪交互，那么我们就需要重写原生的控件实现方式。</p>
+<p><strong>今天就来说一个案例--表格控件列排序方式。</strong></p>
+<p>对于某一些特殊的场景下，我们的表格展示的数据可能需要排序，这样的表格控件Qt已经给我们提供好了，只需要我们从写一些类和接口即可。前边已经写了4篇关于表格控件的功能，分别是<a href="https://www.cnblogs.com/swarmbees/p/11185435.html">QRowTable表格控件-支持hover整行、checked整行、指定列排序等</a>、<a href="https://www.cnblogs.com/swarmbees/p/11204600.html">QRowTable表格控件(二)-红涨绿跌</a>、<a href="https://www.cnblogs.com/swarmbees/p/11220396.html">QRowTable表格控件(三)-效率优化之-合理使用QStandardItem</a>和<a href="https://www.cnblogs.com/swarmbees/p/11490909.html">QRowTable表格控件(四)-效率优化之-优化数据源</a>，感兴趣的同学可以去看看。</p>
+<p>不幸的是Qt自带的表格排序功能，即是我们冲写完所有接口依然不能满足负责的业务需求--表格表头连续3点三次是一个循环，什么意思呢？</p>
+<p><strong>传统表格排序</strong></p>
+<p>Qt自带的表格排序行为是这样的，默认情况是不排序的，我们可以通过接口开启排序，或者通过接口设置不排序，当我们启用排序规则后，假设说我们的表格点击点击一下是降序，点击第二下就是升序，再次点击是又会恢复到降序规则，这样是不是还挺完美呢！</p>
+<p>这个时候产品有话说了，点击第三次时，需要设置程序为不排序。</p>
+<blockquote>
+<p>程序员：卧槽。。。。你说什么。。。。听不到。。。。</p>
+</blockquote>
+<p><strong>新的排序规则</strong></p>
+<p>在传统表格排序的基础上做一下调整</p>
+<ol>
+<li>可以支持某些列不允许排序</li>
+<li>3次连续单击为一个循环，也就是降序-升序-无序这样3个状态循环</li>
+</ol>
+<p>不得不说产品的脑洞还是很大的。既然产品都说想要这个功能了，那么有时间还是得考虑下。跟产品沟通良久后，有了如下安排，虽然这个功能对用户来说不是一个特别需要的功能，但是当我们的软件功能稳定后，迭代没有那么着急的时候，是不是可以考虑研究下这个而功能呢。</p>
+<p>然后也就有了本篇文章</p>
+<blockquote>
+<p>虽然重写了Qt本身的逻辑，没想到还是可以实现的！！！</p>
+</blockquote>
+<h2 id="二效果展示">二、效果展示</h2>
+<p>按照惯例先上图，看看是不是同学们想要的功能。</p>
+<center>
+    <img src="./images/QRowTable表格控件(五)-重写表头排序、支持第三次单击恢复默认排序0.png" />
+</center>
+<h2 id="三实现方式">三、实现方式</h2>
+<p>新的表格排序有2个点需要我们去思考，分别是某些列排序、排序交互修改，下面我们分开来去实现</p>
+<h3 id="排序列定制">1、排序列定制</h3>
+<p>Qt默认提供了可排序接口，但是开启后我们所有的列都支持排序了，这个时候我们就需要研究Qt的源码，看看Qt的排序是怎么触发的，然后在合理的时机去加上我们不支持排序的逻辑</p>
+<p>博主这里找到的做法是重写QHaderView这个类，并重写实现了鼠标按下并抬起的接口，在这个接口中判断我们业务层是不是允许排序。</p>
+<p><strong>重写后的逻辑是这样的</strong></p>
+<ol>
+<li><p><em>如果不允许排序，我们先调用Qt原有的接口禁用所有列排序功能</em></p></li>
+<li><p>调用父类的鼠标抬起函数</p></li>
+<li><p><em>如果不允许排序，需要调用Qt原有的接口启用所有列排序功能</em></p></li>
+</ol>
+<p>以上逻辑的步骤2是原有的逻辑，步骤1和步骤3分别是在进行业务逻辑判断后进行的逻辑调整，达到我们禁用某些列排序的功能</p>
+<pre><code>void QRowHeader::mouseReleaseEvent(QMouseEvent * event)
+{
+    int column = logicalIndexAt(event-&gt;pos().x());
+    if (m_Indicator.contains(column) 
+        &amp;&amp; m_Indicator[column] == false
+        &amp;&amp; qAbs(event-&gt;x() - m_pPressPos.x()) &lt; QApplication::startDragDistance()/*非拖拽*/)
+    {
+        setSectionsClickable(false);
+        QHeaderView::mouseReleaseEvent(event);
+        setSectionsClickable(true);
+    }
+    
+    QHeaderView::mouseReleaseEvent(event);
+    ...</code></pre>
+<p>如上代码，m_Indicator结构中存储了我们想要定制的是否允许排序的列，只需要对外暴露一个修改接口即可，代码是不是还很简单呢。</p>
+<pre><code>void QRowHeader::SetSortEnable(int logicalIndex, bool enable)
+{
+    m_Indicator[logicalIndex] = enable;
+}</code></pre>
+<p><strong>这样禁用某些列排序的功能就是实现了。</strong></p>
+<p>禁用某些列排序这个功能相对来说好实现一些，毕竟重写的逻辑不是特别复杂，下面我们来看下怎么修改排序交互逻辑。</p>
+<h3 id="排序交互修改">2、排序交互修改</h3>
+<p>有了前面的问题处理思路，这个功能依然如此，我们先跟Qt源码，看看已有的排序交互逻辑实现怎么实现的，然后在合理的实际去重置某些变量的值，达到重写交互逻辑。</p>
+<p>博主这里跟踪完Qt默认的排序实现方式后，发现重写这个功能还是有一定难度的，首先数据排序是一块，另一块是一旦启用排序后，排序箭头的绘制这块也需要去重写。</p>
+<p><strong>什么意思呢？</strong></p>
+<p>Qt的排序规则一旦启用，排序的箭头就会被绘制，并且绘制箭头的逻辑还简单粗暴，不是升序就是降序。</p>
+<p><strong>且看如下Qt表头绘制源码</strong></p>
+<p>如果显示排序箭头并且是排序列，则需要绘制排序箭头，不是降序就是升序</p>
+<blockquote>
+<p>我：我槽。。。什么鬼，就不能提供一个空的枚举吗？</p>
+</blockquote>
+<pre><code>void QHeaderView::paintSection(QPainter *painter, const QRect &amp;rect, int logicalIndex) const
+{
+    ...
+    if (isSortIndicatorShown() &amp;&amp; sortIndicatorSection() == logicalIndex)
+        opt.sortIndicator = (sortIndicatorOrder() == Qt::AscendingOrder)
+                            ? QStyleOptionHeader::SortDown : QStyleOptionHeader::SortUp;
+    ...
+}</code></pre>
+<p>既然这条路子是走不通了，那么我们只能取巧，换其他方式。</p>
+<p>终于、皇天不负有心人被博主想到一个好办法，代码量依然还是很少。</p>
+<p>回到我们最开始的需求，我们其实就是想让第三次点击时，只是一个特殊的操作，然后把第四点击当做第一次单击即可。</p>
+<p>有了这个想法后，那么就来干吧，既然还是重写鼠标抬起函数，想尽一切办法监控连续的第三次单击，把他处理成非排序状态，然后在下一次单击时，走正常的排序逻辑。</p>
+<pre><code>void QRowHeader::mouseReleaseEvent(QMouseEvent * event)
+{
+    ...
+    QHeaderView::mouseReleaseEvent(event);
+
+    column = logicalIndexAt(event-&gt;pos().x());
+    static bool nextNoSort = false;
+    static int prevColumn = -1;
+    if (nextNoSort &amp;&amp; prevColumn == column
+        &amp;&amp; qAbs(event-&gt;x() - m_pPressPos.x()) &lt; QApplication::startDragDistance())
+    {
+        emit RestoreSort();//恢复默认排序
+    }
+
+    if (nextNoSort != true
+        &amp;&amp; prevColumn == column
+        &amp;&amp; sectionsClickable()
+        &amp;&amp; sortIndicatorOrder() == Qt::DescendingOrder)
+    {
+        if (qAbs(event-&gt;x() - m_pPressPos.x()) &lt; QApplication::startDragDistance())
+        {
+            nextNoSort = true;
+            prevColumn = column;
+        }
+        else
+        {
+            nextNoSort = false;
+        }
+    }
+    else
+    {
+        if (nextNoSort &amp;&amp; qAbs(event-&gt;x() - m_pPressPos.x()) &gt;= QApplication::startDragDistance())
+        {
+            nextNoSort = true;
+        }
+        else
+        {
+            nextNoSort = false;
+            prevColumn = column;
+        }
+    }
+    ...
+}
+</code></pre>
+<p>好了，代码以上。不过这里重点还是要说下为什么这么干！</p>
+<p>首先需要调用父类的mouseReleaseEvent函数，否则拖拽会有问题，而且必须调用这个函数才可以让内存数据正常。</p>
+<p>然后我们记录了一系列内存状态，判断是不是需要恢复排序状态，当条件满足时发出RestoreSort信号，外部程序只需要接收这个信号，然后恢复默认排序即可。</p>
+<p><strong>恢复默认排序</strong></p>
+<pre><code>void QRowTable::RestoreSort()
+{
+    m_pFilter-&gt;SetCompareType(QFilterModel::CT_NULL);
+    m_pFilter-&gt;invalidate();
+    m_pHHeader-&gt;setSortIndicator(-1, Qt::DescendingOrder);
+}</code></pre>
+<h2 id="四相关文章">四、相关文章</h2>
+<ol>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11167664.html">Qt实现表格控件-支持多级列表头、多级行表头、单元格合并、字体设置等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11155074.html">Qt高仿Excel表格组件-支持冻结列、冻结行、内容自适应和合并单元格</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11129274.html">属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11117259.html">超级实用的属性浏览器控件--QtTreePropertyBrowser</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/9288902.html">Qt之表格控件蚂蚁线</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11185435.html">QRowTable表格控件-支持hover整行、checked整行、指定列排序等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11204600.html">QRowTable表格控件(二)-红涨绿跌</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11220396.html">QRowTable表格控件(三)-效率优化之-合理使用QStandardItem</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11490909.html">QRowTable表格控件(四)-效率优化之-优化数据源</a></p></li>
+<li><p><a href="https://blog.csdn.net/yb0022/article/details/98317326">C++界面库</a></p></li>
+</ol>
+<hr />
+<p><strong>值得一看的优秀文章：</strong></p>
+<ol>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/6707798.html">财联社-产品展示</a></strong></li>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/10836505.html">广联达-产品展示</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95527107">Qt定制控件列表</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95526527">牛逼哄哄的Qt库</a></strong></li>
+</ol>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

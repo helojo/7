@@ -1,0 +1,127 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[系列] Go gRPC 调试工具' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[系列] Go gRPC 调试工具</center></div><div class='banquan'>原文出处:本文由博客园博主新亮笔记提供。<br/>
+原文连接:https://www.cnblogs.com/xinliangcoder/p/11825748.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#概述">概述</a></li>
+        <li><a href="#写一个-grpc-api">写一个 gRPC API</a></li>
+        <li><a href="#grpcui-使用">grpcui 使用</a></li>
+        <li><a href="#go-gin-api-系列文章">go-gin-api 系列文章</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="概述">概述</h2>
+<p>最近这段时间工作挺忙的，发现已经 3 周没更文了...</p>
+<p>感谢你们还在，今天给大家分享一款 gRPC 的调试工具。</p>
+<p>进入正题。</p>
+<p>当我们在写 HTTP 接口的时候，使用的是 Postman 进行接口调试，那么在写 gRPC 接口的时候，有没有类似于 Postman 的调试工具呢？</p>
+<p><img src="./images/[系列] Go gRPC 调试工具0.png" /></p>
+<p>这是有的。</p>
+<p>咱们一起看下 <code>grpcui</code>，源码地址：</p>
+<p><a href="https://github.com/fullstorydev/grpcui" class="uri">https://github.com/fullstorydev/grpcui</a></p>
+<p>看下官方描述：</p>
+<blockquote>
+<p>grpcui is a command-line tool that lets you interact with gRPC servers via a browser. It's sort of like Postman, but for gRPC APIs instead of REST.</p>
+</blockquote>
+<h2 id="写一个-grpc-api">写一个 gRPC API</h2>
+<p>我原来写过 Demo，可以直接用原来写的 listen 项目。</p>
+<p>端口：9901</p>
+<p><code>.proto</code> 文件：</p>
+<pre><code><code>syntax = &quot;proto3&quot;; // 指定 proto 版本
+
+package listen;     // 指定包名
+
+// 定义服务
+service Listen {
+
+    // 定义方法
+    rpc ListenData(Request) returns (Response) {}
+
+}
+
+// Request 请求结构
+message Request {
+    string name = 1;
+}
+
+// Response 响应结构
+message Response {
+    string message = 1;
+}</code></pre>
+<p>很简单，这个大家一看就知道了。</p>
+<ul>
+<li>Service name 为 listen.Listen</li>
+<li>Method name 为 ListenData</li>
+</ul>
+<p>再看下 ListenData 方法：</p>
+<pre><code><code>func (l *ListenController) ListenData(ctx context.Context, in *listen.Request) (*listen.Response, error) {
+    return &amp;listen.Response{Message : fmt.Sprintf(&quot;[%s]&quot;, in.Name)}, nil
+}</code></pre>
+<p>这表示，将 <code>Name</code> 直接返回。</p>
+<p>源码地址：</p>
+<p><a href="https://github.com/xinliangnote/go-jaeger-demo/tree/master/listen" class="uri">https://github.com/xinliangnote/go-jaeger-demo/tree/master/listen</a></p>
+<h4 id="启动服务">启动服务</h4>
+<pre><code><code>cd listen &amp;&amp; go run main.go</code></pre>
+<p>服务启动成功后，等待使用。</p>
+<h2 id="grpcui-使用">grpcui 使用</h2>
+<h4 id="安装">安装</h4>
+<p>根据官方 <code>README.md</code> 文档安装即可。</p>
+<pre><code><code>go get github.com/fullstorydev/grpcui
+go install github.com/fullstorydev/grpcui/cmd/grpcui</code></pre>
+<p>这时，在 <code>$GOPATH/bin</code> 目录下，生成一个 <code>grpcui</code> 可执行文件。</p>
+<p>执行个命令，验证下：</p>
+<pre><code><code>grpcui -help</code></pre>
+<p>输出：</p>
+<pre><code><code>Usage:
+    grpcui [flags] [address]
+    
+......  </code></pre>
+<p>表示安装成功了。</p>
+<h4 id="运行">运行</h4>
+<pre><code><code>grpcui -plaintext 127.0.0.1:9901
+
+Failed to compute set of methods to expose: server does not support the reflection API</code></pre>
+<p>这种情况下，加个反射就可以了，在 listen 的 main.go 新增如下代码即可：</p>
+<pre><code><code>reflection.Register(s)</code></pre>
+<p>在运行一次试试：</p>
+<pre><code><code>grpcui -plaintext 127.0.0.1:9901
+gRPC Web UI available at http://127.0.0.1:63027/</code></pre>
+<p>在浏览器中访问：<code>http://127.0.0.1:63027/</code></p>
+<p><img src="./images/[系列] Go gRPC 调试工具1.png" /></p>
+<p>到这，我们看到 Service name、Method name 都出来了，传输参数直接在页面上进行操作即可。</p>
+<p>当发起 Request &quot;Tom&quot;，也能获得 Response “Tom”。</p>
+<p>当然，如果这个服务下面有多个 Service name，多个 Method name 也都会显示出来的，去试试吧。</p>
+<h2 id="go-gin-api-系列文章">go-gin-api 系列文章</h2>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s/0cozELotcpX3Gd6WPJiBbQ">7. 路由中间件 - 签名验证</a></li>
+<li><a href="https://mp.weixin.qq.com/s/Ea28475_UTNaM9RNfgPqJA">6. 路由中间件 - Jaeger 链路追踪（实战篇）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/28UBEsLOAHDv530ePilKQA">5. 路由中间件 - Jaeger 链路追踪（理论篇）</a></li>
+<li><a href="https://mp.weixin.qq.com/s/SconDXB_x7Gan6T0Awdh9A">4. 路由中间件 - 捕获异常</a></li>
+<li><a href="https://mp.weixin.qq.com/s/eTygPXnrYM2xfrRQyfn8Tg">3. 路由中间件 - 日志记录</a></li>
+<li><a href="https://mp.weixin.qq.com/s/11AuXptWGmL5QfiJArNLnA">2. 规划项目目录和参数验证</a></li>
+<li><a href="https://mp.weixin.qq.com/s/1XNTEgZ0XGZZdxFOfR5f_A">1. 使用 go modules 初始化项目</a></li>
+</ul>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

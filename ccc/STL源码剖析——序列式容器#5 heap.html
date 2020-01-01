@@ -1,0 +1,181 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修STL源码剖析——序列式容器#5 heap' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>STL源码剖析——序列式容器#5 heap</center></div><div class='banquan'>原文出处:本文由博客园博主羽园原华提供。<br/>
+原文连接:https://www.cnblogs.com/MisakiJH/p/11783564.html</div><br>
+    <p>　　准确来讲，heap并不属于STL容器，但它是其中一个容器priority queue必不可少的一部分。顾名思义，priority queue就是优先级队列，允许用户以任何次序将任何元素加入容器内，但取出时是从优先权最高的元素开始取。而优先权有两种，可以是容器内数值最低的，也可以是数值最高的。而priority queue是选择了数值高作为评判优先级的标准。对应实现方法就是binary max heap，其作为priority queue的底层机制。</p>
+<p>　　所谓的binary heap（二叉堆），是一种完全二叉树，也就是说，整棵二叉树除了最底层的叶子节点外，其他节点都是被填满的，而最底层的节点是从左至右不得有空节点的，如图所示：</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/STL源码剖析——序列式容器#5 heap0.png" alt="" width="514" height="362" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;　　如图所示，完全二叉树整棵树内没有任何节点漏洞，这使得我们可以使用数组来存储一棵完全二叉树上的所有结点。另外，如果我们数组的索引1开始记录节点，那么父节点与子节点在数组中的关系就一般为：父节点在 i 处，其左子节点必位于数组的 2i 处，其右子节点必位于数组的 2i+1 处。这种以数组表示树的方式，称为隐式表述法。我们的heap需要动态改变节点数，所以用vector是更好的选择。由于priority queue选择的是binary max heap做为自己的底层机制，所以也只提供了max heap的实现，所以我们接下里讨论的都是大根堆（max heap）。每个节点的键值都大于或等于其子节点的键值。</p>
+<p>&nbsp;</p>
+<h2>heap算法</h2>
+<ul>
+<li><strong>push_heap</strong></li>
+</ul>
+<p><strong>　　</strong>为了满足完全二叉树的条件，最新加入的元素一定要放在最下一层做为叶子节点，并填补在从左至右的第一个空格。新加入的元素并不一定适合于现有的位置，为了满足max-heap的条件，我们需要对刚加入的元素进行一个上浮（percolate up）的操作：将新节点与其父节点比较，如果其键值比父节点的大，就父子交换位置，交换后新加的元素成为了父节点，此时再与它的父节点比较，如此一直上溯，直到不需对换或直到根节点为止。</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/STL源码剖析——序列式容器#5 heap1.png" alt="" width="635" height="515" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;　　push_heap函数接受两个随机迭代器，用来表示一个heap底部容器（vector）的头尾，并且新元素已经插入到底部容器的最尾端，才会进入到该函数。如果参数不符合，或并无新元素插入，该函数的执行结果不可预期。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> template &lt;<span style="color: #0000ff;">class</span> RandomAccessIterator&gt;
+<span style="color: #008080;"> 2</span> inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> push_heap(RandomAccessIterator first, RandomAccessIterator last) {
+</span><span style="color: #008080;"> 3</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 注意，此函数被调用时，新元素应已置于底层容器的最尾端。
+</span><span style="color: #008080;"> 4</span>     <span style="color: #008000;">//</span><span style="color: #008000;">即是新元素被加入到数组（原本最后元素的下一位置）后，才调用该函数</span>
+<span style="color: #008080;"> 5</span> <span style="color: #000000;">    __push_heap_aux(first, last, distance_type(first), value_type(first));
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">}<br />
+</span><span style="color: #008080;"> 7</span> template &lt;<span style="color: #0000ff;">class</span> RandomAccessIterator, <span style="color: #0000ff;">class</span> Distance, <span style="color: #0000ff;">class</span> T&gt;
+<span style="color: #008080;"> 8</span> inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> __push_heap_aux(RandomAccessIterator first,
+</span><span style="color: #008080;"> 9</span>     RandomAccessIterator last, Distance*, T*<span style="color: #000000;">) {
+</span><span style="color: #008080;">10</span>     __push_heap(first, Distance((last - first) - <span style="color: #800080;">1</span>), Distance(<span style="color: #800080;">0</span><span style="color: #000000;">),
+</span><span style="color: #008080;">11</span>         T(*(last - <span style="color: #800080;">1</span><span style="color: #000000;">)));
+</span><span style="color: #008080;">12</span>         <span style="color: #008000;">//</span><span style="color: #008000;">于上个函数获取到的迭代器所指对象类型T，用于强制转换
+</span><span style="color: #008080;">13</span>         <span style="color: #008000;">//</span><span style="color: #008000;">Distance(0)为指出最大值的索引值
+</span><span style="color: #008080;">14</span>         <span style="color: #008000;">//</span><span style="color: #008000;">Distance((last - first) - 1)为指出新添值的索引值</span>
+<span style="color: #008080;">15</span> <span style="color: #000000;">}<br />
+</span><span style="color: #008080;">16</span> template &lt;<span style="color: #0000ff;">class</span> RandomAccessIterator, <span style="color: #0000ff;">class</span> Distance, <span style="color: #0000ff;">class</span> T&gt;
+<span style="color: #008080;">17</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> __push_heap(RandomAccessIterator first, Distance holeIndex,
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    Distance topIndex, T value) {
+</span><span style="color: #008080;">19</span>     <span style="color: #008000;">//</span><span style="color: #008000;">holeIndex为指出新添值的索引值
+</span><span style="color: #008080;">20</span>     <span style="color: #008000;">//</span><span style="color: #008000;">topIndex最大值的索引值
+</span><span style="color: #008080;">21</span>     <span style="color: #008000;">//</span><span style="color: #008000;">value为新添值内容</span>
+<span style="color: #008080;">22</span>     Distance parent = (holeIndex - <span style="color: #800080;">1</span>) / <span style="color: #800080;">2</span>; <span style="color: #008000;">//</span><span style="color: #008000;"> 找出新元素的父节点</span>
+<span style="color: #008080;">23</span>     <span style="color: #0000ff;">while</span> (holeIndex &gt; topIndex &amp;&amp; *(first + parent) &lt;<span style="color: #000000;"> value) {
+</span><span style="color: #008080;">24</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> 当尚未到达顶端，且父节点小于新值（不符合 heap 的次序特性），继续上浮
+</span><span style="color: #008080;">25</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> 由于以上使用 operator&lt;，可知 STL heap 是一种 max-heap（大根堆）。</span>
+<span style="color: #008080;">26</span>         *(first + holeIndex) = *(first + parent); <span style="color: #008000;">//</span><span style="color: #008000;"> 子位置设父值</span>
+<span style="color: #008080;">27</span>         holeIndex = parent; <span style="color: #008000;">//</span><span style="color: #008000;"> percolate up：調整新添值的索引值，向上提升至父节点。</span>
+<span style="color: #008080;">28</span>             parent = (holeIndex - <span style="color: #800080;">1</span>) / <span style="color: #800080;">2</span>; <span style="color: #008000;">//</span><span style="color: #008000;"> 获取新索引值的父节点</span>
+<span style="color: #008080;">29</span>     } <span style="color: #008000;">//</span><span style="color: #008000;"> 持续到顶端，或满足 heap 的次序特性为止。</span>
+<span style="color: #008080;">30</span>     *(first + holeIndex) = value; <span style="color: #008000;">//</span><span style="color: #008000;"> 令最后的索引值为新值，完成插入。</span>
+<span style="color: #008080;">31</span> }</pre>
+</div>
+<ul>
+<li><strong>pop_heap</strong></li>
+</ul>
+<p>　　最大值在根节点处，pop操作取走根节点（其实是把它转移到vector的尾端节点上），为了满足完全二叉树的条件，必须割舍最底层最右边的节点，把其值拿出来放至一临时变量里，然后该位置放根节点的值（最后会被pop_back()给移除）。</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/STL源码剖析——序列式容器#5 heap2.png" alt="" width="607" height="496" /></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> template &lt;<span style="color: #0000ff;">class</span> RandomAccessIterator&gt;
+<span style="color: #008080;"> 2</span> inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> pop_heap(RandomAccessIterator first, RandomAccessIterator last) {
+</span><span style="color: #008080;"> 3</span> <span style="color: #000000;">    __pop_heap_aux(first, last, value_type(first));
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> template &lt;<span style="color: #0000ff;">class</span> RandomAccessIterator, <span style="color: #0000ff;">class</span> T&gt;
+<span style="color: #008080;"> 7</span> inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> __pop_heap_aux(RandomAccessIterator first,
+</span><span style="color: #008080;"> 8</span>     RandomAccessIterator last, T*<span style="color: #000000;">) {
+</span><span style="color: #008080;"> 9</span>     __pop_heap(first, last - <span style="color: #800080;">1</span>, last - <span style="color: #800080;">1</span>, T(*(last - <span style="color: #800080;">1</span><span style="color: #000000;">)), distance_type(first));
+</span><span style="color: #008080;">10</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 设定准条调整的值为尾值，然后将首值调至
+</span><span style="color: #008080;">11</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 尾节点（所以以上将迭代器 result 设为 last-1）。然后重整 [first, last-1)，
+</span><span style="color: #008080;">12</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 使之重新成一個合格的 heap。</span>
+<span style="color: #008080;">13</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> template &lt;<span style="color: #0000ff;">class</span> RandomAccessIterator, <span style="color: #0000ff;">class</span> T, <span style="color: #0000ff;">class</span> Distance&gt;
+<span style="color: #008080;">16</span> inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> __pop_heap(RandomAccessIterator first, RandomAccessIterator last,
+</span><span style="color: #008080;">17</span>     RandomAccessIterator result, T value, Distance*<span style="color: #000000;">) {
+</span><span style="color: #008080;">18</span>     *result = *first; <span style="color: #008000;">//</span><span style="color: #008000;"> 设定尾值为首值，于是尾值即为要求的结果，
+</span><span style="color: #008080;">19</span>                       <span style="color: #008000;">//</span><span style="color: #008000;"> 可由客端稍后再调用 pop_back() 取出尾值。</span>
+<span style="color: #008080;">20</span>     __adjust_heap(first, Distance(<span style="color: #800080;">0</span>), Distance(last -<span style="color: #000000;"> first), value);
+</span><span style="color: #008080;">21</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 以上重新调整 heap，要调整的索引值为 0（亦即树根处），欲调整值为 value（原尾值）。</span>
+<span style="color: #008080;">22</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">23</span> 
+<span style="color: #008080;">24</span> template &lt;<span style="color: #0000ff;">class</span> RandomAccessIterator, <span style="color: #0000ff;">class</span> Distance, <span style="color: #0000ff;">class</span> T&gt;
+<span style="color: #008080;">25</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> __adjust_heap(RandomAccessIterator first, Distance holeIndex,
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">    Distance len, T value) {
+</span><span style="color: #008080;">27</span>     <span style="color: #008000;">//</span><span style="color: #008000;">holeIndex：要调整的索引值，从树根处出发
+</span><span style="color: #008080;">28</span>     <span style="color: #008000;">//</span><span style="color: #008000;">len：所有元素个数（不包括被调整到尾节点的首节点），即[0, len)
+</span><span style="color: #008080;">29</span>     <span style="color: #008000;">//</span><span style="color: #008000;">value：记录了原最底层最右边的节点的值</span>
+<span style="color: #008080;">30</span>     Distance topIndex =<span style="color: #000000;"> holeIndex;
+</span><span style="color: #008080;">31</span>     Distance secondChild = <span style="color: #800080;">2</span> * holeIndex + <span style="color: #800080;">2</span>; <span style="color: #008000;">//</span><span style="color: #008000;"> 调整的索引值的右子节点</span>
+<span style="color: #008080;">32</span>     <span style="color: #0000ff;">while</span> (secondChild &lt;<span style="color: #000000;"> len) {
+</span><span style="color: #008080;">33</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> 比较这左右两个子值，然后以 secondChild 代表较大子节点。</span>
+<span style="color: #008080;">34</span>         <span style="color: #0000ff;">if</span> (*(first + secondChild) &lt; *(first + (secondChild - <span style="color: #800080;">1</span><span style="color: #000000;">)))
+</span><span style="color: #008080;">35</span>             secondChild--<span style="color: #000000;">;
+</span><span style="color: #008080;">36</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> Percolate down：令较大子值代替要调整索引值处的值，再令调整的索引值下移至较大子节点处。</span>
+<span style="color: #008080;">37</span>         *(first + holeIndex) = *(first +<span style="color: #000000;"> secondChild);
+</span><span style="color: #008080;">38</span>         holeIndex =<span style="color: #000000;"> secondChild;
+</span><span style="color: #008080;">39</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> 继续找出要调整的索引值的右子节点</span>
+<span style="color: #008080;">40</span>         secondChild = <span style="color: #800080;">2</span> * (secondChild + <span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">42</span>     <span style="color: #0000ff;">if</span> (secondChild == len) { <span style="color: #008000;">//</span><span style="color: #008000;"> 相等，说明沒有右子节点（不是说没有，而是被准备pop掉的元素占用了，见*result = *first;），只有左子节点
+</span><span style="color: #008080;">43</span>                               <span style="color: #008000;">//</span><span style="color: #008000;"> Percolate down：令左子值代替要调整索引值处的值，再令要调整的索引值下移至左子节点处。</span>
+<span style="color: #008080;">44</span>         *(first + holeIndex) = *(first + (secondChild - <span style="color: #800080;">1</span><span style="color: #000000;">));
+</span><span style="color: #008080;">45</span>         holeIndex = secondChild - <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">46</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">47</span> 
+<span style="color: #008080;">48</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 此时可能尚未满足次序特性，再执行一次上浮操作</span>
+<span style="color: #008080;">49</span> <span style="color: #000000;">    __push_heap(first, holeIndex, topIndex, value);
+</span><span style="color: #008080;">50</span> }</pre>
+</div>
+<p>&nbsp;　　注意，pop_heap之后，最大元素只是被放置于底部容器的最尾端，尚未被取走。如果要取其值，可使用底部容器的back()函数。如果要移除它，可使用底部容器所提供的pop_back()函数。</p>
+<ul>
+<li><strong>sort_heap</strong></li>
+</ul>
+<p><strong>　　</strong>既然每次调用pop_heap可获得heap中键值最大的元素，如果持续对整个heap做pop_heap操作，且每次的操作范围都从后向前缩减一个元素，那么当整个程序执行完毕，我们便有了一个递增序列。sort_heap便是如此做的。该函数接受两个迭代器，用来表示heap的首尾。如果并非首尾，该函数的执行结果不可预期。注意，排序过后，底层容器里的就不再是一个合法的heap了。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> template &lt;<span style="color: #0000ff;">class</span> RandomAccessIterator&gt;
+<span style="color: #008080;">2</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> sort_heap(RandomAccessIterator first, RandomAccessIterator last) {
+</span><span style="color: #008080;">3</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 以下，每执行一次 pop_heap()，极大值即被放在尾端。
+</span><span style="color: #008080;">4</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 尾端自减后（往左移动一格）再执行一次 pop_heap()，次极值又被放在新尾端。一直下去，最后即得
+</span><span style="color: #008080;">5</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 排序结果。</span>
+<span style="color: #008080;">6</span>     <span style="color: #0000ff;">while</span> (last - first &gt; <span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">7</span>         pop_heap(first, last--); <span style="color: #008000;">//</span><span style="color: #008000;"> 每执行 pop_heap() 一次，操作范围即退缩一格。</span>
+<span style="color: #008080;">8</span> }</pre>
+</div>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/STL源码剖析——序列式容器#5 heap3.png" alt="" width="662" height="1003" /></p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/STL源码剖析——序列式容器#5 heap4.png" alt="" width="658" height="301" /></p>
+<p>&nbsp;</p>
+<ul>
+<li><strong>make_heap</strong></li>
+</ul>
+<p><strong>　　</strong>这个算法用来将一段现有的数据转化为一个heap。把一段数据转换为heap的要点就是找到最后一个拥有子节点的节点，例如：</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/STL源码剖析——序列式容器#5 heap5.png" alt="" width="386" height="257" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;　　假设这是一个普通数组，并无heap特性，那么要想其转化为一个heap，切入点就是找到最后一个拥有子节点的节点，上图而言就是E点，以E节点为首的子树，对该子树进行下沉操作和上浮操作，即先交换E跟J的值，再对J进行上浮操作。这样以E节点为首的子树就符合heap特性了。然后自减，来到了D节点（倒二拥有子节点的节点），同样对以D节点为首的子树进行下沉和上浮操作；然后再自减，直至到达根节点为止。这样整个数组就符合heap特性了。那么问题来了？怎么在一个普通数组中找到最后一个拥有子节点的节点的索引值呢？可以证明的是，如果有一长度为n的数组，那么最后一个拥有子节点的节点的索引值就是&nbsp;<strong>(n - 2) / 2&nbsp;</strong>，这是数组从索引0开始的情况。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 将 [first,last) 排列为一个 heap。</span>
+<span style="color: #008080;"> 2</span> template &lt;<span style="color: #0000ff;">class</span> RandomAccessIterator&gt;
+<span style="color: #008080;"> 3</span> inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> make_heap(RandomAccessIterator first, RandomAccessIterator last) {
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">    __make_heap(first, last, value_type(first), distance_type(first));
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> template &lt;<span style="color: #0000ff;">class</span> RandomAccessIterator, <span style="color: #0000ff;">class</span> T, <span style="color: #0000ff;">class</span> Distance&gt;
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">void</span> __make_heap(RandomAccessIterator first, RandomAccessIterator last, T*<span style="color: #000000;">,
+</span><span style="color: #008080;"> 9</span>     Distance*<span style="color: #000000;">) {
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">if</span> (last - first &lt; <span style="color: #800080;">2</span>) <span style="color: #0000ff;">return</span>; <span style="color: #008000;">//</span><span style="color: #008000;"> 如果長度為 0 或 1，不必重新排列。</span>
+<span style="color: #008080;">11</span>     Distance len = last -<span style="color: #000000;"> first;
+</span><span style="color: #008080;">12</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 找出第一个需要重排的子树头部，以 parent 标示出。由于任何叶子节点都不需执行
+</span><span style="color: #008080;">13</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> perlocate down（下沉），所以有以下计算。</span>
+<span style="color: #008080;">14</span>         Distance parent = (len - <span style="color: #800080;">2</span>) / <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">15</span> 
+<span style="color: #008080;">16</span>     <span style="color: #0000ff;">while</span> (<span style="color: #0000ff;">true</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">17</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> 重排以 parent 为首的子树。len 是为了让 __adjust_heap() 判断操作范围</span>
+<span style="color: #008080;">18</span>         __adjust_heap(first, parent, len, T(*(first +<span style="color: #000000;"> parent)));
+</span><span style="color: #008080;">19</span>         <span style="color: #0000ff;">if</span> (parent == <span style="color: #800080;">0</span>) <span style="color: #0000ff;">return</span>; <span style="color: #008000;">//</span><span style="color: #008000;"> 直至根节点，就结束。</span>
+<span style="color: #008080;">20</span>         parent--; <span style="color: #008000;">//</span><span style="color: #008000;"> 未到根节点，就将（即将重排的子树的）索引值向前一個节点</span>
+<span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span> }</pre>
+</div>
+<p>　　<strong>heap没有迭代器，</strong>heap的所有元素都必须遵循特别的排列规则，所以heap不提供遍历功能，也不提供迭代器。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

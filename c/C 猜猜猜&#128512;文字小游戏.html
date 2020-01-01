@@ -1,0 +1,429 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C 猜猜猜&#128512;文字小游戏' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C 猜猜猜&#128512;文字小游戏</center></div><div class='banquan'>原文出处:本文由博客园博主喜欢兰花山丘提供。<br/>
+原文连接:https://www.cnblogs.com/life2refuel/p/11222126.html</div><br>
+    <h3><strong>前言 - 随机性</strong></h3>
+<div>　　<a title="随机数生成" href="https://zh.wikipedia.org/wiki/%E9%9A%8F%E6%9C%BA%E6%95%B0%E7%94%9F%E6%88%90" target="_blank">随机数生成</a> -&nbsp;<a href="https://zh.wikipedia.org/wiki/%E9%9A%8F%E6%9C%BA%E6%95%B0%E7%94%9F%E6%88%90">https://zh.wikipedia.org/wiki/%E9%9A%8F%E6%9C%BA%E6%95%B0%E7%94%9F%E6%88%90</a>
+<p>　　没啥事情, 写了个猜猜猜(猜数字)小游戏. 遇到猜的部分, 那肯定会用到随机函数. 我们为了多平台行为一致, 就统一</p>
+<p>整合一个伪随机函数实现方案, 让随机更随机. 一开始看下接口设计 <strong>rand.h</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">#ifndef _RAND_H
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">#define</span> _RAND_H
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> #include &lt;stdint.h&gt;
+<span style="color: #008080;"> 5</span> #include &lt;assert.h&gt;
+<span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #008000;">//</span>
+<span style="color: #008080;"> 8</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 传承(抄袭)不灭(创新) rand 库
+</span><span style="color: #008080;"> 9</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 大体思路 
+</span><span style="color: #008080;">10</span> <span style="color: #008000;">//</span><span style="color: #008000;">  { r | r[n+1] = (a*r[n] + c) mod m
+</span><span style="color: #008080;">11</span> <span style="color: #008000;">//</span><span style="color: #008000;">      , n &gt;= 0
+</span><span style="color: #008080;">12</span> <span style="color: #008000;">//</span><span style="color: #008000;">      , m = 0xFFFFFFFFFFFF = 2 ^ 48
+</span><span style="color: #008080;">13</span> <span style="color: #008000;">//</span><span style="color: #008000;">      , a = 0x0005DEECE66D = 0x5DEECE66D,
+</span><span style="color: #008080;">14</span> <span style="color: #008000;">//</span><span style="color: #008000;">      , c = 0x000B         = 0xB
+</span><span style="color: #008080;">15</span> <span style="color: #008000;">//</span><span style="color: #008000;">  }
+</span><span style="color: #008080;">16</span> <span style="color: #008000;">//
+</span><span style="color: #008080;">17</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> rand {
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    uint32_t x0, x1, x2;
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    uint32_t a0, a1, a2;
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    uint32_t c;
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span> typedef <span style="color: #0000ff;">struct</span> rand rand_t[<span style="color: #800080;">1</span><span style="color: #000000;">];
+</span><span style="color: #008080;">24</span> 
+<span style="color: #008080;">25</span> <span style="color: #008000;">//</span>
+<span style="color: #008080;">26</span> <span style="color: #008000;">//</span><span style="color: #008000;"> rand_init - 随机函数对象初始化种子
+</span><span style="color: #008080;">27</span> <span style="color: #008000;">//</span><span style="color: #008000;"> r         : 随机函数对象
+</span><span style="color: #008080;">28</span> <span style="color: #008000;">//</span><span style="color: #008000;"> seed      : 种子数
+</span><span style="color: #008080;">29</span> <span style="color: #008000;">//</span><span style="color: #008000;"> return    : void
+</span><span style="color: #008080;">30</span> <span style="color: #008000;">//
+</span><span style="color: #008080;">31</span> <span style="color: #0000ff;">extern</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> rand_init(rand_t r, int64_t seed);
+</span><span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span> <span style="color: #008000;">//</span>
+<span style="color: #008080;">34</span> <span style="color: #008000;">//</span><span style="color: #008000;"> rand_rand - 获取一个随机值
+</span><span style="color: #008080;">35</span> <span style="color: #008000;">//</span><span style="color: #008000;"> r         : 随机函数对象
+</span><span style="color: #008080;">36</span> <span style="color: #008000;">//</span><span style="color: #008000;"> return    : 返回 [0, INT32_MAX] 随机数
+</span><span style="color: #008080;">37</span> <span style="color: #008000;">//
+</span><span style="color: #008080;">38</span> <span style="color: #0000ff;">extern</span><span style="color: #000000;"> int32_t rand_rand(rand_t r);
+</span><span style="color: #008080;">39</span> 
+<span style="color: #008080;">40</span> <span style="color: #008000;">//</span>
+<span style="color: #008080;">41</span> <span style="color: #008000;">//</span><span style="color: #008000;"> r_rand - 得到 [0, INT32_MAX] 随机数
+</span><span style="color: #008080;">42</span> <span style="color: #008000;">//</span><span style="color: #008000;"> r_ranb - 得到 [0, INT64_MAX] (int64 = big int32) 随机数
+</span><span style="color: #008080;">43</span> <span style="color: #008000;">//</span><span style="color: #008000;"> r_rang - 得到 range [min, max] 随机数
+</span><span style="color: #008080;">44</span> <span style="color: #008000;">//
+</span><span style="color: #008080;">45</span> <span style="color: #0000ff;">extern</span> int32_t r_rand(<span style="color: #0000ff;">void</span><span style="color: #000000;">);
+</span><span style="color: #008080;">46</span> 
+<span style="color: #008080;">47</span> <span style="color: #0000ff;">extern</span> int64_t r_ranb(<span style="color: #0000ff;">void</span><span style="color: #000000;">);
+</span><span style="color: #008080;">48</span> 
+<span style="color: #008080;">49</span> <span style="color: #000000;">inline int32_t r_rang(int32_t min, int32_t max) {
+</span><span style="color: #008080;">50</span>     assert(max &gt;=<span style="color: #000000;"> min);
+</span><span style="color: #008080;">51</span>     <span style="color: #0000ff;">return</span> r_rand() % (max - min + <span style="color: #800080;">1</span>) +<span style="color: #000000;"> min;
+</span><span style="color: #008080;">52</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">53</span> 
+<span style="color: #008080;">54</span> <span style="color: #0000ff;">#endif</span><span style="color: #008000;">//</span><span style="color: #008000;">_RAND_H</span></code></pre>
+
+<p><strong>rand.c&nbsp;</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">rand.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">#define</span> X0              (0x330E)
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">#define</span> X1              (0xABCD)
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">#define</span> X2              (0x1234)
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">#define</span> A0              (0xE66D)
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">#define</span> A1              (0xDEEC)
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">#define</span> A2              (0x0005)
+<span style="color: #008080;"> 9</span> <span style="color: #0000ff;">#define</span> C               (0x000B)
+<span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span> <span style="color: #0000ff;">#define</span> N               (16)
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">#define</span> MASK            ((1 &lt;&lt; N) - 1)
+<span style="color: #008080;">13</span> <span style="color: #0000ff;">#define</span> LOW(x)          ((uint32_t)(x) &amp; MASK)
+<span style="color: #008080;">14</span> <span style="color: #0000ff;">#define</span> HIGH(x)         LOW((x) &gt;&gt; N)
+<span style="color: #008080;">15</span> 
+<span style="color: #008080;">16</span> <span style="color: #008000;">//</span>
+<span style="color: #008080;">17</span> <span style="color: #008000;">//</span><span style="color: #008000;"> rand_init - 随机函数对象初始化种子
+</span><span style="color: #008080;">18</span> <span style="color: #008000;">//</span><span style="color: #008000;"> r         : 随机函数对象
+</span><span style="color: #008080;">19</span> <span style="color: #008000;">//</span><span style="color: #008000;"> seed      : 种子数
+</span><span style="color: #008080;">20</span> <span style="color: #008000;">//</span><span style="color: #008000;"> return    : void
+</span><span style="color: #008080;">21</span> <span style="color: #008000;">//
+</span><span style="color: #008080;">22</span> inline <span style="color: #0000ff;">void</span> 
+<span style="color: #008080;">23</span> <span style="color: #000000;">rand_init(rand_t r, int64_t seed) {
+</span><span style="color: #008080;">24</span>     r-&gt;x0 = X0; r-&gt;x1 = LOW(seed); r-&gt;x2 =<span style="color: #000000;"> HIGH(seed);
+</span><span style="color: #008080;">25</span>     r-&gt;a0 = A0; r-&gt;a1 = A1; r-&gt;a2 =<span style="color: #000000;"> A2;
+</span><span style="color: #008080;">26</span>     r-&gt;c =<span style="color: #000000;"> C;
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">28</span> 
+<span style="color: #008080;">29</span> <span style="color: #0000ff;">#define</span> CARRY(x, y)     ((x + y) &gt; MASK) <span style="color: #008000;">//</span><span style="color: #008000;"> 基于 16 位判断二者和是否进位</span>
+<span style="color: #008080;">30</span> <span style="color: #0000ff;">#define</span> ADDRQ(x, y, z)  z = CARRY(x, y); x = LOW(x + y)
+<span style="color: #008080;">31</span> <span style="color: #0000ff;">#define</span> MUL(m, x, y, z) m = (x) * (y); z##0 = LOW(m); z##1 = HIGH(m)
+<span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span> inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> rand_next(rand_t r) {
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">    uint32_t m, p0, p1, q0, q1, s0, s1, c0, c1;
+</span><span style="color: #008080;">35</span> 
+<span style="color: #008080;">36</span>     MUL(m, r-&gt;a0, r-&gt;<span style="color: #000000;">x0, p);
+</span><span style="color: #008080;">37</span>     ADDRQ(p0, r-&gt;<span style="color: #000000;">c, c0);
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">    ADDRQ(p1, c0, c1);
+</span><span style="color: #008080;">39</span>     MUL(m, r-&gt;a0, r-&gt;<span style="color: #000000;">x1, q);
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">    ADDRQ(p1, q0, c0);
+</span><span style="color: #008080;">41</span>     MUL(m, r-&gt;a1, r-&gt;<span style="color: #000000;">x0, s);
+</span><span style="color: #008080;">42</span> 
+<span style="color: #008080;">43</span>     m = c0 + c1 + CARRY(p1, s0) + q1 +<span style="color: #000000;"> s1 
+</span><span style="color: #008080;">44</span>         + r-&gt;a0 * r-&gt;x2 + r-&gt;a1 * r-&gt;x1 + r-&gt;a2 * r-&gt;<span style="color: #000000;">x0;
+</span><span style="color: #008080;">45</span>     r-&gt;x2 =<span style="color: #000000;"> LOW(m);
+</span><span style="color: #008080;">46</span>     r-&gt;x1 = LOW(p1 +<span style="color: #000000;"> s0);
+</span><span style="color: #008080;">47</span>     r-&gt;x0 =<span style="color: #000000;"> LOW(p0);
+</span><span style="color: #008080;">48</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">49</span> 
+<span style="color: #008080;">50</span> <span style="color: #008000;">//</span>
+<span style="color: #008080;">51</span> <span style="color: #008000;">//</span><span style="color: #008000;"> rand_rand - 获取一个随机值
+</span><span style="color: #008080;">52</span> <span style="color: #008000;">//</span><span style="color: #008000;"> r         : 随机函数对象
+</span><span style="color: #008080;">53</span> <span style="color: #008000;">//</span><span style="color: #008000;"> return    : 返回 [0, INT32_MAX] 随机数
+</span><span style="color: #008080;">54</span> <span style="color: #008000;">//
+</span><span style="color: #008080;">55</span> <span style="color: #000000;">inline int32_t 
+</span><span style="color: #008080;">56</span> <span style="color: #000000;">rand_rand(rand_t r) {
+</span><span style="color: #008080;">57</span> <span style="color: #000000;">    rand_next(r);
+</span><span style="color: #008080;">58</span>     <span style="color: #0000ff;">return</span> (r-&gt;x2 &lt;&lt; (N - <span style="color: #800080;">1</span>)) + (r-&gt;x1 &gt;&gt; <span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">59</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">60</span> 
+<span style="color: #008080;">61</span> <span style="color: #008000;">//</span>
+<span style="color: #008080;">62</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 想过 - 朵朵浪花, 也不曾看见云彩飘过 :0
+</span><span style="color: #008080;">63</span> <span style="color: #008000;">//
+</span><span style="color: #008080;">64</span> <span style="color: #0000ff;">static</span> rand_t r_r =<span style="color: #000000;"> { { X0, X1, X2 , A0, A1, A2 , C } };
+</span><span style="color: #008080;">65</span> 
+<span style="color: #008080;">66</span> <span style="color: #008000;">//</span><span style="color: #008000;"> EXTERN_RUN(r_init) 启动初始化</span>
+<span style="color: #008080;">67</span> <span style="color: #0000ff;">extern</span> inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> r_init(int64_t seed) {
+</span><span style="color: #008080;">68</span> <span style="color: #000000;">    rand_init(r_r, seed);
+</span><span style="color: #008080;">69</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">70</span> 
+<span style="color: #008080;">71</span> <span style="color: #000000;">inline int32_t 
+</span><span style="color: #008080;">72</span> r_rand(<span style="color: #0000ff;">void</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">73</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> rand_rand(r_r);
+</span><span style="color: #008080;">74</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">75</span> 
+<span style="color: #008080;">76</span> <span style="color: #000000;">inline int64_t 
+</span><span style="color: #008080;">77</span> r_ranb(<span style="color: #0000ff;">void</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">78</span>     uint64_t x = ((r_rand() &lt;&lt; N) ^ r_rand()) &amp;<span style="color: #000000;"> INT32_MAX;
+</span><span style="color: #008080;">79</span>     uint64_t y = ((r_rand() &lt;&lt; N) ^ r_rand()) &amp;<span style="color: #000000;"> INT32_MAX;
+</span><span style="color: #008080;">80</span>     <span style="color: #0000ff;">return</span> ((x &lt;&lt; <span style="color: #800080;">2</span> * N) | y) &amp;<span style="color: #000000;"> INT64_MAX;    
+</span><span style="color: #008080;">81</span> }</code></pre>
+
+<p>算法层面网上资料很够(redis rand48 原理) . 我这里只聊聊工程实现方面, 可以看出来多线程并发发起 r_rand()</p>
+<p>请求是不可控的(非线程安全, 你也不知道内部运行状态是啥). 但如果存在特殊业务需要可窥探随机序列时候,</p>
+<p>rand_init&nbsp; 就可以运用上了, 来构建多线程情况下可控的随机函数对象.&nbsp;&nbsp;</p>
+<p>　　&nbsp;对于 r_init 多数使用 time(NULL) 时间量初始化种子,&nbsp;有没有人觉得不太可靠, 毕竟服务器时间也可以改. 有</p>
+<p>没有想过让其更加混乱一点. 这里有个小想法, 提出来可供大家一块参略讨论讨论.</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"><br /> 1</span> <span style="color: #008000;">//</span>
+<span style="color: #008080;"> 2</span> <span style="color: #008000;">//</span><span style="color: #008000;"> EXTERN_RUN - 函数包装宏, 声明并立即使用
+</span><span style="color: #008080;"> 3</span> <span style="color: #008000;">//</span><span style="color: #008000;"> frun     : 需要执行的函数名称
+</span><span style="color: #008080;"> 4</span> <span style="color: #008000;">//</span><span style="color: #008000;"> ...      : 可变参数, 保留
+</span><span style="color: #008080;"> 5</span> <span style="color: #008000;">//
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">#define</span> EXTERN_RUN(frun, ...)                          \
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">do</span><span style="color: #000000;"> {                                                   \
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">extern</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> frun();                                \
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    frun (__VA_ARGS__);                                \
+</span><span style="color: #008080;">10</span> } <span style="color: #0000ff;">while</span>(<span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 此后 :) 随机与你无关 ~</span>
+<span style="color: #008080;">13</span> EXTERN_RUN(rand_restrict);<br /><br /></code></pre>
+
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">17</span> <span style="color: #008000;">//</span><span style="color: #008000;"> rand_nationalism - 民族主义, 国家是人民所共有, 各族平等, 团结一致</span>
+<span style="color: #008080;">18</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> rand_nationalism(<span style="color: #0000ff;">void</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">struct</span><span style="color: #000000;"> timespec s; 
+</span><span style="color: #008080;">20</span>     (<span style="color: #0000ff;">void</span>)timespec_get(&amp;<span style="color: #000000;">s, TIME_UTC);
+</span><span style="color: #008080;">21</span>     EXTERN_RUN(r_init, s.tv_nsec +<span style="color: #000000;"> s.tv_sec);
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">for</span> (int32_t i = BUFSIZ; i &gt; <span style="color: #800080;">0</span> ; --<span style="color: #000000;">i) {
+</span><span style="color: #008080;">23</span>         (<span style="color: #0000ff;">void</span>)timespec_get(&amp;<span style="color: #000000;">s, TIME_UTC);
+</span><span style="color: #008080;">24</span>         EXTERN_RUN(r_init, s.tv_nsec +<span style="color: #000000;"> i);
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">27</span> 
+<span style="color: #008080;">28</span> <span style="color: #008000;">//</span><span style="color: #008000;"> rand_democracy - 民权主义, 政治是人民所共管, 选举权、罢免权、创制权和复决权</span>
+<span style="color: #008080;">29</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> rand_democracy(<span style="color: #0000ff;">void</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">    int32_t x, y, z, w;
+</span><span style="color: #008080;">31</span>     <span style="color: #0000ff;">do</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">32</span>         x =<span style="color: #000000;"> r_rand();
+</span><span style="color: #008080;">33</span>         y =<span style="color: #000000;"> r_rand();
+</span><span style="color: #008080;">34</span>         z =<span style="color: #000000;"> r_rand();
+</span><span style="color: #008080;">35</span>         w =<span style="color: #000000;"> r_rand();
+</span><span style="color: #008080;">36</span>     } <span style="color: #0000ff;">while</span> (!(x &gt; y &amp;&amp; y &gt; z &amp;&amp; z &gt; w &amp;&amp; w &gt;<span style="color: #000000;"> INT16_MAX));
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">38</span> 
+<span style="color: #008080;">39</span> <span style="color: #008000;">//</span><span style="color: #008000;"> rand_livelihood - 民生主义, 利益是人民所共享, 让人像个人</span>
+<span style="color: #008080;">40</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> rand_livelihood(<span style="color: #0000ff;">void</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">41</span>     <span style="color: #0000ff;">for</span> (int32_t i = r_rand(); i &gt;= <span style="color: #800080;">0</span>; --<span style="color: #000000;">i)
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">        r_rand();
+</span><span style="color: #008080;">43</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">44</span> 
+<span style="color: #008080;">45</span> <span style="color: #008000;">//</span><span style="color: #008000;"> rand_restrict - 三权制衡在随机函数初中运用</span>
+<span style="color: #008080;">46</span> <span style="color: #0000ff;">void</span> rand_restrict(<span style="color: #0000ff;">void</span><span style="color: #000000;">) {
+</span><span style="color: #008080;">47</span> <span style="color: #000000;">    thread_async(rand_nationalism);
+</span><span style="color: #008080;">48</span> <span style="color: #000000;">    thread_async(rand_democracy);
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">    thread_async(rand_livelihood);
+</span><span style="color: #008080;">50</span> }</code></pre>
+
+<p>&nbsp;<a title="structc rand init" href="https://github.com/wangzhione/structc/blob/master/structc/main/main_init.c#L67" target="_blank">传送门</a>&nbsp;核心是引入多线程互相竞争制约, 让随机函数你我不知, 模糊不清, 捉摸不透.&nbsp; 这里只是瞎弄一个思路.</p>
+<p>大家有更好的想法可以在评论区和我一块交流.&nbsp;</p>
+<p>&nbsp;</p>
+<h3><strong>正文 - 猜猜猜</strong></h3>
+<p>　　是不是要开始扯闲篇. 那就用上面随机库写个猜猜猜游戏吧 ~&nbsp;</p>
+<p><strong>main.c</strong></p>
+<div class="cnblogs_code">
+<pre><code>#include <span style="color: #800000;">"</span><span style="color: #800000;">rand.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span>&lt;time.h&gt;<span style="color: #000000;">
+#include </span>&lt;stdio.h&gt;<span style="color: #000000;">
+#include </span>&lt;stdlib.h&gt;<span style="color: #000000;">
+#include </span>&lt;stdbool.h&gt;
+
+<span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> EXTERN_RUN - 函数包装宏, 声明并立即使用
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> frun     : 需要执行的函数名称
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> ...      : 可变参数, 保留
+</span><span style="color: #008000;">//
+</span><span style="color: #0000ff;">#define</span> EXTERN_RUN(frun, ...)                          \
+<span style="color: #0000ff;">do</span><span style="color: #000000;"> {                                                   \
+    </span><span style="color: #0000ff;">extern</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> frun();                                \
+    frun (__VA_ARGS__);                                \
+} </span><span style="color: #0000ff;">while</span>(<span style="color: #800080;">0</span><span style="color: #000000;">)
+
+</span><span style="color: #008000;">//</span> 
+<span style="color: #008000;">//</span><span style="color: #008000;"> GUESS_THRESHOLD_INT - 猜数最多次数
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> GUESS_TEMPER_INT    - 遇到小脾气不再触发提示
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> GUESS_MAX_INT       - 最大值区间
+</span><span style="color: #008000;">//
+</span><span style="color: #0000ff;">#define</span> GUESS_THRESHOLD_INT     (8)
+<span style="color: #0000ff;">#define</span> GUESS_TEMPER_INT        (3)
+<span style="color: #0000ff;">#define</span> GUESS_MAX_INT           (8964)
+
+<span style="color: #008000;">//</span><span style="color: #008000;"> guess 猜数字游戏对象</span>
+<span style="color: #0000ff;">struct</span><span style="color: #000000;"> guess {
+    int32_t max;                          </span><span style="color: #008000;">//</span><span style="color: #008000;"> 数字区间上限</span>
+    int32_t correct;                      <span style="color: #008000;">//</span><span style="color: #008000;"> 正确数值</span>
+    int32_t use;                          <span style="color: #008000;">//</span><span style="color: #008000;"> 已经猜数次数</span>
+    int32_t numbers[GUESS_THRESHOLD_INT]; <span style="color: #008000;">//</span><span style="color: #008000;"> 用户猜数数组</span>
+    int32_t now;                          <span style="color: #008000;">//</span><span style="color: #008000;"> 用户当前输入值</span>
+<span style="color: #000000;">};
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> guess_run 猜数字游戏开始</span>
+<span style="color: #0000ff;">void</span> guess_run(<span style="color: #0000ff;">struct</span> guess *<span style="color: #000000;"> restrict g); 
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> guess_guess 猜数字开启猜猜猜</span>
+<span style="color: #0000ff;">bool</span> guess_guess(<span style="color: #0000ff;">struct</span> guess *<span style="color: #000000;"> restrict g);
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> guess_end 猜数字游戏结束总结</span>
+<span style="color: #0000ff;">void</span> guess_end(<span style="color: #0000ff;">struct</span> guess *<span style="color: #000000;"> restrict g);
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> threshold_input - 获取猜数字的范围</span>
+<span style="color: #0000ff;">static</span> int32_t threshold_input(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> argv[]) {
+    int32_t max </span>=<span style="color: #000000;"> GUESS_MAX_INT;
+    </span><span style="color: #0000ff;">if</span> (argc &gt; <span style="color: #800080;">1</span><span style="color: #000000;">) {
+        </span><span style="color: #0000ff;">int</span> num = atoi(argv[<span style="color: #800080;">1</span><span style="color: #000000;">]);
+        </span><span style="color: #0000ff;">if</span> (num &lt;= <span style="color: #800080;">0</span><span style="color: #000000;">) {
+            printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">亲， 别👇瞎闹 [input = %s] 好不好 ～\n</span><span style="color: #800000;">"</span>, argv[<span style="color: #800080;">1</span><span style="color: #000000;">]);
+            exit(EXIT_FAILURE);
+        }
+        max </span>=<span style="color: #000000;"> num;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> max;
+}
+
+</span><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> 简单的猜猜猜数字游戏
+</span><span style="color: #008000;">//
+</span><span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> argv[]) {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 获取猜数字范围</span>
+    <span style="color: #0000ff;">int</span> max =<span style="color: #000000;"> threshold_input(argc, argv);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 设置随机函数种子</span>
+    <span style="color: #0000ff;">struct</span><span style="color: #000000;"> timespec s; 
+    (</span><span style="color: #0000ff;">void</span>)timespec_get(&amp;<span style="color: #000000;">s, TIME_UTC);
+    EXTERN_RUN(r_init, s.tv_nsec </span>+<span style="color: #000000;"> s.tv_sec);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 设置 guess number 对象</span>
+    <span style="color: #0000ff;">struct</span> guess user =<span style="color: #000000;"> { 
+        .max </span>=<span style="color: #000000;"> max,
+        .correct </span>= r_rand() % user.max + <span style="color: #800080;">1</span><span style="color: #000000;">,
+    };
+
+    guess_run(</span>&amp;<span style="color: #000000;">user);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 游戏过程主逻辑</span>
+    <span style="color: #0000ff;">while</span> (!guess_guess(&amp;<span style="color: #000000;">user))
+        ;
+    guess_end(</span>&amp;<span style="color: #000000;">user);
+
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> guess_run 猜数字游戏开始</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> 
+guess_run(</span><span style="color: #0000ff;">struct</span> guess *<span style="color: #000000;"> restrict g) {
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">------------------------******* 大侠，猜猜猜 *******------------------------\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; 大侠，如此难得舍得， 不如 🤱  猜猜猜\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; 1. 猜数范围 [1, %d]\n</span><span style="color: #800000;">"</span>, g-&gt;<span style="color: #000000;">max);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; 2. 拥有猜数机会 [%d] 次\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, GUESS_THRESHOLD_INT);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; 3. 触发小脾气 🦐  1/%d, 不再多给提示\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, GUESS_TEMPER_INT);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; ready Go\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> guess_check 猜数字游戏检查</span>
+<span style="color: #0000ff;">static</span> <span style="color: #0000ff;">bool</span> guess_check(<span style="color: #0000ff;">struct</span> guess *<span style="color: #000000;"> restrict g) {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 猜中数字， 进入结束环节</span>
+    <span style="color: #0000ff;">if</span> (g-&gt;now == g-&gt;<span style="color: #000000;">correct) {
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; 哇，棒棒棒\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;      
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 免费次数用完</span>
+    <span style="color: #0000ff;">if</span> (g-&gt;use &gt;=<span style="color: #000000;"> GUESS_THRESHOLD_INT) {
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; 坑多 🐾  不够，大侠就此别过 ～\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 进入提示环节</span>
+    int32_t luckly = r_rand() %<span style="color: #000000;"> GUESS_TEMPER_INT;
+    </span><span style="color: #0000ff;">if</span> (luckly == <span style="color: #800080;">0</span><span style="color: #000000;">) {
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; 小脾气，🧠  脑子是个好东西，可惜有些人没有 💵\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 正常提示环节</span>
+    <span style="color: #0000ff;">if</span> (g-&gt;now &gt; g-&gt;<span style="color: #000000;">correct) {
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; [%d] 🤪  大了\n</span><span style="color: #800000;">"</span>, g-&gt;<span style="color: #000000;">now);    
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; [%d] 🤪  小了\n</span><span style="color: #800000;">"</span>, g-&gt;<span style="color: #000000;">now);   
+    }
+    </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> guess_guess 猜数字开启猜猜猜</span>
+<span style="color: #0000ff;">bool</span><span style="color: #000000;"> 
+guess_guess(</span><span style="color: #0000ff;">struct</span> guess *<span style="color: #000000;"> restrict g) {    
+    int32_t num;
+    </span><span style="color: #0000ff;">char</span><span style="color: #000000;"> buf[BUFSIZ];
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;"> (;;) {
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; 亲，输入 luckly 数字吧 🕗 : </span><span style="color: #800000;">"</span><span style="color: #000000;">);
+
+        </span><span style="color: #0000ff;">if</span> (fgets(buf, <span style="color: #0000ff;">sizeof</span><span style="color: #000000;"> buf, stdin)) {
+            </span><span style="color: #0000ff;">if</span> (buf[<span style="color: #800080;">0</span>] == <span style="color: #800000;">'</span><span style="color: #800000;">q</span><span style="color: #800000;">'</span> || buf[<span style="color: #800080;">0</span>] == <span style="color: #800000;">'</span><span style="color: #800000;">Q</span><span style="color: #800000;">'</span><span style="color: #000000;">) {
+                printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-$ 聚是一团火，散是满天 💫 \n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+                exit(EXIT_SUCCESS);
+            }
+
+            </span><span style="color: #0000ff;">if</span> ((num = atoi(buf)) &gt; <span style="color: #800080;">0</span><span style="color: #000000;">) {
+                </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+            }
+
+            printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-&gt; 大侠外面的世界很精彩， 💨  快走吧，别乱叛逆 ⭕ 哦 --&lt;-\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        }
+
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 清除输入的缓冲指针</span>
+<span style="color: #000000;">        rewind(stdin);
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 数据记录</span>
+    g-&gt;now =<span style="color: #000000;"> num;
+    g</span>-&gt;numbers[g-&gt;use++] =<span style="color: #000000;"> num;
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> guess_check(g);
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> guess_end 猜数字游戏结束总结</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> 
+guess_end(</span><span style="color: #0000ff;">struct</span> guess *<span style="color: #000000;"> restrict g) {
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">&lt;- 大侠喝杯茶， 🙏  稍后 ～\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">&lt;- 猜范围 [1, %d]\n</span><span style="color: #800000;">"</span>, g-&gt;<span style="color: #000000;">max);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">&lt;- luckly 是 [%d] 你是 %s\n</span><span style="color: #800000;">"</span>, g-&gt;correct, g-&gt;now == g-&gt;correct ? <span style="color: #800000;">"</span><span style="color: #800000;">&radic; </span><span style="color: #800000;">"</span>:<span style="color: #800000;">"</span><span style="color: #800000;">❌</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">&lt;- 猜测过程 [ %d</span><span style="color: #800000;">"</span>, g-&gt;numbers[<span style="color: #800080;">0</span><span style="color: #000000;">]);
+    </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt; g-&gt;use; ++<span style="color: #000000;">i)
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;"> -&gt; %d </span><span style="color: #800000;">"</span>, g-&gt;<span style="color: #000000;">numbers[i]);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">]\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">if</span> (g-&gt;use &lt;= <span style="color: #800080;">1</span><span style="color: #000000;">) {
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">-$ 无数奇真供世眼, 一轮明月耀天心 ❤\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">&lt;- 风🍃 从没有停止，大侠的故事⛵  仍然在回响 ～\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">------------------------******* 猜数，猜猜猜 *******------------------------\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+}</span></code></pre>
+
+<p>其中编译操作 <strong>Makefile</strong>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">.PHONY : all clean
+
+all : guess.exe
+
+guess.exe : main.o rand.o
+    gcc </span>-g -Wall -O2 -Wno-unused-result -o $@ $^<span style="color: #000000;">
+
+main.o : main.c
+    gcc </span>-g -Wall -O2 -c -o $@ $&lt;<span style="color: #000000;">
+
+rand.o : rand.c
+    gcc </span>-g -Wall -O2 -c -o $@ $&lt;<span style="color: #000000;">
+
+clean:
+    </span>-rm -<span style="color: #000000;">rf guess.exe main.o rand.o
+    </span>-printf <span style="color: #800000;">'</span><span style="color: #800000;">\ec</span><span style="color: #800000;">'</span>
+    </code></pre>
+
+<p>有兴趣朋友可以试试 ~&nbsp; 哈哈哈 大侠请喝茶 ~</p>
+<h3><strong>后记 - 去去去</strong></h3>
+<p><strong>　　</strong>细说都是错, 欢迎交流指正互相博一乐.<strong><br /></strong></p>
+<p>　　<a title="[黄梅戏] 谁料皇榜中状元" href="https://www.kugou.com/song/#hash=C25E49A4B64E60E02895F60155942719&amp;album_id=970764" target="_blank">[黄梅戏] 谁料皇榜中状元</a> -&nbsp;<a href="https://www.kugou.com/song/#hash=C25E49A4B64E60E02895F60155942719&amp;album_id=970764">https://www.kugou.com/song/#hash=C25E49A4B64E60E02895F60155942719&amp;album_id=970764</a></p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

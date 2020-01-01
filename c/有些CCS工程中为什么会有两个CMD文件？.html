@@ -1,0 +1,60 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修有些CCS工程中为什么会有两个CMD文件？' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>有些CCS工程中为什么会有两个CMD文件？</center></div><div class='banquan'>原文出处:本文由博客园博主大风当歌提供。<br/>
+原文连接:https://www.cnblogs.com/arron-zx/p/11002972.html</div><br>
+    <p>　　这里的CCS就是TI公司的Code Composer Studio 集成开发环境，所以这篇随笔也就是关于TI公司DSP开发过程中对于刚入门同学的一个常见问题了。</p>
+<p>　　那作为一个初学者，对于CCS工程中的cmd文件首先应该是有些基础了解的，下面做一个简单的介绍：</p>
+<p>　　.cmd 的专业名称叫链接器配置文件，是存放链接器的配置信息----给出了程序空间和数据空间的设置，及编译后各程序段在程序或数据空间的具体位置。一般情况下该文件主体部分为两个伪指令，　　　　　　MEMORY和SECTIONS。MEMORY用来配置目标存储器，SECTIONS用来指定段的存放位置。例如下面的格式：</p>
+<div>MEMORY<br />{<br />PAGE 0 :&nbsp; /* Program Memory */
+<div>　　.......
+<div>PAGE 1 :
+<div>　　......
+<div>}
+<div>
+<div>SECTIONS<br />{<br />&nbsp;/* Allocate program areas: */<br />&nbsp;.cinit&nbsp;&nbsp;&nbsp;: &gt; FLASHF&nbsp;&nbsp;PAGE = 0, ALIGN(8)<br />&nbsp;.pinit&nbsp;&nbsp;&nbsp;: &gt; FLASHF&nbsp;&nbsp;PAGE = 0, ALIGN(8)<br />&nbsp;.text&nbsp;&nbsp;&nbsp;: &gt; FLASHG &nbsp; PAGE = 0, ALIGN(8)
+<div>......
+<div>}
+<div>限于篇幅，这里就不展开讲cmd文件里面内容的具体含义和语法了，可以参考另一篇博文。。。。。。
+<div>　　这里重点讲一讲，为什么CCS工程里面会有两个cmd文件，它们之间是什么关系？
+<div>　　可能有些同学已经想到了，既然是链接器配置文件，对于一个工程来讲，只要告诉链接器具体的配置内容，那么链接器就可以知道怎么处理编译后的二进制文件，用一个cmd文件完全可以做到。
+<div>　　这样就很好理解，CCS工程里面的两个cmd文件其实是一分为二的关系，也就是说，这些CCS工程里面，把一个cmd文件分成了两个部分，分别解释不同的部分该怎么去配置处理。
+<div>　　那么问题又来了，为什么要把一个cmd文件分成两个呢？　
+<div>
+<p>　　实际上，（推测是基于便于管理的角度）TI把它分开了，一个对寄存器进行存储映射，因为同个系列的芯片寄存器都是一样的，这样一个cmd文件在该系列芯片的工程里都是可以通用的。</p>
+<p>　　另外一个是对Flash, Ram进行存储分配，同个系列不同芯片有不同存储配置，所以他们的CMD也不一样。</p>
+<p>　　例如2837xS系列芯片的不同芯片ram/rom配置如下表：</p>
+<p>　　<img src="./images/有些CCS工程中为什么会有两个CMD文件？0.png" alt="" /></p>
+<p>　　从上面可以看到，根据不同的需要，芯片的ram和rom(flash)有多有少，那么在cmd文件中也要针对性的调整，否则可能编译出来的文件无法正确烧写或者执行。</p>
+<p>　　另外一个，顺便提一句的。在同一个芯片系列中相同的cmd文件，主要存放芯片寄存器地址信息，同学们会看到，在这个cmd文件中MEMORY指令中只有PAGE1的内容，就像下面这样：</p>
+<p><img src="./images/有些CCS工程中为什么会有两个CMD文件？1.png" alt="" /></p>
+<p>　　为什么呢？这是因为，TI公司默认在MEMORY把PAGE0作为程序储存器，PAGE1作为数据储存器进行分配，分别有数据总线和程序总线进行访问。那么，所有芯片寄存器都属于数据空间，所以放在PAGE1，因此这个cmd文件里就只有PAGE1的内容了。</p>
+<p>&nbsp;</p>
+
+
+
+
+
+
+
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

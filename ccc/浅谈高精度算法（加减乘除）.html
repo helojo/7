@@ -1,0 +1,226 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修浅谈高精度算法（加减乘除）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>浅谈高精度算法（加减乘除）</center></div><div class='banquan'>原文出处:本文由博客园博主只影孤狼提供。<br/>
+原文连接:https://www.cnblogs.com/thereal/p/11294746.html</div><br>
+    <p>　　在C/C++中，不时会遇到限定数据范围的情况，我们先来看看常用的int和long long两种数据类型的范围吧。</p>
+<p>　　C++标准规定，int占一个机器字长。在32位系统中int占32位，也就是4个字节，所以在32位系统中，int的范围是[-2^31,2^31-1]，为10^9数量级；而long long的范围则是[-2^63,2^63-1]，为10^18数量级，但当一些ACM/OI题目中测试数据范围超过此范围，甚至超过double（1.7*10^308数量级）时，该怎么办？Java有大数类，而python的整数也是不限制长度的，虽然C++的整数长度受到限制，但我们也有高精度算法，下面，我将介绍几种常见的高精度整算法。</p>
+<p>　　一、高精度加法。</p>
+<p>　　对于10^308以上的大数，确实不能用C++内置的数据类型直接处理，但回想我们曾经做过的小学算术问题，两个整数相加，先从个位算起，过十进位，依照这个思路，我们可以将大数存放在数组中，再利用数组去模拟加法运算的过程，代码如下：</p>
+<div class="cnblogs_code">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;cstring&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">char</span> s1[<span style="color: #800080;">505</span>],s2[<span style="color: #800080;">505</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span> a[<span style="color: #800080;">505</span>],b[<span style="color: #800080;">505</span>],c[<span style="color: #800080;">505</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> m,n,v,t;
+    std::ios::sync_with_stdio(</span><span style="color: #0000ff;">false</span><span style="color: #000000;">);
+    cin</span>&gt;&gt;s1&gt;&gt;<span style="color: #000000;">s2;
+    m</span>=<span style="color: #000000;">strlen(s1);
+    n</span>=<span style="color: #000000;">strlen(s2);
+        memset(a,</span><span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(a));
+        memset(b,</span><span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(b));
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;m;i++<span style="color: #000000;">){
+        a[m</span>-<span style="color: #800080;">1</span>-i]=s1[i]-<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;n;i++<span style="color: #000000;">){
+        b[n</span>-<span style="color: #800080;">1</span>-i]=s2[i]-<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    }
+    m</span>=<span style="color: #000000;">max(m,n);
+    m</span>++<span style="color: #000000;">;
+    memset(c,</span><span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(c));
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;m;i++<span style="color: #000000;">){         
+        v</span>=a[i]+<span style="color: #000000;">b[i];
+        </span><span style="color: #0000ff;">if</span>((c[i]+v)&lt;<span style="color: #800080;">10</span><span style="color: #000000;">)
+            c[i]</span>+=<span style="color: #000000;">v;
+        </span><span style="color: #0000ff;">else</span><span style="color: #000000;">{
+            c[i</span>+<span style="color: #800080;">1</span>]+=(c[i]+v)/<span style="color: #800080;">10</span><span style="color: #000000;">;
+            c[i]</span>=(c[i]+v)%<span style="color: #800080;">10</span><span style="color: #000000;">;        
+        }    
+    }    　　　　<br /><br /></span><span style="color: #008000;">//</span><span style="color: #008000;">下面是一种更简单的做法，结果直接储存在a中                    </span>
+    <span style="color: #008000;">/*</span><span style="color: #008000;">for(int i=0;i&lt;m;i++){
+        a[i]+=b[i];
+        a[i+1]+=a[i]/10;
+        a[i]%=10;    
+    }</span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">if</span>(c[m-<span style="color: #800080;">1</span>]==<span style="color: #800080;">0</span>)    m--<span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=m-<span style="color: #800080;">1</span>;i&gt;=<span style="color: #800080;">0</span>;i--)    cout&lt;&lt;<span style="color: #000000;">c[i];
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>　　二、高精度减法。</p>
+<p>　　和高精度加法的基本思路相同，不过在减法中，需要确定输入数字的相对大小来判断是否输出负号，还需要注意是否要"借位"。上代码：</p>
+<div class="cnblogs_code">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;cstring&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">bool</span> compare(<span style="color: #0000ff;">char</span> s1[],<span style="color: #0000ff;">char</span><span style="color: #000000;"> s2[]){
+    </span><span style="color: #0000ff;">int</span> u=strlen(s1),v=<span style="color: #000000;">strlen(s2);
+    </span><span style="color: #0000ff;">if</span>(u!=<span style="color: #000000;">v)
+        </span><span style="color: #0000ff;">return</span> u&gt;<span style="color: #000000;">v;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;u;i++<span style="color: #000000;">)
+        </span><span style="color: #0000ff;">if</span>(s1[i]!=s2[i])    <span style="color: #0000ff;">return</span> s1[i]&gt;<span style="color: #000000;">s2[i];
+    </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+}                                        　　　　　　　　　　</span><span style="color: #008000;">//</span><span style="color: #008000;">比较两个数相对大小 </span>
+<span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+    std::ios::sync_with_stdio(</span><span style="color: #0000ff;">false</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">int</span> flag=<span style="color: #800080;">1</span><span style="color: #000000;">,i,j;
+    </span><span style="color: #0000ff;">char</span> s1[<span style="color: #800080;">100005</span>],s2[<span style="color: #800080;">100005</span>],s3[<span style="color: #800080;">100005</span>];            　　<span style="color: #008000;">//</span><span style="color: #008000;">这里为节省空间考虑，直接用char数组运算 </span>
+    cin&gt;&gt;s1&gt;&gt;<span style="color: #000000;">s2;
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;">(compare(s1,s2));
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">{
+        flag</span>=-<span style="color: #800080;">1</span><span style="color: #000000;">;
+        strcpy(s3,s1);
+        strcpy(s1,s2);
+        strcpy(s2,s3);
+    }
+    </span><span style="color: #0000ff;">int</span> u=strlen(s1),v=<span style="color: #000000;">strlen(s2);
+    </span><span style="color: #0000ff;">for</span>(i=u-<span style="color: #800080;">1</span>,j=v-<span style="color: #800080;">1</span>;j&gt;=<span style="color: #800080;">0</span>;i--,j--<span style="color: #000000;">){
+        </span><span style="color: #0000ff;">if</span>(s1[i]&lt;<span style="color: #000000;">s2[j]){
+            s1[i</span>-<span style="color: #800080;">1</span>]-=<span style="color: #800080;">1</span><span style="color: #000000;">;
+            s3[i]</span>=s1[i]-s2[j]+<span style="color: #800080;">10</span>+<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+        }
+        </span><span style="color: #0000ff;">else</span>    s3[i]=s1[i]-s2[j]+<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    }                                                　　</span><span style="color: #008000;">//</span><span style="color: #008000;">从最后一位向前减 </span>
+    <span style="color: #0000ff;">for</span>(;i&gt;=<span style="color: #800080;">0</span>;i--<span style="color: #000000;">)    {
+        </span><span style="color: #0000ff;">if</span>(s1[i]&lt;<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">){
+            s1[i</span>-<span style="color: #800080;">1</span>]-=<span style="color: #800080;">1</span><span style="color: #000000;">;
+            s3[i]</span>=s1[i]+<span style="color: #800080;">10</span><span style="color: #000000;">;
+        }
+        </span><span style="color: #0000ff;">else</span>    s3[i]=<span style="color: #000000;">s1[i];
+    }                                                　　</span><span style="color: #008000;">//</span><span style="color: #008000;">s1数位大，所以还有s1减'0' </span>
+    <span style="color: #0000ff;">for</span>(i=<span style="color: #800080;">0</span>;i&lt;u-<span style="color: #800080;">1</span>&amp;&amp;s3[i]==<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>;i++);                    　<span style="color: #008000;">//</span><span style="color: #008000;">只到u-1的原因时 </span>
+    <span style="color: #0000ff;">if</span>(flag==-<span style="color: #800080;">1</span>)    cout&lt;&lt;<span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    cout</span>&lt;&lt;s3+<span style="color: #000000;">i;
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>　　三、高精度乘法。</p>
+<p>　　依旧是模拟算术做竖式乘法的过程，要注意进位，贴代码：</p>
+<div class="cnblogs_code">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;cstring&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">char</span> a[<span style="color: #800080;">2005</span>],b[<span style="color: #800080;">2005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span> c[<span style="color: #800080;">2005</span>],d[<span style="color: #800080;">2005</span>],e[<span style="color: #800080;">4005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> u,v,w;
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> i,j;
+    cin</span>&gt;&gt;a&gt;&gt;<span style="color: #000000;">b;
+    u</span>=<span style="color: #000000;">strlen(a);
+    v</span>=<span style="color: #000000;">strlen(b);
+    memset(c,</span><span style="color: #800080;">0</span>,<span style="color: #800080;">4005</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;u;i++<span style="color: #000000;">)
+        c[u</span>-<span style="color: #800080;">1</span>-i]=a[i]-<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;v;i++<span style="color: #000000;">)
+        d[v</span>-<span style="color: #800080;">1</span>-i]=b[i]-<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(i=<span style="color: #800080;">0</span>;i&lt;u;i++<span style="color: #000000;">){
+        </span><span style="color: #0000ff;">for</span>(j=<span style="color: #800080;">0</span>;j&lt;v;j++<span style="color: #000000;">){
+            w</span>=c[i]*<span style="color: #000000;">d[j];
+            </span><span style="color: #0000ff;">if</span>(e[i+j]+w&lt;<span style="color: #800080;">10</span>)    e[i+j]+=<span style="color: #000000;">w;
+            </span><span style="color: #0000ff;">else</span><span style="color: #000000;">{
+                e[i</span>+j+<span style="color: #800080;">1</span>]+=(e[i+j]+w)/<span style="color: #800080;">10</span><span style="color: #000000;">;
+                e[i</span>+j]=(e[i+j]+w)%<span style="color: #800080;">10</span><span style="color: #000000;">;
+            }
+        }
+    }
+    </span><span style="color: #0000ff;">for</span>(i=u+v-<span style="color: #800080;">1</span>;i&gt;<span style="color: #800080;">0</span>&amp;&amp;e[i]==<span style="color: #800080;">0</span>;i--);        　　　　<span style="color: #008000;">//</span><span style="color: #008000;">此处是为了不漏掉输出结果为0而将条件写为i&gt;0 </span>
+    <span style="color: #0000ff;">for</span>(;i&gt;=<span style="color: #800080;">0</span>;i--)    cout&lt;&lt;<span style="color: #000000;">e[i];
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>　　四、高精度除法。</p>
+<p>　　高精度除法分两种，都是仿照竖式除法实现，一种是高精度除以低精度，较为容易实现，主要是利用一个数，在线处理：</p>
+<div class="cnblogs_code">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;cstring&gt;<span style="color: #000000;">
+#include</span>&lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">char</span> s1[<span style="color: #800080;">5005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span> a[<span style="color: #800080;">5005</span>],b,c[<span style="color: #800080;">5005</span>],x=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+    cin</span>&gt;&gt;s1&gt;&gt;<span style="color: #000000;">b;
+    a[</span><span style="color: #800080;">0</span>]=<span style="color: #000000;">strlen(s1);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=a[<span style="color: #800080;">0</span>];i++)    a[i]=s1[i-<span style="color: #800080;">1</span>]-<span style="color: #800080;">48</span><span style="color: #000000;">;
+    memset(c,</span><span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(c));
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=a[<span style="color: #800080;">0</span>];i++<span style="color: #000000;">){
+        c[i]</span>=(x*<span style="color: #800080;">10</span>+a[i])/<span style="color: #000000;">b;
+        x</span>=(x*<span style="color: #800080;">10</span>+a[i])%<span style="color: #000000;">b;　　
+    }        　　　　　　　　　　　　　　　　　　　　　　</span><span style="color: #008000;">//</span><span style="color: #008000;">核心部分</span>
+    x=<span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span>(c[x]==<span style="color: #800080;">0</span>&amp;&amp;x&lt;a[<span style="color: #800080;">0</span>])    x++<span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(;x&lt;=a[<span style="color: #800080;">0</span>];x++)    cout&lt;&lt;<span style="color: #000000;">c[x]; 
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>　　另一种，是运用逐次相减的方法确定出商和余数，代码如下：</p>
+<div class="cnblogs_code">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;cstring&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">int</span> a[<span style="color: #800080;">5005</span>],b[<span style="color: #800080;">5005</span>],c[<span style="color: #800080;">5005</span>],d[<span style="color: #800080;">5005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">bool</span> compare(<span style="color: #0000ff;">int</span> a[],<span style="color: #0000ff;">int</span><span style="color: #000000;"> b[]){
+    </span><span style="color: #0000ff;">if</span>(a[<span style="color: #800080;">0</span>]!=b[<span style="color: #800080;">0</span>])    <span style="color: #0000ff;">return</span> a[<span style="color: #800080;">0</span>]&gt;b[<span style="color: #800080;">0</span><span style="color: #000000;">];
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=a[<span style="color: #800080;">0</span>];i&gt;<span style="color: #800080;">0</span>;i--<span style="color: #000000;">){
+        </span><span style="color: #0000ff;">if</span>(a[i]!=b[i])    <span style="color: #0000ff;">return</span> a[i]&gt;<span style="color: #000000;">b[i];
+    }
+    </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+    std::ios::sync_with_stdio(</span><span style="color: #0000ff;">false</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">string</span><span style="color: #000000;"> s1,s2;
+    cin</span>&gt;&gt;s1&gt;&gt;<span style="color: #000000;">s2;
+    memset(a,</span><span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(a));
+    memset(b,</span><span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(b));
+    a[</span><span style="color: #800080;">0</span>]=<span style="color: #000000;">s1.length();
+    b[</span><span style="color: #800080;">0</span>]=<span style="color: #000000;">s2.length();
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=a[<span style="color: #800080;">0</span>];i++)    a[i]=s1[a[<span style="color: #800080;">0</span>]-i]-<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=b[<span style="color: #800080;">0</span>];i++)    b[i]=s2[b[<span style="color: #800080;">0</span>]-i]-<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+    c[</span><span style="color: #800080;">0</span>]=a[<span style="color: #800080;">0</span>]-b[<span style="color: #800080;">0</span>]+<span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=c[<span style="color: #800080;">0</span>];i&gt;<span style="color: #800080;">0</span>;i--){            <span style="color: #008000;">//</span><span style="color: #008000;">c[0]代表最初a,b的数位差 </span>
+        memset(d,<span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(d));
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>;j&lt;=b[<span style="color: #800080;">0</span>];j++<span style="color: #000000;">)
+            d[j</span>+i-<span style="color: #800080;">1</span>]=<span style="color: #000000;">b[j];
+        d[</span><span style="color: #800080;">0</span>]=b[<span style="color: #800080;">0</span>]+i-<span style="color: #800080;">1</span>;                    　　　　　　　<span style="color: #008000;">//</span><span style="color: #008000;">先让b中存下的数与a在一个数量级 </span>
+        <span style="color: #0000ff;">while</span>(compare(a,d)){            　　　　　　　　<span style="color: #008000;">//</span><span style="color: #008000;">比较，如果a比较大，用a直接减去d，如果a比较小，下一次大循环中，d的位数会减一 </span>
+            c[i]++<span style="color: #000000;">;
+            </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=a[<span style="color: #800080;">0</span>];i++<span style="color: #000000;">){
+                a[i]</span>-=<span style="color: #000000;">d[i];
+                </span><span style="color: #0000ff;">if</span>(a[i]&lt;<span style="color: #800080;">0</span><span style="color: #000000;">){
+                    a[i</span>+<span style="color: #800080;">1</span>]--<span style="color: #000000;">;
+                    a[i]</span>+=<span style="color: #800080;">10</span><span style="color: #000000;">;
+                }
+            }
+            </span><span style="color: #0000ff;">while</span>(a[<span style="color: #800080;">0</span>]&gt;<span style="color: #800080;">0</span>&amp;&amp;a[a[<span style="color: #800080;">0</span>]]==<span style="color: #800080;">0</span>)    a[<span style="color: #800080;">0</span>]--<span style="color: #000000;">;
+        }
+    }
+    </span><span style="color: #0000ff;">while</span>(c[<span style="color: #800080;">0</span>]&gt;<span style="color: #800080;">1</span>&amp;&amp;c[c[<span style="color: #800080;">0</span>]]==<span style="color: #800080;">0</span>)    c[<span style="color: #800080;">0</span>]--<span style="color: #000000;">;
+    cout</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">商：</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=c[<span style="color: #800080;">0</span>];i&gt;<span style="color: #800080;">0</span>;i--)    cout&lt;&lt;<span style="color: #000000;">c[i];
+    cout</span>&lt;&lt;endl&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">余数：</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=a[<span style="color: #800080;">0</span>];i&gt;<span style="color: #800080;">0</span>;i--)    cout&lt;&lt;a[i];        　　　<span style="color: #008000;">//</span><span style="color: #008000;">a中最后剩下的就是余数  </span>
+    <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>　　好的，高精度基础算法介绍完毕，大家不妨自行动手一试。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

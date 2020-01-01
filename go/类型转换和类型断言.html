@@ -1,0 +1,356 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修类型转换和类型断言' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>类型转换和类型断言</center></div><div class='banquan'>原文出处:本文由博客园博主追风的浪子提供。<br/>
+原文连接:https://www.cnblogs.com/echojson/p/10746417.html</div><br>
+    <h1>概述</h1>
+<hr />
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>由于Go语言不允许隐式类型转换，不同的类型之间的转换必须做显示的类型转换。而类型转换和类型断言的本质，就是把一个类型转换到另一个类型。</p>
+<p>不过Go语言必须做显示的类型转换的要求也有例外的情况:</p>
+<ul>
+<li>&nbsp;当普通 <span style="color: #ff0000;"><strong>T</strong></span> 类型变量向<span style="color: #ff0000;"><strong> <strong><code>I</code></strong></strong>&nbsp;</span>接口类型转换时，是隐式转换的(编译时转换)；(T-&gt;I)</li>
+<li>当&nbsp;<span style="color: #ff0000;"><strong><code>IX</code></strong></span><code> </code><code>接口变量向<span style="color: #ff0000;"><strong><strong><code>I</code></strong></strong></span><code>接口类型转,是隐式转换的(编译完成时转换的)；(I-&gt;I)</code></code></li>
+</ul>
+<p>&nbsp;</p>
+<h2>类型之间转换的例子</h2>
+<p>下面是Go语言规范给出的部分例子:</p>
+<div class="cnblogs_Highlighter">
+<pre><code>*Point(p)        // same as *(Point(p))
+(*Point)(p)      // p is converted to *Point
+&lt;-chan int(c)    // same as &lt;-(chan int(c))
+(&lt;-chan int)(c)  // c is converted to &lt;-chan int
+func()(x)        // function signature func() x
+(func())(x)      // x is converted to func()
+(func() int)(x)  // x is converted to func() int
+func() int(x)    // x is converted to func() int (unambiguous)
+</pre>
+</div>
+<p>　　</p>
+<p>简单的说,&nbsp;<code>x</code>需要转换为<code>T</code>类型的语法是<code>T(x)</code>.&nbsp;<br />如果对于某些地方的优先级拿不准可以自己加<code>()</code>约束.</p>
+<p>最后一个转换就是一个容易混淆的语句, 因此需要用括号<code>(func() int)(x)</code>提高优先级.</p>
+<p>还有一个容易混淆的地方是 只读和只写的通道类型&nbsp;<code>&lt;-chan int</code>/<code>chan&lt;- int</code>&nbsp;.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<h1>变量类型转换方式</h1>
+<hr />
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>Go语言的转换分两种：类型转换 和 类型断言</p>
+<p>&nbsp;</p>
+<h3><strong>1. 类型转换</strong></h3>
+<p>&nbsp;</p>
+<p><strong>go里面的类型转换写法：</strong></p>
+<div class="cnblogs_Highlighter">
+<pre><code>T(x)
+</pre>
+</div>
+<p>　　</p>
+<p>&nbsp;</p>
+<p>（1）、<strong>语法</strong>：&lt;结果类型&gt; := &lt;目标类型&gt; ( &lt;表达式&gt; )</p>
+<p>（2）、<strong>类型转换是用来在不同但相互兼容的类型之间的相互转换的方式</strong>，所以，当类型不兼容的时候，是无法转换的。如下：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>var var1 int = 7
+fmt.Printf("%T-&gt;%v\n", var1, var1)  //int-&gt;7
+var2 := float32(var1) 
+fmt.Printf("%T-&gt;%v\n", var2, var2) //float32-&gt;7
+</pre>
+</div>
+<p>　　</p>
+<p>值得注意的是，如果某些类型可能引起误会，应该用括号括起来转换，如下：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>//创建一个int变量，并获得它的指针
+var1 := new(int32)
+fmt.Printf("%T-&gt;%v\n", var1, var1)
+var2 := *int32(var1)
+fmt.Printf("%T-&gt;%v\n", var2, var2)
+</pre>
+</div>
+<p>　　</p>
+<p>*int32(var1)相当于*(int32(var1))，一个指针，当然不能直接转换成一个int32类型，所以该表达式直接编译错误。将该表达式改为 (*int32)(var1)就可以正常输出了。</p>
+<p>&nbsp;</p>
+<h3><strong>2. 类型断言(</strong>Type Assertion<strong>)</strong></h3>
+<p><span style="color: #ff0000;"><strong>类型断言用于提取接口的基础值&nbsp;</strong></span></p>
+<p><strong>go里面的类型断言写法：</strong></p>
+<div class="cnblogs_Highlighter">
+<pre><code>x.(T)
+</pre>
+</div>
+<p>其中x为interface{}类型，T是要断言的类型。</p>
+<p>&nbsp;</p>
+<p>（1）<strong>语法</strong>：</p>
+<p>　　&lt;目标类型的值&gt;，&lt;布尔参数&gt; := &lt;表达式&gt;<strong>.</strong>( 目标类型 ) // 安全类型断言</p>
+<p>　　&lt;目标类型的值&gt; := &lt;表达式&gt;<strong>.</strong>( 目标类型 )　　//非安全类型断言</p>
+<p>（2）类型断言的本质，跟类型转换类似，都是类型之间进行转换，<strong>不同之处在于，类型断言实在接口之间进行</strong>，相当于Java中，对于一个对象，把一种接口的引用转换成另一种。</p>
+<p>&nbsp;</p>
+<p><span style="color: #ff0000;"><strong>x.(T)</strong></span>&nbsp;检查x的动态类型是否是T，其中x必须是接口值。</p>
+<p>&nbsp;</p>
+<p>我们先来看一个最简单的错误的类型断言：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>func test() {
+    var i interface{} = "kk"
+    j := i.(int)
+    fmt.Printf("%T-&gt;%d\n", j, j)
+}
+</pre>
+</div>
+<p>　　</p>
+<p>var i interface{} = "KK" 某种程度上相当于java中的，Object i = "KK";</p>
+<p>现在把这个 i 转换成 int 类型，系统内部检测到这种不匹配，就会调用内置的panic()函数，抛出一个异常。</p>
+<p>改一下，把 i 的定义改为：var i interface{} = 99，就没问题了。输出为：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>int-&gt;99
+</pre>
+</div>
+<p>　　</p>
+<p>以上是不安全的类型断言。我们来看一下安全的类型断言：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>func test() {
+    var i interface{} = "TT"
+    j, b := i.(int)
+    if b {
+        fmt.Printf("%T-&gt;%d\n", j, j)
+    } else {
+        fmt.Println("类型不匹配")
+    }
+}
+</pre>
+</div>
+<p>　　</p>
+<p>输出&ldquo;类型不匹配&rdquo;。</p>
+<p>&nbsp;</p>
+<p>在理解有关接口的相关转换前，我们先要理解Go语言中的接口类型：interface{}</p>
+<p>定义格式：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>type IA interface {} //声明了一个接口(没有函数集合时，是空接口类型)</pre>
+</div>
+<p>申明一个空接口类型时，我们在定义&ldquo;<strong><span style="color: #ff0000;">空接口类型</span></strong>&rdquo;的变量时，可以赋值任意类型的值，如</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import (
+	"fmt"
+)
+
+type IA interface {} //空接口类型
+
+
+
+func main()  {
+	var a IA = 1  //int
+	var b IA = 1.1  //float
+	var c IA = false  //bool
+
+	fmt.Println(a,b,c)
+}
+</pre>
+</div>
+<p>　　</p>
+<p>接口类型(interface{})作为函数形式参数时，则该函数可以接受任意类型的变量，但对于函数内部，<strong>该变量仍然为interface{}类型（空接口类型）</strong></p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import (
+	"fmt"
+)
+
+func test(a interface{})  {
+	fmt.Printf("%T-&gt;%v\n", a, a)
+	
+}
+
+
+func main()  {
+	test(1)
+	test(1.1)
+	test(true)
+}
+</pre>
+</div>
+<p>输出结果:</p>
+<div class="cnblogs_Highlighter">
+<pre><code>int-&gt;1
+float64-&gt;1.1
+bool-&gt;true
+</pre>
+</div>
+<p>　　</p>
+<p>什么叫在在 函数内部，该变量任然为interface{}类型，如：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+
+import "fmt"
+
+//用于输出数组元素
+func echoArray(a interface{}){
+	for _,v:=range a {
+		fmt.Print(v," ")
+	}
+	fmt.Println()
+	return
+}
+func main(){
+	a:=[]int{2,1,3,5,4}
+	echoArray(a)
+}
+</pre>
+</div>
+<p>　　</p>
+<p>以上代码将会报错，因为对于echoArray()而言，a是interface{}类型，而不是[]int类型</p>
+<p>所以前面代码中，将echoArray()做如下修改即可：</p>
+<div class="cnblogs_Highlighter">
+<pre><code>func echoArray(a interface{}){
+    b,_:=a.([]int)//通过断言实现类型转换
+　　for _,v:=range b{
+　　　　fmt.Print(v," ")
+　　}
+　　fmt.Println()
+　　return
+}
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="color: #ff0000;">注意</span>：在使用断言时最好用 (安全类型断言)</p>
+<div class="cnblogs_Highlighter">
+<pre><code>b,ok:=a.([]int)
+if ok{
+    ...
+}<br /><br />或  </pre>
+<pre><code>b,ok:=a.([]int) if ok{ //断言成功处理&nbsp;&nbsp;<br /> 　　　
+    ...
+}</pre>
+<p>&nbsp;</p>
+</div>
+<p>　　</p>
+<p>的形式，这样能根据ok的值判断断言是否成功。</p>
+<p>因为<strong><span style="color: #ff0000;">断言失败在编译阶段不会报错</span></strong>，所以很可能出现断言失败导致<strong><span style="color: #ff0000;">运行错误</span></strong>，而你却迟迟找不到原因（亲身经历）。　</p>
+<p>&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code><span style="font-size: 16px; color: #ff0000;"><strong>总结：&ldquo;空接口类型&rdquo;是动态类型的，即空接口类型的变量是任意类型的变量
+</strong></span></pre>
+</div>
+<p>　　</p>
+<p>通过上面的例子，我们对<strong><span style="color: #ff0000;">&ldquo;空接口类型&rdquo;</span></strong>有了了解，下面我们就对&ldquo;接口之间的转换&rdquo; 和 &ldquo;接口和普通类型直接的转换&rdquo;作讲解，来理解和接口之间的转换到底是<strong>&ldquo;类型转换&rdquo;</strong>还是<strong>&ldquo;类型断言&rdquo;</strong></p>
+<p>&nbsp;</p>
+<h1>接口之间转换</h1>
+<hr />
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;Go语言中接口的类型转换有很多奇怪的特性: 有时候是隐式转换, 有时候需要类型断言。</p>
+<p>&nbsp;</p>
+<p>如：2个接口类型:</p>
+<div class="cnblogs_Highlighter">
+<pre><code>type IA interface {}  //空接口类型
+type IB interface {Foo()}  //非空接口类型
+</pre>
+</div>
+<p>&nbsp;</p>
+<h3>1. 　<strong>空接口类型转非空接口类型</strong></h3>
+<p><code>IA</code>要向<code>IB</code>转换如何操作呢?&nbsp;</p>
+<p>这个操作无法在编译期确定, 因此必然不是类型转换.。由于2者都是接口类型, 因此肯定是类型断言:</p>
+<p>为什么说&ldquo;在编译期确定&rdquo;呢？通过上面的知识，我们知道 IA 是空接口类型，既然是空接口类型，说明IA对应的变量可以是任意类型，所以类型就无法确定(动态类型)，所以在编译的时候，都无法确定</p>
+<p>&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>var a A
+var b = a.(B)</pre>
+</div>
+<p>当然因为上面的代码中的<code>a</code>是<code>nil，</code>会导致<code>a.(B)</code>错误。但是请注意:&nbsp;<strong>这只是运行错误, 并不是编译错误!</strong></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;"><strong>结论：空接口类型转非空接口类型时，是"<strong>类型断言</strong>"转换</strong></span></p>
+<p>&nbsp;</p>
+<h3><span style="font-size: 15px;"><strong>2. 非空接口类型转空接口类型</strong></span></h3>
+<p><span style="font-size: 15px;"><code>IB</code>要向<code>IA</code>转换如何操作呢? 因为IB是确定的类型，所以这个操作可以在编译期确定(类型), 因此必然是类型转换.</span></p>
+<div class="cnblogs_Highlighter">
+<pre><code>var b B
+var a = A(b)
+</pre>
+</div>
+<p>前面我们说过, Go语言的接口是隐式转换的, 因此还可以省略强制转换的语句:</p>
+<div class="cnblogs_Highlighter">
+<pre><code>var b B
+var a = b
+</pre>
+</div>
+<p>　　</p>
+<p>&nbsp;</p>
+<h1>接口和类型之间的转换(T(x))</h1>
+<hr />
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>虽然前面看到接口之间偶尔也会有类似普通类型之间的强制强制转换语法,&nbsp;<br />但从本意上来说接口是一个特殊的类型(和普通的类型区别).</p>
+<p>我们先定义2个和前面的<code>IA</code>/<code>IB</code>匹配的普通类型(底层类型一样):</p>
+<p>&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>type IA interface {}  //空接口类型
+type IB interface {Foo()}  //非空接口类型</pre>
+<pre><code><br />type TA int
+type TB int
+func (TB) Foo(<br />) {}
+</pre>
+</div>
+<p>　　</p>
+<p>如果是<code>TA</code>和<code>TB</code>之间的转换, 可以参考前面的<strong>类型之间转换的例子</strong>.&nbsp;<br />我们这里重点关注&nbsp;<code>TA</code>/<code>TB</code>&nbsp;和&nbsp;<code>IA</code>/<code>IB</code>&nbsp;之间的转换.</p>
+<p>普通类型向接口类型转换是隐式的(可以编译期确定, 接口的隐式转换特权):</p>
+<p>&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>var ta TA
+var ia = ta
+var tb TB
+var ib = tb
+</pre>
+</div>
+<p>　　</p>
+<p><span style="color: #ff0000;">&nbsp;接口类型向普通类型是类型断言(运行期确定):</span></p>
+<p>&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>var ia IA
+var ta = ia.(TA)
+var ib IB
+var tb = ib.(TB)
+</pre>
+</div>
+<p>　　</p>
+<p>类型断言在编译期是没有任何保障的, 错误的代码也可以编译通过:</p>
+<div class="cnblogs_Highlighter">
+<pre><code>var ta = ib.(TA)
+var tb = ia.(TB)
+</pre>
+</div>
+<p>　　</p>
+<h1>总结：</h1>
+<hr />
+<p><code>x.(T)</code>&nbsp;检查x的动态类型是否是T，其中x必须是接口值。</p>
+<p>&nbsp;</p>
+<ol>
+<li>如果T是具体类型，类型断言检查x的动态类型是否<strong><span style="color: #ff0000;">等于</span></strong>具体类型T。如果检查成功，类型断言返回的结果是x的动态值，其类型是T。换句话说，对接口值x断言其动态类型是具体类型T，若成功则提取出x的具体值。如果检查失败则panic。</li>
+<li>如果T是接口类型，类型断言检查x的动态类型是否<span style="color: #ff0000;"><strong>满足</strong></span>T。如果检查成功，x的动态值不会被提取，返回值是一个类型为T的接口值。换句话说，到接口类型的类型断言，改变了表达式的类型，改变了（通常是扩大了）可以访问的方法，且保护了接口值内部的动态类型和值。</li>
+</ol>
+<p>&nbsp;</p>
+<ul>
+<li>无论T是什么类型，如果x是nil接口值，则类型断言失败。</li>
+<li>类型断言到一个较少限制（较少方法）的接口类型基本是不需要的，因为这个行为和赋值一样(除了nil的情况)</li>
+<li>如果我们想知道类型断言是否失败，而不是失败时触发panic，可以使用返回两个值的版本：<code>y, ok := x.(T)</code></li>
+</ul>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,186 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Qt开源编辑器qsciscintilla的一些用法' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Qt开源编辑器qsciscintilla的一些用法</center></div><div class='banquan'>原文出处:本文由博客园博主破竹提供。<br/>
+原文连接:https://www.cnblogs.com/pozhu15/p/11317648.html</div><br>
+    <p>首先放一张自己做的软件中的编辑器的效果图</p>
+<p><img src="./images/Qt开源编辑器qsciscintilla的一些用法0.png" alt="" /></p>
+<p>中间红色的框就是放在Qt的tabwidget控件中的qsciscintilla编辑器</p>
+<p>先从官网下载qsciscintilla源码，在qtcreater中编译，提取静态库和头文件，将库和Qsci中的头文件添加到自己的项目的pro配置文件中，具体编译方法可参考网上的帖子，这里不再赘述，可以运行之后再看下面的操作</p>
+<p>1，一些常规设置，都是通过对应的函数来设置</p>
+<div class="cnblogs_code">
+<pre>//设置字体<br />QFont font(<span style="color: #800000;">"</span><span style="color: #800000;">Courier</span><span style="color: #800000;">"</span>, <span style="color: #800080;">10</span><span style="color: #000000;">, QFont::Normal);
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">setFont(font);
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">setMarginsFont(font);
+    QFontMetrics fontmetrics </span>=<span style="color: #000000;"> QFontMetrics(font);<br />//设置左侧行号栏宽度等
+    ui</span>-&gt;textEdit-&gt;setMarginWidth(<span style="color: #800080;">0</span>, fontmetrics.width(<span style="color: #800000;">"</span><span style="color: #800000;">00000</span><span style="color: #800000;">"</span><span style="color: #000000;">));
+    ui</span>-&gt;textEdit-&gt;setMarginLineNumbers(<span style="color: #800080;">0</span>, <span style="color: #0000ff;">true</span><span style="color: #000000;">);
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">setBraceMatching(QsciScintilla::SloppyBraceMatch);
+    ui</span>-&gt;textEdit-&gt;setTabWidth(<span style="color: #800080;">4</span><span style="color: #000000;">);<br />//设置括号等自动补全
+    ui</span>-&gt;textEdit-&gt;setAutoIndent(<span style="color: #0000ff;">true</span><span style="color: #000000;">);<br />//初始设置c++解析器
+    ui</span>-&gt;textEdit-&gt;setLexer(<span style="color: #0000ff;">new</span> QsciLexerCPP(<span style="color: #0000ff;">this</span><span style="color: #000000;">));
+ </span><span style="color: #008000;">//设置自动补全
+</span>    ui-&gt;textEdit-&gt;setCaretLineVisible(<span style="color: #0000ff;">true</span><span style="color: #000000;">);<br />//设置光标所在行背景色
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">setCaretLineBackgroundColor(Qt::lightGray);
+
+   </span><span style="color: #008000;">//</span><span style="color: #008000;"> ui-&gt;textEdit-&gt;setCursorPosition(2,2);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">int markerDefine(MarkerSymbol sym, int markerNumber = -1);</span>
+    ui-&gt;textEdit-&gt;SendScintilla(QsciScintilla::SCI_SETCODEPAGE,QsciScintilla::SC_CP_UTF8);<span style="color: #008000;">//</span><span style="color: #008000;">设置编码为UTF-8<br />//得到光标位置<br />int line,col;<br />ui-&gt;textEdit-&gt;getCursorPosition(&amp;line,&amp;col);<br /></span></pre>
+</div>
+<p>2，通过SendScintilla的参数来设置</p>
+<p>最新版编辑器（QScintilla_gpl-2.11.1）好多设置都是通过QsciScintillaBase类中的SendScintilla函数来进行设置的，这个函数有多个重载：</p>
+<div class="cnblogs_code">
+<pre>    <span style="color: #008000;">//</span><span style="color: #008000;">! Send the Scintilla message \a msg with the optional parameters \a
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! wParam and \a lParam.</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, unsigned <span style="color: #0000ff;">long</span> wParam = <span style="color: #800080;">0</span><span style="color: #000000;">,
+            </span><span style="color: #0000ff;">long</span> lParam = <span style="color: #800080;">0</span>) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, unsigned <span style="color: #0000ff;">long</span><span style="color: #000000;"> wParam,
+            </span><span style="color: #0000ff;">void</span> *lParam) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> msg, uintptr_t wParam,
+            </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *lParam) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *lParam) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;">wParam,
+            </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *lParam) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, <span style="color: #0000ff;">long</span> wParam) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, <span style="color: #0000ff;">int</span> wParam) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, <span style="color: #0000ff;">long</span> cpMin, <span style="color: #0000ff;">long</span><span style="color: #000000;"> cpMax,
+            </span><span style="color: #0000ff;">char</span> *lpstrText) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, unsigned <span style="color: #0000ff;">long</span><span style="color: #000000;"> wParam,
+            </span><span style="color: #0000ff;">const</span> QColor &amp;col) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, <span style="color: #0000ff;">const</span> QColor &amp;col) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, unsigned <span style="color: #0000ff;">long</span> wParam, QPainter *<span style="color: #000000;">hdc,
+            </span><span style="color: #0000ff;">const</span> QRect &amp;rc, <span style="color: #0000ff;">long</span> cpMin, <span style="color: #0000ff;">long</span> cpMax) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, unsigned <span style="color: #0000ff;">long</span><span style="color: #000000;"> wParam,
+            </span><span style="color: #0000ff;">const</span> QPixmap &amp;lParam) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">! \overload</span>
+    <span style="color: #0000ff;">long</span> SendScintilla(unsigned <span style="color: #0000ff;">int</span> msg, unsigned <span style="color: #0000ff;">long</span><span style="color: #000000;"> wParam,
+            </span><span style="color: #0000ff;">const</span> QImage &amp;lParam) <span style="color: #0000ff;">const</span>;</pre>
+</div>
+<p>在这个类的前面有大量的枚举值，既是这个函数可以用到的参数，</p>
+<p><img src="./images/Qt开源编辑器qsciscintilla的一些用法1.png" alt="" /></p>
+<p>大多数枚举值都有英文注释，可自己查找对应的参数，</p>
+<p>这里只介绍我自己用到的几个</p>
+<div class="cnblogs_code">
+<pre>//SCI_MARKERGET 参数用来设置标记，默认为圆形标记<br /> <span style="color: #0000ff;">int</span> nMask = ui-&gt;textEdit-&gt;SendScintilla(QsciScintilla::SCI_MARKERGET,linenr-<span style="color: #800080;">1</span><span style="color: #000000;">);
+//SCI_MARKERSETFORE，SCI_MARKERSETBACK设置标记前景和背景标记</span><span style="color: #000000;">
+        ui</span>-&gt;textEdit-&gt;SendScintilla(QsciScintilla::SCI_MARKERSETFORE, <span style="color: #800080;">0</span><span style="color: #000000;">,QColor(Qt::red));
+        ui</span>-&gt;textEdit-&gt;SendScintilla(QsciScintilla::SCI_MARKERSETBACK, <span style="color: #800080;">0</span><span style="color: #000000;">,QColor(Qt::red));
+        ui</span>-&gt;textEdit-&gt;SendScintilla(QsciScintilla::SCI_MARKERADD,linenr-<span style="color: #800080;">1</span><span style="color: #000000;">);
+
+</span></pre>
+</div>
+<p>效果如图</p>
+<p><img src="./images/Qt开源编辑器qsciscintilla的一些用法2.png" alt="" /></p>
+<p>下面设置下划线标记</p>
+<div class="cnblogs_code">
+<pre>ui-&gt;textEdit-&gt;SendScintilla(QsciScintilla::SCI_STYLESETUNDERLINE,linenr,<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+</span><span style="color: #008000;">ui-&gt;textEdit-&gt;SendScintilla(QsciScintilla::SCI_MARKERDEFINE,0,QsciScintilla::SC_MARK_UNDERLINE)</span></pre>
+</div>
+<p>效果如下</p>
+<p><img src="./images/Qt开源编辑器qsciscintilla的一些用法3.png" alt="" /></p>
+<p>删除所有标记</p>
+<div class="cnblogs_code">
+<pre>textEdit-&gt;SendScintilla(QsciScintilla::SCI_MARKERDELETEALL);</pre>
+</div>
+<p>跳转标记</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">//跳转到下一个标记<br />void</span><span style="color: #000000;"> QsciEditor::gotoNext()//函数写完还未测试，大概是这个作用，可自行测试
+{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> line,col;
+    ui</span>-&gt;textEdit-&gt;getCursorPosition(&amp;line,&amp;<span style="color: #000000;">col);
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">SendScintilla(QsciScintilla::SCI_MARKERNEXT,line);
+}<br /></span></pre>
+<pre><code><span style="color: #0000ff;">//跳转到上一个标记</span><span style="color: #000000;"><br />void QsciEditor::gotoPre()<br />{<br />&nbsp;&nbsp;&nbsp; int line,col;<br />&nbsp;&nbsp;&nbsp; ui-&gt;textEdit-&gt;getCursorPosition(&amp;line,&amp;col);<br />&nbsp;&nbsp;&nbsp; ui-&gt;textEdit-&gt;SendScintilla(QsciScintilla::SCI_MARKERPREVIOUS,line);<br />}<br /></span></pre>
+</div>
+<p>跳转光标到行line，列index</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span> QsciEditor::setCursorPosition_p(<span style="color: #0000ff;">int</span> line,<span style="color: #0000ff;">int</span><span style="color: #000000;"> index)
+{
+    ui</span>-&gt;textEdit-&gt;setCursorPosition(line-<span style="color: #800080;">1</span><span style="color: #000000;">,index);
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">setCaretLineBackgroundColor(Qt::lightGray);
+    ui</span>-&gt;textEdit-&gt;SendScintilla(QsciScintilla::SCI_SETFIRSTVISIBLELINE,line<span style="color: #000000;">);
+}</span></pre>
+</div>
+<p>设置词法分析器</p>
+<div class="cnblogs_code">
+<pre>QsciLexer *<span style="color: #000000;">textLexer;</span><span style="color: #008000;">//</span><span style="color: #008000;">创建一个词法分析器<br /><br /></span>//常用以下几种，注意添加对应的头文件
+        textLexer = <span style="color: #0000ff;">new</span><span style="color: #000000;"> QsciLexerCPP;
+  </span><span style="color: #000000;">
+        textLexer </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> QsciLexerPython;
+</span><span style="color: #000000;">
+        textLexer </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> QsciLexerJava;
+</span><span style="color: #000000;">
+        textLexer </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> QsciLexerHTML;
+ </span><span style="color: #000000;">
+        textLexer </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> QsciLexerCSharp;
+</span><span style="color: #000000;">
+        textLexer </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> QsciLexerCSS;</span><span style="color: #000000;">
+        textLexer </span>= <span style="color: #0000ff;">new</span> QsciLexerJavaScript;</pre>
+</div>
+<p>一些编辑操作函数，看函数名就知道是干嘛的了，手动滑稽</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">undo();
+</span><span style="color: #000000;">
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">redo();
+</span><span style="color: #000000;">
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">copy();
+</span><span style="color: #000000;">
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">cut();
+</span><span style="color: #000000;">
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">paste();
+</span><span style="color: #000000;">
+    ui</span>-&gt;textEdit-&gt;findFirst(expr,<span style="color: #0000ff;">true</span>,<span style="color: #0000ff;">false</span>,<span style="color: #0000ff;">true</span>,<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+</span><span style="color: #000000;">
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">findNext();
+</span><span style="color: #000000;">
+    ui</span>-&gt;textEdit-&gt;replace(replaceStr);</pre>
+</div>
+<p>&nbsp;常用的信号</p>
+<div class="cnblogs_code">
+<pre>//编辑器内容被编辑<br />textChanged()<br />//是否可复制，大概是这样copyAvailable(<span style="color: #0000ff;">bool</span>)</pre>
+</div>
+<p>就说这些，剩下的需要去源代码里面找了</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

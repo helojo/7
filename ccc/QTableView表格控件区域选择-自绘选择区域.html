@@ -1,0 +1,410 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修QTableView表格控件区域选择-自绘选择区域' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>QTableView表格控件区域选择-自绘选择区域</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11280122.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一开心一刻">一、开心一刻</a></li>
+        <li><a href="#二概述">二、概述</a></li>
+        <li><a href="#三效果展示">三、效果展示</a></li>
+        <li><a href="#四实现思路">四、实现思路</a><ul>
+        <li><a href="#绘制区域">1、绘制区域</a></li>
+        <li><a href="#绘制边框">2、绘制边框</a></li>
+        <li><a href="#绘制">3、绘制</a></li>
+        </ul></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11280122.html">QTableView表格控件区域选择-自绘选择区域</a></p>
+<h2 id="一开心一刻">一、开心一刻</h2>
+<blockquote>
+<p>陪完客户回到家，朦胧之中，看到我妈正在拖地，我掏出200块塞到我妈手里，说道：妈，给你点零花钱，别让我媳妇知道。</p>
+</blockquote>
+<blockquote>
+<p>我妈接过钱，大吼：你是不是又喝酒了？</p>
+</blockquote>
+<blockquote>
+<p>我：嘘，你怎么知道的？</p>
+</blockquote>
+<blockquote>
+<p>老妈：你看清楚了，我是你媳妇，还有。这200块钱是哪来的，说！我：啊……</p>
+</blockquote>
+<h2 id="二概述">二、概述</h2>
+<p>最近优化了一个小功能，主要是模仿excel相关的操作，觉得还挺不错的，因此在这里进行了整理，分享给有需要的朋友。今天主要是说一下区域选择这项功能，Qt自带的表格控件是具有区域选择功能的，但是他并不美观，不能支持我们自定义边框色和一些细节上的调整。</p>
+<p>今天博主就来讲解下自己是怎么自定义这个区域选择功能的。</p>
+<p>主要使用的方式还是自绘，下面先来看下效果，是不是你想要的。</p>
+<h2 id="三效果展示">三、效果展示</h2>
+<p>如下图所示，是一个自绘选择区域的效果展示，除此之外demo中还有一些其他的效果，但不是本篇文章所要讲述的内容。</p>
+<blockquote>
+<p>本篇文章的重点就是讲述怎么实现区域选择框绘制</p>
+</blockquote>
+<html>
+<center>
+<div>
+    <img src="./images/QTableView表格控件区域选择-自绘选择区域0.png" />
+</div>
+</center>
+</html>
+<h2 id="四实现思路">四、实现思路</h2>
+<p>看过效果图之后，接下来开始分析怎么绘制矩形选择框。下面以问题的形式来进行分析，这样更有利于理解。</p>
+<p>那么先来思考如下几个很问题</p>
+<ol>
+<li>怎么确定绘制区域</li>
+<li>怎么确定绘制的边框</li>
+<li>谁去绘制更好</li>
+</ol>
+<p>以上三个问题搞懂了，那么今天的主要内容也就差不多了。</p>
+<h3 id="绘制区域">1、绘制区域</h3>
+<p>学习Qt的第一步便是看帮助文档，不得不说Qt的帮助文档那是做的相当好，非常齐全。既然如此那还等什么，直接打开<code>Qt 助手</code>看看如下几个类都有哪些信号把。</p>
+<p><strong>QTableView</strong></p>
+<pre><code>//QAbstractItemView
+void activated(const QModelIndex &amp;index)
+void clicked(const QModelIndex &amp;index)
+void doubleClicked(const QModelIndex &amp;index)
+void entered(const QModelIndex &amp;index)
+void iconSizeChanged(const QSize &amp;size)
+void pressed(const QModelIndex &amp;index)
+void viewportEntered()</code></pre>
+<p>QTableView是表格控件基类，我们的表格也是基于这个控件进行开发。再看这个类的包含的信号(其中都是他的父窗口信号)，对于本小结开始提出的3个问题好像没有特别大的作用。那么我们继续往下看，看看他的数据存储类。</p>
+<p><strong>QStandardItemModel</strong></p>
+<pre><code>void itemChanged(QStandardItem *item)
+
+//parent QAbstractItemModel
+
+void columnsAboutToBeInserted(const QModelIndex &amp;parent, int first, int last)
+void columnsAboutToBeMoved(const QModelIndex &amp;sourceParent, int sourceStart, int sourceEnd, const QModelIndex &amp;destinationParent, int destinationColumn)
+void columnsAboutToBeRemoved(const QModelIndex &amp;parent, int first, int last)
+void columnsInserted(const QModelIndex &amp;parent, int first, int last)
+void columnsMoved(const QModelIndex &amp;parent, int start, int end, const QModelIndex &amp;destination, int column)
+void columnsRemoved(const QModelIndex &amp;parent, int first, int last)
+void dataChanged(const QModelIndex &amp;topLeft, const QModelIndex &amp;bottomRight, const QVector&lt;int&gt; &amp;roles = QVector&lt;int&gt; ())
+void headerDataChanged(Qt::Orientation orientation, int first, int last)
+void layoutAboutToBeChanged(const QList&lt;QPersistentModelIndex&gt; &amp;parents = QList&lt;QPersistentModelIndex&gt; (), QAbstractItemModel::LayoutChangeHint hint = QAbstractItemModel::NoLayoutChangeHint)
+void layoutChanged(const QList&lt;QPersistentModelIndex&gt; &amp;parents = QList&lt;QPersistentModelIndex&gt; (), QAbstractItemModel::LayoutChangeHint hint = QAbstractItemModel::NoLayoutChangeHint)
+void modelAboutToBeReset()
+void modelReset()
+void rowsAboutToBeInserted(const QModelIndex &amp;parent, int start, int end)
+void rowsAboutToBeMoved(const QModelIndex &amp;sourceParent, int sourceStart, int sourceEnd, const QModelIndex &amp;destinationParent, int destinationRow)
+void rowsAboutToBeRemoved(const QModelIndex &amp;parent, int first, int last)
+void rowsInserted(const QModelIndex &amp;parent, int first, int last)
+void rowsMoved(const QModelIndex &amp;parent, int start, int end, const QModelIndex &amp;destination, int row)
+void rowsRemoved(const QModelIndex &amp;parent, int first, int last)</code></pre>
+<p>QStandardItemModel便是QTableView的数据模型了，一眼扫过好像都是模型数据发生变化了的一些信号。这个时候发现M和V好像没有我们需要的东西，Qt不会真这么挫吧。答案当然是“否”，仔细翻阅Qt的帮助文档就会发现QAbstractItemView类可以返回一个selectionModel，看其名字好像是我们需要的东西。</p>
+<pre><code>QItemSelectionModel * selectionModel() const</code></pre>
+<p>随继续翻阅帮助文档，我们得到以下信息</p>
+<pre><code>void currentChanged(const QModelIndex &amp;current, const QModelIndex &amp;previous)
+void currentColumnChanged(const QModelIndex &amp;current, const QModelIndex &amp;previous)
+void currentRowChanged(const QModelIndex &amp;current, const QModelIndex &amp;previous)
+void modelChanged(QAbstractItemModel *model)
+void selectionChanged(const QItemSelection &amp;selected, const QItemSelection &amp;deselected)</code></pre>
+<p><strong>哈哈哈，果然找到了我们需要的信号，看信号名称就知道，当前项发生变化时触发，然后我们就可以去统计哪些项被选中。</strong></p>
+<p><strong>到这里，我们的第一个问题就算回答了，我们可以通过selectionModel的selectionChanged信号来统计可能需要绘制border的单元格。</strong></p>
+<pre><code>//连接信号
+connect(m_pVew-&gt;selectionModel(), &amp;QItemSelectionModel::selectionChanged, this, &amp;ExcTableWidget::SelectionChanged);</code></pre>
+<h3 id="绘制边框">2、绘制边框</h3>
+<p>信号连接上后，开始处理信号。</p>
+<p>思路大致是这样的：</p>
+<ol>
+<li>使用gridCell记录所有的单元格</li>
+<li>循环遍历选中的单元格</li>
+<li>判断当前单元格哪个边是需要绘制的</li>
+<li>结果存储于gridPosints结构中</li>
+</ol>
+<blockquote>
+<p>判断逻辑也比较简单，逻辑比较简单，可以直接看代码。这里我举一个例子，比如说是否需要绘制左border，那么就是需要看这个cell左边是否有cell，或者自己已经是第一列。</p>
+</blockquote>
+<blockquote>
+<p>gridPosints是QMap&lt;QModelIndex, QVector<GridPoint>&gt;类型，键存储单元格索引，值存储4个边的状态(是否需要绘制)</p>
+</blockquote>
+<pre><code>void ExcTableWidget::SelectionChanged(const QItemSelection &amp;selected, const QItemSelection &amp;deselected)
+{
+    QModelIndexList indexs = m_pVew-&gt;selectionModel()-&gt;selectedIndexes();
+
+    qDebug() &lt;&lt; indexs;
+
+    int row = GetModel()-&gt;rowCount();
+    int column = GetModel()-&gt;columnCount();
+
+    QVector&lt;QVector&lt;bool&gt;&gt; gridCell(row, QVector&lt;bool&gt;(column));
+
+    for each (const QModelIndex &amp; index in indexs)
+    {
+        gridCell[index.row()][index.column()] = true;
+    }
+
+    QMap&lt;QModelIndex, DrawTypes&gt; datas;
+    QMap&lt;QModelIndex, QVector&lt;GridPoint&gt;&gt; gridPosints;
+    for each (const QModelIndex &amp; index in indexs)
+    {
+        DrawTypes types;
+        bool topLine = true, rightLine = true, bottomLine = true, leftLine = true;
+        if (index.row() == 0)
+        {
+            types |= TOP;
+        }
+        else
+        {
+            int aboveCell = index.row() - 1;
+            if (gridCell[aboveCell][index.column()] == false)
+            {
+                types |= TOP;
+            }
+            else
+            {
+                topLine = false;
+            }
+        }
+
+        if (index.column() == GetModel()-&gt;columnCount() - 1)
+        {
+            types |= RIGHT;
+        }
+        else
+        {
+            int rightCell = index.column() + 1;
+            if (gridCell[index.row()][rightCell] == false)
+            {
+                types |= RIGHT;
+            }
+            else
+            {
+                rightLine = false;
+            }
+        }
+
+        if (index.row() == GetModel()-&gt;rowCount() - 1)
+        {
+            types |= BOTTOM;
+        }
+        else
+        {
+            int beloveCell = index.row() + 1;
+            if (gridCell[beloveCell][index.column()] == false)
+            {
+                types |= BOTTOM;
+            }
+            else
+            {
+                bottomLine = false;
+            }
+        }
+
+        if (index.column() == 0)
+        {
+            types |= LEFT;
+        }
+        else
+        {
+            int leftCell = index.column() - 1;
+            if (gridCell[index.row()][leftCell] == false)
+            {
+                types |= LEFT;
+            }
+            else
+            {
+                leftLine = false;
+            }
+        }
+
+        datas[index] = types;
+
+        gridPosints[index].push_back({ TOP, topLine });
+        gridPosints[index].push_back({ RIGHT, rightLine });
+        gridPosints[index].push_back({ BOTTOM, bottomLine });
+        gridPosints[index].push_back({ LEFT, leftLine });
+    }
+
+    m_pVew-&gt;SetCellDatas(gridPosints);
+    SelectStyle * style = m_pVew-&gt;GetDelegate();
+    style-&gt;SetCellDatas(datas);
+
+    m_pVew-&gt;update();
+}</code></pre>
+<p><strong>到这里，我们的第二个问题就算回答了，我们需要绘制边框的单元格总算是计算出来了。</strong></p>
+<h3 id="绘制">3、绘制</h3>
+<p>数据都有了，绘制还会远吗？</p>
+<p>接下来继续往下看，Qt提供的绘制逻辑机制还是很强大滴，我们可以通过以下方式重绘</p>
+<p><strong>1、重写QStyledItemDelegate</strong></p>
+<p>QStyledItemDelegate是绘图代理，大多数的绘制操作最终都会在这里被执行，看参数就知道每一个cell绘制时都会来这里。</p>
+<pre><code>virtual void paint(QPainter * painter, const QStyleOptionViewItem &amp; option, const QModelIndex &amp; index) const override;</code></pre>
+<p>但是这里有一个问题，那就是这个函数可绘制的区域问题，只能在这个cell里边绘制，如果绘制在border上将会被覆盖，不信看如下堆栈。</p>
+<html>
+<center>
+<div>
+    <img src="./images/QTableView表格控件区域选择-自绘选择区域1.png" />
+</div>
+</center>
+</html>
+<p>绘图代理QStyledItemDelegate的paint函数是被QTableView的paintEvent函数进行回调。</p>
+<p>既然绘图代理中绘制cell项时不能绘制到cell外边去，那么刚好，我们可以在这里进行选择区域的填充</p>
+<pre><code>void SelectStyle::DrawSelected(QPainter * painter, const QRect &amp; rect, const QModelIndex &amp; index) const
+{
+    if (m_indexs.contains(index) == false)
+    {
+        return;
+    }
+
+    painter-&gt;save();
+
+    QPen pen = painter-&gt;pen();
+    pen.setWidth(1);
+    pen.setColor(m_color);
+    painter-&gt;setPen(pen);
+
+    painter-&gt;fillRect(rect, QColor(100, 0, 0, 100));
+
+    painter-&gt;restore();
+}</code></pre>
+<p>填充完选择区域后，接下来便是绘制选择区域的border。</p>
+<p><strong>2、重写paintEvent</strong><br />
+看了函数调用堆栈后，大家心里应该也比较清楚QTableView是怎么绘制的了吧。既然绘制代理不能完成需求，那么我们就只能在paintEvent这座大山中进行绘制。</p>
+<p>这里需要注意一点就是，我们需要先试用QTableView本身的paintEvent把原有的绘制走一遍，保证界面上的信息都是全的，然后在执行我们自己的定制代码。</p>
+<p>如下图所示，父类的paintEvent函数执行完毕后，我们绘制了border边线<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/QTableView表格控件区域选择-自绘选择区域2.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<p>之前在selectionModel的selectionChanged信号中，我们已经获取到了需要绘制border的cell信息，下面绘制时只需要根据缓存数据绘制即可，看这代码很长，但速度杠杠滴。</p>
+<pre><code>void FreezeTableView::paintEvent(QPaintEvent * event)
+{
+    QTableView::paintEvent(event);
+
+    //绘制网格线
+    QPainter painter(viewport());
+    painter.save();
+    QPen pen = painter.pen();
+    pen.setWidth(1);
+    pen.setColor(m_pSelectBorder-&gt;GetLineColor());
+    painter.setPen(pen);
+
+    for (auto iter = m_indexs.begin(); iter != m_indexs.end(); ++iter)
+    {
+        QModelIndex index = iter.key();
+        QVector&lt;GridPoint&gt; cellTyeps = iter.value();
+        QRect rect = visualRect(index);
+        QRect tmpRect = rect;
+        tmpRect.adjust(-1, -1, 1, 1);
+        if (index.column() == 0)
+        {
+            tmpRect.adjust(1, 0, 0, 0);
+        }
+        if (index.row() == 0)
+        { 
+            tmpRect.adjust(0, 1, 0, 0);
+        }
+
+        for (int i = 0; i &lt; cellTyeps.size(); ++i)
+        {
+            const GridPoint &amp; point = cellTyeps.at(i);
+
+            if (point.type == TOP &amp;&amp; point.line)
+            {
+                painter.drawLine(tmpRect.topLeft(), tmpRect.topRight());
+            }
+            if (point.type == RIGHT &amp;&amp; point.line)
+            {
+                painter.drawLine(tmpRect.topRight(), tmpRect.bottomRight());
+            }
+            if (point.type == BOTTOM &amp;&amp; point.line)
+            {
+                painter.drawLine(tmpRect.bottomLeft(), tmpRect.bottomRight());
+            }
+            if (point.type == LEFT &amp;&amp; point.line)
+            {
+                painter.drawLine(tmpRect.topLeft(), tmpRect.bottomLeft());
+            }
+        }
+    }
+
+    for (auto iter = m_indexsBorder.begin(); iter != m_indexsBorder.end(); ++iter)
+    {
+        QModelIndexList indexs = iter.key();
+        for each (const QModelIndex &amp; index in indexs)
+        {
+            QRect rect = visualRect(index);
+            rect.adjust(-1, -1, 0, 0);
+            if (index.column() == 0)
+            {
+                rect.adjust(1, 0, 0, 0);
+            }
+            if (index.row() == 0)
+            {
+                rect.adjust(0, 1, 0, 0);
+            }
+            painter.setPen(iter.value());
+            painter.drawRect(rect);
+        }
+    }
+
+    painter.restore();
+}</code></pre>
+<p>有了以上核心代码，自绘选择区域的功能基本上也就可以实现了。</p>
+<h2 id="五相关文章">五、相关文章</h2>
+<ol>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11167659.html">Qt实现表格控件-支持多级列表头、多级行表头、单元格合并、字体设置等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11155074.html">Qt高仿Excel表格组件-支持冻结列、冻结行、内容自适应和合并单元格</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11129274.html">属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11117259.html">超级实用的属性浏览器控件--QtTreePropertyBrowser</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/9288902.html">Qt之表格控件蚂蚁线</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11185435.html">QRowTable表格控件-支持hover整行、checked整行、指定列排序等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11204600.html">QRowTable表格控件(二)-红涨绿跌</a></p></li>
+</ol>
+<hr />
+<p><strong>值得一看的优秀文章：</strong></p>
+<ol>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/6707798.html">财联社-产品展示</a></strong></li>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/10836505.html">广联达-产品展示</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95527107">Qt定制控件列表</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95526527">牛逼哄哄的Qt库</a></strong></li>
+</ol>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

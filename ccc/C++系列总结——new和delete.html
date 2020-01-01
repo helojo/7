@@ -1,0 +1,128 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++系列总结——new和delete' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++系列总结——new和delete</center></div><div class='banquan'>原文出处:本文由博客园博主一罪提供。<br/>
+原文连接:https://www.cnblogs.com/yizui/p/10601424.html</div><br>
+    <h2 id="前言">前言</h2>
+<p>&quot;<code>new</code>和<code>malloc()</code>有什么区别&quot;，这是一个很常见的C++面试题。我的回答是&quot;<code>new</code>等于<code>malloc()</code>后再选择性执行构造函数&quot;。执行流程上是这样的，但是这样的回答是有纰漏的，比如没有考虑异常。下面就仔细聊一聊<code>new</code>，了解了<code>new</code>就了解了<code>delete</code>。</p>
+<blockquote>
+<p>选择性的含义是有构造函数就会执行，没有构造函数则不会执行。</p>
+</blockquote>
+<h2 id="new是什么">new是什么</h2>
+<p><code>new</code>是C++的一个关键字，这个关键字有两种用法</p>
+<ul>
+<li><a href="https://zh.cppreference.com/w/cpp/memory/new/operator_new"><code>new</code>运算符</a>：分配内存</li>
+<li><a href="https://zh.cppreference.com/w/cpp/language/new"><code>new</code>表达式</a>：分配内存并初始化</li>
+</ul>
+<p>通常我们都是使用<code>new</code>表达式，当然我们也可以直接使用<code>new</code>运算符。</p>
+<pre><code>int* a = new int;  // new表达式
+int* b = (int*)operator new( sizeof(int) );  // new运算符</code></pre>
+<h3 id="new表达式">new表达式</h3>
+<p>调试一下下面这段代码，看看编译器是如何对待<code>new</code>表达式的。</p>
+<pre><code>class A
+{
+public:
+    A(){}
+    ~A(){}
+    int a;
+};
+int main()
+{
+    A* a = new A;
+    return 0;
+}</code></pre>
+<p>截取一段汇编代码</p>
+<pre><code>=&gt; 0x000000000040061f &lt;+9&gt;:     mov    $0x4,%edi    # 0x4就是A的大小，作为参数值传递
+   0x0000000000400624 &lt;+14&gt;:    callq  0x400510 &lt;_Znwm@plt&gt;    # 单步调试，就会进入operator new( unsigned long ) 函数
+   0x0000000000400629 &lt;+19&gt;:    mov    %rax,%rbx    # rax里存储了返回的内存地址
+   0x000000000040062c &lt;+22&gt;:    mov    %rbx,%rdi    # 将分配的内存地址作为参数
+   0x000000000040062f &lt;+25&gt;:    callq  0x400644 &lt;A::A()&gt;    # 如果没有构造函数的话，这里就不会调用了</code></pre>
+<p>从上，我们发现当使用<code>new</code>表达式时，编译器做的工作就是计算出类型的大小，然后将该大小作为参数调用<code>operator new()</code>，最后调用构造函数在<code>operator new()</code>返回的地址上做初始化。因为分配的大小是编译器自己计算出来的，所以即使<code>operator new()</code>的返回值是void*，编译器也不会告警。</p>
+<h3 id="new运算符">new运算符</h3>
+<p>常用的<code>new</code>运算符原型有如下几种</p>
+<pre><code>1. void* operator new( std::size_t count ) throw( std::bad_alloc );    // 对应着 new T
+2. void* operator new( std::size_t count, const std::nothrow_t&amp; tag) throw(); // 对应着 new(std::nothrow) T
+3. void* operator new( std::size_t count, void* ptr ) throw(); // 对应着 new(ptr) T，直接在ptr所指的内存上执行T的构造函数进行初始化。</code></pre>
+<p>1和2的区别仅在于1会抛出异常，而2不会。</p>
+<p>一定不要写出类似下面的代码，当分配不出内存时，其实际结果是不符合预期的。</p>
+<pre><code>A* a = new A;
+if( NULL == a ){
+    return false;
+}</code></pre>
+<p>除去异常这块，我们能看到<code>new</code>运算符和<code>malloc()</code>几乎是一模一样的：指定分配的内存大小，返回void*类型。如果去看内部实现的话，我们更会发现<code>operator new()</code>其实就是调用了<code>malloc()</code>，毕竟没有必要重复造轮子嘛。</p>
+<h2 id="new">new[]</h2>
+<p><code>new[]</code>表达式和<code>new</code>表达式本质上没有什么差别，都是分配内存并初始化，只不过<code>new[]</code>表达式是一次性对分配多个对象的内存并初始化。</p>
+<p>常用的<code>new[]</code>表达式，对应以下几种<code>new[]</code>运算符</p>
+<pre><code>1. void* operator new[]( std::size_t count ) throw( std::bad_alloc );    // 对应着 new T[N]
+2. void* operator new[]( std::size_t count, const std::nothrow_t&amp; tag) throw(); // 对应着 new(std::nothrow) T[N]
+3. void* operator new[]( std::size_t count, void* ptr ) throw(); // 对应着 new(ptr) T[N]，实际是直接返回ptr</code></pre>
+<p>调试代码可以发现<code>new[]</code>运算符实际就是调用了对应的<code>new</code>运算符。</p>
+<p>为了讲解<code>new[]</code>表达式的一些实现，需要从<code>delete[]</code>开始说起。当我们写<code>delete[] a;</code>时，并没有像<code>new[]</code>那样指定元素个数，那么编译器如何知道需要执行几次析构函数呢？答案很简单，就是<code>new[]</code>的时候，编译器会多分配点空间用来保存元素个数。</p>
+<blockquote>
+<p>为什么<code>delete[]</code>不指定元素个数？我想还是为了减少程序员的工作量。</p>
+</blockquote>
+<p>让我们来看看代码</p>
+<pre><code>class A
+{
+public:
+    A(){}
+    ~A(){}
+private:
+    int a;
+};
+int main()
+{
+    A* a = new A[1];
+}</code></pre>
+<p>从下面的汇编可以看出实际分配的大小是12个字节，a地址的前8个字节保存了元素个数</p>
+<pre><code>=&gt; 0x0000000000400623 &lt;+13&gt;:    mov    $0xc,%edi    # count是12
+   0x0000000000400628 &lt;+18&gt;:    callq  0x400500 &lt;_Znam@plt&gt;    # 调用operator new[]()
+   0x000000000040062d &lt;+23&gt;:    mov    %rax,%rbx    #  将operator new[]()的返回值，放入rbx
+   0x0000000000400630 &lt;+26&gt;:    movq   $0x1,(%rbx)    # 记录元素个数是1
+   0x0000000000400637 &lt;+33&gt;:    lea    0x8(%rbx),%rax    # 往后移动8字节，开始调用构造函数</code></pre>
+<p><code>delete[]</code>会根据记录的元素个数执行完指定个数的析构函数，然后往前偏移8字节，调用<code>free()</code>释放内存。</p>
+<p>我们知道<strong>编译器是不会做多余的事</strong>，如果没有析构函数需要执行的话，还需要多分配空间来保存元素个数么？答案是不需要！</p>
+<pre><code>class A
+{
+public:
+    A(){}
+private:
+    int a;
+};
+int main()
+{
+    A* a = new A[1];
+}</code></pre>
+<p>可以看到分配的大小就是4字节。</p>
+<pre><code>   0x0000000000400623 &lt;+13&gt;:    mov    $0x4,%edi                                                                     
+   0x0000000000400628 &lt;+18&gt;:    callq  0x400500 &lt;_Znam@plt&gt;   # 调用operator new[]()</code></pre>
+<p><strong>因此如果没有析构处理的必要的话，就不要写析构函数了，省内存。</strong></p>
+<p>到这里，我们很自然的就能知道为什么<code>new</code>和<code>delete</code>以及<code>new[]</code>和<code>delete[]</code>要配套使用了。</p>
+<h2 id="后话">后话</h2>
+<p><code>new</code>和<code>delete</code>是很基础的知识了，日常只需要记住配套使用，不遗漏delete就足够了。</p>
+<p>可以想想，下面这段代码运行时会有问题么，会破坏malloc内存管理结构、内存泄漏或者踩内存么？</p>
+<pre><code>A* a = new A;
+
+a-&gt;~A();
+delete[] (char*)a;</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

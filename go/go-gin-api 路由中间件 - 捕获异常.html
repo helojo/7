@@ -1,0 +1,126 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go-gin-api 路由中间件 - 捕获异常' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go-gin-api 路由中间件 - 捕获异常</center></div><div class='banquan'>原文出处:本文由博客园博主it-world提供。<br/>
+原文连接:https://www.cnblogs.com/it-3327/p/11828151.html</div><br>
+    <p>概述<br /><br />首先同步下项目概况：<br /><img src="./images/go-gin-api 路由中间件 - 捕获异常0.png" alt="" width="450" height="683" /><br /><br />上篇文章分享了，路由中间件 - 日志记录，这篇文章咱们分享：路由中间件 - 捕获异常。<br /><br />当系统发生异常时，提示 &ldquo;系统异常，请联系管理员！&rdquo;，并发送 panic 告警邮件。<br /><img src="./images/go-gin-api 路由中间件 - 捕获异常1.png" alt="" width="478" height="140" /><br />什么是异常？<br /><br />在 Go 中异常就是 panic，它是在程序运行的时候抛出的，当 panic 抛出之后，如果在程序里没有添加任何保护措施的话，控制台就会在打印出 panic 的详细情况，然后终止运行。<br /><br />我们可以将 panic 分为两种：<br /><br />一种是有意抛出的，比如，<br /><br />panic("自定义的 panic 信息")<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>输出：
+
+    2019/09/10 20:25:27 http: panic serving [::1]:61547: 自定义的 panic 信息    
+    goroutine 8 [running]:    
+    ...
+
+一种是无意抛出的，写程序马虎造成，比如，
+
+    var slice = [] int {1, 2, 3, 4, 5}    
+    slice[6] = 6
+
+输出：
+
+    2019/09/10 15:27:05 http: panic serving [::1]:61616: runtime error: index out of range    
+    goroutine 6 [running]:    
+    ...
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />想象一下，如果在线上环境出现了 panic，命令行输出的，因为咱们无法捕获就无法定位问题呀，想想都可怕，那么问题来了，怎么捕获异常？<br /><br />怎么捕获异常？<br /><br />当程序发生 panic 后，在 defer(延迟函数) 内部可以调用 recover 进行捕获。<br /><br />不多说，直接上代码：<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>    defer func() {    
+        if err := recover(); err != nil {    
+            fmt.Println(err)    
+        }    
+    }()
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />在运行一下 &ldquo;无意抛出的 panic &rdquo;，输出：<br /><br />runtime error: index out of range<br /><br />OK，错误捕获到了，这时我们可以进行做文章了。<br /><br />做啥文章，大家应该都知道了吧：<br /><br />&nbsp;&nbsp;&nbsp; 获取运行时的调用栈（debug.Stack()）<br /><br />&nbsp;&nbsp;&nbsp; 获取当时的 Request 数据<br /><br />&nbsp;&nbsp;&nbsp; 组装数据，进行发邮件<br /><br />那么，Go 怎么发邮件呀，有没有开源包呀？<br /><br />当然有，请往下看。<br /><br />封装发邮件方法<br /><br />使用包：gopkg.in/gomail.v2<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>直接上代码：
+
+    func SendMail(mailTo string, subject string, body string) error {    
+        if config.ErrorNotifyOpen != 1 {    
+            return nil    
+        }    
+        m := gomail.NewMessage()    
+        //设置发件人    
+        m.SetHeader("From", config.SystemEmailUser)    
+        //设置发送给多个用户    
+        mailArrTo := strings.Split(mailTo, ",")    
+        m.SetHeader("To", mailArrTo...)    
+        //设置邮件主题    
+        m.SetHeader("Subject", subject)    
+        //设置邮件正文    
+        m.SetBody("text/html", body)    
+        d := gomail.NewDialer(config.SystemEmailHost, config.SystemEmailPort, config.SystemEmailUser, config.SystemEmailPass)    
+        err := d.DialAndSend(m)    
+        if err != nil {    
+            fmt.Println(err)    
+        }    
+        return err    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />在这块我加了一个开关，想开想关，您随意。<br /><br />现在会发送邮件了，再整个邮件模板就完美了。<br /><br />自定义邮件模板<br /><br />如图：<br /><img src="./images/go-gin-api 路由中间件 - 捕获异常2.png" alt="" width="698" height="709" /><br />这就是告警邮件的模板，还不错吧，大家还想记录什么，可以自定义去修改。<br /><br />封装一个中间件<br /><br />最后，封装一下。<br /><br />直接上代码：<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>  func SetUp() gin.HandlerFunc {    
+        return func(c *gin.Context) {    
+            defer func() {    
+                if err := recover(); err != nil {    
+                    DebugStack := ""    
+                    for _, v := range strings.Split(string(debug.Stack()), "\n") {    
+                        DebugStack += v + "&lt;br&gt;"    
+                    }    
+                    subject := fmt.Sprintf("【重要错误】%s 项目出错了！", config.AppName)    
+                    body := strings.ReplaceAll(MailTemplate, "{ErrorMsg}", fmt.Sprintf("%s", err))    
+                    body  = strings.ReplaceAll(body, "{RequestTime}", util.GetCurrentDate())    
+                    body  = strings.ReplaceAll(body, "{RequestURL}", c.Request.Method + "  " + c.Request.Host + c.Request.RequestURI)    
+                    body  = strings.ReplaceAll(body, "{RequestUA}", c.Request.UserAgent())    
+                    body  = strings.ReplaceAll(body, "{RequestIP}", c.ClientIP())    
+                    body  = strings.ReplaceAll(body, "{DebugStack}", DebugStack)    
+                    _ = util.SendMail(config.ErrorNotifyUser, subject, body)    
+                    utilGin := util.Gin{Ctx: c}    
+                    utilGin.Response(500, "系统异常，请联系管理员！", nil)    
+                }    
+            }()    
+            c.Next()    
+        }    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p>这里我还准备了一分学习图和资料，如下：</p>
+<p><img src="./images/go-gin-api 路由中间件 - 捕获异常3.png" alt="" /></p>
+<p>链接：<a href="https://pan.baidu.com/s/1v5gm7n0L7TGyejCmQrMh2g" target="_blank">https://pan.baidu.com/s/1v5gm7n0L7TGyejCmQrMh2g</a>&nbsp;提取码：x2p5<br /><br />免费分享，但是X度限制严重，如若链接失效点击链接或搜索加群 群号<a href="https://jq.qq.com/?_wv=1027&amp;k=5Qtjg0V" target="_blank">518475424</a>。</p>
+<p><br /><br />当发生 panic 异常时，输出：<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>   {    
+        "code": 500,    
+        "msg": "系统异常，请联系管理员！",    
+        "data": null    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br />同时，还会收到一封 panic 告警邮件。<br /><br /><img src="./images/go-gin-api 路由中间件 - 捕获异常4.png" alt="" width="653" height="747" /><br /><br />便于截图，DebugStack 删减了一些信息。<br /><br />到这，就结束了。<br /><img src="./images/go-gin-api 路由中间件 - 捕获异常5.png" alt="" width="500" height="433" /><br />备注<br /><br />&nbsp;&nbsp;&nbsp; 发邮件的地方，可以调整为异步发送。<br /><br />&nbsp;&nbsp;&nbsp; 文章中仅贴了部分代码，相关代码请查阅 github。<br /><br />&nbsp;&nbsp;&nbsp; 测试发邮件时，一定要配置邮箱信息。<br /><br /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

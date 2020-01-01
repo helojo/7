@@ -1,0 +1,254 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11129274.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一回顾">一、回顾</a></li>
+        <li><a href="#二动态库编译">二、动态库编译</a><ul>
+        <li><a href="#命令行编译动态库和测试程序">1、命令行编译动态库和测试程序</a></li>
+        <li><a href="#vs工具编译动态库和测试程序">2、vs工具编译动态库和测试程序</a></li>
+        <li><a href="#安装文档">3、安装文档</a></li>
+        <li><a href="#测试文档">4、测试文档</a></li>
+        </ul></li>
+        <li><a href="#三设计师插件编译">三、设计师插件编译</a><ul>
+        <li><a href="#重写qdesignercustomwidgetinterface">1、重写QDesignerCustomWidgetInterface</a></li>
+        <li><a href="#添加到插件列表">2、添加到插件列表</a></li>
+        <li><a href="#拷贝生成的dll">3、拷贝生成的dll</a></li>
+        <li><a href="#重启qt-designer">4、重启Qt Designer</a></li>
+        </ul></li>
+        <li><a href="#四多说一句">四、多说一句</a></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：<a href="https://www.cnblogs.com/swarmbees/">属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)</a></strong></p>
+<h2 id="一回顾">一、回顾</h2>
+<p>上一篇文章<a href="https://www.cnblogs.com/swarmbees/p/11117259.html">超级实用的属性浏览器控件--QtTreePropertyBrowser</a>讲了怎么去编译QtTreePropertyBrowser库，并且可以简单实用。由于我下载的库是基于Qt4的版本，所以编译起来也费劲巴拉的，改了好久的源码才编译通过。</p>
+<p><strong>本篇文章我们核心讲解的是怎么把这个库编译成动态库，让别的模块去动态调用。</strong></p>
+<p>这里引入Qt官方维护的模块QtSolutions，里边就包含了QtTreePropertyBrowser这个项目，最关键是Qt5可以直接编译通过。</p>
+<p>QtSolutions里边不仅仅有QtTreePropertyBrowser这个项目，而且包含了多个有用模块，文章最后会简单做以介绍。</p>
+<p>下面我们主要还是围绕QtTreePropertyBrowser这个库来进行讲解。。</p>
+<h2 id="二动态库编译">二、动态库编译</h2>
+<p>编译成动态库的方式有2种，一种是命令行，另一种是vs工具，其实本质上都是一样的，都是使用了msvc编译器。</p>
+<blockquote>
+<p>如果想要使用其他编译器编译，本篇文章可以作为参考，可能有些地方不太实用。</p>
+</blockquote>
+<p><strong>编译这种长期维护的项目，我们首先就是去看代码中的文档说明，一般都会有编译步骤。</strong></p>
+<html>
+<center>
+<div>
+    <img src="./images/属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)0.png" />
+</div>
+</center>
+</html>
+<p>这个库也不例外，看上图中红色款圈出来的部分，就是我们编译的步骤，简单吧。</p>
+<blockquote>
+<p>configure.bat，如果需要生成动态库则需要添加<code>-library</code>参数</p>
+</blockquote>
+<h3 id="命令行编译动态库和测试程序">1、命令行编译动态库和测试程序</h3>
+<p>命令行cd到源码根目录，执行以下步骤即可</p>
+<ol>
+<li>confiture.bat -library</li>
+<li>qmake</li>
+<li>nmake</li>
+</ol>
+<p>没有什么悬念，代码应该可以正常编译通过，这里就不做过多解释。</p>
+<p><strong>重点看下怎么使用vs工具进行编译</strong></p>
+<h3 id="vs工具编译动态库和测试程序">2、vs工具编译动态库和测试程序</h3>
+<p>首先在网上随便搜索下pro转sln工程的文章，总结一下就是下面两句话</p>
+<pre><code>qmake xxx.pro
+qmake -tp vc -r</code></pre>
+<p>对于我们的qtpropertybrowser代码可能就像下面这样</p>
+<pre><code>qmake qtpropertybrowser.pro
+qmake -tp vc -r</code></pre>
+<blockquote>
+<p>如果不使用这种方式，也可以使用vs-addin插件直接打开pro文件</p>
+</blockquote>
+<p><strong>执行完上述两句话之后，会发现我们的根目录下多了一个qtpropertybrowser.sln工程文件。每一个项目文件夹下也多了一个simple.vcxproj项目文件。</strong></p>
+<p>接下来就是用vs打开qtpropertybrowser.sln工程文件，然后进行编译了。</p>
+<html>
+<center>
+<div>
+    <img src="./images/属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)1.png" />
+</div>
+</center>
+</html>
+<p>通过命令行生成的QtSolutions_PropertyBrowser-head.vcxproj这个工程文件有一些小问题，需要修改下工程配置，否则编译会失败。</p>
+<p><strong>打开工程属性 -&gt; C/C++ -&gt; 预处理器 -&gt; 预处理器定义项。</strong></p>
+<p><strong>修改QT_QTPROPERTYBROWSER_IMPORT宏为QT_QTPROPERTYBROWSER_EXPORT</strong></p>
+<p>然后编译，动态库的编译结果如下图，其他测试程序这里没有放出来。<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)2.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<h3 id="安装文档">3、安装文档</h3>
+<p>根据INSTALL.txt说明文件，尝试如下两种操作均失败</p>
+<ol>
+<li>添加qch文件，发现没有这个文件</li>
+<li>使用添加命令<code>assustant -addContentFile xxx.dcf</code>添加，报错。</li>
+</ol>
+<html>
+<center>
+<div>
+    <img src="./images/属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)3.png" />
+</div>
+</center>
+</html>
+<p>后来无意中看到了一片文章<a href="https://www.bbsmax.com/A/QV5ZjZXZ5y/">创建文档和自定义的qt assistant</a>，讲怎么生成Qt帮助文档的，<strong>发现其中有根据qhp文件生成qch文件的方式，尝试了下，居然可以</strong>。</p>
+<p>操作步骤如下：</p>
+<ol>
+<li>qhelpgenerator xxx.qhp -o xxx.qch</li>
+<li>assistant -register xxx.qch</li>
+</ol>
+<p>对于我们的qtpropertybrowser代码，可能会像下面这样。首先进入doc\html目录下，然后执行如下操作</p>
+<ol>
+<li>qhelpgenerator qtpropertybrowser.qhp -o qtpropertybrowser.qch</li>
+<li>assistant -register qtpropertybrowser.qch</li>
+</ol>
+<html>
+<center>
+<div>
+    <img src="./images/属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)4.png" />
+</div>
+</center>
+</html>
+<p>第二步也可以通过工具来添加，如上图所示。编辑菜单 -&gt; 首选项，选中文档页签，添加自己的qch文件即可。</p>
+<h3 id="测试文档">4、测试文档</h3>
+<p>搜索页签下输入&quot;QtPro&quot;，搜索到结果QtProperty，如下图所示，表示我们的文档集成成功。</p>
+<html>
+<center>
+<div>
+    <img src="./images/属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)5.png" />
+</div>
+</center>
+</html>
+<h2 id="三设计师插件编译">三、设计师插件编译</h2>
+<p><strong>动态库都有了，设计师插件还会远吗？</strong></p>
+<p>自己写一个Qt插件，把需要导入到desinger中的控件都注册进来即可。</p>
+<p>大致流程如下</p>
+<h3 id="重写qdesignercustomwidgetinterface">1、重写QDesignerCustomWidgetInterface</h3>
+<blockquote>
+<p>WidgetInterface类继承自QDesignerCustomWidgetInterface，WidgetInterface类包含了一些默认行为，这里就不贴出来了。</p>
+</blockquote>
+<pre><code>class TreeBrowserInterface : public WidgetInterface
+{
+    Q_OBJECT
+    Q_INTERFACES( QDesignerCustomWidgetInterface )
+
+public:
+    TreeBrowserInterface(QObject * parent);
+    virtual QWidget * createWidget( QWidget * parent ) override;
+};</code></pre>
+<h3 id="添加到插件列表">2、添加到插件列表</h3>
+<pre><code>WidgetCollectionInterface::WidgetCollectionInterface( QObject * parent /*= nullptr */ )
+    : QObject(parent)
+{
+    d_plugins.append(new QPB::TreeBrowserInterface(this));
+    d_plugins.append(new QPB::ButtonBrowserInterface(this));
+    d_plugins.append(new QPB::GroupBoxBrowserInterface(this));
+}</code></pre>
+<h3 id="拷贝生成的dll">3、拷贝生成的dll</h3>
+<p>生成的设计师动态库拷贝到Qt安装目录下，具体目录为和bin同级plugins目录下的designer文件夹中</p>
+<html>
+<center>
+<div>
+    <img src="./images/属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)6.png" />
+</div>
+</center>
+</html>
+<h3 id="重启qt-designer">4、重启Qt Designer</h3>
+<p>重新启动设计师后，Widget Box列表中多了3个控件。<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)7.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<p><strong>一切准备就绪，剩下的就是自己玩儿了</strong></p>
+<p><strong>关于怎么写设计师插件，不是本文的重点，想学习的同学直接去百度即可</strong></p>
+<h2 id="四多说一句">四、多说一句</h2>
+<p>qt-solutions是一个Qt官方维护的开源库，其中有8个项目，QtTreePropertyBrowser就是我们今天讲到的其中一个。</p>
+<html>
+<center>
+<div>
+    <img src="./images/属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)8.png" />
+</div>
+</center>
+</html>
+<p>这个8个模块如下列表：</p>
+<ol>
+<li>qtbrowserplugin 浏览器插件</li>
+<li>qtlockedfile 锁定文件</li>
+<li>qtpropertybrowser 属性编辑器</li>
+<li>qtscriptclassic 脚本支持</li>
+<li>qtservice 提供服务属性</li>
+<li>qtsingleapplication 单例运行</li>
+<li>qtsoap SOAP协议</li>
+<li>qtwinmigrate 混合运行，qt写界面dll，集成到Win32工程中。</li>
+</ol>
+<p><strong>属性浏览器控件QtTreePropertyBrowser的运行效果，可以到<a href="https://www.cnblogs.com/swarmbees/p/11117259.html">超级实用的属性浏览器控件--QtTreePropertyBrowser</a>这篇文章中查看。</strong></p>
+<p>有人说，Qt.Soluations这个库的代码时基于Qt4写的，而且最后的测试时间也是Qt4.4，最好使用Qt新版本的qtpropertybrowser代码，这里我自己也进行了测试，<strong>直接把Qt5的代码覆盖当前版本的代码，编译也是能通过的，唯一比较坑的一点就是不能作为动态库使用了。</strong></p>
+<p>然后我就屁颠屁颠的，把所有需要导出的类都添加了导出宏，手都给我加酸了。</p>
+<p>随着后续对这个控件的使用，具体细节上的区别等以后再过来完善。</p>
+<p><strong>写到最后，使用Beyond Compare工具进行了两份代码的对比，其实本质上差别不大。 目前发现的唯一一个区别较大的就是QtTreePropertyBrowser这个类中使用的树控件问题了，Qt4时使用的是QTreeView，而到了Qt5使用的是QTreeWidget。</strong></p>
+<h2 id="五相关文章">五、相关文章</h2>
+<p><a href="https://www.cnblogs.com/swarmbees/p/11117259.html">超级实用的属性浏览器控件--QtTreePropertyBrowser</a></p>
+<p><a href="https://www.bbsmax.com/A/QV5ZjZXZ5y/">创建文档和自定义的qt assistant</a></p>
+<p><a href="https://blog.csdn.net/yizhou2010/article/details/52994134/">QtPropertyBrowser控件在Qt5.5上的安装配置</a></p>
+<p><br></p>
+<p><strong>以上内容，基本就是本篇文章的所有内容啦！表格树控件可以使用起来了。希望可以帮到大家。</strong></p>
+<p><br></p>
+<p><strong>一起期待后续封装完善的控件。。。</strong></p>
+<p><strong>照着文章一步一步进行，所有库应该都可以编译通过，如果实在搞不定需要工程代码的可以留邮箱</strong></p>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

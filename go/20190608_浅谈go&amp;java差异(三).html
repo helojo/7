@@ -1,0 +1,343 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修20190608_浅谈go&amp;java差异(三)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>20190608_浅谈go&amp;java差异(三)</center></div><div class='banquan'>原文出处:本文由博客园博主funnyZpC提供。<br/>
+原文连接:https://www.cnblogs.com/funnyzpc/p/10990703.html</div><br>
+    <p>20190608_浅谈go&amp;java差异(三)</p>
+<p>转载请注明出处<a href="https://www.cnblogs.com/funnyzpc/p/10990703.html" class="uri">https://www.cnblogs.com/funnyzpc/p/10990703.html</a></p>
+<h4 id="第三节内容概览">第三节内容概览</h4>
+<ul>
+<li>多线程通讯(线程安全类型 chan)</li>
+<li>struct(结构体) 与 对象实体类</li>
+<li>异常(panic 与 throw)</li>
+<li>数组切片(slice)、map集合</li>
+<li>继承,实现,组合（extend&amp;interface&amp;abstract)</li>
+<li>包引入及管理(import、dep、module、maven)</li>
+<li>打包运行(run build)</li>
+<li>对象(receiver)函数(略)</li>
+</ul>
+<h4 id="多线程通讯线程安全类型-chan">多线程通讯(线程安全类型 chan)</h4>
+<ul>
+<li>java</li>
+</ul>
+<p>java 提供了具有线程安全的类型以避免线程问题，比如AtomicLong、AtomicArray、AtomicInteger等等，其中对于字符串类型则提供了<br />
+StringBuffer类型来操作字符串，如果多个线程操作同一个jdk的数据安全类型的需要手动添加synchronized或者Lock()来保证并发数据<br />
+的安全性</p>
+<pre><code><code>public class AtomIntegerTest {
+    private static final Logger LOG = LoggerFactory.getLogger(AtomIntegerTest.class);
+    private static AtomicInteger atomicInt = new  AtomicInteger();
+    /*
+    private static AtomicLong atomicLong = new  AtomicLong();
+    private static AtomicArray atomicArray = new  AtomicArray(100);
+    private static AtomicBoolean atomicBoolean = new  AtomicBoolean();
+    */
+
+    @Test
+    public void process01(){
+        IntStream.range(0,100).parallel().forEach(i-&gt;{
+            atomicInt.addAndGet(i);
+        });
+        LOG.info(&quot;result : {}&quot;,atomicInt);
+    }
+}</code></pre>
+<ul>
+<li>go</li>
+</ul>
+<p>go语言则提供来chan关键字来辅助多协程通讯，而且go相对于java来说，他的基本数据类型也具有数据安全特性，其解决的方式有点儿类似于<br />
+消息队列的形式。</p>
+<pre><code><code>func main() {
+    c := make(chan int)
+    go func() {
+        for i := 0; i &lt;= 100; i = i + 1 {
+            c &lt;- i
+        }
+        close(c)
+    }()
+    j := 0
+    // 这里会阻塞 直到循环执行完成
+    for i := range c {
+        j = j + i
+        //fmt.Println(i)
+    }
+    fmt.Println(&quot;result : &quot;, j)
+    fmt.Println(&quot;Finished&quot;)
+}</code></pre>
+<h4 id="struct结构体-与-对象实体类">struct(结构体) 与 对象实体类</h4>
+<ul>
+<li>java</li>
+</ul>
+<p>其实这方面java与go是没法比较的，go偏向于过程，而java是强面向对象的，这里仅仅阐述下各自对于数据的处理的结构差异<br />
+在java中可以说一切皆为对象，任何时候需要调用对象里面的函数必须new一个(也即创建一个)，但是对于静态的方法不需要new，但是静态方法<br />
+一定是存在于对象之中的。java的数据对象定义是固定的，默认需要给参数加上getter和setter方法以做隐藏处理</p>
+<pre><code><code>public class PersonEntity {
+
+    private String name;
+    private int age;
+    private boolean isAdult;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public boolean isAdult() {
+        return isAdult;
+    }
+
+    public void setAdult(boolean adult) {
+        isAdult = adult;
+    }
+}</code></pre>
+<ul>
+<li>go<br />
+go 对于数据对象的处理就开放的多，比如可以使用interface{} 代替所有struct(结构体)，比如他的参数赋值也可以省略<br />
+(需要根据参数的位置来确定)，同时也可以定义label来映射序列化json字段或映射数据库字段等(这个在java中需要定义注解来实现)</li>
+</ul>
+<pre><code><code>func main() {
+    p1 := PersonEntity{&quot;Lina&quot;, 27, true}
+    p2 := PersonEntity{name: &quot;Steve&quot;, age: 15, isAdult: false}
+    fmt.Println(&quot;p1 : &quot;, p1)
+    fmt.Println(&quot;p2 : &quot;, p2)
+}
+
+type PersonEntity struct {
+    name    string
+    age     int8
+    isAdult bool
+}</code></pre>
+<h4 id="异常panic-与-throw">异常(panic 与 throw)</h4>
+<ul>
+<li>go</li>
+</ul>
+<p>在go中没有异常抛出的概念，不过在大多数情况下均将异常放入error中返回，手动判断及处理异常；如果有显性抛出并<br />
+处理的地方需要配合defer去处理，同时抛出的异常是在panic的参数中定义</p>
+<pre><code><code>func main() {
+    defer func() { // 必须要先声明defer，否则不能捕获到panic异常
+        fmt.Println(&quot;process 03&quot;)
+        if err := recover(); err != nil {
+            fmt.Println(err) // 这里的err其实就是panic传入的内容，55
+        }
+        fmt.Println(&quot;process 04&quot;)
+    }()
+    f()
+}
+func f() {
+    fmt.Println(&quot;process 01&quot;)
+    panic(&quot;error info&quot;)
+    fmt.Println(&quot;process 02&quot;)
+}
+</code></pre>
+<ul>
+<li>java</li>
+</ul>
+<p>java在可能出现异常的地方均会在方法上声明抛出(但这并不代表未声明的函数就一定不会抛出异常了)，<br />
+这个时候需要在业务逻辑中选择抛出或者抓取处理就任由用户选择了</p>
+<pre><code><code>public class ThrowExceptionTest {
+    private static final Logger LOG = LoggerFactory.getLogger(ThrowExceptionTest.class);
+
+    @Test
+    public void process01(){
+        String[] strArr = {&quot;a&quot;,&quot;b&quot;};
+        // 数组取值时越界可能会抛出异常
+        LOG.info(&quot;value : {}&quot;,strArr[3]);
+    }
+
+    @Test
+    public void process02()/*throws UnsupportedEncodingException*/{
+        String str = &quot;hello&quot;;
+        byte[] enCodeArr = {};
+        try {
+            // getBytes 显式抛出异常了，需要抛出或者抓取(try catch)处理
+            enCodeArr = Base64.getEncoder().encode(str.getBytes(&quot;utf-8&quot;));
+        }catch (UnsupportedEncodingException e){
+            LOG.error(&quot;异常 ： &quot;,e);
+        }
+        LOG.info(&quot;enCode result : {}&quot;,enCodeArr);
+    }
+    /*
+    public byte[] getBytes(String charsetName)
+            throws UnsupportedEncodingException {
+        if (charsetName == null) throw new NullPointerException();
+        return StringCoding.encode(charsetName, value, 0, value.length);
+    }
+    */
+}</code></pre>
+<h4 id="集合-slicemaparraymap">集合([ ]、slice、map、Array、Map)</h4>
+<ul>
+<li><p>java([ ]、Array、Map)<br />
+<code>java 的集合类型有三类：</code></p>
+<ul>
+<li><p>[] : 且称它为定长单值数组</p></li>
+<li><p>Array ：可以理解是一个定长数组的管理器，它实现了不定长数组</p>
+<p><code>根据不同的算法有ArrayList、Set、TreeSet 等等</code></p></li>
+<li><p>Map : 是一个键值对的集合类型，它的值可以是基本数据类型也可以是自定义数据类型</p>
+<p><code>它的实现也有很多 HashMap、TresMap、LinkedHashMap 等等</code></p></li>
+</ul></li>
+</ul>
+<pre><code><code>public class ArrayTest {
+    private static final Logger LOG = LoggerFactory.getLogger(ArrayTest.class);
+
+
+    @Test
+    public void process01(){
+        // 这里定义了长度为4的定长数组，当取或放&gt;4个值后会抛异常
+        String[] arrBase= new String[4];
+        arrBase[0] = &quot;hello&quot;;
+        LOG.info(&quot;len {},{}&quot;,arrBase.length,arrBase[0]);
+
+        // 这里定义了一个默认长度为4的不定长数组，当然是可以放入&gt;4个值的
+        List&lt;Integer&gt; lst = new ArrayList&lt;Integer&gt;(4){{
+            add(0);
+            add(22);
+            add(-1);
+        }};
+        LOG.info(&quot;arr len {},{}&quot;,lst.size(),lst.toString());
+    }
+
+    @Test
+    public void process02(){
+        // 这里定义了一个键值对集合
+        Map&lt;String,Object&gt; hashMap = new HashMap&lt;String,Object&gt;(2){{
+            put(&quot;a&quot;,1);
+            put(&quot;b&quot;,2);
+        }};
+        LOG.info(&quot;map len {},{}&quot;,hashMap.size(),hashMap.toString());
+    }
+}</code></pre>
+<ul>
+<li>go([ ]、slice、map)</li>
+</ul>
+<p>go的集合有三种形式，其中数组与切片数组看似相似，其实对于内存分配有很大差异，一般实际使用后者，同时需要说明的是map也可使用make关键字<br />
+做集合优化。</p>
+<p><code>go 的集合类型有三类,目前均无多算法实现：</code><br />
+- 数组<br />
+- 切片数组(slice)<br />
+- 键值对集合(map)</p>
+<pre><code><code>func main() {
+    // 这里定义了一个不定长数组(这种描述可能不准确)
+    var arr []int8
+    arr = append(arr, 100)
+    arr = append(arr, -1)
+    fmt.Println(arr)
+    // 这里使用slice 定义了一个长度为3，容量为3的数组
+    arr2 := make([]string, 3, 3)
+    arr2 = append(arr2, &quot;hello&quot;)
+    arr2[2] = &quot;youth&quot;
+    //arr2 = append(arr2, &quot;youth&quot;)
+    // arr2 = append(arr2, &quot;good&quot;)
+    // arr2 = append(arr2, &quot;morning&quot;)
+    fmt.Println(cap(arr2), len(arr2), arr2)
+}
+</code></pre>
+<h4 id="继承实现组合extendinterfaceabstract">继承,实现,组合（extend&amp;interface&amp;abstract)</h4>
+<ul>
+<li>java</li>
+</ul>
+<p>java 有继承extend和实现interface 之分，一个类只能单继承或者多实现，但不管是被继承还是被实现，他们的类型还是有差异的<br />
+(访问类型也是有差异的)</p>
+<pre><code><code>public class ExtendIntfTest {
+
+
+}
+
+ interface EntityA{
+    void doSth01();
+    // private doSth02();
+}
+class EntityB{
+    public void doSth01(){
+
+    }
+}
+
+public abstract class EntityC {
+
+    public void doSth01(){
+        // TODO
+    }
+
+    public void doSth02(){
+        // TODO
+    }
+}</code></pre>
+<ul>
+<li>go</li>
+</ul>
+<p>go更偏向于过程，只给出了组合作为继承的一种实现，而且是通过结构体嵌套实现的，不说了还是看代码吧:</p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+)
+
+type Base struct {
+}
+
+func (b *Base) ShowA() {
+    fmt.Println(&quot;showA&quot;)
+}
+func (b *Base) ShowB() {
+    fmt.Println(&quot;showB&quot;)
+}
+
+type Derived struct {
+    Base
+}
+
+func (d *Derived) ShowB() {
+    fmt.Println(&quot;Derived showB&quot;)
+}
+
+func main() {
+    // 当 Derived 的结构体中包含Base时也就相当于继承了Base 的 ShowA() 方法
+    d := Derived{}
+    d.ShowA()
+    d.ShowB()
+}</code></pre>
+<h4 id="包引入及管理importdepmodulemaven">包引入及管理(import、dep、module、maven)</h4>
+<pre><code><code> go的包引入与java比较相似，均是通过在java文件或者go文件首行定义包名称以被引入，不过使用的细节上还有有丢丢
+ 差异的，比如在go内如果有多个引入 则使用 import()来包含，同时还可以对引入做忽略(不够准确，与init相关)和别名处理
+ 同时对于包(module模块)的管理在go 1.11之前多用dep，而在go 1.11及之后则引入来go module，个人觉得有点儿像git，对于多个
+ 工程的管理更加的方便了。
+
+ java中如果存在同包内多个子包引入则在包尾使用*，同一package内引入不用声明引入，对于包的管理多用maven(以及gradle)，但对于较老的
+ 工程也有手动导入的方式。</code></pre>
+<h4 id="打包运行run-build">打包运行(run build)</h4>
+<pre><code><code> go的打包只有官方标准的，每一个安装了go语言的机器都内置了go的一些列命令，包含 打包、构建、运行、测试、拉取依赖等等，不过
+ 虽然方便但也有不足之处，比如`go run`命令没有提供进程守护，需要第三方实现；再比如 `go package` 的包比较大不利于发布，
+ 一般使用upx命令缩减包的大小。
+ java的打包有官方和非官方两种，官方只定义了jar包的打包的规范，对于工程管理却没有提供任何工具；而非官方的以maven为主(还有gradle)，不仅仅
+ 可以管理依赖和工程结构等等～=，比官方好用多了～;而运行主要将打包后的文件扔进容器即可，同时容器提供了进程守护等功能，容器以tomcat、
+ jetty、webLogic、ws为主,均为非官方。</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

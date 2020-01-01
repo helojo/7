@@ -1,0 +1,263 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ 赋值运算符&#39;=&#39;的重载（浅拷贝、深拷贝）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ 赋值运算符&#39;=&#39;的重载（浅拷贝、深拷贝）</center></div><div class='banquan'>原文出处:本文由博客园博主小林coding提供。<br/>
+原文连接:https://www.cnblogs.com/xiaolincoding/p/11967842.html</div><br>
+    <h2 id="赋值运算符重载的需求">01 赋值运算符重载的需求</h2>
+<p>有时候希望赋值运算符两边的类型可以不匹配，比如：把一个 int 类型变量赋值给一个Complex（复数）对象，或把一个 char* 类型的字符串赋值给一个字符串对象，此时就需要重载赋值运算符‘=’。</p>
+<p>需要注意的是：赋值运算符 <code>=</code> 只能重载为成员函数。</p>
+<hr />
+<h2 id="赋值运算符重载的例子">02 赋值运算符重载的例子</h2>
+<p>下面我们以自定义一个自己的字符串类代码的例子，讲解赋值运算符的重载函数。</p>
+<pre><code>class MyString // 字符串类
+{
+public:
+    // 构造函数，默认初始化1个字节的字符
+    MyString ():m_str(new char[1])
+    {
+        m_str[0] = 0;
+    }
+    
+    // 析构函数，释放资源
+    ~MyString()
+    {
+        delete [] m_str;
+    }
+    
+    const char* c_str()
+    {
+        return m_str;
+    }
+    
+    // 赋值运算符重载函数
+    // 重载=号使得 obj = &quot;Hello&quot; 能够成立
+    MyString &amp; operator= (const char *s)
+    {
+        // 释放旧字符串资源
+        delete [] m_str;
+        
+        // 生成新字符串的空间大小，长度多+1的目的是存放\0
+        m_str = new char[strlen(s) +1 ];
+        
+        // 拷贝新字符串的内容
+        strcpy(m_str, s);
+        
+        // 返回该对象
+        return *this;
+    }
+    
+private:
+    char * m_str; // 字符串指针
+};
+
+int main() {
+    
+    MyString s;
+    
+    s = &quot;Hello~&quot;; // 等价于s.operator=(&quot;Hello~&quot;);
+    std::cout &lt;&lt; s.c_str()  &lt;&lt; std::endl;
+    
+    // MyString s2 = &quot;Hello!&quot;; // 这条语句要是不注释就会编译报错
+    
+    s = &quot;Hi~&quot;; // 等价于s.operator=(&quot;Hi~&quot;);
+    std::cout &lt;&lt; s.c_str()  &lt;&lt; std::endl;
+
+    return 0;
+}</code></pre>
+<p>输出结果：</p>
+<pre><code>Hello~
+Hi~</code></pre>
+<p>重载=号运算符函数后，<code>s = &quot;Hello~&quot;;</code> 语句就等价于 <code>s.operator=(&quot;Hello~&quot;);</code>。</p>
+<p>需要注意的一点是：上面的<code>MyString s2 = &quot;Hello!&quot;;</code>语句实际上是初始化语句，而不是赋值语句，因为是初始化语句，所以需要调用构造函数进行初始化，那么这时就需要有<code>char*</code>参数的构造函数，由于我们没有定义此构造函数，所以就会编译出错。</p>
+<hr />
+<h2 id="浅拷贝和深拷贝">03 浅拷贝和深拷贝</h2>
+<p>还是依据上面的例子，假设我们要实现最后一个语句的方式：</p>
+<pre><code>MyString s1,s2;
+s1 = &quot;this&quot;; // 调用重载的赋值语句
+s2 = &quot;that&quot;; // 调用重载的赋值语句
+s1 = s2; // 如何实现这个？？</code></pre>
+<p><code>s1 = s2;</code>语句目的希望是<code>s1</code>对象放的字符串和<code>s2</code>对象放的字符串象要一样，由于 <code>=</code> 号两边的类似都是对象，编译器会用<strong>原生</strong>的赋值运算符函数，但是这个<strong>原生</strong>的赋值运算符函数对于有<strong>指针成员变量的对象</strong>来说，是非常危险的！</p>
+<h4 id="浅拷贝">浅拷贝</h4>
+<p>如果用<strong>原生</strong>的赋值运算符函数去赋值有<strong>指针成员变量的对象</strong>，就会使得两个对象的<strong>指针地址也是一样的</strong>，也就是两个对象的指针成员变量指向的地址是同一个地方，这种方式就是浅拷贝。</p>
+<p>这时当一个对象释放了指针成员变量时，那么另外一个对象的指针成员变量指向的地址就是空的了，再次使用这个对象时，程序就会奔溃了，因为该对象的指针成员函数已经是个不合法的指针了！</p>
+<p><img src="./images/C++ 赋值运算符&#39;=&#39;的重载（浅拷贝、深拷贝）0.png" /></p>
+<h4 id="深拷贝">深拷贝</h4>
+<p>如果对象里面有指针成员变量，则我们需要对<strong>原生</strong>的赋值运算符函数，防止出现程序出错现象的发生。</p>
+<p>因此要在 <code>class MyString</code> 类里加上如下成员函数：</p>
+<pre><code>MyString &amp; operator=(const MyString &amp; s)
+{
+    // 释放旧字符串资源
+    delete [] m_str;
+    
+    // 生成新字符串的空间大小，长度多+1的目的是存放\0
+    m_str = new char[strlen(s.m_str) +1 ];
+    
+    // 拷贝新字符串的内容
+    strcpy(m_str, s.m_str);
+    
+    // 返回该对象
+    return *this;
+}</code></pre>
+<p>这么做就够了吗？还有什么需要改进的地方吗？</p>
+<p>我们在考虑下面的语句：</p>
+<pre><code>MyString s;
+s = &quot;Hello&quot;;
+s = s; // 是否会有问题？</code></pre>
+<p>最后一个语句是否会有问题？</p>
+<p><code>s = s;</code>等价于<code>s.operator=(s)</code>，由于s和s是相同的对象，那么就没必要完全执行重载的赋值 <code>=</code> 的函数了，我们再加个判断，当左右两边是相同对象时，就直接返回该对象就好：</p>
+<pre><code>MyString &amp; operator=(const MyString &amp; s)
+{
+    // 当左右两边是相同对象时，就直接返回该对象就
+    if(this == &amp;s)
+        return *this;
+
+    delete [] m_str;
+    m_str = new char[strlen(s.m_str) +1 ];
+    strcpy(m_str, s.m_str);
+    return *this;
+}</code></pre>
+<hr />
+<h2 id="对operator返回值类型的讨论">对operator=返回值类型的讨论</h2>
+<ul>
+<li>void 好不好？</li>
+<li>MyString 好不好？</li>
+<li>为什么是MyString &amp;？</li>
+</ul>
+<p><strong>当我们重载一个运算符的时候，好的风格应该是尽量保留运算符原本的特性</strong></p>
+<p>考虑：</p>
+<ul>
+<li><code>a = b = c;</code> 这个赋值语句的顺序是先<code>b = c</code>，然后在<code>a = (b = c)</code>。如果返回的<code>void</code>类型，那么<code>a = (void)</code>显然是不成立的；</li>
+<li><code>(a = b) = c;</code> 这个赋值语句会修改<code>a</code>的值，如果返回的类型是<code>MyString</code>对象，那么就无法修改<code>a</code>的值了。</li>
+</ul>
+<p>分别等价于：</p>
+<ul>
+<li><code>a.operator=(b.operator=(c));</code></li>
+<li><code>(a.operator=(b)).operator=(c);</code></li>
+</ul>
+<p>所以综上考虑，operator=返回值类型是<code>MyString &amp;</code>是比较好的。</p>
+<h2 id="复制拷贝构造函数">04 复制（拷贝）构造函数</h2>
+<p>上面的<code>MyString</code>类是否就没有问题了？</p>
+<pre><code>MyString s;
+s = &quot;Hello&quot;;
+MyString s1(s); // 要考虑这种情况，那就要重载复制（拷贝）构造函数</code></pre>
+<p>如果使用默认的复制（拷贝）构造函数，那就对有指针成员变量的对象会有问题，因为会默认的复制（拷贝）构造函数会导致两个对象的指针成员变量指向同一个的空间。</p>
+<p>所以需要对复制（拷贝）构造函数重载，并实现深拷贝的方式：</p>
+<pre><code>MyString (const MyString &amp;s)
+{
+    m_str = new char[strlen(s.m_str) + 1];
+    strcpy(m_str, s.m_str);
+}</code></pre>
+<h2 id="小结">05 小结</h2>
+<p>最后的所有代码，如下：</p>
+<pre><code>class MyString // 字符串类
+{
+public:
+    // 构造函数，默认初始化1个字节的字符
+    MyString ():m_str(new char[1])
+    {
+        m_str[0] = 0;
+    }
+    
+    // 复制（拷贝）构造函数
+    MyString (const MyString &amp;s)
+    {
+        m_str = new char[strlen(s.m_str) + 1];
+        strcpy(m_str, s.m_str);
+    }
+    
+    // 析构函数，释放资源
+    ~MyString()
+    {
+        delete [] m_str;
+    }
+    
+    const char* c_str()
+    {
+        return m_str;
+    }
+    
+    // 赋值运算符重载函数
+    // 重载=号使得 obj = &quot;Hello&quot; 能够成立
+    MyString &amp; operator= (const char *s)
+    {
+        // 释放旧字符串资源
+        delete [] m_str;
+        
+        // 生成新字符串的空间大小，长度多+1的目的是存放\0
+        m_str = new char[strlen(s) +1 ];
+        
+        // 拷贝新字符串的内容
+        strcpy(m_str, s);
+        
+        // 返回该对象
+        return *this;
+    }
+    
+    // 赋值运算符重载函数
+    // 重载=号使得 obj1 = obj2 能够成立
+    MyString &amp; operator=(const MyString &amp; s)
+    {
+        // 当左右两边是相同对象时，就直接返回该对象就
+        if(this == &amp;s)
+            return *this;
+    
+        delete [] m_str;
+        m_str = new char[strlen(s.m_str) +1 ];
+        strcpy(m_str, s.m_str);
+        return *this;
+    }
+    
+private:
+    char * m_str; // 字符串指针
+};
+
+int main() 
+{
+    
+    MyString s1,s2;
+    
+    s1 = &quot;Hello~&quot;; // 等价于s1.operator=(&quot;Hello~&quot;);
+    std::cout &lt;&lt; s1.c_str()  &lt;&lt; std::endl;
+    
+    
+    s2 = &quot;Hi~&quot;; // 等价于s2.operator=(&quot;Hi~&quot;);
+    std::cout &lt;&lt; s2.c_str()  &lt;&lt; std::endl;
+    
+    s1 = s2;   // 等价于s1.operator=(s2);
+    std::cout &lt;&lt; s1.c_str()  &lt;&lt; std::endl;
+    
+    MyString s3(s1);  // 复制构造函数
+    std::cout &lt;&lt; s3.c_str()  &lt;&lt; std::endl;
+
+    return 0;
+}</code></pre>
+<p>输出如下：</p>
+<pre><code>Hello~
+Hi~
+Hi~
+Hi~</code></pre>
+<hr />
+<blockquote>
+<p><img src="./images/C++ 赋值运算符&#39;=&#39;的重载（浅拷贝、深拷贝）1.png" /></p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

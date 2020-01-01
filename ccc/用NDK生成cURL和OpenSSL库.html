@@ -1,0 +1,155 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修用NDK生成cURL和OpenSSL库' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>用NDK生成cURL和OpenSSL库</center></div><div class='banquan'>原文出处:本文由博客园博主d16_flanker提供。<br/>
+原文连接:https://www.cnblogs.com/qiliang/p/11663058.html</div><br>
+    <p>最近在用Qt开发Android应用时需要获取https页面内容，但Qt内置的QNetworkAccessManager类只支持下面这些协议（调用其supportedSchemes成员函数获取）：</p>
+<p>("ftp", "file", "qrc", "http", "data")</p>
+<p>而网上我找到的支持https的介绍是使用QSslConfiguration类，然后把OpenSSL的两个DLL（libeay32.dll和ssleay32.dll）复制到Qt库目录中，但我始终没成功，也就懒得在手机上折腾了。</p>
+<p>这个思路不行，还有两个方案：一是通过QAndroidJniEnvironment和QAndroidJniObject调用Android SDK中封装的Https访问代码，还有就是通过cURL库，可以复用以前的代码，而且性能也不错，所以选择这个方案。</p>
+<p>首先是准备工作：</p>
+<ul>
+<li>Windows（Win10 x64）
+<ul>
+<li>下载并安装msys2(http://repo.msys2.org/distrib/x86_64/)，启动msys2_shell.cmd脚本，运行&ldquo;pacman -Syuu&rdquo;升级后关闭控制台窗口，重新启动后再运行一遍。这一步是可选的，如果不更新应该也可以，但我是更新后开始下一步的。</li>
+<li>下载Windows版NDK并安装</li>
+<li>设置ANDROID_NDK_HOME环境变量：exprot&nbsp;ANDROID_NDK_HOME=/d/android-ndk-r20</li>
+<li>更新PATH环境变量：export PATH="/d/android-ndk-r20/toolchains/llvm/prebuilt/windows-x86_64/bin/":$PATH</li>
+</ul>
+</li>
+<li>Linux（CentOS 8）
+<ul>
+<li>下载Linux版NDK并安装</li>
+<li>设置ANDROID_NDK_HOME环境变量：exprot&nbsp;ANDROID_NDK_HOME=/home/user/android-ndk-r20</li>
+<li>更新PATH环境变量：export PATH="/home/user/android-ndk-r20/toolchains/llvm/prebuilt/linux-x86_64/bin":$PATH</li>
+</ul>
+</li>
+<li>下载OpenSSL源码包，版本必须是1.1.x，开始我没注意，用的是之前下载的1.0.x，折腾了很长时间也没搞定，郁闷！</li>
+<li>下载cURL源码包，我用的版本是7.66.0</li>
+</ul>
+<p>然后就可以开工，下面列出的命令都是Linux平台，Windows里面msys2的命令大同小异。</p>
+<p>生成OpenSSL</p>
+<ul>
+<li>cd&nbsp;openssl-1.1.1d</li>
+<li>./Configure shared android-arm -D__ANDROID_API__=23 no-asm no-ssl2 no-ssl3 no-comp no-hw no-engine --prefix=/usr/local/ssl</li>
+<li>make -j &amp;&amp; make install</li>
+</ul>
+<p>上面第二行命令中的android-arm参数要注意，脚本提示可选的系统/编译器有很多：</p>
+<p>android-arm android-arm64 android-armeabi android-mips android-mips64 android-x86 android-x86_64 android64 android64-aarch64 android64-mips64 android64-x86_64</p>
+<p>但要选择哪个取决于你所用NDK根目录下&ldquo;platforms/android-xx&rdquo;里面的子目录能对应上才行，例如android-ndk-r20中的android-16里面只有arch-arm和arch-x86，所以如果命令行设置__ANDROID_API__=16的话，是不能生成android-arm64版库文件的。</p>
+<p>接下来是cURL</p>
+<ul>
+<li>cd&nbsp;curl-7.66.0</li>
+<li>CC=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi23-clang ./configure --prefix=/usr/local/curl --host=arm-linux-androideabi --with-ssl=/usr/local/ssl/</li>
+<li>make -j &amp;&amp; make install</li>
+</ul>
+<p>在用到Qt项目之前，先写个控制台程序测试一下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;map&gt;
+<span style="color: #008080;"> 3</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 4</span> #include &lt;curl/curl.h&gt;
+<span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 8</span> 
+<span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span> <span style="color: #0000ff;">#define</span> URL u8R"(https://raw.githubusercontent.com/LCTT/LFS-BOOK/9.0-translating/README.md<span style="color: #008000;">)"</span>
+<span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span> typedef std::map&lt;std::<span style="color: #0000ff;">string</span>, std::<span style="color: #0000ff;">string</span>&gt;<span style="color: #000000;"> HeaderFields;
+</span><span style="color: #008080;">14</span> typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> code;
+</span><span style="color: #008080;">16</span>     std::<span style="color: #0000ff;">string</span><span style="color: #000000;"> body;
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">    HeaderFields headers;
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">} Response;
+</span><span style="color: #008080;">19</span> 
+<span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span> size_t write_callback( <span style="color: #0000ff;">void</span> *data, size_t size, size_t nmemb, <span style="color: #0000ff;">void</span> *<span style="color: #000000;">userdata )
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">23</span>     Response *r = reinterpret_cast&lt; Response * &gt;<span style="color: #000000;">( userdata );
+</span><span style="color: #008080;">24</span>     r-&gt;body.append( reinterpret_cast&lt; <span style="color: #0000ff;">char</span> * &gt;( data ), size *<span style="color: #000000;"> nmemb );
+</span><span style="color: #008080;">25</span>     <span style="color: #0000ff;">return</span> size *<span style="color: #000000;"> nmemb;
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">27</span> 
+<span style="color: #008080;">28</span> 
+<span style="color: #008080;">29</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> _cURL()
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">31</span>     <span style="color: #0000ff;">if</span>( curl_global_init( CURL_GLOBAL_ALL ) !=<span style="color: #000000;"> CURLE_OK )
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">33</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Call curl_global_init failed! \n</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">34</span>         <span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">35</span>     }<span style="color: #008000;">//</span><span style="color: #008000;"> if</span>
+<span style="color: #008080;">36</span> 
+<span style="color: #008080;">37</span>     CURL *curlHandle =<span style="color: #000000;"> curl_easy_init();
+</span><span style="color: #008080;">38</span>     CURLcode res =<span style="color: #000000;"> CURLE_OK;
+</span><span style="color: #008080;">39</span>     curl_slist *headerList =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">40</span>     Response ret =<span style="color: #000000;"> {};
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">    curl_easy_setopt( curlHandle, CURLOPT_URL, URL );
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">    curl_easy_setopt( curlHandle, CURLOPT_WRITEFUNCTION, write_callback );
+</span><span style="color: #008080;">43</span>     curl_easy_setopt( curlHandle, CURLOPT_WRITEDATA, &amp;<span style="color: #000000;">ret );
+</span><span style="color: #008080;">44</span>     curl_easy_setopt( curlHandle, CURLOPT_SSL_VERIFYPEER, <span style="color: #800080;">0</span><span style="color: #000000;"> );
+</span><span style="color: #008080;">45</span>     curl_easy_setopt( curlHandle, CURLOPT_SSL_VERIFYHOST, <span style="color: #800080;">0</span><span style="color: #000000;"> );
+</span><span style="color: #008080;">46</span>     res =<span style="color: #000000;"> curl_easy_perform( curlHandle );
+</span><span style="color: #008080;">47</span>     <span style="color: #0000ff;">if</span>( res !=<span style="color: #000000;"> CURLE_OK )
+</span><span style="color: #008080;">48</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">The result code is: </span><span style="color: #800000;">"</span> &lt;&lt; ( <span style="color: #0000ff;">int</span> )res &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">49</span>     <span style="color: #0000ff;">if</span>( <span style="color: #0000ff;">false</span> ==<span style="color: #000000;"> ret.body.empty() )
+</span><span style="color: #008080;">50</span>         cout &lt;&lt; ret.body &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">51</span> <span style="color: #000000;">    curl_easy_cleanup( curlHandle );
+</span><span style="color: #008080;">52</span> <span style="color: #000000;">    curl_global_cleanup();
+</span><span style="color: #008080;">53</span> 
+<span style="color: #008080;">54</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">55</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">56</span> 
+<span style="color: #008080;">57</span> 
+<span style="color: #008080;">58</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">59</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">60</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> _cURL();
+</span><span style="color: #008080;">61</span> }</pre>
+</div>
+<p>保存为test.cc，然后生成Android控制台程序：</p>
+<p>$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi23-clang++ test.cc&nbsp;-I/usr/local/curl/include -Wl,-Bstatic -lcurl -lssl -lcrypto -Wl,-Bdynamic -o test</p>
+<p>注意curl、ssl和crypto三个库用-Wl,-Bstatic方式指定链接静态库（顺序不能错），否则默认会链接动态库，但非root手机没有复制动态库到系统目录的权限，所以需要静态链接得到test，然后开启Android手机的调试模式并连接主机USB，最后在命令行切换到Android SDK的platform-tools目录：</p>
+<ul>
+<li>把文件复制到手机存储器：adb push test /data/local/tmp</li>
+<li>启动adb Shell：adb shell</li>
+<li>文件添加可执行权限：chmod +x /data/local/tmp/test</li>
+<li>启动：/data/local/tmp/test</li>
+</ul>
+<p>顺利的话就可以正确获取并显示页面中的文本，然后就可以导入Qt项目，首先把cURL的头文件都复制到项目的目录中，然后把libcurl.a、libssl.a和libcrypto.a三个库文件复制到项目路径的android/lib中，修改*.pro文件，添加下面一行：</p>
+<p>LIBS += -L$$PWD/android/lib -lcurl -lssl -lcrypto</p>
+<p>如果已经有LIBS就在后面加上-lcurl -lssl -lcrypto三个库的引用，最后即可生成APK。</p>
+<p>注意：</p>
+<ul>
+<li>如果系统没有GNU binutils，运行cURL的configure脚本前需要把NDK的路径添加到PATH，而且是添加对应生成目标的路径，例如要生成64位arm指令集：</li>
+</ul>
+<div class="cnblogs_code">
+<pre>PATH=&ldquo;$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/aarch64-linux-android/bin/&rdquo;:$PATH</pre>
+</div>
+<p>然后在生成不同目标平台库的时候先切换，例如通用arm指令集：</p>
+<div class="cnblogs_code">
+<pre>PATH=&ldquo;$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/arm-linux-androideabi/bin/&rdquo;:$PATH</pre>
+</div>
+<ul>
+<li>Qt应用项目的Android系统版本号要大于等于生成cURL和OpenSSL设置的__ANDROID_API__版本号，否则链接时可能会出现找不到stdin、stdout和stderr外部符号的错误，一般生成库都是选个低点的系统版本兼容性更好。</li>
+</ul>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

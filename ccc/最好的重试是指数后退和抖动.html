@@ -1,0 +1,139 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修最好的重试是指数后退和抖动' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>最好的重试是指数后退和抖动</center></div><div class='banquan'>原文出处:本文由博客园博主锅外的大佬提供。<br/>
+原文连接:https://www.cnblogs.com/liululee/p/11569565.html</div><br>
+    <h2 id="概述">1. 概述</h2>
+<p>在本教程中，我们将探讨如何使用两种不同的策略改进客户端重试：指数后退和抖动。</p>
+<h2 id="重试">2. 重试</h2>
+<p>在分布式系统中，多个组件之间的网络通信随时可能发生故障。</p>
+<p><strong>客户端应用程序通过实现重试来处理这些失败。</strong></p>
+<p>设想我们有一个调用远程服务的客户端应用程序—— <em>PingPongService</em> 。</p>
+<pre><code>interface PingPongService {
+    String call(String ping) throws PingPongServiceException;
+}</code></pre>
+<p>如果 <em>PingPongService</em> 返回一个 <em>PingPongServiceException</em> ，则客户端应用程序必须重试。在以下选项当中，我们将考虑实现客户端重试的方法。</p>
+<h2 id="resilience4j-重试">3. Resilience4j 重试</h2>
+<p>在我们的例子中，我们将使用 <a href="https://www.baeldung.com/resilience4j">Resilience4j</a> 库，特别是它的 <a href="https://resilience4j.readme.io/docs/retry">retry</a> 模块。我们需要将添加 resilience4j-retry 模块到 <em>pom.xml</em> ：</p>
+<pre class="xml"><code>&lt;dependency&gt;
+    &lt;groupId&gt;io.github.resilience4j&lt;/groupId&gt;
+    &lt;artifactId&gt;resilience4j-retry&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p>关于重试的复习，不要忘记查看我们的 <a href="https://www.baeldung.com/resilience4j">Resilience4j 指南</a>。</p>
+<h2 id="指数后退">4. 指数后退</h2>
+<p>客户端应用程序必须负责地实现重试。<strong>当客户在没有等待的情况下重试失败的调用时</strong>，他们可能会使系统不堪重负，并导致已经处于困境的服务进一步降级。</p>
+<p>指数回退是处理失败网络调用重试的常用策略。简单地说，<strong>客户端在连续重试之间等待的时间间隔越来越长：</strong></p>
+<pre><code>wait_interval = base * multiplier^n</code></pre>
+<p>其中，</p>
+<ul>
+<li><em>base</em> 是初始间隔，即等待第一次重试</li>
+<li><em>n</em> 是已经发生的故障数量</li>
+<li><em>multiplier</em> 是一个任意的乘法器，可以用任何合适的值替换</li>
+</ul>
+<p>通过这种方法，我们为系统提供了喘息的空间，以便从间歇性故障或更严重的问题中恢复过来。</p>
+<p>我们可以在 Resilience4j 重试中使用指数回退算法，方法是配置它的 <em>IntervalFunction</em> ，该函数接受 <em>initialInterval</em> 和 <em>multiplier</em>。</p>
+<p>重试机制使用 <em>IntervalFunction</em> 作为睡眠函数：</p>
+<pre class="js"><code>IntervalFunction intervalFn =
+  IntervalFunction.ofExponentialBackoff(INITIAL_INTERVAL, MULTIPLIER);
+
+RetryConfig retryConfig = RetryConfig.custom()
+  .maxAttempts(MAX_RETRIES)
+  .intervalFunction(intervalFn)
+  .build();
+Retry retry = Retry.of(&quot;pingpong&quot;, retryConfig);
+
+Function&lt;String, String&gt; pingPongFn = Retry
+    .decorateFunction(retry, ping -&gt; service.call(ping));
+pingPongFn.apply(&quot;Hello&quot;);</code></pre>
+<p>让我们模拟一个真实的场景，假设我们有几个客户端同时调用 <em>PingPongService</em> ：</p>
+<pre><code>ExecutorService executors = newFixedThreadPool(NUM_CONCURRENT_CLIENTS);
+List&lt;Callable&gt; tasks = nCopies(NUM_CONCURRENT_CLIENTS, () -&gt; pingPongFn.apply(&quot;Hello&quot;));
+executors.invokeAll(tasks);</code></pre>
+<p>让我们看看 <em>NUM_CONCURRENT_CLIENTS</em> = 4 的远程调用日志：</p>
+<pre><code>[thread-1] At 00:37:42.756
+[thread-2] At 00:37:42.756
+[thread-3] At 00:37:42.756
+[thread-4] At 00:37:42.756
+
+[thread-2] At 00:37:43.802
+[thread-4] At 00:37:43.802
+[thread-1] At 00:37:43.802
+[thread-3] At 00:37:43.802
+
+[thread-2] At 00:37:45.803
+[thread-1] At 00:37:45.803
+[thread-4] At 00:37:45.803
+[thread-3] At 00:37:45.803
+
+[thread-2] At 00:37:49.808
+[thread-3] At 00:37:49.808
+[thread-4] At 00:37:49.808
+[thread-1] At 00:37:49.808</code></pre>
+<p>我们可以在这里看到一个清晰的模式——客户机等待指数级增长的间隔，但是在每次重试（冲突）时，它们都在同一时间调用远程服务。</p>
+<p><a href="http://inprogress.baeldung.com/wp-content/uploads/2019/07/chart.png"><img src="./images/最好的重试是指数后退和抖动0.png" alt="img" /></a></p>
+<p>我们只解决了问题的一部分 - 我们不再重新启动远程服务，<strong>但是，取而代之的是随着时间的推移分散工作量，我们在工作时间间隔更多，空闲时间更长。</strong>此行为类似于<a href="https://en.wikipedia.org/wiki/Thundering_herd_problem">惊群问题</a>。</p>
+<h2 id="介绍抖动">5. 介绍抖动</h2>
+<p>在我们前面的方法中，客户机等待时间逐渐变长，但仍然是同步的。<strong>添加抖动提供了一种方法来中断跨客户机的同步，从而避免冲突。</strong>在这种方法中，我们给等待间隔增加了随机性。</p>
+<pre><code>wait_interval = (base * 2^n) +/- (random_interval)</code></pre>
+<p>其中，<em>random_interval</em> 被添加（或减去）以打破客户端之间的同步。</p>
+<p>我们不会深入研究随机区间的计算机制，但是随机化必须将峰值空间分离到更平滑的客户端调用分布。</p>
+<p>我们可以通过配置一个指数随机回退 <em>IntervalFunction</em>，它也接受一个 <em>randomizationFactor</em>，从而在 Resilience4j 重试中使用带有抖动的指数回退：</p>
+<pre><code>IntervalFunction intervalFn = 
+  IntervalFunction.ofExponentialRandomBackoff(INITIAL_INTERVAL, MULTIPLIER, RANDOMIZATION_FACTOR);</code></pre>
+<p>让我们回到我们的真实场景，并查看带抖动的远程调用日志：</p>
+<pre><code>[thread-2] At 39:21.297
+[thread-4] At 39:21.297
+[thread-3] At 39:21.297
+[thread-1] At 39:21.297
+
+[thread-2] At 39:21.918
+[thread-3] At 39:21.868
+[thread-4] At 39:22.011
+[thread-1] At 39:22.184
+
+[thread-1] At 39:23.086
+[thread-5] At 39:23.939
+[thread-3] At 39:24.152
+[thread-4] At 39:24.977
+
+[thread-3] At 39:26.861
+[thread-1] At 39:28.617
+[thread-4] At 39:28.942
+[thread-2] At 39:31.039</code></pre>
+<p>现在我们有了更好的传播。我们已经<strong>消除了冲突和空闲时间，并以几乎恒定的客户端调用率</strong>结束，除非出现最初的激增。</p>
+<p><a href="http://inprogress.baeldung.com/wp-content/uploads/2019/07/chart-1.png"><img src="./images/最好的重试是指数后退和抖动1.png" alt="img" /></a></p>
+<p>注意：我们夸大了插图的间隔时间，在实际情况中，我们会有较小的差距。</p>
+<h2 id="结论">6. 结论</h2>
+<p>在本教程中，我们探讨了如何通过使用抖动增加指数回退来改进客户端应用程序重试失败调用的方法。本教程中使用的示例的源代码可以在 <a href="https://github.com/eugenp/tutorials/tree/master/patterns/backoff-jitter">GitHub</a> 上找到。</p>
+<blockquote>
+<p>原文：<a href="https://www.baeldung.com/resilience4j-backoff-jitter" class="uri">https://www.baeldung.com/resilience4j-backoff-jitter</a></p>
+<p>作者：<a href="https://www.baeldung.com/author/priyank-srivastava/">Priyank Srivastava</a></p>
+<h2 id="译者queena">译者：Queena</h2>
+</blockquote>
+<p>9月福利，关注公众号<br />
+​<br />
+后台回复：004，领取8月翻译集锦!<br />
+​<br />
+往期福利回复：001，002, 003即可领取！</p>
+<p><img src="./images/最好的重试是指数后退和抖动2.png" alt="img" /></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,568 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修FFmpeg4.0笔记：封装ffmpeg的解封装功能类CDemux' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>FFmpeg4.0笔记：封装ffmpeg的解封装功能类CDemux</center></div><div class='banquan'>原文出处:本文由博客园博主gongluck提供。<br/>
+原文连接:https://www.cnblogs.com/gongluck/p/11142963.html</div><br>
+    <h2 id="github">Github</h2>
+<p><a href="https://github.com/gongluck/FFmpeg4.0-study/tree/master/Cff" class="uri">https://github.com/gongluck/FFmpeg4.0-study/tree/master/Cff</a></p>
+<h2 id="cdemux.h">CDemux.h</h2>
+<pre><code>/*******************************************************************
+*  Copyright(c) 2019
+*  All rights reserved.
+*
+*  文件名称:    CDemux.h
+*  简要描述:    解封装
+*
+*  作者:  gongluck
+*  说明:
+*
+*******************************************************************/
+
+#ifndef __CDEMUX_H__
+#define __CDEMUX_H__
+
+#ifdef __cplusplus
+extern &quot;C&quot;
+{
+#endif
+
+#include &lt;libavformat/avformat.h&gt;
+#include &lt;libavdevice/avdevice.h&gt;
+
+#ifdef __cplusplus
+}
+#endif
+
+#include &lt;string&gt;
+#include &lt;mutex&gt;
+#include &lt;thread&gt;
+
+class CDemux
+{
+public:
+    virtual ~CDemux();
+    // 状态
+    enum STATUS { STOP, DEMUXING };
+    // 状态通知回调声明
+    typedef void (*DemuxStatusCallback)(STATUS status, const std::string&amp; err, void* param);
+    // 解封装帧回调声明
+    typedef void (*DemuxPacketCallback)(const AVPacket* packet, int64_t timestamp, void* param);
+
+    // 设置输入
+    bool set_input(const std::string&amp; input, std::string&amp; err);
+    // 获取输入
+    const std::string&amp; get_input(std::string&amp; err);
+
+    // 设置解封装帧回调 
+    bool set_demux_callback(DemuxPacketCallback cb, void* param, std::string&amp; err);
+    // 设置解封装状态变化回调
+    bool set_demux_status_callback(DemuxStatusCallback cb, void* param, std::string&amp; err);
+
+    // 打开输入
+    bool openinput(std::string&amp; err);
+    // 开始解封装
+    bool begindemux(std::string&amp; err);
+    // 停止解封装
+    bool stopdemux(std::string&amp; err);
+
+    // 获取流索引
+    int get_steam_index(AVMediaType type, std::string&amp; err);
+    // 获取流参数
+    const AVCodecParameters* get_steam_par(int index, std::string&amp; err);
+
+    // 跳转到指定秒
+    bool seek(int64_t timestamp, int index, int flags, std::string&amp; err);
+
+    // 启用设备采集
+    bool device_register_all(std::string&amp; err);
+    // 设置输入格式
+    bool set_input_format(const std::string&amp; fmt, std::string&amp; err);
+    // 设置附加参数
+    bool set_dic_opt(const std::string&amp; key, const std::string&amp; value, std::string&amp; err);
+    // 清理设置
+    bool free_opt(std::string&amp; err);
+
+    // 设置bsf名称，影响回调的packet数据能否直接播放
+    bool set_bsf_name(const std::string&amp; bsf, std::string&amp; err);
+
+private:
+    // 解封装线程
+    bool demuxthread();
+
+private:
+    STATUS status_ = STOP;
+    std::recursive_mutex mutex_;
+
+    std::string input_;
+    std::thread demuxth_;
+
+    DemuxStatusCallback demuxstatuscb_ = nullptr;
+    void* demuxstatuscbparam_ = nullptr;
+    DemuxPacketCallback demuxpacketcb_ = nullptr;
+    void* demuxpacketcbparam_ = nullptr;
+
+    //ffmpeg
+    AVFormatContext* fmtctx_ = nullptr;
+    AVInputFormat* fmt_ = nullptr;
+    AVDictionary* dic_ = nullptr;
+    std::string bsfname_;
+};
+
+#endif//__CDEMUX_H__</code></pre>
+<h2 id="cdemux.cpp">CDemux.cpp</h2>
+<pre><code>/*******************************************************************
+*  Copyright(c) 2019
+*  All rights reserved.
+*
+*  文件名称:    CDemux.cpp
+*  简要描述:    解封装
+*
+*  作者:  gongluck
+*  说明:
+*
+*******************************************************************/
+
+#include &quot;common.h&quot;
+#include &quot;CDemux.h&quot;
+
+CDemux::~CDemux()
+{
+    std::string err;
+    stopdemux(err);
+    free_opt(err);
+}
+
+bool CDemux::set_input(const std::string&amp; input, std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    if (input.empty())
+    {
+        err = &quot;input is empty.&quot;;
+        return false;
+    }
+    else
+    {
+        input_ = input;
+        return true;
+    }
+}
+
+const std::string&amp; CDemux::get_input(std::string&amp; err)
+{
+    LOCK();
+    err = &quot;opt succeed.&quot;;
+    return input_;
+}
+
+bool CDemux::set_demux_callback(DemuxPacketCallback cb, void* param, std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    demuxpacketcb_ = cb;
+    demuxpacketcbparam_ = param;
+
+    return true;
+}
+
+bool CDemux::set_demux_status_callback(DemuxStatusCallback cb, void* param, std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    demuxstatuscb_ = cb;
+    demuxstatuscbparam_ = param;
+
+    return true;
+}
+
+bool CDemux::openinput(std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+    int ret = 0;
+
+    avformat_close_input(&amp;fmtctx_);
+    fmtctx_ = avformat_alloc_context();
+    if (fmtctx_ == nullptr)
+    {
+        err = &quot;avformat_alloc_context() return nullptr.&quot;;
+        return false;
+    }
+    ret = avformat_open_input(&amp;fmtctx_, input_.c_str(), fmt_, &amp;dic_);
+    CHECKFFRET(ret);
+
+    ret = avformat_find_stream_info(fmtctx_, nullptr);
+    CHECKFFRET(ret);
+
+    av_dump_format(fmtctx_, 0, input_.c_str(), 0);
+
+    return true;
+}
+
+bool CDemux::begindemux(std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    status_ = DEMUXING;
+    std::thread th(&amp;CDemux::demuxthread, this);
+    demuxth_.swap(th);
+
+    return true;
+}
+
+bool CDemux::stopdemux(std::string&amp; err)
+{
+    LOCK();
+    err = &quot;opt succeed.&quot;;
+
+    status_ = STOP;
+    if (demuxth_.joinable())
+    {
+        demuxth_.join();
+    }
+    avformat_close_input(&amp;fmtctx_);
+
+    return true;
+}
+
+bool CDemux::demuxthread()
+{
+    int ret;
+    std::string err;
+
+    AVPacket* packet = av_packet_alloc();
+    const AVBitStreamFilter* bsf = nullptr;
+    AVBSFContext* bsfctx = nullptr;
+    AVCodecParameters* codecpar = nullptr;
+    int vindex = -1;
+    do
+    {
+        if (fmtctx_ == nullptr)
+        {
+            err = &quot;fmtctx is nullptr.&quot;;
+            break;
+        }
+        else if (packet == nullptr)
+        {
+            err = &quot;av_packet_alloc() return nullptr.&quot;;
+            break;
+        }
+        // 初始化packet
+        av_init_packet(packet);
+
+        // bsf
+        if (!bsfname_.empty())
+        {
+            bsf = av_bsf_get_by_name(bsfname_.c_str());
+            if (bsf == nullptr)
+            {
+                err = &quot;av_bsf_get_by_name() return nullptr.&quot;;
+                break;
+            }
+            ret = av_bsf_alloc(bsf, &amp;bsfctx);
+            if (ret &lt; 0)
+            {
+                err = av_err2str(ret);
+                break;
+            }
+            for (int i = 0; i &lt; fmtctx_-&gt;nb_streams; ++i)
+            {
+                if (fmtctx_-&gt;streams[i]-&gt;codecpar-&gt;codec_type == AVMEDIA_TYPE_VIDEO)
+                {
+                    codecpar = fmtctx_-&gt;streams[i]-&gt;codecpar;
+                    vindex = i;
+                    break;
+                }
+            }
+            if (codecpar == nullptr)
+            {
+                err = &quot;can not find codecpar.&quot;;
+                break;
+            }
+            ret = avcodec_parameters_copy(bsfctx-&gt;par_in, codecpar);
+            if (ret &lt; 0)
+            {
+                err = av_err2str(ret);
+                break;
+            }
+            ret = av_bsf_init(bsfctx);
+            if (ret &lt; 0)
+            {
+                err = av_err2str(ret);
+                break;
+            }
+        }
+
+        // 循环读数据解码数据
+        while (true)
+        {
+            if (status_ != DEMUXING)
+            {
+                break;
+            }
+
+            // 读数据
+            ret = av_read_frame(fmtctx_, packet);
+            if (ret &lt; 0)
+            {
+                err = av_err2str(ret);
+                break; //这里认为视频读取完了
+            }
+            else if (demuxpacketcb_ != nullptr)
+            {
+                if (packet-&gt;stream_index == vindex &amp;&amp; bsfctx != nullptr)
+                {
+                    ret = av_bsf_send_packet(bsfctx, packet);
+                    if (ret &lt; 0)
+                    {
+                        err = av_err2str(ret);
+                        break;
+                    }
+                    while (ret &gt;= 0)
+                    {
+                        ret = av_bsf_receive_packet(bsfctx, packet);
+                        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                        {
+                            // 不完整或者EOF
+                            break;
+                        }
+                        else if (ret &lt; 0)
+                        {
+                            // 其他错误
+                            err = av_err2str(ret);
+                            if (demuxstatuscb_ != nullptr)
+                            {
+                                demuxstatuscb_(DEMUXING, err, demuxstatuscbparam_);
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            demuxpacketcb_(packet, av_rescale_q_rnd(packet-&gt;pts, fmtctx_-&gt;streams[packet-&gt;stream_index]-&gt;time_base, { 1, 1 }, static_cast&lt;AVRounding&gt;(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)), demuxpacketcbparam_);
+                        }
+                    }
+                }
+                else
+                {
+                    demuxpacketcb_(packet, av_rescale_q_rnd(packet-&gt;pts, fmtctx_-&gt;streams[packet-&gt;stream_index]-&gt;time_base, { 1, 1 }, static_cast&lt;AVRounding&gt;(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)), demuxpacketcbparam_);
+                }
+            }
+
+            // 不再引用指向的缓冲区
+            av_packet_unref(packet);
+        }
+        break;
+    } while (true);
+
+    // 清理bsf
+    av_bsf_free(&amp;bsfctx);
+    // 清理packet
+    av_packet_free(&amp;packet);
+
+    status_ = STOP;
+    if (demuxstatuscb_ != nullptr)
+    {
+        demuxstatuscb_(STOP, err, demuxstatuscbparam_);
+    }
+
+    return true;
+}
+
+int CDemux::get_steam_index(AVMediaType type, std::string&amp; err)
+{
+    TRYLOCK();
+    err = &quot;opt succeed.&quot;;
+
+    int ret = av_find_best_stream(fmtctx_, type, -1, -1, nullptr, 0);
+    UNLOCK();
+    if (ret &lt; 0)
+    {
+        err = av_err2str(ret);
+        return -1;
+    }
+    else
+    {
+        return ret;
+    }
+} 
+
+const AVCodecParameters* CDemux::get_steam_par(int index, std::string&amp; err)
+{
+    TRYLOCK();
+    const AVCodecParameters* par = nullptr;
+    err = &quot;opt succeed.&quot;;
+
+    if (index &lt; 0 || static_cast&lt;unsigned int&gt;(index) &gt;= fmtctx_-&gt;nb_streams)
+    {
+        err = &quot;stream index err.&quot;;
+    }
+    else
+    {
+        par = fmtctx_-&gt;streams[index]-&gt;codecpar;
+    }
+    UNLOCK();
+
+    return par;
+}
+
+bool CDemux::seek(int64_t timestamp, int index, int flags, std::string&amp; err)
+{
+    TRYLOCK();
+    err = &quot;opt succeed.&quot;;
+
+    int ret = av_seek_frame(fmtctx_, index, av_rescale_q_rnd(timestamp, { 1, 1 }, fmtctx_-&gt;streams[index]-&gt;time_base, static_cast&lt;AVRounding&gt;(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX)), flags);
+    UNLOCK();
+    if (ret &lt; 0)
+    {
+        err = av_err2str(ret);
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+bool CDemux::device_register_all(std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    avdevice_register_all();
+
+    return true;
+}
+
+bool CDemux::set_input_format(const std::string&amp; fmt, std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    if (fmt.empty())
+    {
+        err = &quot;fmt is empty.&quot;;
+        return false;
+    }
+    else
+    {
+        fmt_ = av_find_input_format(fmt.c_str());
+        if (fmt_ == nullptr)
+        {
+            err = &quot;can not find fmt &quot; + fmt;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool CDemux::set_dic_opt(const std::string&amp; key, const std::string&amp; value, std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    if (key.empty() || value.empty())
+    {
+        err = &quot;input is empty.&quot;;
+        return false;
+    }
+
+    CHECKFFRET(av_dict_set(&amp;dic_, key.c_str(), value.c_str(), 0));
+
+    return true;
+}
+
+bool CDemux::free_opt(std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    av_dict_free(&amp;dic_);
+    fmt_ = nullptr;
+
+    return true;
+}
+
+bool CDemux::set_bsf_name(const std::string&amp; bsf, std::string&amp; err)
+{
+    LOCK();
+    CHECKSTOP(err);
+    err = &quot;opt succeed.&quot;;
+
+    bsfname_ = bsf;
+
+    return true;
+}</code></pre>
+<h2 id="测试">测试</h2>
+<pre><code>// 解封装
+void test_demux()
+{
+    bool ret = false;
+    std::string err;
+    CDemux demux;
+    
+    ret = demux.set_input(&quot;in.flv&quot;, err);
+    //ret = demux.set_input(&quot;in.h264&quot;, err);
+    //ret = demux.set_input(&quot;in.aac&quot;, err);
+    TESTCHECKRET(ret);
+
+    ret = demux.set_demux_callback(DemuxPacketCB, &amp;demux, err);
+    TESTCHECKRET(ret);
+
+    ret = demux.set_demux_status_callback(DemuxStatusCB, &amp;demux, err);
+    TESTCHECKRET(ret);
+
+    ret = demux.set_bsf_name(&quot;h264_mp4toannexb&quot;, err);
+    TESTCHECKRET(ret);
+
+    ret = demux.openinput(err);
+    TESTCHECKRET(ret);
+
+    g_vindex = demux.get_steam_index(AVMEDIA_TYPE_VIDEO, err);
+    std::cout &lt;&lt; err &lt;&lt; std::endl;
+    g_aindex = demux.get_steam_index(AVMEDIA_TYPE_AUDIO, err);
+    std::cout &lt;&lt; err &lt;&lt; std::endl;
+
+    ret = demux.begindemux(err);
+    TESTCHECKRET(ret);
+
+    std::cout &lt;&lt; &quot;input to stop demuxing.&quot; &lt;&lt; std::endl;
+    std::cin.get();
+
+    ret = demux.stopdemux(err);
+    TESTCHECKRET(ret);
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

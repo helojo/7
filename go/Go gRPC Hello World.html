@@ -1,0 +1,208 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go gRPC Hello World' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go gRPC Hello World</center></div><div class='banquan'>原文出处:本文由博客园博主it-world提供。<br/>
+原文连接:https://www.cnblogs.com/it-3327/p/11861891.html</div><br>
+    <p>概述<br /><br />开始 gRPC 了，这篇文章学习使用 gRPC，输出一个 Hello World。<br /><br />&nbsp;&nbsp;&nbsp; 用 Go 实现 gRPC 的服务端。<br /><br />&nbsp;&nbsp;&nbsp; 用 Go 实现 gRPC 的客户端。<br /><br />gRPC 支持 4 类服务方法，咱们这次实现 单项 RPC 和 服务端流式 RPC。<br /><br />四类服务方法<br /><br />单项 RPC<br /><br />服务端发送一个请求给服务端，从服务端获取一个应答，就像一次普通的函数调用。<br /><br />rpc SayHello(HelloRequest) returns (HelloResponse){}<br /><br />服务端流式 RPC<br /><br />客户端发送一个请求给服务端，可获取一个数据流用来读取一系列消息。客户端从返回的数据流里一直读取直到没有更多消息为止。<br /><br />rpc LotsOfReplies(HelloRequest) returns (stream HelloResponse){}<br /><br />客户端流式 RPC<br /><br />客户端用提供的一个数据流写入并发送一系列消息给服务端。一旦客户端完成消息写入，就等待服务端读取这些消息并返回应答。</p>
+<div class="cnblogs_Highlighter">
+<pre><code>rpc LotsOfGreetings(stream HelloRequest) returns (HelloResponse) {}
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />双向流式 RPC<br /><br />两边都可以分别通过一个读写数据流来发送一系列消息。这两个数据流操作是相互独立的，所以客户端和服务端能按其希望的任意顺序读写，例如：服务端可以在写应答前等待所有的客户端消息，或者它可以先读一个消息再写一个消息，或者是读写相结合的其他方式。每个数据流里消息的顺序会被保持。<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>rpc BidiHello(stream HelloRequest) returns (stream HelloResponse){}
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />安装<br /><br />安装 protobuf 编译器<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>brew install protobuf
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />验证：<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>    protoc --version    
+    //输出：libprotoc 3.7.1
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />安装 Go protobuf 插件<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>    go get -u github.com/golang/protobuf/proto    
+    go get -u github.com/golang/protobuf/protoc-gen-go
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br />安装 grpc-go<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>go get -u google.golang.org/grpc
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br /><br />写个 Hello World 服务<br /><br />&nbsp;&nbsp;&nbsp; 编写服务端 .proto 文件<br /><br />&nbsp;&nbsp;&nbsp; 生成服务端 .pb.go 文件并同步给客户端<br /><br />&nbsp;&nbsp;&nbsp; 编写服务端提供接口的代码<br /><br />&nbsp;&nbsp;&nbsp; 编写客户端调用接口的代码<br /><br />目录结构<br /><br />&nbsp;&nbsp;&nbsp; ├─ hello&nbsp; -- 代码根目录&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp; ├─ go_client&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp; ├── main.go&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp; ├── proto&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── hello&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── hello.pb.go&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp; ├─ go_server&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp; ├── main.go&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp; ├── controller&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── hello_controller&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── hello_server.go&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp; ├── proto&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── hello&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── hello.pb.go&nbsp;&nbsp; &nbsp;<br />&nbsp;&nbsp;&nbsp; │&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ├── hello.proto<br /><br />这样创建目录是为了 go_client 和 go_server 后期可以拆成两个项目。<br /><br />编写服务端 hello.proto 文件<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>    syntax = "proto3"; // 指定 proto 版本    
+    package hello;     // 指定包名    
+    // 定义 Hello 服务    
+    service Hello {    
+        // 定义 SayHello 方法    
+        rpc SayHello(HelloRequest) returns (HelloResponse) {}    
+        // 定义 LotsOfReplies 方法    
+        rpc LotsOfReplies(HelloRequest) returns (stream HelloResponse){}    
+    }    
+    // HelloRequest 请求结构    
+    message HelloRequest {    
+        string name = 1;    
+    }    
+    // HelloResponse 响应结构    
+    message HelloResponse {    
+        string message = 1;    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />了解更多 Protobuf 语法，请查看：<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>https://developers.google.com/protocol-buffers/
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />生成服务端 .pb.go<br /><br />protoc -I . --go_out=plugins=grpc:. ./hello.proto<br /><br />同时将生成的 hello.pb.go 复制到客户端一份。<br /><br />查看更多命令参数，执行 protoc，查看 OPTION 。<br /><br />编写服务端提供接口的代码<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>  // hello_server.go    
+    package hello_controller    
+    import (    
+        "fmt"    
+        "golang.org/x/net/context"    
+        "hello/go_server/proto/hello"    
+    )    
+    type HelloController struct{}    
+    func (h *HelloController) SayHello(ctx context.Context, in *hello.HelloRequest) (*hello.HelloResponse, error) {    
+        return &amp;hello.HelloResponse{Message : fmt.Sprintf("%s", in.Name)}, nil    
+    }    
+    func (h *HelloController) LotsOfReplies(in *hello.HelloRequest, stream hello.Hello_LotsOfRepliesServer)  error {    
+        for i := 0; i &lt; 10; i++ {    
+            stream.Send(&amp;hello.HelloResponse{Message : fmt.Sprintf("%s %s %d", in.Name, "Reply", i)})    
+        }    
+        return nil    
+    }
+
+    // main.go    
+    package main    
+    import (    
+        "log"    
+        "net"    
+        "hello/go_server/proto/hello"    
+        "hello/go_server/controller/hello_controller"    
+        "google.golang.org/grpc"    
+    )    
+    const (    
+        Address = "0.0.0.0:9090"    
+    )    
+    func main() {    
+        listen, err := net.Listen("tcp", Address)    
+        if err != nil {    
+            log.Fatalf("Failed to listen: %v", err)    
+        }    
+        s := grpc.NewServer()    
+        // 服务注册    
+        hello.RegisterHelloServer(s, &amp;hello_controller.HelloController{})    
+        log.Println("Listen on " + Address)    
+        if err := s.Serve(listen); err != nil {    
+            log.Fatalf("Failed to serve: %v", err)    
+        }    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />运行：<br /><br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>  go run main.go    
+    2019/07/28 17:51:20 Listen on 0.0.0.0:9090
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br />编写客户端请求接口的代码<br /><br />&nbsp;&nbsp; <br />&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main   <br />import (    
+        "hello/go_client/proto/hello"    
+        "io"    
+        "log"    
+        "golang.org/x/net/context"    
+        "google.golang.org/grpc"    
+    )    
+    const (    
+        // gRPC 服务地址    
+        Address = "0.0.0.0:9090"    
+    )    
+    func main() {    
+        conn, err := grpc.Dial(Address, grpc.WithInsecure())    
+        if err != nil {    
+            log.Fatalln(err)    
+        }    
+        defer conn.Close()    
+        // 初始化客户端    
+        c := hello.NewHelloClient(conn)    
+        // 调用 SayHello 方法    
+        res, err := c.SayHello(context.Background(), &amp;hello.HelloRequest{Name: "Hello World"})    
+        if err != nil {    
+            log.Fatalln(err)    
+        }    
+        log.Println(res.Message)    
+        // 调用 LotsOfReplies 方法    
+        stream, err := c.LotsOfReplies(context.Background(),&amp;hello.HelloRequest{Name: "Hello World"})    
+        if err != nil {    
+            log.Fatalln(err)    
+        }    
+        for {    
+            res, err := stream.Recv()    
+            if err == io.EOF {    
+                break    
+            }    
+            if err != nil {    
+                log.Printf("stream.Recv: %v", err)    
+            }    
+            log.Printf("%s", res.Message)    
+        }    
+    }
+</pre>
+</div>
+<p>&nbsp;</p>
+<p><br /><br />运行：<br /><br /></p>
+<div class="cnblogs_Highlighter">
+<pre><code>    go run main.go    
+    2019/07/28 17:58:13 Hello World    
+    2019/07/28 17:58:13 Hello World Reply 0    
+    2019/07/28 17:58:13 Hello World Reply 1    
+    2019/07/28 17:58:13 Hello World Reply 2    
+    2019/07/28 17:58:13 Hello World Reply 3    
+    2019/07/28 17:58:13 Hello World Reply 4    
+    2019/07/28 17:58:13 Hello World Reply 5    
+    2019/07/28 17:58:13 Hello World Reply 6    
+    2019/07/28 17:58:13 Hello World Reply 7    
+    2019/07/28 17:58:13 Hello World Reply 8    
+</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

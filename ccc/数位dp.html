@@ -1,0 +1,180 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修数位dp' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>数位dp</center></div><div class='banquan'>原文出处:本文由博客园博主ロイ・マスタング提供。<br/>
+原文连接:https://www.cnblogs.com/ninecities/p/11390441.html</div><br>
+    <p><strong><span style="font-size: 14pt;">基础</span></strong></p>
+<p><span style="font-size: 12px;">对于一类问题：求给定区间内，满足给定条件的数的个数。一般情况下，这类问题通常采用暴力枚举求解：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 12px;"><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=l;i&lt;=r;++<span style="color: #000000;">i)
+    </span><span style="color: #0000ff;">if</span>(right(i))    ++ans;</span></pre>
+</div>
+<p><span style="font-size: 12px;">很显然，当给定区间过大时，无法直接用朴素的方法求解。而所求的限定条件往往与数位有关，例如数位之和、指定数码个数、数的大小顺序分组等等。此时我们就需要利用数位的性质，设计log级别复杂度的算法。</span></p>
+<p><span style="font-size: 12px;">解决这类问题最基本的思想就是&ldquo;逐位确定&rdquo;，有时求解这类问题时还需要做预处理，而预处理的过程即可视作数位dp。</span></p>
+<p><span style="font-size: 12px;">简单而言，数位dp就是在给定的区间内，利用限定条件，逐位暴力枚举的算法。</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 12px;">对于数位dp，可通过简单的分析进行了解。</span></p>
+<p><span style="font-size: 12px;">我们假设给定一个r=312。对于数位dp的过程，也就是从最高位即百位起，顺次枚举0-9。</span></p>
+<p><span style="font-size: 12px;">但是很显然，以百位3为例，枚举时数字最大不能超过3。同时当百位为3时，十位最大不能超过1；当百位为3，十位为1时，个位最大不能超过2。其他限定情况下也以此类推。所以在实际的运用中，需要用一个布尔变量limit记录这一情况。</span></p>
+<p><span style="font-size: 12px;">另一方面，数位dp中，对于问题的求解，通常是：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 12px;">printf(<span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span>,solve(l)-solve(r-<span style="color: #800080;">1</span>));</span></pre>
+</div>
+<p><span style="font-size: 12px;">所以不管左端点是多少，百位一定会枚举到0，可是这样前导零可能会影响计数（视题目而定），所以通常情况下还会用一个布尔变量lead记录具体情况。</span></p>
+<p><span style="font-size: 12px;">lead和limit一样，当前面已经不存在前导零or最大值限定时，是不必再继续限定的。</span></p>
+<p><span style="font-size: 12px;">这样就得到了数位dp最基本的模板：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 12px;"><span style="color: #0000ff;">int</span> dfs(<span style="color: #0000ff;">int</span> pos,<span style="color: #0000ff;">int</span> sta,<span style="color: #0000ff;">bool</span> lead,<span style="color: #0000ff;">bool</span><span style="color: #000000;"> limit)
+</span><span style="color: #008000;">//</span><span style="color: #008000;">pos即枚举到的位数；sta起到记录作用，一般情况下是记录上一位的数值，也有可能根据题意记录如4的个数5的个数
+</span><span style="color: #008000;">//</span><span style="color: #008000;">lead记录前导零；limit记录数值的限定</span>
+<span style="color: #000000;">{
+    </span><span style="color: #0000ff;">if</span>(pos==-<span style="color: #800080;">1</span>)    <span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span>;<span style="color: #008000;">//</span><span style="color: #008000;">也就是位数由大到小枚举退出的边界</span>
+    <span style="color: #0000ff;">if</span>(!limit&amp;&amp;!lead&amp;&amp;dp[pos][sta]!=-<span style="color: #800080;">1</span>)    <span style="color: #0000ff;">return</span> dp[pos][sta];<span style="color: #008000;">//</span><span style="color: #008000;">情况已经记录时返回，节省时间</span>
+    <span style="color: #0000ff;">int</span> up=limit?a[pos]:<span style="color: #800080;">9</span>,ans=<span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">确定可枚举到的最大数</span>
+    <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;=up;++<span style="color: #000000;">i)
+    {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">判断条件</span>
+<span style="color: #000000;">    }
+    </span><span style="color: #0000ff;">if</span>(!limit&amp;&amp;!lead) dp[pos][sta]=ans;<span style="color: #008000;">//</span><span style="color: #008000;">记忆化，存储节省时间</span>
+    <span style="color: #0000ff;">return</span><span style="color: #000000;"> ans;
+}
+
+</span><span style="color: #0000ff;">int</span> solve(<span style="color: #0000ff;">int</span><span style="color: #000000;"> x)
+{
+    </span><span style="color: #0000ff;">int</span> pos=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span><span style="color: #000000;">(x)
+    {
+        a[pos</span>++]=x%<span style="color: #800080;">10</span><span style="color: #000000;">;
+        x</span>/=<span style="color: #800080;">10</span><span style="color: #000000;">;
+    }</span><span style="color: #008000;">//</span><span style="color: #008000;">确定每一位的最大值限定</span>
+    <span style="color: #0000ff;">return</span> dfs(pos-<span style="color: #800080;">1</span>,-<span style="color: #800080;">1</span>,<span style="color: #0000ff;">true</span>,<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    memset(dp,</span>-<span style="color: #800080;">1</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(dp));
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> a,b;
+    scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;a,&amp;<span style="color: #000000;">b);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span>,solve(b)-solve(a-<span style="color: #800080;">1</span><span style="color: #000000;">));
+}</span></span></pre>
+</div>
+<p><span style="font-size: 12px;">要注意的是，dfs的四个变量并不一定会用到，也有可能更多，视情况而定。</span></p>
+<p><span style="font-size: 12px;">同时，solve中的拆分也可能是二进制的情况。</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 14pt;"><strong>例题</strong></span></p>
+<p><span style="font-size: 14px;"><strong>例题1 <a href="https://www.luogu.org/problem/P2657" target="_blank">SCOI2009 windy数</a></strong></span></p>
+<p><span style="font-size: 12px;">比较典型的数位dp例题，要注意前导零的情况，可以直接套板子。</span></p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;cstdio&gt;<span style="color: #000000;">
+#include</span>&lt;cstring&gt;<span style="color: #000000;">
+#include</span>&lt;cmath&gt;
+
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">int</span> a[<span style="color: #800080;">15</span>],dp[<span style="color: #800080;">15</span>][<span style="color: #800080;">15</span><span style="color: #000000;">];
+
+</span><span style="color: #0000ff;">int</span> dfs(<span style="color: #0000ff;">int</span> pos,<span style="color: #0000ff;">int</span> sta,<span style="color: #0000ff;">bool</span> lead,<span style="color: #0000ff;">bool</span><span style="color: #000000;"> limit)
+{
+    </span><span style="color: #0000ff;">if</span>(pos==-<span style="color: #800080;">1</span>)    <span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">if</span>(!limit&amp;&amp;!lead&amp;&amp;dp[pos][sta]!=-<span style="color: #800080;">1</span>)    <span style="color: #0000ff;">return</span><span style="color: #000000;"> dp[pos][sta];
+    </span><span style="color: #0000ff;">int</span> up=limit?a[pos]:<span style="color: #800080;">9</span>,ans=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;=up;++<span style="color: #000000;">i)
+    {
+        </span><span style="color: #0000ff;">if</span>(!lead&amp;&amp;abs(i-sta)&lt;<span style="color: #800080;">2</span>)    <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">if</span>(lead&amp;&amp;i==<span style="color: #800080;">0</span>)    ans+=dfs(pos-<span style="color: #800080;">1</span>,sta,lead,limit&amp;&amp;i==<span style="color: #000000;">a[pos]);
+        </span><span style="color: #0000ff;">else</span>    ans+=dfs(pos-<span style="color: #800080;">1</span>,i,lead&amp;&amp;i==<span style="color: #800080;">0</span>,limit&amp;&amp;i==a[pos]);<span style="color: #008000;">//</span><span style="color: #008000;">注意limit是要根据前几位更改所以要limit&amp;&amp;i==a[pos]</span>
+<span style="color: #000000;">    }
+    </span><span style="color: #0000ff;">if</span>(!limit&amp;&amp;!lead) dp[pos][sta]=<span style="color: #000000;">ans;
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> ans;
+}
+
+</span><span style="color: #0000ff;">int</span> solve(<span style="color: #0000ff;">int</span><span style="color: #000000;"> x)
+{
+    </span><span style="color: #0000ff;">int</span> pos=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span><span style="color: #000000;">(x)
+    {
+        a[pos</span>++]=x%<span style="color: #800080;">10</span><span style="color: #000000;">;
+        x</span>/=<span style="color: #800080;">10</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">return</span> dfs(pos-<span style="color: #800080;">1</span>,-<span style="color: #800080;">1</span>,<span style="color: #0000ff;">true</span>,<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    memset(dp,</span>-<span style="color: #800080;">1</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(dp));
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> a,b;
+    scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;a,&amp;<span style="color: #000000;">b);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span>,solve(b)-solve(a-<span style="color: #800080;">1</span><span style="color: #000000;">));
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><strong><span style="font-size: 14px;">例题2 <a href="http://poj.org/problem?id=3252" target="_blank">POJ 3252 Round Numbers</a></span></strong></p>
+<p><span style="font-size: 12px;">这里就要注意sta存储的不再是上一位的值而是0比1多的值，但是因为可能会出现0比1少也就是负数的情况，而数组下标不能是负数，所以初始值就要根据题目设为32。</span></p>
+<p><span style="font-size: 12px;">又因为是二进制，所以solve也会有一定的更改。</span></p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;cstdio&gt;<span style="color: #000000;">
+#include</span>&lt;cstring&gt;<span style="color: #000000;">
+#include</span>&lt;cmath&gt;
+
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">int</span> a[<span style="color: #800080;">15</span>],dp[<span style="color: #800080;">15</span>][<span style="color: #800080;">15</span><span style="color: #000000;">];
+
+</span><span style="color: #0000ff;">int</span> dfs(<span style="color: #0000ff;">int</span> pos,<span style="color: #0000ff;">int</span> sta,<span style="color: #0000ff;">bool</span> lead,<span style="color: #0000ff;">bool</span><span style="color: #000000;"> limit)
+{
+    </span><span style="color: #0000ff;">if</span>(pos==-<span style="color: #800080;">1</span>)    <span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">if</span>(!limit&amp;&amp;!lead&amp;&amp;dp[pos][sta]!=-<span style="color: #800080;">1</span>)    <span style="color: #0000ff;">return</span><span style="color: #000000;"> dp[pos][sta];
+    </span><span style="color: #0000ff;">int</span> up=limit?a[pos]:<span style="color: #800080;">9</span>,ans=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;=up;++<span style="color: #000000;">i)
+    {
+        </span><span style="color: #0000ff;">if</span>(!lead&amp;&amp;abs(i-sta)&lt;<span style="color: #800080;">2</span>)    <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">if</span>(lead&amp;&amp;i==<span style="color: #800080;">0</span>)    ans+=dfs(pos-<span style="color: #800080;">1</span>,sta,lead,limit&amp;&amp;i==a[pos]);<span style="color: #008000;">//</span><span style="color: #008000;">当有前导零时会对结果产生影响所以sta不会更改</span>
+        <span style="color: #0000ff;">else</span>    ans+=dfs(pos-<span style="color: #800080;">1</span>,i,lead&amp;&amp;i==<span style="color: #800080;">0</span>,limit&amp;&amp;i==<span style="color: #000000;">a[pos]);
+    }
+    </span><span style="color: #0000ff;">if</span>(!limit&amp;&amp;!lead) dp[pos][sta]=<span style="color: #000000;">ans;
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> ans;
+}
+
+</span><span style="color: #0000ff;">int</span> solve(<span style="color: #0000ff;">int</span><span style="color: #000000;"> x)
+{
+    </span><span style="color: #0000ff;">int</span> pos=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span><span style="color: #000000;">(x)
+    {
+        a[pos</span>++]=x%<span style="color: #800080;">10</span><span style="color: #000000;">;
+        x</span>/=<span style="color: #800080;">10</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">return</span> dfs(pos-<span style="color: #800080;">1</span>,-<span style="color: #800080;">1</span>,<span style="color: #0000ff;">true</span>,<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    memset(dp,</span>-<span style="color: #800080;">1</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(dp));
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> a,b;
+    scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;a,&amp;<span style="color: #000000;">b);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span>,solve(b)-solve(a-<span style="color: #800080;">1</span><span style="color: #000000;">));
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,176 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ this指针的理解和作用' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ this指针的理解和作用</center></div><div class='banquan'>原文出处:本文由博客园博主小林coding提供。<br/>
+原文连接:https://www.cnblogs.com/xiaolincoding/p/11954905.html</div><br>
+    <h2 id="c-程序到-c-程序的翻译">01 C++ 程序到 C 程序的翻译</h2>
+<p>要想理解 C++ 的 this 指针，我们先把下面的 C++ 代码转换成 C 的代码</p>
+<pre><code>class Car 
+{
+public:
+    int m_price;         // 成员变量
+    void SetPrice(int p) // 成员函数
+    {
+        m_price = p; 
+    }
+};
+
+int main()
+{
+    Car car;
+    car.SetPrice(20000); // 给car对象m_price成员变量赋值
+    
+    return 0;
+}</code></pre>
+<p>C 语言是没有类定义的<code>class</code>关键词，但是有跟<code>class</code>类似的定义，那就是结构体<code>struct</code>。</p>
+<p><code>m_price</code>变量是<code>Car</code>类的成员变量，那么我们可以把<code>Car</code>类和成员变量翻译成如下的 C 代码：</p>
+<pre><code>// 结构体Car
+struct Car
+{
+    // price变量是属于Car结构体这个域里的变量
+    int price;  
+};</code></pre>
+<p><code>SetPrice</code>函数是<code>Car</code>类的成员函数，但是 C 程序里是没有成员函数这种概念的，所以只能把成员函数翻译成全局的函数：</p>
+<pre><code>// 参数1：结构体Car的指针
+// 参数2：要设置的价格变量
+void SetPrice(struct Car* this, int p)
+{ 
+    this-&gt;price = p;  // 将传入的Car结构体的price变量赋值
+}</code></pre>
+<p>为什么要加个 this 的指针呢？我们继续往下看。</p>
+<p>在这里我们把上面<code>main</code>函数下面的 C++ 程序翻译 C 程序是这样的：</p>
+<pre><code>int main() 
+{
+    struct Car car;
+    SetPrice( &amp;car, 20000);
+    return 0;
+}</code></pre>
+<p>所以最终把上述的 C++程序 转换成C 程序的代码如下：</p>
+<pre><code>struct Car
+{
+    int price;  
+};
+
+
+void SetPrice(struct Car* this, int p)
+{ 
+    this-&gt;price = p; 
+}
+
+int main() 
+{
+    struct Car car;
+    SetPrice( &amp;car, 20000); // 给car结构体的price变量赋值
+    return 0;
+}</code></pre>
+<hr />
+<h2 id="this指针的作用">02 this指针的作用</h2>
+<p>其作用就是指向成员函数所作用的对象，<br />
+所以<strong>非静态</strong>成员函数中可以直接使用 this 来代表指向该函数作用的对象的指针。</p>
+<pre><code>#include &lt;iostream&gt;
+
+class Car 
+{
+public:
+    int m_price;
+    
+    void PrintPrice()
+    {
+        std::cout &lt;&lt; m_price &lt;&lt; std::endl;  
+    }
+    
+    void SetPrice(int p)
+    {
+        this-&gt;m_price = p; // 等价于 m_price = p;
+        this-&gt;PrintPrice();// 等价于 PrintPrice();
+    }
+    
+    Car GetCar()
+    {
+        return *this; // 返回该函数作用的对象
+    }
+};
+
+int main(void)
+{
+    Car car1, car2;
+    car1.SetPrice(20000);
+    
+    // GetCar()成员函数返回所作用的car1对象，所把返回的car1赋值给了car2
+    car2 = car1.GetCar(); 
+    car2.PrintPrice();   
+    
+    return 0;
+}</code></pre>
+<p>输出结果：</p>
+<pre><code>20000
+20000</code></pre>
+<p>接下来我们下面的代码，你觉得输出结果是什么呢？会出错吗？</p>
+<pre><code>class A
+{
+    int i;
+    public:
+    void Hello() { cout &lt;&lt; &quot;hello&quot; &lt;&lt; endl; }
+};
+
+int main()
+{
+    A * p = NULL;
+    p-&gt;Hello(); //结果会怎样？
+}</code></pre>
+<p>答案是正常输出hello，你可能会好奇明明 p 指针是空的，不应该是会程序奔溃吗？别着急，我们先把上面的代码转换C程序，就能理解为什么能正常运行了。</p>
+<pre><code>void Hello() { cout &lt;&lt; &quot;hello&quot; &lt;&lt; endl; } 
+# 成员函数相当于如下形式：
+void Hello(A * this ) { cout &lt;&lt; &quot;hello&quot; &lt;&lt; endl; }
+
+p-&gt;Hello(); 
+# 执行Hello()形式相当于：
+Hello(p);</code></pre>
+<p>所以，实际上每个成员函数的第一个参数默认都有个指向对象的 this 指针，上述情况下如果该指向的对象是空，相当于成员函数的第一个参数是<code>NULL</code>，那么只要成员函数没有使用到成员变量，也是可以正常执行。</p>
+<p>下面这份代码执行时，就会奔溃了，因为this指针是空的，使用了 空的指针指向了成员变量<code>i</code>，程序就会奔溃。</p>
+<pre><code>class A
+{
+    int i;
+public:
+    void Hello() { cout &lt;&lt; i &lt;&lt; &quot;hello&quot; &lt;&lt; endl; }
+    // -&gt;&gt; void Hello(A * this ) { cout &lt;&lt; this-&gt;i &lt;&lt; &quot;hello&quot; &lt;&lt; endl; }
+};
+int main()
+{
+    A * p = NULL;
+    p-&gt;Hello(); //  -&gt;&gt; Hello(p); 
+}</code></pre>
+<hr />
+<h2 id="this指针和静态成员函数">03 this指针和静态成员函数</h2>
+<p><strong>静态</strong>成员函数是不能使用 this 指针，因为静态成员函数相当于是共享的变量，不属于某个对象的变量。</p>
+<hr />
+<h2 id="小结">04 小结</h2>
+<ul>
+<li><p>通过将C++程序翻译成C程序的方式，来理解 this 指针，其作用就是指向<strong>非静态</strong>成员函数所作用的对象，每个成员函数的第一个参数实际上都是有个默认 this 指针参数。</p></li>
+<li><p><strong>静态</strong>成员函数是无法使用this指针，</p></li>
+</ul>
+<hr />
+<blockquote>
+<p><img src="./images/C++ this指针的理解和作用0.png" /></p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

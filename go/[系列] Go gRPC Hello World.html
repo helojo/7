@@ -1,0 +1,277 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[系列] Go gRPC Hello World' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[系列] Go gRPC Hello World</center></div><div class='banquan'>原文出处:本文由博客园博主新亮笔记提供。<br/>
+原文连接:https://www.cnblogs.com/xinliangcoder/p/11268128.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#概述">概述</a></li>
+        <li><a href="#四类服务方法">四类服务方法</a></li>
+        <li><a href="#安装">安装</a></li>
+        <li><a href="#写个-hello-world-服务">写个 Hello World 服务</a></li>
+        <li><a href="#推荐阅读">推荐阅读</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="概述">概述</h2>
+<p>开始 gRPC 了，这篇文章学习使用 gRPC，输出一个 Hello World。</p>
+<ul>
+<li>用 Go 实现 gRPC 的服务端。</li>
+<li>用 Go 实现 gRPC 的客户端。</li>
+</ul>
+<p>gRPC 支持 4 类服务方法，咱们这次实现 单项 RPC 和 服务端流式 RPC。</p>
+<h2 id="四类服务方法">四类服务方法</h2>
+<p><strong>单项 RPC</strong></p>
+<p>服务端发送一个请求给服务端，从服务端获取一个应答，就像一次普通的函数调用。</p>
+<pre><code><code>rpc SayHello(HelloRequest) returns (HelloResponse){}</code></pre>
+<p><strong>服务端流式 RPC</strong></p>
+<p>客户端发送一个请求给服务端，可获取一个数据流用来读取一系列消息。客户端从返回的数据流里一直读取直到没有更多消息为止。</p>
+<pre><code><code>rpc LotsOfReplies(HelloRequest) returns (stream HelloResponse){}</code></pre>
+<p><strong>客户端流式 RPC</strong></p>
+<p>客户端用提供的一个数据流写入并发送一系列消息给服务端。一旦客户端完成消息写入，就等待服务端读取这些消息并返回应答。</p>
+<pre><code><code>rpc LotsOfGreetings(stream HelloRequest) returns (HelloResponse) {}</code></pre>
+<p><strong>双向流式 RPC</strong></p>
+<p>两边都可以分别通过一个读写数据流来发送一系列消息。这两个数据流操作是相互独立的，所以客户端和服务端能按其希望的任意顺序读写，例如：服务端可以在写应答前等待所有的客户端消息，或者它可以先读一个消息再写一个消息，或者是读写相结合的其他方式。每个数据流里消息的顺序会被保持。</p>
+<pre><code><code>rpc BidiHello(stream HelloRequest) returns (stream HelloResponse){}</code></pre>
+<h2 id="安装">安装</h2>
+<p><strong>安装 protobuf 编译器</strong></p>
+<pre><code><code>brew install protobuf</code></pre>
+<p>验证：</p>
+<pre><code><code>protoc --version
+
+//输出：libprotoc 3.7.1</code></pre>
+<p><strong>安装 Go protobuf 插件</strong></p>
+<pre><code><code>go get -u github.com/golang/protobuf/proto
+
+go get -u github.com/golang/protobuf/protoc-gen-go</code></pre>
+<p><strong>安装 grpc-go</strong></p>
+<pre><code><code>go get -u google.golang.org/grpc</code></pre>
+<h2 id="写个-hello-world-服务">写个 Hello World 服务</h2>
+<ul>
+<li>编写服务端 <code>.proto</code> 文件</li>
+<li>生成服务端 <code>.pb.go</code> 文件并同步给客户端</li>
+<li>编写服务端提供接口的代码</li>
+<li>编写客户端调用接口的代码</li>
+</ul>
+<p><strong>目录结构</strong></p>
+<pre><code><code>├─ hello  -- 代码根目录
+│  ├─ go_client
+│     ├── main.go
+│     ├── proto
+│         ├── hello
+│            ├── hello.pb.go
+│  ├─ go_server
+│     ├── main.go
+│     ├── controller
+│         ├── hello_controller
+│            ├── hello_server.go
+│     ├── proto
+│         ├── hello
+│            ├── hello.pb.go
+│            ├── hello.proto</code></pre>
+<p>这样创建目录是为了 go_client 和 go_server 后期可以拆成两个项目。</p>
+<p><strong>编写服务端 hello.proto 文件</strong></p>
+<pre><code><code>syntax = &quot;proto3&quot;; // 指定 proto 版本
+
+package hello;     // 指定包名
+
+// 定义 Hello 服务
+service Hello {
+
+    // 定义 SayHello 方法
+    rpc SayHello(HelloRequest) returns (HelloResponse) {}
+
+    // 定义 LotsOfReplies 方法
+    rpc LotsOfReplies(HelloRequest) returns (stream HelloResponse){}
+}
+
+// HelloRequest 请求结构
+message HelloRequest {
+    string name = 1;
+}
+
+// HelloResponse 响应结构
+message HelloResponse {
+    string message = 1;
+}
+</code></pre>
+<p>了解更多 Protobuf 语法，请查看：</p>
+<p><a href="https://developers.google.com/protocol-buffers/" class="uri">https://developers.google.com/protocol-buffers/</a></p>
+<p><strong>生成服务端 <code>.pb.go</code></strong></p>
+<pre><code><code>protoc -I . --go_out=plugins=grpc:. ./hello.proto</code></pre>
+<p>同时将生成的 <code>hello.pb.go</code> 复制到客户端一份。</p>
+<p>查看更多命令参数，执行 protoc，查看 OPTION 。</p>
+<p><strong>编写服务端提供接口的代码</strong></p>
+<pre><code><code>// hello_server.go
+package hello_controller
+
+import (
+    &quot;fmt&quot;
+    &quot;golang.org/x/net/context&quot;
+    &quot;hello/go_server/proto/hello&quot;
+)
+
+type HelloController struct{}
+
+func (h *HelloController) SayHello(ctx context.Context, in *hello.HelloRequest) (*hello.HelloResponse, error) {
+    return &amp;hello.HelloResponse{Message : fmt.Sprintf(&quot;%s&quot;, in.Name)}, nil
+}
+
+func (h *HelloController) LotsOfReplies(in *hello.HelloRequest, stream hello.Hello_LotsOfRepliesServer)  error {
+    for i := 0; i &lt; 10; i++ {
+        stream.Send(&amp;hello.HelloResponse{Message : fmt.Sprintf(&quot;%s %s %d&quot;, in.Name, &quot;Reply&quot;, i)})
+    }
+    return nil
+}</code></pre>
+<pre><code><code>// main.go
+package main
+
+import (
+    &quot;log&quot;
+    &quot;net&quot;
+    &quot;hello/go_server/proto/hello&quot;
+    &quot;hello/go_server/controller/hello_controller&quot;
+    &quot;google.golang.org/grpc&quot;
+)
+
+const (
+    Address = &quot;0.0.0.0:9090&quot;
+)
+
+func main() {
+    listen, err := net.Listen(&quot;tcp&quot;, Address)
+    if err != nil {
+        log.Fatalf(&quot;Failed to listen: %v&quot;, err)
+    }
+
+    s := grpc.NewServer()
+
+    // 服务注册
+    hello.RegisterHelloServer(s, &amp;hello_controller.HelloController{})
+
+    log.Println(&quot;Listen on &quot; + Address)
+
+    if err := s.Serve(listen); err != nil {
+        log.Fatalf(&quot;Failed to serve: %v&quot;, err)
+    }
+}</code></pre>
+<p>运行：</p>
+<pre><code><code>go run main.go
+
+2019/07/28 17:51:20 Listen on 0.0.0.0:9090</code></pre>
+<p><strong>编写客户端请求接口的代码</strong></p>
+<pre><code><code>package main
+
+import (
+    &quot;hello/go_client/proto/hello&quot;
+    &quot;io&quot;
+    &quot;log&quot;
+    &quot;golang.org/x/net/context&quot;
+    &quot;google.golang.org/grpc&quot;
+)
+
+const (
+    // gRPC 服务地址
+    Address = &quot;0.0.0.0:9090&quot;
+)
+
+func main() {
+    conn, err := grpc.Dial(Address, grpc.WithInsecure())
+    if err != nil {
+        log.Fatalln(err)
+    }
+    defer conn.Close()
+
+    // 初始化客户端
+    c := hello.NewHelloClient(conn)
+
+    // 调用 SayHello 方法
+    res, err := c.SayHello(context.Background(), &amp;hello.HelloRequest{Name: &quot;Hello World&quot;})
+
+    if err != nil {
+        log.Fatalln(err)
+    }
+
+    log.Println(res.Message)
+
+    // 调用 LotsOfReplies 方法
+    stream, err := c.LotsOfReplies(context.Background(),&amp;hello.HelloRequest{Name: &quot;Hello World&quot;})
+    if err != nil {
+        log.Fatalln(err)
+    }
+
+    for {
+        res, err := stream.Recv()
+        if err == io.EOF {
+            break
+        }
+
+        if err != nil {
+            log.Printf(&quot;stream.Recv: %v&quot;, err)
+        }
+
+        log.Printf(&quot;%s&quot;, res.Message)
+    }
+}</code></pre>
+<p>运行：</p>
+<pre><code><code>go run main.go
+
+2019/07/28 17:58:13 Hello World
+2019/07/28 17:58:13 Hello World Reply 0
+2019/07/28 17:58:13 Hello World Reply 1
+2019/07/28 17:58:13 Hello World Reply 2
+2019/07/28 17:58:13 Hello World Reply 3
+2019/07/28 17:58:13 Hello World Reply 4
+2019/07/28 17:58:13 Hello World Reply 5
+2019/07/28 17:58:13 Hello World Reply 6
+2019/07/28 17:58:13 Hello World Reply 7
+2019/07/28 17:58:13 Hello World Reply 8
+2019/07/28 17:58:13 Hello World Reply 9</code></pre>
+<p>查看源码：<a href="https://github.com/xinliangnote/Go" class="uri">https://github.com/xinliangnote/Go</a></p>
+<h2 id="推荐阅读">推荐阅读</h2>
+<p><strong>gRPC</strong></p>
+<ul>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11268128.html">Go gRPC Hello World</a></li>
+</ul>
+<p><strong>Gin 框架</strong></p>
+<ul>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11242337.html">Gin 框架 - 自定义错误处理</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11234017.html">Gin 框架 - 数据绑定和验证</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11212573.html">Gin 框架 - 使用 Logrus 日志记录</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11200332.html">Gin 框架 - 安装和路由配置</a></li>
+</ul>
+<p><strong>基础篇</strong></p>
+<ul>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11286801.html">Go - chan 通道</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11187087.html">Go - 函数</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11169416.html">Go - 循环</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11156599.html">Go - Map 集合</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11134787.html">Go - Struct 结构体</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11113395.html">Go - Slice 切片</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11101116.html">Go - 数组</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11101098.html">Go - 变量声明</a></li>
+<li><a href="https://www.cnblogs.com/xinliangcoder/p/11082216.html">Go - 环境安装</a></li>
+</ul>
+<p>本文欢迎转发，转发请注明作者和出处，谢谢！</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

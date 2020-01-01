@@ -1,0 +1,97 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] 利用channel形成管道沟通循环内外' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] 利用channel形成管道沟通循环内外</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/11913961.html</div><br>
+    <p>这个要解决的问题是,比如如果有一个大循环,取自一个大的文件,要进行逻辑处理,那么这个逻辑的代码要放在循环每一行的循环体里面,这样有可能会出现一个for循环的逻辑嵌套,一层又一层,类似俄罗斯套娃.如果放在外面那么就需要把大循环的每一行数据存到一个数组或者切片里面,这样会占很大的内存</p>
+<p>那么就可以使用这种技巧来既能解决循环嵌套,又能解决不存在占用大内存的数据</p>
+<p>创建一个channel,开启一个goroutine,在groutine里面进行for循环遍历,把每一行的数据发送到channel中<br />在主groutine里面,读取channel,因为接收者总是比发送者先执行,那么这个地方就会阻塞等待那一个数据到来<br />这样就形成这样一个良性的同步操作,虽然是在不同的groutine里面执行的,但是总是同步执行的,并且解决了循环嵌套的问题</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func main() {
+    arr :</span>= []<span style="color: #0000ff;">int</span>{<span style="color: #800080;">1</span>, <span style="color: #800080;">2</span>, <span style="color: #800080;">3</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">5</span>, <span style="color: #800080;">6</span><span style="color: #000000;">}
+    yields :</span>= <span style="color: #0000ff;">make</span>(chan <span style="color: #0000ff;">int</span><span style="color: #000000;">)
+    go func() {
+        </span><span style="color: #0000ff;">for</span> _, i :=<span style="color: #000000;"> range arr {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">每次这里先打印,然后跳到循环外</span>
+            <span style="color: #0000ff;">fmt</span>.Println(<span style="color: #800000;">"</span><span style="color: #800000;">循环内</span><span style="color: #800000;">"</span><span style="color: #000000;">, i)
+            yields </span>&lt;-<span style="color: #000000;"> i
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">这是防止执行太快看不到效果</span>
+            <span style="color: #0000ff;">time</span>.Sleep(<span style="color: #0000ff;">time</span><span style="color: #000000;">.Second)
+        }
+        close(yields)
+    }()
+    </span><span style="color: #0000ff;">for</span> i :=<span style="color: #000000;"> range yields {
+        </span><span style="color: #0000ff;">fmt</span>.Println(<span style="color: #800000;">"</span><span style="color: #800000;">循环外:</span><span style="color: #800000;">"</span><span style="color: #000000;">, i)
+    }
+}</span></pre>
+</div>
+<p>就是这样的效果</p>
+<div class="cnblogs_code">
+<pre><code>循环内 <span style="color: #800080;">1</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">1</span><span style="color: #000000;">
+循环内 </span><span style="color: #800080;">2</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">2</span><span style="color: #000000;">
+循环内 </span><span style="color: #800080;">3</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">3</span><span style="color: #000000;">
+循环内 </span><span style="color: #800080;">4</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">4</span><span style="color: #000000;">
+循环内 </span><span style="color: #800080;">5</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">5</span><span style="color: #000000;">
+循环内 </span><span style="color: #800080;">6</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">6</span></pre>
+</div>
+<p>如果那个channel是个有缓存的channel,就会先把缓存数量的全都塞进channel,后循环外才执行,这个在很多的案例里都有使用</p>
+<div class="cnblogs_code">
+<pre><code>yields := <span style="color: #0000ff;">make</span>(chan <span style="color: #0000ff;">int</span>, <span style="color: #800080;">6</span><span style="color: #000000;">)
+循环内 </span><span style="color: #800080;">1</span><span style="color: #000000;">
+循环内 </span><span style="color: #800080;">2</span><span style="color: #000000;">
+循环内 </span><span style="color: #800080;">3</span><span style="color: #000000;">
+循环内 </span><span style="color: #800080;">4</span><span style="color: #000000;">
+循环内 </span><span style="color: #800080;">5</span><span style="color: #000000;">
+循环内 </span><span style="color: #800080;">6</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">1</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">2</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">3</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">4</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">5</span><span style="color: #000000;">
+循环外: </span><span style="color: #800080;">6</span></pre>
+</div>
+<p>比如说这样的代码:</p>
+<div class="cnblogs_code">
+<pre><code>    mailboxes := <span style="color: #0000ff;">make</span>(chan *imap.MailboxInfo, <span style="color: #800080;">20</span><span style="color: #000000;">)
+    go func() {
+        imapClient.List(</span><span style="color: #800000;">""</span>, <span style="color: #800000;">"</span><span style="color: #800000;">*</span><span style="color: #800000;">"</span><span style="color: #000000;">, mailboxes)
+    }()
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">列取邮件夹</span>
+    <span style="color: #0000ff;">for</span> m :=<span style="color: #000000;"> range mailboxes {
+        mailDirs </span>=<span style="color: #000000;"> append(mailDirs, m.Name)
+    }</span></pre>
+</div>
+<p>这个很像是PHP中的yield的作用,沟通函数内外</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

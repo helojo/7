@@ -1,0 +1,102 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] gocron源码阅读-判断是否使用root用户执行' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] gocron源码阅读-判断是否使用root用户执行</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/11901451.html</div><br>
+    <p>判断是linux系统，并且uid为0,allowRoot是通过命令行传参传进来的，通过flag包解析出来的，可以使用go run node.go -h看到这些参数</p>
+<div class="cnblogs_code">
+<pre><code>    <span style="color: #0000ff;">if</span> runtime.GOOS != <span style="color: #800000;">"</span><span style="color: #800000;">windows</span><span style="color: #800000;">"</span> &amp;&amp; os.Getuid() == <span style="color: #800080;">0</span> &amp;&amp; !<span style="color: #000000;">allowRoot {
+        log.Fatal(</span><span style="color: #800000;">"</span><span style="color: #800000;">Do not run gocron-node as root user</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;">
+    }</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>log.Fatal传入的是一个可变参数v ...interface{}，并且可以传入任意类型，可变参数的使用和切片很像</p>
+<p>如果要真的传入一个切片，那么切片类型要和参数类型一致</p>
+<div class="cnblogs_code">
+<pre><code>    nums := []<span style="color: #0000ff;">int</span>{<span style="color: #800080;">1</span>, <span style="color: #800080;">2</span>, <span style="color: #800080;">3</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">5</span><span style="color: #000000;">}
+    Fatal2(nums...)
+func Fatal2(args ...</span><span style="color: #0000ff;">int</span><span style="color: #000000;">) {
+    </span><span style="color: #0000ff;">for</span> _, arg :=<span style="color: #000000;"> range args {
+        </span><span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(arg)
+    }
+}</span></pre>
+</div>
+<p>完整代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">log</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">os</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">runtime</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func main() {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">可变参数</span>
+    Fatal(<span style="color: #800000;">"</span><span style="color: #800000;">hello</span><span style="color: #800000;">"</span>, <span style="color: #800080;">1</span><span style="color: #000000;">)
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">如果要传切片,切片类型要和参数类型一致</span>
+    nums := []<span style="color: #0000ff;">int</span>{<span style="color: #800080;">1</span>, <span style="color: #800080;">2</span>, <span style="color: #800080;">3</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">5</span><span style="color: #000000;">}
+    Fatal2(nums...)
+    host, _ :</span>=<span style="color: #000000;"> os.Hostname()
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">获取当前目录</span>
+    wd, _ :=<span style="color: #000000;"> os.Getwd()
+    </span><span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(
+        host,
+        wd,
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">获取用户ID</span>
+<span style="color: #000000;">        os.Getuid(),
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">获取有效用户ID</span>
+<span style="color: #000000;">        os.Geteuid(),
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">获取组ID</span>
+<span style="color: #000000;">        os.Getgid(),
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">获取有效组ID</span>
+<span style="color: #000000;">        os.Getegid(),
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">获取进程ID</span>
+<span style="color: #000000;">        os.Getpid(),
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">获取父进程ID</span>
+<span style="color: #000000;">        os.Getppid(),
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">获取环境变量的值</span>
+        os.Getenv(<span style="color: #800000;">"</span><span style="color: #800000;">GOPATH</span><span style="color: #800000;">"</span><span style="color: #000000;">),
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">设置环境变量的值</span>
+        os.Setenv(<span style="color: #800000;">"</span><span style="color: #800000;">MY_NAME</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">taoshihan</span><span style="color: #800000;">"</span><span style="color: #000000;">),
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">改变当前工作目录</span>
+        os.Chdir(<span style="color: #800000;">"</span><span style="color: #800000;">/home/</span><span style="color: #800000;">"</span><span style="color: #000000;">))
+    </span><span style="color: #0000ff;">if</span> runtime.GOOS != <span style="color: #800000;">"</span><span style="color: #800000;">windows</span><span style="color: #800000;">"</span> &amp;&amp; os.Getuid() == <span style="color: #800080;">0</span><span style="color: #000000;"> {
+        log.Fatal(</span><span style="color: #800000;">"</span><span style="color: #800000;">Do not run gocron-node as root user</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+        return
+    }
+}
+func Fatal(args ...interface{}) {
+    </span><span style="color: #0000ff;">for</span> _, arg :=<span style="color: #000000;"> range args {
+        </span><span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(arg)
+    }
+}
+func Fatal2(args ...</span><span style="color: #0000ff;">int</span><span style="color: #000000;">) {
+    </span><span style="color: #0000ff;">for</span> _, arg :=<span style="color: #000000;"> range args {
+        </span><span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(arg)
+    }
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

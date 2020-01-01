@@ -1,0 +1,255 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修QDomDocument 读取和编辑xml文件' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>QDomDocument 读取和编辑xml文件</center></div><div class='banquan'>原文出处:本文由博客园博主Smalldy提供。<br/>
+原文连接:https://www.cnblogs.com/xdblog/p/11143022.html</div><br>
+    <h1>Qt中几种操作xml的方式</h1>
+<ul>
+<li>流方式</li>
+<li>sax方式</li>
+<li>dom方式</li>
+</ul>
+<p>初学时，我常常采用流方式读取xml，该方式简单直观，容易理解。之后遇到了需要修改xml并重新写回的情况，流方式就显得捉襟见肘了。</p>
+<p>sax方式接触不多，从来没有在实际生产中使用过。</p>
+<h1><!--more--></h1>
+<p>dom方式概念复杂，对于个人来说，文档也不是很清晰，导致我一直对这个方式不甚了解，最近下定决心好好研究一番，也算是大致清楚了个中&ldquo;套路&rdquo;，在此记录，以便今后查阅。</p>
+<p><strong>注意：如果你对QDomDocument没有任何了解，则不适合阅读此文章。如果你在使用QDomDocumentde的过程中产生了疑惑，则此文可能对你产生帮助。</strong></p>
+<p>如有疏漏，还望指正。</p>
+<h1>QDomNode ？ QDomElemet？ QDomAttr？QDomText？</h1>
+<p>初见QDomDocument时，我被这些东西搞得一头雾水。 <br />
+直到我看到了某博客中这样一段话：</p>
+<blockquote>
+<p>QDom前缀的都是代表节点类型。所以有，QDomElement代表一个Element节点，而QDomText代表一个Text节点。QDomNode类可以存储任意类型的节点。如果想进一步处理一个节点，首先必须把它转化为正确的数据类型。QDomNode调用toElement（）以把它转化成QDomElement，然后调用tagName（）来获得元素的标签名称。如果节点不是Element类型，那么toElement（）函数就返回一个空QDomElement对象和一个空标签。<a title="Qt中对QDomDocument和QDomnode的理解" href="https://www.cnblogs.com/mydomain/p/9837762.html">1</a></p>
+
+</blockquote>
+<p>我们对xml操作，无非对节点文本，节点属性进行操作，因此，我着重在这个基础上整理一下。</p>
+<p>QDomNode 兼容所有节点类型。 <br />
+这里只讨论QDomNode为QDomElemet的情况;此时读者心里一惊，难道，还有不是的情况？当然有！</p>
+<h2 id="QDomNodeQDomElemet">QDomNode QDomElemet</h2>
+<p>举个简单例子 <br />
+<strong>你看！</strong></p>
+<ul>
+<li>有如下xml</li>
+
+</ul>
+<div data-mode="xml">
+<pre><code>&lt;bookstore category="xml"&gt;
+    &lt;book category="CHILDREN"&gt;
+      &lt;title&gt;Harry Potter&lt;/title&gt;
+      &lt;author&gt;J K. Rowling&lt;/author&gt;
+      &lt;year&gt;2005&lt;/year&gt;
+      &lt;price&gt;29.99&lt;/price&gt;
+    &lt;/book&gt;
+    &lt;!-- asdasd--&gt;
+    &lt;book category="WEB"&gt;
+      &lt;title&gt;Learning XML&lt;/title&gt;
+      &lt;author&gt;Erik T. Ray&lt;/author&gt;
+      &lt;year&gt;2003&lt;/year&gt;
+      &lt;price&gt;39.95&lt;/price&gt;
+    &lt;/book&gt;
+    &lt;test&gt;hello&lt;/test&gt;
+&lt;/bookstore&gt;</code></pre>
+</div>
+<p>有如下代码：</p>
+<ul>
+<li>code 01</li>
+</ul>
+<div data-mode="cpp">
+<pre><code>    QDomElement root = doc.documentElement();
+
+    QDomNode node=  root.firstChild();
+    qDebug() &lt;&lt; root.attributeNode("category").value();
+    while(!node.isNull())
+    {
+       qDebug() &lt;&lt; "xx";
+       node = node.nextSibling();
+    }</code></pre>
+</div>
+<p>结果会输出几个xx呢？</p>
+<p>代码做出如下更改</p>
+<ul>
+<li>code 02</li>
+</ul>
+<div data-mode="cpp">
+<pre><code>    QDomElement root = doc.documentElement();
+
+    QDomElement node=  root.firstChildElement();
+    qDebug() &lt;&lt; root.attributeNode("category").value();
+    while(!node.isNull())
+    {
+       qDebug() &lt;&lt; "xx";
+       node = node.nextSiblingElement();
+    }</code></pre>
+</div>
+<p>结果会输出几个xx呢？</p>
+<p>答案分别是4和3！:smirk: :smirk:</p>
+<p><strong>结论：<code>注释</code> 是<code>QDomNode</code>而不是<code>QDomElement</code></strong></p>
+<p>到这里，大家应该就能明白两者的区别了。也应该能读懂上边的</p>
+<blockquote>
+<p>QDomNode调用toElement（）以把它转化成QDomElement，然后调用tagName（）来获得元素的标签名称。如果节点不是Element类型，那么toElement（）函数就返回一个空QDomElement对象和一个空标签</p>
+</blockquote>
+<p>[========]</p>
+<h2 id="QDomElemet与QDomAttrQDomText">QDomElemet 与 QDomAttr QDomText</h2>
+<p>经过上面的试验，我们还可以得到另一个结论，那就是 <br />
+<strong><code>属性</code>不是<code>QDomELement</code>的<code>子QDomELement</code></strong> <br />
+<strong><code>属性</code>不是<code>QDomNode</code>的<code>子QDomNode</code></strong></p>
+<p>还有一件事我们不知道，那就是<code>QDomELement</code>中的文本算是它的<code>子QDomELement</code>么？</p>
+<div data-mode="xml">
+<pre><code>&lt;bookstore category="xml"&gt;hello&lt;/bookstore&gt;</code></pre>
+</div>
+<ul>
+<li>code 03</li>
+</ul>
+<div data-mode="cpp">
+<pre><code>    QDomElement ele=  root.firstChildElement();
+
+    while(!ele.isNull())
+    {
+       qDebug() &lt;&lt; "xx";
+       ele = ele.nextSiblingElement();
+    }</code></pre>
+</div>
+<p>程序不会有任何输出 <br />
+<strong><code>文本</code>不是<code>QDomELement</code>的<code>子QDomELement</code></strong></p>
+<ul>
+<li>code 04</li>
+
+</ul>
+<div data-mode="cpp">
+<pre><code>    QDomNode node=  root.firstChild();
+
+    while(!node.isNull())
+    {
+       qDebug() &lt;&lt; "xx";
+       node = node.nextSibling();
+    }</code></pre>
+</div>
+<p>程序将会输出一个xx <br />
+<strong><code>文本</code>是<code>QDomNode</code>的<code>子QDomNode</code></strong></p>
+<p>了解了它们之间的联系之后，我们现在迫切的需要知道一个问题，既然文本和属性都不是子QDomELement，如何获取到文本和属性呢？</p>
+<h2 id="读写xml">读写xml</h2>
+<h3 id="遍历某QDomELement的子QDomELement">遍历某QDomELement的 子QDomELement</h3>
+<ul>
+<li>示例xml</li>
+
+</ul>
+<div data-mode="xml">
+<pre><code>&lt;bookstore category="xml"&gt;
+    &lt;book category="CHILDREN"&gt;
+      &lt;title&gt;Harry Potter&lt;/title&gt;
+      &lt;author&gt;J K. Rowling&lt;/author&gt;
+      &lt;year&gt;2005&lt;/year&gt;
+      &lt;price&gt;29.99&lt;/price&gt;
+    &lt;/book&gt;
+    &lt;book category="WEB"&gt;
+      &lt;title&gt;Learning XML&lt;/title&gt;
+      &lt;author&gt;Erik T. Ray&lt;/author&gt;
+      &lt;year&gt;2003&lt;/year&gt;
+      &lt;price&gt;39.95&lt;/price&gt;
+    &lt;/book&gt;
+    &lt;test&gt;hello&lt;/test&gt;
+&lt;/bookstore&gt;</code></pre>
+</div>
+<ul>
+<li>code 05 遍历</li>
+</ul>
+<div data-mode="cpp">
+<pre><code>    QDomDocument doc = QDomDocument();
+    QFile file("./test.xml");
+    file.open(QFile::ReadWrite);
+    doc.setContent(&amp;file);
+
+    QDomElement root = doc.documentElement();
+
+    QDomElement ele=  root.firstChildElement();
+
+    while(!ele.isNull())
+    {
+       //do something
+
+       ele = ele.nextSiblingElement();
+    }</code></pre>
+</div>
+<p><code>doc.documentElement()</code>获取最顶级的<code>QDomDocument</code>，接下来的循环遍历了它所有的<code>QDomDocument</code>,对于它的<code>子QDomDocument</code>，同样可以使用以上方法。 <br />
+如果一个<code>QDomDocument</code>的<code>firstChildElement()</code>返回的<code>QDomElement</code>为空(<code>ele.isNull() 为 true</code>)，则说明他没有子<code>QDomElement</code>，也就意味着他是xml的最底层了，接下来介绍获取文本和属性的方法。</p>
+<ul>
+<li>code 06 读取</li>
+
+</ul>
+<div data-mode="cpp">
+<pre><code>    QDomDocument doc = QDomDocument();
+    QFile file("./test.xml");
+    file.open(QFile::ReadWrite);
+    doc.setContent(&amp;file);
+
+    QDomElement root = doc.documentElement();
+
+    QDomElement ele=  root.firstChildElement();
+
+    qDebug() &lt;&lt; root.attributeNode("category").nodeValue();
+
+    while(!ele.isNull())
+    {
+        //此处可以有多种判定方法，此处只是采用了子元素为空判定
+        //实际生产中你很可能不需要这样判断，根据xml结构直接判定元素名称即可
+        //如 if(ele.tagName() == "xxxx")
+        if(ele.firstChildElement().isNull())
+        {
+            qDebug() &lt;&lt; ele.tagName();
+            qDebug() &lt;&lt; ele.text();
+
+            //文本是ele的子QDomNode，而不是ele本身！ 所以这样不会输出任何东西！
+            qDebug() &lt;&lt; ele.toText().nodeValue();
+            //如果真的需要转化为QDomText
+            QDomNode node = ele.firstChild();
+            while (!node.isNull()) {
+                if(node.isText())
+                {
+                    qDebug() &lt;&lt; node.toText().nodeValue();
+                }
+                node = node.nextSibling();
+            }
+
+        }
+       ele = ele.nextSiblingElement();
+    }</code></pre>
+</div>
+<p>输出</p>
+<div>
+<pre><code>"xml"
+"test"
+"hello"
+""
+"hello"</code></pre>
+</div>
+<p>修改很简单，只需要将上边的<code>nodeValue</code>函数改为<code>setNodeValue</code>即可。记得要写回文件改动才会生效哦(详情请查看save方法的帮助文档)。</p>
+<p>除此之外QDomDocument还提供了替换节点的方法，自行探索。</p>
+<p><strong>转载请注明出处</strong></p>
+<h1>&lt;wiz_tmp_tag id="wiz-table-range-border" contenteditable="false" style="display: none;"&gt;</h1>
+<div id="wiz-table-col-line" style="display: none;">&nbsp;</div>
+<div id="wiz-table-row-line" style="display: none;">&nbsp;</div>
+<div id="wiz-table-range-border_start" style="display: none;">&nbsp;</div>
+<div id="wiz-table-range-border_range" style="display: none;">&nbsp;</div>
+<h1><br /><br /></h1>
+<div><a title="来自为知笔记(Wiz)" href="http://www.wiz.cn/i/0e5c52ce">来自为知笔记(Wiz)</a></div>
+<h1 id="QDomNode？QDomElemet？QDomAttr？QDomText？"><br /><br /></h1>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,791 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修GO的并发之道-Goroutine调度原理&amp;Channel详解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>GO的并发之道-Goroutine调度原理&amp;Channel详解</center></div><div class='banquan'>原文出处:本文由博客园博主云端大鲨鱼|X-knight提供。<br/>
+原文连接:https://www.cnblogs.com/X-knight/p/11363730.html</div><br>
+    <div>
+<div>并发（并行），一直以来都是一个编程语言里的核心主题之一，也是被开发者关注最多的话题；Go语言作为一个出道以来就自带 『高并发』光环的富二代编程语言，它的并发（并行）编程肯定是值得开发者去探究的，而Go语言中的并发（并行）编程是经由goroutine实现的，goroutine是golang最重要的特性之一，具有使用成本低、消耗资源低、能效高等特点，官方宣称原生goroutine并发成千上万不成问题，于是它也成为Gopher们经常使用的特性。</div>
+</div>
+<h2 id="blogTitle0">一、goroutine简介</h2>
+<div>
+<div>
+<p>Golang被极度赞扬的是它的异步机制，也就是goroutine。goroutine使用方式非常的简单，只需使用go关键字即可启动一个协程, 并且它是处于异步方式运行，你不需要等它运行完成以后再执行以后的代码。</p>
+<div class="cnblogs_code">
+<pre><code>go func()//通过go关键字启动一个协程来运行函数</pre>
+</div>
+<p>除去语法上的简洁，goroutine是一个协程，也就是比线程更节省资源，一个线程中可以有多个协程，而且goroutine被分配到多个CPU上运行，是真正意义上的并发。</p>
+</div>
+</div>
+<div class="cnblogs_code">
+<pre><code>go func()//通过go关键字启动一个协程来运行函数</pre>
+</div>
+<h2 id="blogTitle1">二、goroutine内部原理</h2>
+<p>在介绍goroutine原理之前，先对一些关键概念进行介绍：</p>
+<h3 id="blogTitle2">关键概念</h3>
+<p><strong>并发</strong></p>
+<p>一个cpu上能同时执行多项任务，在很短时间内，cpu来回切换任务执行(在某段很短时间内执行程序a，然后又迅速得切换到程序b去执行)，有时间上的重叠（宏观上是同时的，微观仍是顺序执行）,这样看起来多个任务像是同时执行，这就是并发。</p>
+<p><strong>并行</strong></p>
+<p>当系统有多个CPU时,每个CPU同一时刻都运行任务，互不抢占自己所在的CPU资源，同时进行，称为并行。</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解0.png" alt="" width="297" height="382" /></p>
+<blockquote>
+<p style="text-align: center;"><strong>简单理解</strong></p>
+<p>你吃饭吃到一半，电话来了，你一直到吃完了以后才去接，这就说明你不支持并发也不支持并行。<br />你吃饭吃到一半，电话来了，你停了下来接了电话，接完后继续吃饭，这说明你支持并发。<br />你吃饭吃到一半，电话来了，你一边打电话一边吃饭，这说明你支持并行。</p>
+<p>并发的关键是你有处理多个任务的能力，不一定要同时。<br />并行的关键是你有同时处理多个任务的能力。</p>
+<p>在计算机中就是：</p>
+<p><img src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解1.png" alt="" /></p>
+<p>
+所以我认为它们最关键的点就是：是否是『同时』。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</blockquote>
+<p>　　</p>
+<p><strong>进程</strong></p>
+<p>cpu在切换程序的时候，如果不保存上一个程序的状态（也就是我们常说的context--上下文），直接切换下一个程序，就会丢失上一个程序的一系列状态，于是引入了进程这个概念，用以划分好程序运行时所需要的资源。</p>
+<p><strong>因此进程就是一个程序运行时候的所需要的基本资源单位（也可以说是程序运行的一个实体）。</strong></p>
+<p><strong>线程</strong></p>
+<p>cpu切换多个进程的时候，会花费不少的时间，因为切换进程需要切换到内核态，而每次调度需要内核态都需要读取用户态的数据，进程一旦多起来，cpu调度会消耗一大堆资源，因此引入了线程的概念，线程本身几乎不占有资源，他们共享进程里的资源，内核调度起来不会那么像进程切换那么耗费资源。</p>
+<p><strong>线程是进程的一个执行实体，是CPU调度和分派的基本单位，它是比进程更小的能独立运行的基本单位。</strong></p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解2.png" alt="" width="508" height="176" /></p>
+<blockquote>
+<p>NOTE：线程包括三大类，而且goroutine也并非真正地协程。<a href="https://www.cnblogs.com/X-knight/p/11365878.html" target="_blank"><span style="color: #993366;"><strong>（请查看:《线程那些事儿》）</strong></span></a></p>
+<p>有时候为了方便理解可以简单把goroutine类比成协程，但心里一定要有个清晰的认知 &mdash; goroutine并不等同于协程。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</blockquote>
+<p><strong>协程</strong></p>
+<p>协程拥有自己的寄存器上下文和栈。协程调度切换时，将寄存器上下文和栈保存到其他地方，在切回来的时候，恢复先前保存的寄存器上下文和栈。因此，协程能保留上一次调用时的状态（即所有局部状态的一个特定组合），每次过程重入时，就相当于进入上一次调用的状态，换种说法：进入上一次离开时所处逻辑流的位置。线程和进程的操作是由程序触发系统接口，最后的执行者是系统；协程的操作执行者则是用户自身程序，goroutine也是协程。</p>
+<p>&nbsp;<img style="display: block; margin-left: auto; margin-right: auto;" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解3.png" alt="" width="473" height="304" /></p>
+<p>&nbsp;</p>
+<h3 id="blogTitle3">G-P-M调度模型简介</h3>
+<p>groutine能拥有强大的并发实现是通过GPM调度模型实现，下面就来解释下goroutine的调度模型。</p>
+<div>
+<div><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解4.png" alt="" width="453" height="366" />
+<p>&nbsp;</p>
+
+
+
+
+
+
+
+
+
+
+</div>
+<div>Go的调度器内部的三个重要的结构：M，P，G<br />M:M代表内核级线程，一个M就是一个线程，goroutine就是跑在M之上的；M是一个很大的结构，里面维护小对象内存cache（mcache）、当前执行的goroutine、随机数发生器等等非常多的信息<br />G:代表一个goroutine，它有自己的栈，instruction pointer和其他信息（正在等待的channel等等），用于调度。<br />P:P全称是Processor，处理器，它的主要用途就是用来执行goroutine的，所以它也维护了一个goroutine队列，里面存储了所有需要它来执行的goroutine</div>
+<div><br />
+<blockquote>
+<p>NOTE：G-P-M模型详解，<a href="https://www.cnblogs.com/X-knight/p/11365929.html" target="_blank">请查看该篇博文。</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</blockquote>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+<div>&nbsp;</div>
+<h3 id="blogTitle4">调度实现</h3>
+<div><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解5.png" alt="" /></div>
+<div>
+<div>从上图中看，有2个物理线程M，每一个M都拥有一个处理器P，每一个也都有一个正在运行的goroutine。<br />P的数量可以通过GOMAXPROCS()来设置，它其实也就代表了真正的并发度，即有多少个goroutine可以同时运行。<br />图中灰色的那些goroutine并没有运行，而是出于ready的就绪态，正在等待被调度。P维护着这个队列（称之为runqueue），<br />Go语言里，启动一个goroutine很容易：go function 就行，所以每有一个go语句被执行，runqueue队列就在其末尾加入一个<br />goroutine，在下一个调度点，就从runqueue中取出（如何决定取哪个goroutine？）一个goroutine执行。
+<p>&nbsp;</p>
+<p>当一个OS线程M0陷入阻塞时（如下图)，P转而在运行M1，图中的M1可能是正被创建，或者从线程缓存中取出。</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解6.png" alt="" /></p>
+<p>&nbsp;</p>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<br />
+<div>
+<div>当MO返回时，它必须尝试取得一个P来运行goroutine，一般情况下，它会从其他的OS线程那里拿一个P过来，<br />如果没有拿到的话，它就把goroutine放在一个global runqueue里，然后自己睡眠（放入线程缓存里）。所有的P也会周期性的检查global runqueue并运行其中的goroutine，否则global runqueue上的goroutine永远无法执行。</div>
+<div>&nbsp;</div>
+<div>
+<div>另一种情况是P所分配的任务G很快就执行完了（分配不均），这就导致了这个处理器P很忙，但是其他的P还有任务，此时如果global runqueue没有任务G了，那么P不得不从其他的P里拿一些G来执行。一般来说，如果P从其他的P那里要拿任务的话，一般就拿run queue的一半，这就确保了每个OS线程都能充分的使用，如下图：</div>
+<div><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解7.png" alt="" /></div>
+<div>参考地址：http://morsmachine.dk/go-scheduler</div>
+<div>&nbsp;</div>
+<h2 id="blogTitle5">三、使用goroutine</h2>
+<h3 id="blogTitle6">基本使用</h3>
+<p>设置goroutine运行的CPU数量，最新版本的go已经默认已经设置了。</p>
+<div class="cnblogs_code">
+<pre><code>num := runtime.NumCPU()    //获取主机的逻辑CPU个数
+runtime.GOMAXPROCS(num)    //设置可同时执行的最大CPU数</pre>
+</div>
+<p>使用示例</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('b8561abe-b2fc-49ad-a153-19142bb597e4')"><img id="code_img_closed_b8561abe-b2fc-49ad-a153-19142bb597e4" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_b8561abe-b2fc-49ad-a153-19142bb597e4" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('b8561abe-b2fc-49ad-a153-19142bb597e4',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_b8561abe-b2fc-49ad-a153-19142bb597e4" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func cal(a int , b int )  {
+    c :</span>= a+<span style="color: #000000;">b
+    fmt.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d + %d = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,a,b,c)
+}
+
+func main() {
+　　
+    </span><span style="color: #0000ff;">for</span> i :=0 ; i&lt;10 ;i++<span style="color: #000000;">{
+        go cal(i,i</span>+1)  //<span style="color: #000000;">启动10个goroutine 来计算
+    }
+    time.Sleep(time.Second </span>* 2) //<span style="color: #000000;"> sleep作用是为了等待所有任务完成
+} 
+</span>//<span style="color: #000000;">结果
+</span>//8 + 9 = 17
+//9 + 10 = 19
+//4 + 5 = 9
+//5 + 6 = 11
+//0 + 1 = 1
+//1 + 2 = 3
+//2 + 3 = 5
+//3 + 4 = 7
+//7 + 8 = 15
+//6 + 7 = 13</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>&nbsp;</p>
+<h3 id="blogTitle7">goroutine异常捕捉</h3>
+<p>当启动多个goroutine时，如果其中一个goroutine异常了，并且我们并没有对进行异常处理，那么整个程序都会终止，所以我们在编写程序时候最好每个goroutine所运行的函数都做异常处理，异常处理采用recover</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('49cb75ab-a7b6-48f5-800a-498ca5eb2854')"><img id="code_img_closed_49cb75ab-a7b6-48f5-800a-498ca5eb2854" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_49cb75ab-a7b6-48f5-800a-498ca5eb2854" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('49cb75ab-a7b6-48f5-800a-498ca5eb2854',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_49cb75ab-a7b6-48f5-800a-498ca5eb2854" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func addele(a []int ,i int)  {
+    defer func() {    </span>//<span style="color: #000000;">匿名函数捕获错误
+        err :</span>=<span style="color: #000000;"> recover()
+        </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+            fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">add ele fail</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+        }
+    }()
+   a[i]</span>=<span style="color: #000000;">i
+   fmt.Println(a)
+}
+
+func main() {
+    Arry :</span>= make([]int,4<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">for</span> i :=0 ; i&lt;10 ;i++<span style="color: #000000;">{
+        go addele(Arry,i)
+    }
+    time.Sleep(time.Second </span>* 2<span style="color: #000000;">)
+}
+</span>//<span style="color: #000000;">结果
+add ele fail
+[0 0 0 0]
+[0 </span>1<span style="color: #000000;"> 0 0]
+[0 </span>1 2<span style="color: #000000;"> 0]
+[0 </span>1 2 3<span style="color: #000000;">]
+add ele fail
+add ele fail
+add ele fail
+add ele fail
+add ele fail</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>&nbsp;</p>
+<h3 id="blogTitle8">同步的goroutine</h3>
+<p>由于goroutine是异步执行的，那很有可能出现主程序退出时还有goroutine没有执行完，此时goroutine也会跟着退出。此时如果想等到所有goroutine任务执行完毕才退出，go提供了sync包和channel来解决同步问题，当然如果你能预测每个goroutine执行的时间，你还可以通过time.Sleep方式等待所有的groutine执行完成以后在退出程序(如上面的列子)。</p>
+<div>示例一：使用sync包同步goroutine</div>
+<div>sync大致实现方式</div>
+<div>WaitGroup 等待一组goroutinue执行完毕. 主程序调用 Add 添加等待的goroutinue数量. 每个goroutinue在执行结束时调用 Done ，此时等待队列数量减1.，主程序通过Wait阻塞，直到等待队列为0.</div>
+<div>&nbsp;
+<div class="cnblogs_code" onclick="cnblogs_code_show('bfa5ecaa-d91d-45b3-9748-bd5a40a1837d')"><img id="code_img_closed_bfa5ecaa-d91d-45b3-9748-bd5a40a1837d" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_bfa5ecaa-d91d-45b3-9748-bd5a40a1837d" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('bfa5ecaa-d91d-45b3-9748-bd5a40a1837d',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_bfa5ecaa-d91d-45b3-9748-bd5a40a1837d" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">sync</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func cal(a int , b int ,n </span>*<span style="color: #000000;">sync.WaitGroup)  {
+    c :</span>= a+<span style="color: #000000;">b
+    fmt.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d + %d = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,a,b,c)
+    defer n.Done() </span>//goroutinue完成后, WaitGroup的计数-1<span style="color: #000000;">
+
+}
+
+func main() {
+    var go_sync sync.WaitGroup </span>//<span style="color: #000000;">声明一个WaitGroup变量
+    </span><span style="color: #0000ff;">for</span> i :=0 ; i&lt;10 ;i++<span style="color: #000000;">{
+        go_sync.Add(</span>1) //<span style="color: #000000;"> WaitGroup的计数加1
+        go cal(i,i</span>+1,&amp;<span style="color: #000000;">go_sync)  
+    }
+    go_sync.Wait()  </span>//<span style="color: #000000;">等待所有goroutine执行完毕
+}
+</span>//<span style="color: #000000;">结果
+</span>9 + 10 = 19
+2 + 3 = 5
+3 + 4 = 7
+4 + 5 = 9
+5 + 6 = 11
+1 + 2 = 3
+6 + 7 = 13
+7 + 8 = 15<span style="color: #000000;">
+0 </span>+ 1 = 1
+8 + 9 = 17</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>&nbsp;</p>
+</div>
+<p>示例二：通过channel实现goroutine之间的同步。</p>
+<p>实现方式：通过channel能在多个groutine之间通讯，当一个goroutine完成时候向channel发送退出信号,等所有goroutine退出时候，利用for循环channe去channel中的信号，若取不到数据会阻塞原理，等待所有goroutine执行完毕，使用该方法有个前提是你已经知道了你启动了多少个goroutine。</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('aef363f3-4f16-459f-b1ec-ef379e0e4374')"><img id="code_img_closed_aef363f3-4f16-459f-b1ec-ef379e0e4374" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_aef363f3-4f16-459f-b1ec-ef379e0e4374" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('aef363f3-4f16-459f-b1ec-ef379e0e4374',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_aef363f3-4f16-459f-b1ec-ef379e0e4374" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func cal(a int , b int ,Exitchan chan bool)  {
+    c :</span>= a+<span style="color: #000000;">b
+    fmt.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d + %d = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,a,b,c)
+    time.Sleep(time.Second</span>*2<span style="color: #000000;">)
+    Exitchan </span>&lt;-<span style="color: #000000;"> true
+}
+
+func main() {
+
+    Exitchan :</span>= make(chan bool,10)  //<span style="color: #000000;">声明并分配管道内存
+    </span><span style="color: #0000ff;">for</span> i :=0 ; i&lt;10 ;i++<span style="color: #000000;">{
+        go cal(i,i</span>+1<span style="color: #000000;">,Exitchan)
+    }
+    </span><span style="color: #0000ff;">for</span> j :=0; j&lt;10; j++<span style="color: #000000;">{   
+         </span>&lt;- Exitchan  //<span style="color: #000000;">取信号数据，如果取不到则会阻塞
+    }
+    close(Exitchan) </span>//<span style="color: #000000;"> 关闭管道
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<h3 id="blogTitle9">goroutine之间的通讯</h3>
+<p>goroutine本质上是协程，可以理解为不受内核调度，而受go调度器管理的线程。goroutine之间可以通过channel进行通信或者说是数据共享，当然你也可以使用全局变量来进行数据共享。</p>
+<p>示例：使用channel模拟消费者和生产者模式</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('83c144f9-25bc-4231-97ba-d2a9f0b73152')"><img id="code_img_closed_83c144f9-25bc-4231-97ba-d2a9f0b73152" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_83c144f9-25bc-4231-97ba-d2a9f0b73152" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('83c144f9-25bc-4231-97ba-d2a9f0b73152',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_83c144f9-25bc-4231-97ba-d2a9f0b73152" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">sync</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func Productor(mychan chan int,data int,wait </span>*<span style="color: #000000;">sync.WaitGroup)  {
+    mychan </span>&lt;-<span style="color: #000000;"> data
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">product data：</span><span style="color: #800000;">"</span><span style="color: #000000;">,data)
+    wait.Done()
+}
+func Consumer(mychan chan int,wait </span>*<span style="color: #000000;">sync.WaitGroup)  {
+     a :</span>= &lt;-<span style="color: #000000;"> mychan
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">consumer data：</span><span style="color: #800000;">"</span><span style="color: #000000;">,a)
+     wait.Done()
+}
+func main() {
+
+    datachan :</span>= make(chan int, 100)   //<span style="color: #000000;">通讯数据管道
+    var wg sync.WaitGroup
+
+    </span><span style="color: #0000ff;">for</span> i := 0; i &lt; 10; i++<span style="color: #000000;"> {
+        go Productor(datachan, i,</span>&amp;wg) //<span style="color: #000000;">生产数据
+        wg.Add(</span>1<span style="color: #000000;">)
+    }
+    </span><span style="color: #0000ff;">for</span> j := 0; j &lt; 10; j++<span style="color: #000000;"> {
+        go Consumer(datachan,</span>&amp;wg)  //<span style="color: #000000;">消费数据
+        wg.Add(</span>1<span style="color: #000000;">)
+    }
+    wg.Wait()
+}
+</span>//<span style="color: #000000;">结果
+consumer data： </span>4<span style="color: #000000;">
+product data： </span>5<span style="color: #000000;">
+product data： </span>6<span style="color: #000000;">
+product data： </span>7<span style="color: #000000;">
+product data： </span>8<span style="color: #000000;">
+product data： </span>9<span style="color: #000000;">
+consumer data： </span>1<span style="color: #000000;">
+consumer data： </span>5<span style="color: #000000;">
+consumer data： </span>6<span style="color: #000000;">
+consumer data： </span>7<span style="color: #000000;">
+consumer data： </span>8<span style="color: #000000;">
+consumer data： </span>9<span style="color: #000000;">
+product data： </span>2<span style="color: #000000;">
+consumer data： </span>2<span style="color: #000000;">
+product data： </span>3<span style="color: #000000;">
+consumer data： </span>3<span style="color: #000000;">
+product data： </span>4<span style="color: #000000;">
+consumer data： 0
+product data： 0
+product data： </span>1</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<h2 id="blogTitle10">四、channel</h2>
+<p>不同goroutine之间是如何进行通讯的呢？</p>
+<ul>
+<li>方法一：全局变量和锁同步</li>
+<li>方法二：Channel</li>
+</ul>
+<p>这里我们主要注重讲解下go中特有的channel，其类似于UNIX中的管道（piple）。</p>
+<h3>channel概念</h3>
+<p>channel俗称<span style="color: #ff0000;"><strong>管道</strong></span>，用于数据传递或数据共享，其本质是一个<span style="color: #ff0000;"><strong>先进先出</strong></span>的队列，使用goroutine+channel进行数据通讯简单高效，同时也<span style="color: #ff0000;"><strong>线程安全</strong></span>，<strong>多个goroutine可同时修改一个channel，不需要加锁</strong>。</p>
+<h3 id="blogTitle12"><strong>channel操作</strong></h3>
+<h4>定义和声明:</h4>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #000000;">var 变量名 chan 类型    //channel是有类型的，一个整数的channel只能存放整数
+</span><span style="color: #008080;">2</span> 
+<span style="color: #008080;">3</span> <span style="color: #000000;">var test chan int 
+</span><span style="color: #008080;">4</span> 
+<span style="color: #008080;">5</span> <span style="color: #000000;">var test chan map[string]string
+</span><span style="color: #008080;">6</span> 
+<span style="color: #008080;">7</span> var test chan *stu</pre>
+</div>
+<p><strong>channel可分为三种：</strong></p>
+<p>只读channel：只能读channel里面数据，不可写入</p>
+<p>只写channel：只能写数据，不可读</p>
+<p>一般channel：可读可写</p>
+<div class="cnblogs_code">
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a title="复制代码"><img src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解18.png" alt="复制代码" /></a></span></div>
+<pre><code>var readOnlyChan &lt;-chan int            // 只读chan
+var writeOnlyChan chan&lt;- int           // 只写chan
+var mychan  chan int                   //读写channel
+</pre>
+<pre><code>mychannel = make(chan int,10)
+
+//或者
+read_only := make (&lt;-chan int,10)//定义只读的channel
+write_only := make (chan&lt;- int,10)//定义只写的channel
+read_write := make (chan int,10)//可同时读写</pre>
+<div class="cnblogs_code_toolbar"><span class="cnblogs_code_copy"><a title="复制代码"><img src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解18.png" alt="复制代码" /></a></span></div>
+</div>
+<pre><code><strong><span style="color: #ff0000;">定义完成以后需要make来分配内存空间，不然会deadlock!</span><br /><img src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解20.png" alt="" /></strong></pre>
+<div class="cnblogs_code" onclick="cnblogs_code_show('74d8fc30-4e37-466f-8eb8-f4cf18d1268b')"><img id="code_img_closed_74d8fc30-4e37-466f-8eb8-f4cf18d1268b" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_74d8fc30-4e37-466f-8eb8-f4cf18d1268b" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('74d8fc30-4e37-466f-8eb8-f4cf18d1268b',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_74d8fc30-4e37-466f-8eb8-f4cf18d1268b" class="cnblogs_code_hide">
+<pre><code>//<span style="color: #000000;">定义一个结构体类型的channel
+
+package main
+
+type student struct{
+    name string
+}
+
+func main() {
+    var stuChan chan student
+    stuChan </span>= make(chan student, 10<span style="color: #000000;">)
+
+    stu :</span>= student{name:<span style="color: #800000;">"</span><span style="color: #800000;">syu01</span><span style="color: #800000;">"</span><span style="color: #000000;">}
+
+    stuChan </span>&lt;-<span style="color: #000000;"> stu  
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">struct类型channel</span></div>
+<p>&nbsp;</p>
+<h4>读写数据</h4>
+<div class="cnblogs_code">
+<pre><code>ch &lt;- "wd"  //写数据
+a := &lt;- ch //读取数据
+a, ok := &lt;-ch  //推荐的读取数据方法</pre>
+</div>
+<p>注意：</p>
+<ul>
+<li>管道如果未关闭，在读取超时会则会引发deadlock异常</li>
+<li>管道如果关闭进行写入数据会pannic</li>
+<li>当管道中没有数据时候再行读取或读取到默认值，如int类型默认值是0</li>
+</ul>
+<h4>遍历管道</h4>
+<ul>
+<li>使用for range遍历管道，如果管道未关闭会引发deadlock错误。</li>
+<li>如果采用for死循环已经关闭的管道，当管道没有数据时候，读取的数据会是管道的默认值，并且循环不会退出。</li>
+</ul>
+<div class="cnblogs_code" onclick="cnblogs_code_show('4dea61d4-072e-4860-87be-efa6356abeb2')"><img id="code_img_closed_4dea61d4-072e-4860-87be-efa6356abeb2" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_4dea61d4-072e-4860-87be-efa6356abeb2" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('4dea61d4-072e-4860-87be-efa6356abeb2',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_4dea61d4-072e-4860-87be-efa6356abeb2" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+
+func main() {
+    mychannel :</span>= make(chan int,10<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">for</span> i := 0;i &lt; 10;i++<span style="color: #000000;">{
+        mychannel </span>&lt;-<span style="color: #000000;"> i
+    }
+    close(mychannel)  </span>//<span style="color: #000000;">关闭管道
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">data lenght: </span><span style="color: #800000;">"</span><span style="color: #000000;">,len(mychannel))
+    </span><span style="color: #0000ff;">for</span>  v := range mychannel {  //<span style="color: #000000;">遍历管道
+        fmt.Println(v)
+    }
+    fmt.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">data lenght:  %d</span><span style="color: #800000;">"</span><span style="color: #000000;">,len(mychannel))
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<h3 id="blogTitle13">带缓冲区channe和不带缓冲区channel</h3>
+<p>带缓冲区channel：定义声明时候制定了缓冲区大小(长度)，可以保存多个数据。</p>
+<p>不带缓冲区channel：只能存一个数据，并且只有当该数据被取出时候才能存下一个数据。</p>
+<div class="cnblogs_code">
+<pre><code>ch := make(chan int) //不带缓冲区
+ch := make(chan int ,10) //带缓冲区</pre>
+</div>
+<p>不带缓冲区示例：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('49a2bd94-ad19-4a1a-a0c8-40206dc287a5')"><img id="code_img_closed_49a2bd94-ad19-4a1a-a0c8-40206dc287a5" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_49a2bd94-ad19-4a1a-a0c8-40206dc287a5" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('49a2bd94-ad19-4a1a-a0c8-40206dc287a5',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_49a2bd94-ad19-4a1a-a0c8-40206dc287a5" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span> <span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func test(c chan int) {
+    </span><span style="color: #0000ff;">for</span> i := 0; i &lt; 10; i++<span style="color: #000000;"> {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">send </span><span style="color: #800000;">"</span><span style="color: #000000;">, i)
+        c </span>&lt;-<span style="color: #000000;"> i
+    }
+}
+func main() {
+    ch :</span>=<span style="color: #000000;"> make(chan int)
+    go test(ch)
+    </span><span style="color: #0000ff;">for</span> j := 0; j &lt; 10; j++<span style="color: #000000;"> {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">get </span><span style="color: #800000;">"</span>, &lt;-<span style="color: #000000;">ch)
+    }
+}
+
+
+</span>//<span style="color: #000000;">结果：
+send  0
+send  </span>1<span style="color: #000000;">
+get  0
+get  </span>1<span style="color: #000000;">
+send  </span>2<span style="color: #000000;">
+send  </span>3<span style="color: #000000;">
+get  </span>2<span style="color: #000000;">
+get  </span>3<span style="color: #000000;">
+send  </span>4<span style="color: #000000;">
+send  </span>5<span style="color: #000000;">
+get  </span>4<span style="color: #000000;">
+get  </span>5<span style="color: #000000;">
+send  </span>6<span style="color: #000000;">
+send  </span>7<span style="color: #000000;">
+get  </span>6<span style="color: #000000;">
+get  </span>7<span style="color: #000000;">
+send  </span>8<span style="color: #000000;">
+send  </span>9<span style="color: #000000;">
+get  </span>8<span style="color: #000000;">
+get  </span>9</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<h3 id="blogTitle14">channel实现作业池</h3>
+<p>我们创建三个channel，一个channel用于接受任务，一个channel用于保持结果，还有个channel用于决定程序退出的时候。</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('9422f7c8-af6d-4389-be02-bd4a38b6b07a')"><img id="code_img_closed_9422f7c8-af6d-4389-be02-bd4a38b6b07a" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_9422f7c8-af6d-4389-be02-bd4a38b6b07a" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('9422f7c8-af6d-4389-be02-bd4a38b6b07a',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_9422f7c8-af6d-4389-be02-bd4a38b6b07a" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func Task(taskch, resch chan int, exitch chan bool) {
+    defer func() {   </span>//<span style="color: #000000;">异常处理
+        err :</span>=<span style="color: #000000;"> recover()
+        </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+            fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">do task error：</span><span style="color: #800000;">"</span><span style="color: #000000;">, err)
+            </span><span style="color: #0000ff;">return</span><span style="color: #000000;">
+        }
+    }()
+
+    </span><span style="color: #0000ff;">for</span> t := range taskch { //<span style="color: #000000;">  处理任务
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">do task :</span><span style="color: #800000;">"</span><span style="color: #000000;">, t)
+        resch </span>&lt;- t //<span style="color: #000000;">
+    }
+    exitch </span>&lt;- true //<span style="color: #000000;">处理完发送退出信号
+}
+
+func main() {
+    taskch :</span>= make(chan int, 20) //<span style="color: #000000;">任务管道
+    resch :</span>= make(chan int, 20)  //<span style="color: #000000;">结果管道
+    exitch :</span>= make(chan bool, 5) //<span style="color: #000000;">退出管道
+    go func() {
+        </span><span style="color: #0000ff;">for</span> i := 0; i &lt; 10; i++<span style="color: #000000;"> {
+            taskch </span>&lt;-<span style="color: #000000;"> i
+        }
+        close(taskch)
+    }()
+
+
+    </span><span style="color: #0000ff;">for</span> i := 0; i &lt; 5; i++ {  //<span style="color: #000000;">启动5个goroutine做任务
+        go Task(taskch, resch, exitch)
+    }
+
+    go func() { </span>//<span style="color: #000000;">等5个goroutine结束
+        </span><span style="color: #0000ff;">for</span> i := 0; i &lt; 5; i++<span style="color: #000000;"> {
+            </span>&lt;-<span style="color: #000000;">exitch
+        }
+        close(resch)  </span>//<span style="color: #000000;">任务处理完成关闭结果管道，不然range报错
+        close(exitch)  </span>//<span style="color: #000000;">关闭退出管道
+    }()
+
+    </span><span style="color: #0000ff;">for</span> res := range resch{  //<span style="color: #000000;">打印结果
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">task res：</span><span style="color: #800000;">"</span><span style="color: #000000;">,res)
+    }
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<h3 id="blogTitle15">只读channel和只写channel</h3>
+<p>一般定义只读和只写的管道意义不大，更多时候我们可以在参数传递时候指明管道可读还是可写，即使当前管道是可读写的。</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('9772488a-2982-4c80-a362-c10ef17e829c')"><img id="code_img_closed_9772488a-2982-4c80-a362-c10ef17e829c" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_9772488a-2982-4c80-a362-c10ef17e829c" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('9772488a-2982-4c80-a362-c10ef17e829c',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_9772488a-2982-4c80-a362-c10ef17e829c" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+</span>//<span style="color: #000000;">只能向chan里写数据
+func send(c chan</span>&lt;-<span style="color: #000000;"> int) {
+    </span><span style="color: #0000ff;">for</span> i := 0; i &lt; 10; i++<span style="color: #000000;"> {
+        c </span>&lt;-<span style="color: #000000;"> i
+    }
+}
+</span>//<span style="color: #000000;">只能取channel中的数据
+func get(c </span>&lt;-<span style="color: #000000;">chan int) {
+    </span><span style="color: #0000ff;">for</span> i :=<span style="color: #000000;"> range c {
+        fmt.Println(i)
+    }
+}
+func main() {
+    c :</span>=<span style="color: #000000;"> make(chan int)
+    go send(c)
+    go get(c)
+    time.Sleep(time.Second</span>*1<span style="color: #000000;">)
+}
+</span>//<span style="color: #000000;">结果
+0
+</span>1
+2
+3
+4
+5
+6
+7
+8
+9</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span><a style="background-color: #ffffff; font-family: 'PingFang SC', 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 14px;" title="复制代码">&nbsp;</a></div>
+<h3 id="blogTitle16">select-case实现非阻塞channel</h3>
+<p>原理通过select+case加入一组管道，当满足（这里说的满足意思是有数据可读或者可写)select中的某个case时候，那么该case返回，若都不满足case，则走default分支。</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('d51c0f06-d63d-4865-a623-7bb9f77da187')"><img id="code_img_closed_d51c0f06-d63d-4865-a623-7bb9f77da187" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_d51c0f06-d63d-4865-a623-7bb9f77da187" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('d51c0f06-d63d-4865-a623-7bb9f77da187',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_d51c0f06-d63d-4865-a623-7bb9f77da187" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func send(c chan int)  {
+    </span><span style="color: #0000ff;">for</span> i :=1 ; i&lt;10 ;i++<span style="color: #000000;">  {
+     c </span>&lt;-<span style="color: #000000;">i
+     fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">send data : </span><span style="color: #800000;">"</span><span style="color: #000000;">,i)
+    }
+}
+
+func main() {
+    resch :</span>= make(chan int,20<span style="color: #000000;">)
+    strch :</span>= make(chan string,10<span style="color: #000000;">)
+    go send(resch)
+    strch </span>&lt;- <span style="color: #800000;">"</span><span style="color: #800000;">wd</span><span style="color: #800000;">"</span><span style="color: #000000;">
+    select {
+    case a :</span>= &lt;-<span style="color: #000000;">resch:
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">get data : </span><span style="color: #800000;">"</span><span style="color: #000000;">, a)
+    case b :</span>= &lt;-<span style="color: #000000;">strch:
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">get data : </span><span style="color: #800000;">"</span><span style="color: #000000;">, b)
+    default:
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">no channel actvie</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+
+    }
+
+}
+
+</span>//结果：get data :  wd</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<h3 id="blogTitle17">channel中定时器的使用</h3>
+<p>在对channel进行读写的时，可以对读写进行频率控制，通过time.Ticke实现</p>
+<p>示例：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('32338d1d-8b7b-4313-9247-097040d2ee9d')"><img id="code_img_closed_32338d1d-8b7b-4313-9247-097040d2ee9d" class="code_img_closed" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解8.png" alt="" /><img id="code_img_opened_32338d1d-8b7b-4313-9247-097040d2ee9d" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('32338d1d-8b7b-4313-9247-097040d2ee9d',event)" src="./images/GO的并发之道-Goroutine调度原理&amp;Channel详解9.png" alt="" />
+<div id="cnblogs_code_open_32338d1d-8b7b-4313-9247-097040d2ee9d" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+</span><span style="color: #0000ff;">import</span><span style="color: #000000;"> (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func main(){
+    requests:</span>= make(chan int ,5<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">for</span> i:=1;i&lt;5;i++<span style="color: #000000;">{
+        requests</span>&lt;-<span style="color: #000000;">i
+    }
+    close(requests)
+    limiter :</span>= time.Tick(time.Second*1<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">for</span> req:=<span style="color: #000000;">range requests{
+        </span>&lt;-<span style="color: #000000;">limiter
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">requets</span><span style="color: #800000;">"</span>,req,time.Now()) //<span style="color: #000000;">执行到这里，需要隔1秒才继续往下执行，time.Tick(timer)上面已定义
+    }
+}
+</span>//<span style="color: #000000;">结果：
+requets </span>1 2018-07-06 10:17:35.98056403 +0800 CST m=+1.004248763<span style="color: #000000;">
+requets </span>2 2018-07-06 10:17:36.978123472 +0800 CST m=+2.001798205<span style="color: #000000;">
+requets </span>3 2018-07-06 10:17:37.980869517 +0800 CST m=+3.004544250<span style="color: #000000;">
+requets </span>4 2018-07-06 10:17:38.976868836 +0800 CST m=+4.000533569</pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>&nbsp;</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

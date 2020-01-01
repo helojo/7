@@ -1,0 +1,368 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++中的深拷贝和浅拷贝构造函数' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++中的深拷贝和浅拷贝构造函数</center></div><div class='banquan'>原文出处:本文由博客园博主子宇24提供。<br/>
+原文连接:https://www.cnblogs.com/dishengAndziyu/p/10905930.html</div><br>
+    <p align="left">1，对象的构造在实际工程开发当中是相当重要的，C++ 中使用类就要创建对象，这 就涉及了对象的构造，本节课讲解对象的构造和内存操作方面的问题；</p>
+<p align="left">&nbsp;&nbsp;</p>
+<p align="left">2，实际工程开发中，bug 产生的根源，必然的会有内存操作的问题，所以对象的构 造牵涉了内存的操作，则是课程的重点和难点；</p>
+<p align="left">&nbsp;</p>
+<p align="left">3，两个特殊的构造函数（同类名相同的无返回值的可自动调用的函数，这里也就是 说明了没有赋值操作符函数）：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，无参构造函数：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，没有参数的构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，没有参数的构造函数就是无参构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，当类中没有定义构造函数时，编译器默认提供一个无参构造函数，并且其函数体为空（这是无参构造函数特殊之处）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，无参构造函数是必须要存在的，因为使用类就要创建对象，创建对象就涉及构造函数的调用，如果定义一个类，它里面没有任何构造函数时，为了保证能够使用这个类来创建对象，编译器为我们提供了一个默认的构造函数，并且让这个默认的构造函数函数体为空；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，类中已经定义了一个构造函数（包括拷贝构造函数），编译器便不会为我们提供默认的无参构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，拷贝构造函数：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，参数为 const class_name&amp; 的构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，和对象的拷贝和复制相关；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，const class_name&amp; 参数出现在构造函数中，则必然是拷贝构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，当类中没有定义拷贝构造函数时，编译器默认提供一个拷贝构造函数，简单的进行成员变量的值赋值；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，类中只定义了无参构造函数后，任然会提供拷贝构造函数；</p>
+<p align="left">&nbsp;</p>
+<p align="left">4，特殊的构造函数编程实验：</p>
+<p align="left">&nbsp; &nbsp; 1，代码示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> j;
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> getI()
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">11</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">13</span>     
+<span style="color: #008080;">14</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> getJ()
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">16</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> j;
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">18</span>     
+<span style="color: #008080;">19</span>     <span style="color: #008000;">/*</span><span style="color: #008000;">Test(const Test&amp; t)  // 编译器默认提供；
+</span><span style="color: #008080;">20</span> <span style="color: #008000;">    {
+</span><span style="color: #008080;">21</span> <span style="color: #008000;">        i = t.i;  // 编译器做的工作；
+</span><span style="color: #008080;">22</span> <span style="color: #008000;">        j = t.j;
+</span><span style="color: #008080;">23</span> <span style="color: #008000;">    }
+</span><span style="color: #008080;">24</span>     
+<span style="color: #008080;">25</span> <span style="color: #008000;">    Test()  // 编译器默认提供；
+</span><span style="color: #008080;">26</span> <span style="color: #008000;">    {
+</span><span style="color: #008080;">27</span> <span style="color: #008000;">    }</span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">28</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">29</span> 
+<span style="color: #008080;">30</span> <span style="color: #0000ff;">class</span> T  <span style="color: #008000;">//</span><span style="color: #008000;"> 这个类中至少有一个无参构造函数；</span>
+<span style="color: #008080;">31</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">33</span> 
+<span style="color: #008080;">34</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">36</span>     Test t;  <span style="color: #008000;">//</span><span style="color: #008000;"> 编译通过，C++ 编译器提供了无参的默认构造函数，即屏蔽的第二个函数，直接加载在类函数体后面的三行代码；</span>
+<span style="color: #008080;">37</span>     
+<span style="color: #008080;">38</span>     Test t1;  <span style="color: #008000;">//</span><span style="color: #008000;"> 这里打印随机值；</span>
+<span style="color: #008080;">39</span>     Test t2；  <span style="color: #008000;">//</span><span style="color: #008000;"> 这里打印随机值；</span>
+<span style="color: #008080;">40</span>     
+<span style="color: #008080;">41</span>     <span style="color: #0000ff;">int</span> i = <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">42</span>     <span style="color: #0000ff;">int</span> j = i;  <span style="color: #008000;">//</span><span style="color: #008000;"> C 语言中可以存在这样的初始化方式，面向对象也可以（要兼容 C 语言语法），用另一个对象初始化新定义的对象；</span>
+<span style="color: #008080;">43</span>     
+<span style="color: #008080;">44</span>     Test t2 = t1;  <span style="color: #008000;">//</span><span style="color: #008000;"> 这里打印相同的随机值，这里是对象的赋值，和前面用常量值的赋值来调用构造函数是不同的，前面调用的只是有参构造函数中的非拷贝构造函数，说到底还是构造函数的重载问题，只是这里重载的是对象，而上一节重载的是变量而已；</span>
+<span style="color: #008080;">45</span>     
+<span style="color: #008080;">46</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">t1.i = %d, t1.j = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, t1.getI(), t1.getJ());
+</span><span style="color: #008080;">47</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">t2.i = %d, t2.j = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, t2.getI(), t2.getJ());
+</span><span style="color: #008080;">48</span>     
+<span style="color: #008080;">49</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">50</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p align="left">&nbsp; &nbsp; 2，实验结果说明：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，编译器提供的构造函数只有两种，一种是无参构造函数，一种是拷贝构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，编译器提供的拷贝构造函数仅仅是对成员变量进行简单的复制；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">5，拷贝构造函数的意义：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，兼容 C 语言的初始化方式；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，这里初始化是对象的初始化，会牵涉到拷贝构造函数的调用；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，利用已经存在的对象来创建另一个新的对象，进而使得这两个对象那个是一样的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，初始化行为能够符合预期的逻辑；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，预期的逻辑是两个对象的状态是一模一样的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">6，初始化的构造函数调用问题总结：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，初始化会调用构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，构造函数的调用会以重载的方式调用，不管实参是类的对象还是变量；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，为了兼容 C 语言中的赋值初始化方式，C++ 也提供了赋值初始化的方式；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，对基础变量的重载调用普通的构造函数，对对象的重载调用拷贝构造函数（构造函数的一种特殊名称而已，但是编译器会在没有这个构造函数时候默认的创建这个函数）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 5，拷贝构造函数</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">7，拷贝构造函数的意义：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，浅拷贝：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，拷贝后对象的物理状态相同；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，面向对象里面，最根本的还是会牵涉到内存问题；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，浅拷贝使得对象的物理状态相同，单纯的进行值的复制；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，复制过后，两个对象在内存当中的状态一模一样；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，编译器提供的拷贝构造函数只进行浅拷贝；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，简单的成员的复制，所以是浅拷贝；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，深拷贝：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，拷贝后对象的逻辑状态相同；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">8，对象的初始化编程实验：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> j;
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">int</span>*<span style="color: #000000;"> p;
+</span><span style="color: #008080;"> 9</span>     
+<span style="color: #008080;">10</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> getI()
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">13</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">15</span>     
+<span style="color: #008080;">16</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> getJ()
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">18</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> j;
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">20</span>     
+<span style="color: #008080;">21</span>     <span style="color: #0000ff;">int</span>*<span style="color: #000000;"> getP()
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">23</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> p;
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span>     
+<span style="color: #008080;">26</span>     Test(<span style="color: #0000ff;">const</span> Test&amp; t)  <span style="color: #008000;">//</span><span style="color: #008000;"> 手工定义拷贝构造函数；这样得到了深拷贝，因为已经深入到对应的堆空间的里面的值，所以叫深拷贝；</span>
+<span style="color: #008080;">27</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">28</span>         i =<span style="color: #000000;"> t.i;
+</span><span style="color: #008080;">29</span>         j =<span style="color: #000000;"> t.j;
+</span><span style="color: #008080;">30</span>         p = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">int</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> p 指向新的堆空间地址；p 的指针值不能够复制了，要到堆空间里面申请；</span>
+<span style="color: #008080;">31</span>         
+<span style="color: #008080;">32</span>         *p = *t.p;  <span style="color: #008000;">//</span><span style="color: #008000;"> 将指向地址当中的值重新指定；申请后将 t 对象中</span><span style="color: #008000;">的 p 指针指向的值拿出来，赋值到 p 所指向的堆空间；</span>
+<span style="color: #008080;">33</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">34</span> <span style="color: #008000;">/*</span>    
+<span style="color: #008080;">35</span> <span style="color: #008000;">    Test(const Test&amp; t)  // 未有人为定义上面的拷贝构造函数的时候，编译器提供的拷贝构造函数；
+</span><span style="color: #008080;">36</span> <span style="color: #008000;">    {
+</span><span style="color: #008080;">37</span> <span style="color: #008000;">        i = t.i;
+</span><span style="color: #008080;">38</span> <span style="color: #008000;">        j = t.j;
+</span><span style="color: #008080;">39</span> <span style="color: #008000;">        p = t.p;
+</span><span style="color: #008080;">40</span> <span style="color: #008000;">    }
+</span><span style="color: #008080;">41</span> <span style="color: #008000;">*/</span>   
+<span style="color: #008080;">42</span>     Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> v)
+</span><span style="color: #008080;">43</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">44</span>         i = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">45</span>         j = <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">46</span>         p = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">int</span><span style="color: #000000;">;
+</span><span style="color: #008080;">47</span>         
+<span style="color: #008080;">48</span>         *p = v;  <span style="color: #008000;">//</span><span style="color: #008000;"> 这个程序其构造函数仅仅是想将参数值存储到某个堆空间中，这个堆空间可以是不同的，因此拷贝构造函数也做同样的事就可以了；所以在写拷贝构造函数的时候，要看其构造函数要表达的意义，满足即可；</span>
+<span style="color: #008080;">49</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">50</span>     
+<span style="color: #008080;">51</span>     <span style="color: #0000ff;">void</span> <span style="color: #0000ff;">free</span><span style="color: #000000;">()
+</span><span style="color: #008080;">52</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">53</span>         <span style="color: #0000ff;">delete</span><span style="color: #000000;"> p;
+</span><span style="color: #008080;">54</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">55</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">56</span> 
+<span style="color: #008080;">57</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">58</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">59</span>     Test t1(<span style="color: #800080;">3</span><span style="color: #000000;">);
+</span><span style="color: #008080;">60</span> <span style="color: #008000;">/*</span>    
+<span style="color: #008080;">61</span> <span style="color: #008000;">    Test t = t1;  // 未有提供拷贝构造函数的时候，下面打印的成员函数值    完全相同，包括指针的地址值；t 和 t1 的 p 指向了相同的堆空间的东西，这在对象释放堆空间中的内存时，内存错误；物理状态指的是我们的对象占据的内存当中他们的每个字节是否相同，此时物理状态相同；
+</span><span style="color: #008080;">62</span>     
+<span style="color: #008080;">63</span> <span style="color: #008000;">    printf("t1.i = %d, t1.j = %d, t1.p = %p\n", t1.getI(), t1.getJ(), t1.getP());
+</span><span style="color: #008080;">64</span> <span style="color: #008000;">    printf("t.i = %d, t.j = %d, t.p = %p\n", t.getI(), t.getJ(), t.getP());
+</span><span style="color: #008080;">65</span>     
+<span style="color: #008080;">66</span> <span style="color: #008000;">    t1.free();  
+</span><span style="color: #008080;">67</span> <span style="color: #008000;">    t.free();  // 未有提供拷贝构造函数的时候，指向相同堆内存空间，重复释放堆空间，内存错误；
+</span><span style="color: #008080;">68</span> <span style="color: #008000;">*/</span>
+<span style="color: #008080;">69</span>     
+<span style="color: #008080;">70</span> <span style="color: #008000;">/*</span>
+<span style="color: #008080;">71</span> <span style="color: #008000;">    Text t2 = t1;  // t1 产生时其 p 指针指向堆空间的某个地址，使用 t1 初始化 t2 的时候，t2 的 p 指针也应该指向堆空间里面的内存地址，并且应该是一个不同的内存地址；这样不违背拷贝构造的意义，见提供的拷贝构造函数；触发如上所述的拷贝构造函数的调用，此时其实参为 t1；
+</span><span style="color: #008080;">72</span> <span style="color: #008000;">*/</span> 
+<span style="color: #008080;">73</span>                 
+<span style="color: #008080;">74</span>     Test t2(t1);  <span style="color: #008000;">//</span><span style="color: #008000;"> 同上面的代码，只是不同的表述，t1 会被参数 t 引用；下面打印的指针值不是相同的，但是 p 中指向的值是一样的，这样状态就一致了；此时逻辑状态相同，根据程序上下文，仅仅需要 t1 和 t2 中 p 指针所指向的值是一样的，这是逻辑状态；</span>
+<span style="color: #008080;">75</span>     
+<span style="color: #008080;">76</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">t1.i = %d, t1.j = %d, t1.p = %p\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, t1.getI(), t1.getJ(), t1.getP());
+</span><span style="color: #008080;">77</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">t2.i = %d, t2.j = %d, t2.p = %p\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, t2.getI(), t2.getJ(), t2.getP());
+</span><span style="color: #008080;">78</span>     
+<span style="color: #008080;">79</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">t1.i = %d, t1.j = %d, *t1.p = %d\n</span><span style="color: #800000;">"</span>, t1.getI(), t1.getJ(), *<span style="color: #000000;">t1.getP());
+</span><span style="color: #008080;">80</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">t2.i = %d, t2.j = %d, *t2.p = %d\n</span><span style="color: #800000;">"</span>, t2.getI(), t2.getJ(), *<span style="color: #000000;">t2.getP());
+</span><span style="color: #008080;">81</span>     
+<span style="color: #008080;">82</span>     t1.<span style="color: #0000ff;">free</span><span style="color: #000000;">();
+</span><span style="color: #008080;">83</span>     t2.<span style="color: #0000ff;">free</span><span style="color: #000000;">();
+</span><span style="color: #008080;">84</span>     
+<span style="color: #008080;">85</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">86</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">9，什么时候需要进行深拷贝？</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，对象中有成员指代了系统中的资源（唯一准则）：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，成员指向了动态内存空间；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，内存是系统资源之一；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，成员打开了外存中的文件；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，类的成员打开了系统当中的一个文件，它是系统资源之一；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，成员使用了系统中的网络端口；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，网络端口也是系统资源之一；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4，...；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，问题分析：</p>
+<p align="center">&nbsp;<img src="./images/C++中的深拷贝和浅拷贝构造函数0.png" alt="" /></p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，一般性原则：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，自定义拷贝构造函数，必然需要实现深拷贝；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，要自定义拷贝构造函数，就要考虑是不是要做一个深拷贝；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，如果是，要考虑深拷贝是否会在多个对象之间造成问题（比如多次释放堆空间）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，如果不是，要考虑为何要自定义拷贝构造函数而不使用编译器默认提供的拷贝构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">10，数组类的改进编程实验：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，IntArray.h 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">#ifndef _INTARRAY_H_
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">#define</span> _INTARRAY_H_
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> IntArray
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> m_length;
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">int</span>*<span style="color: #000000;"> m_pointer;
+</span><span style="color: #008080;"> 9</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">10</span>     IntArray(<span style="color: #0000ff;">int</span><span style="color: #000000;"> len);
+</span><span style="color: #008080;">11</span>     IntArray(<span style="color: #0000ff;">const</span> IntArray&amp;<span style="color: #000000;"> obj);
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> length();
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">bool</span> <span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">int</span> index, <span style="color: #0000ff;">int</span>&amp;<span style="color: #000000;"> value);
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">bool</span> <span style="color: #0000ff;">set</span>(<span style="color: #0000ff;">int</span> index ,<span style="color: #0000ff;">int</span><span style="color: #000000;"> value);
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">void</span> <span style="color: #0000ff;">free</span><span style="color: #000000;">();
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">17</span> 
+<span style="color: #008080;">18</span> <span style="color: #0000ff;">#endif</span></pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，IntArray.cpp 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">IntArray.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> IntArray::IntArray(<span style="color: #0000ff;">int</span><span style="color: #000000;"> len)
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     m_pointer = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">int</span>[len];  <span style="color: #008000;">//</span><span style="color: #008000;"> 在构造函数中申请了堆空间的内存，因此要给数组类提供一个拷贝构造函数；</span>
+<span style="color: #008080;"> 6</span>     
+<span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;len; i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 9</span>         m_pointer[i] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">11</span>     
+<span style="color: #008080;">12</span>     m_length =<span style="color: #000000;"> len;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> IntArray::IntArray(<span style="color: #0000ff;">const</span> IntArray&amp;<span style="color: #000000;"> obj)
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">17</span>     m_length = obj.m_length;  <span style="color: #008000;">//</span><span style="color: #008000;"> length 直接赋值；</span>
+<span style="color: #008080;">18</span>     
+<span style="color: #008080;">19</span>     m_pointer = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">int</span>[obj.m_length];  <span style="color: #008000;">//</span><span style="color: #008000;"> pointer 要到堆空间申请内存，大小和初始化对象的一样，加上下面，完成了深拷贝；</span>
+<span style="color: #008080;">20</span>      
+<span style="color: #008080;">21</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;obj.m_length; i++)  <span style="color: #008000;">//</span><span style="color: #008000;"> 完成数组元素的赋值和复制；</span>
+<span style="color: #008080;">22</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">23</span>         m_pointer[i] =<span style="color: #000000;"> obj.m_pointer[i];
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">26</span> 
+<span style="color: #008080;">27</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> IntArray::length()
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">29</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> m_length;
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">31</span> 
+<span style="color: #008080;">32</span> <span style="color: #0000ff;">bool</span> IntArray::<span style="color: #0000ff;">get</span>(<span style="color: #0000ff;">int</span> index, <span style="color: #0000ff;">int</span>&amp;<span style="color: #000000;"> value)
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">34</span>     <span style="color: #0000ff;">bool</span> ret = (<span style="color: #800080;">0</span> &lt;= index) &amp;&amp; (index &lt;<span style="color: #000000;"> length());
+</span><span style="color: #008080;">35</span>     
+<span style="color: #008080;">36</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;">( ret )
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">38</span>         value =<span style="color: #000000;"> m_pointer[index];
+</span><span style="color: #008080;">39</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">40</span>     
+<span style="color: #008080;">41</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">43</span> 
+<span style="color: #008080;">44</span> <span style="color: #0000ff;">bool</span> IntArray::<span style="color: #0000ff;">set</span>(<span style="color: #0000ff;">int</span> index, <span style="color: #0000ff;">int</span><span style="color: #000000;"> value)
+</span><span style="color: #008080;">45</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">46</span>     <span style="color: #0000ff;">bool</span> ret = (<span style="color: #800080;">0</span> &lt;= index) &amp;&amp; (index &lt;<span style="color: #000000;"> length());
+</span><span style="color: #008080;">47</span>     
+<span style="color: #008080;">48</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;">( ret )
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">50</span>         m_pointer[index] =<span style="color: #000000;"> value;
+</span><span style="color: #008080;">51</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">52</span>     
+<span style="color: #008080;">53</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;">54</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">55</span> 
+<span style="color: #008080;">56</span> <span style="color: #0000ff;">void</span> IntArray::<span style="color: #0000ff;">free</span><span style="color: #000000;">()
+</span><span style="color: #008080;">57</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">58</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;">[]m_pointer;
+</span><span style="color: #008080;">59</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，IntArray 类的使用：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">IntArray.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span>     IntArray a(<span style="color: #800080;">5</span><span style="color: #000000;">);    
+</span><span style="color: #008080;"> 7</span>     
+<span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;a.length(); i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">10</span>         a.<span style="color: #0000ff;">set</span>(i, i + <span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">12</span>     
+<span style="color: #008080;">13</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;a.length(); i++<span style="color: #000000;">)
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">15</span>         <span style="color: #0000ff;">int</span> value = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span>         
+<span style="color: #008080;">17</span>         <span style="color: #0000ff;">if</span>( a.<span style="color: #0000ff;">get</span><span style="color: #000000;">(i, value) )
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">19</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">a[%d] = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, i, value);
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span>     
+<span style="color: #008080;">23</span>     IntArray b = a;  <span style="color: #008000;">//</span><span style="color: #008000;"> 用 a 对象初始化 b 对象；</span>
+<span style="color: #008080;">24</span>     
+<span style="color: #008080;">25</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;b.length(); i++<span style="color: #000000;">)
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">27</span>         <span style="color: #0000ff;">int</span> value = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">28</span>         
+<span style="color: #008080;">29</span>         <span style="color: #0000ff;">if</span>( b.<span style="color: #0000ff;">get</span><span style="color: #000000;">(i, value) )
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">31</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">b[%d] = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, i, value);
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">34</span>     
+<span style="color: #008080;">35</span>     a.<span style="color: #0000ff;">free</span><span style="color: #000000;">();
+</span><span style="color: #008080;">36</span>     b.<span style="color: #0000ff;">free</span><span style="color: #000000;">();
+</span><span style="color: #008080;">37</span>     
+<span style="color: #008080;">38</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">39</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">11，小结：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，C++ 编译器会默认提供构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，无参构造函数用于定义对象的默认初始化状态；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，拷贝构造函数在创建对象时拷贝对象的状态；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，对象的拷贝有浅拷贝和深拷贝两种方式：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，浅拷贝使得对象的物理状态相同；</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，深拷贝使得对象的逻辑状态相同；</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

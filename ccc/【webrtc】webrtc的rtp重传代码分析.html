@@ -1,0 +1,179 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修【webrtc】webrtc的rtp重传代码分析' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>【webrtc】webrtc的rtp重传代码分析</center></div><div class='banquan'>原文出处:本文由博客园博主leno米雷提供。<br/>
+原文连接:https://www.cnblogs.com/lenomirei/p/11329131.html</div><br>
+    <p>pgm不太能用，没有想象中的可靠，重传机制貌似仍然使用组播重传，丢包率80%的网络感觉没啥改进，如果有所好转延迟估计也是个不小的问题。</p>
+<p>后听说rtp也有nack机制，webrtc基于rtp实现了重传在一定程度上保证可靠性。</p>
+<p>在各路大神的指引下找到了rfc4585，看到了这么一段<br />
+RTCP扩展反馈报文，有一种nack报文<br />
+<img src="./images/【webrtc】webrtc的rtp重传代码分析0.png" /></p>
+<p>当FMT=1并且PT=205时，代表此报文是个NACK报文</p>
+<table>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Value</th>
+<th>Brief Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>RTPFB</td>
+<td>205</td>
+<td>Transport layer FB message</td>
+</tr>
+<tr class="even">
+<td>PSFB</td>
+<td>206</td>
+<td>Pyload-specific FB message</td>
+</tr>
+</tbody>
+</table>
+<pre><code>0:    unassigned
+1:    Generic NACK
+2-30: unassigned
+31:   reserved for future expansion of the identifier number space</code></pre>
+<p><code>The Generic NACK message is identified by PT=RTPFB and FMT=1.</code></p>
+<p>FCI字段会有如下图所示的数据<br />
+<img src="./images/【webrtc】webrtc的rtp重传代码分析1.png" /></p>
+<p>PID：表示Packet ID，用于表明当前接收端丢失的数据包的序号，是接收端期待收到的下一个数据包<br />
+BLP：表示bitmask of following lost lost packets，占两个字节，16位，表示接着PID后面的16个数据包的丢包情况。</p>
+<p>rtp协议本身不会帮你重传。应用应该自己解析rtcp做处理</p>
+<h2 id="webrtc关于nack的实现">webrtc关于nack的实现</h2>
+<p>我突然想起来，我入职的时候下过webrtc的源码，还没删除（可能是太大了，删太慢了就没删），于是就把源码拿出来看了看webrtc对于这个部分的实现</p>
+<p>这个部分的代码量也不多，很好懂，大概就是发送端的rtcp receiver接收到rtcp数据包，解析发现是个nack，告诉rtp发送端重新发送接收端请求重传的数据包</p>
+<pre class="cpp"><code>bool RTCPReceiver::IncomingPacket(const uint8_t* packet, size_t packet_size) {
+  if (packet_size == 0) {
+    LOG(LS_WARNING) &lt;&lt; &quot;Incoming empty RTCP packet&quot;;
+    return false;
+  }
+
+  PacketInformation packet_information;
+  if (!ParseCompoundPacket(packet, packet + packet_size, &amp;packet_information))
+    return false;
+  TriggerCallbacksFromRTCPPacket(packet_information);
+  return true;
+}</code></pre>
+<p>上述代码是rtcp receiver接收到rtcp数据包后的初步判断，<code>ParseCompoundPacket</code>函数用于解析rtcp数据包，将关键信息摘出储存到<code>PacketInformation</code>结构体中传递给触发回调，<code>TriggerCallbacksFromRTCPPacket</code>函数用于触发收到rtcp数据包回调。</p>
+<p>下面是<code>ParseCompoundPacket</code>结构体的实现</p>
+<pre class="cpp"><code>struct RTCPReceiver::PacketInformation {
+  uint32_t packet_type_flags = 0;  // RTCPPacketTypeFlags bit field.
+
+  uint32_t remote_ssrc = 0;
+  std::vector&lt;uint16_t&gt; nack_sequence_numbers;
+  ReportBlockList report_blocks;
+  int64_t rtt_ms = 0;
+  uint8_t sli_picture_id = 0;
+  uint64_t rpsi_picture_id = 0;
+  uint32_t receiver_estimated_max_bitrate_bps = 0;
+  std::unique_ptr&lt;rtcp::TransportFeedback&gt; transport_feedback;
+};</code></pre>
+<p><code>nack_sequence_numbers</code>已经是解析过后的接收端没有收到的数据包的序号了，解析过程也很简单，是个拆包过的成就不再展开描述了。</p>
+<pre class="cpp"><code>void RTCPReceiver::TriggerCallbacksFromRTCPPacket(
+    const PacketInformation&amp; packet_information) {
+...
+  if (!receiver_only_ &amp;&amp; (packet_information.packet_type_flags &amp; kRtcpNack)) {
+    if (!packet_information.nack_sequence_numbers.empty()) {
+      LOG(LS_VERBOSE) &lt;&lt; &quot;Incoming NACK length: &quot;
+                      &lt;&lt; packet_information.nack_sequence_numbers.size();
+      _rtpRtcp.OnReceivedNack(packet_information.nack_sequence_numbers);
+    }
+...
+}</code></pre>
+<p><code>TriggerCallbacksFromRTCPPacket</code>函数会根据解析的数据包信息判断出当前rtcp数据包类型是nack，触发回调，该回调并不会直接到rtp sender而是到rtp-rtcp module由这个module调用rtp sender，这个module是rtp和rtcp的中心组件（和webrtc结构有关），也起到了解耦的作用</p>
+<p>这个中间调用的代码量不多</p>
+<pre class="cpp"><code>void ModuleRtpRtcpImpl::OnReceivedNack(
+    const std::vector&lt;uint16_t&gt;&amp; nack_sequence_numbers) {
+  for (uint16_t nack_sequence_number : nack_sequence_numbers) {
+    send_loss_stats_.AddLostPacket(nack_sequence_number);
+  }
+  if (!rtp_sender_.StorePackets() ||
+      nack_sequence_numbers.size() == 0) {
+    return;
+  }
+  // Use RTT from RtcpRttStats class if provided.
+  int64_t rtt = rtt_ms();
+  if (rtt == 0) {
+    rtcp_receiver_.RTT(rtcp_receiver_.RemoteSSRC(), NULL, &amp;rtt, NULL, NULL);
+  }
+  rtp_sender_.OnReceivedNack(nack_sequence_numbers, rtt);
+}</code></pre>
+<p>一开始做了一些记录，记录丢包情况，然后rtt是用来做流控的，收到nack当次并不一定会重传，会用到rtt做判断。</p>
+<p>下面是rtp sender的代码用于重传数据包</p>
+<pre class="cpp"><code>void RTPSender::OnReceivedNack(
+    const std::vector&lt;uint16_t&gt;&amp; nack_sequence_numbers,
+    int64_t avg_rtt) {
+  TRACE_EVENT2(TRACE_DISABLED_BY_DEFAULT(&quot;webrtc_rtp&quot;),
+               &quot;RTPSender::OnReceivedNACK&quot;, &quot;num_seqnum&quot;,
+               nack_sequence_numbers.size(), &quot;avg_rtt&quot;, avg_rtt);
+  for (uint16_t seq_no : nack_sequence_numbers) {
+    const int32_t bytes_sent = ReSendPacket(seq_no, 5 + avg_rtt);
+    if (bytes_sent &lt; 0) {
+      // Failed to send one Sequence number. Give up the rest in this nack.
+      LOG(LS_WARNING) &lt;&lt; &quot;Failed resending RTP packet &quot; &lt;&lt; seq_no
+                      &lt;&lt; &quot;, Discard rest of packets&quot;;
+      break;
+    }
+  }
+}</code></pre>
+<p><code>TRACE_EVENT</code>是google调试使用的机制，不用管它，这个函数会循环重发丢失队列中的数据包，但是不一定发送成功，数据包缓存是有限制的，如果要重新发送的数据包已经不再缓存中了，总不能变出来吧？</p>
+<pre class="cpp"><code>int32_t RTPSender::ReSendPacket(uint16_t packet_id, int64_t min_resend_time) {
+  std::unique_ptr&lt;RtpPacketToSend&gt; packet =
+      packet_history_.GetPacketAndSetSendTime(packet_id, min_resend_time, true);
+  if (!packet) {
+    // Packet not found.
+    return 0;
+  }
+
+  // Check if we&#39;re overusing retransmission bitrate.
+  // TODO(sprang): Add histograms for nack success or failure reasons.
+  RTC_DCHECK(retransmission_rate_limiter_);
+  if (!retransmission_rate_limiter_-&gt;TryUseRate(packet-&gt;size()))
+    return -1;
+
+  if (paced_sender_) {
+    // Convert from TickTime to Clock since capture_time_ms is based on
+    // TickTime.
+    int64_t corrected_capture_tims_ms =
+        packet-&gt;capture_time_ms() + clock_delta_ms_;
+    paced_sender_-&gt;InsertPacket(RtpPacketSender::kNormalPriority,
+                                packet-&gt;Ssrc(), packet-&gt;SequenceNumber(),
+                                corrected_capture_tims_ms,
+                                packet-&gt;payload_size(), true);
+
+    return packet-&gt;size();
+  }
+  bool rtx = (RtxStatus() &amp; kRtxRetransmitted) &gt; 0;
+  int32_t packet_size = static_cast&lt;int32_t&gt;(packet-&gt;size());
+  if (!PrepareAndSendPacket(std::move(packet), rtx, true,
+                            PacketInfo::kNotAProbe))
+    return -1;
+  return packet_size;
+}</code></pre>
+<ul>
+<li>重发数据包操作会先检查历史缓存中有没有数据包，如果没有，继续外层循环，重发下一个包。</li>
+<li>如果有带宽限制，需要看当前分给重发机制的带宽是否已经被用完，用完了就停止循环重发操作。</li>
+<li><code>min_resend_time</code>时间用于检测。如果之前有请求过重传同样序号的数据包，在短时间内是不会再重传的</li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

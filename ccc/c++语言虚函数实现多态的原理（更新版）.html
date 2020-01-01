@@ -1,0 +1,230 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++语言虚函数实现多态的原理（更新版）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++语言虚函数实现多态的原理（更新版）</center></div><div class='banquan'>原文出处:本文由博客园博主coding小菜鸟提供。<br/>
+原文连接:https://www.cnblogs.com/xgmzhna/p/10934562.html</div><br>
+    <p>&nbsp;自上一个帖子之间跳过了一篇总结性的帖子，之后再发，今天主要研究了c++语言当中虚函数对多态的实现，感叹于c++设计者的精妙绝伦</p>
+<p><span style="font-size: 16px;"><strong>c++中虚函数表的作用主要是实现了多态的机制。首先先解释一下多态的概念，多态是c++的特点之一，关于多态，简而言之就是 <span style="text-decoration: underline;">用父类的指针指向其子类的实例，然后通过父类的指针调用实际子类的成员函数</span>，这种方法呢，可以让父类的指针具有多种形态，也就是说不需要改动很多的代码就可以让父类这一种指针，干一些很多子类指针的事情，这里是从虚函数的实现机制层面进行研究</strong></span></p>
+<p>在写这篇帖子之前对于相关的文章进行了查阅，基本上是大段的文字，所以我的这一篇可能会用大量的图形进行赘述（如果理解有误的地方，烦请大佬能够指出），接下来就言归正传：</p>
+<p>首先介绍一下为什么会引进多态呢，基于c++的复用性和拓展性而言，同类的程序模块进行大量重复，是一件无法容忍的事情，比如我设置了苹果，香蕉，西瓜类，现在想把这些东西都装到碗这个函数里，那么在主函数当中，声明对象是必须的，但是每一次装进碗里对于水果来说，都要用自己的指针调用一次装的功能，那为什么不把这些类抽象成一个水果类呢，直接定义一个水果类的指针一次性调用所有水果装的功能呢，这个就是利用<strong><span style="text-decoration: underline;">父类指针去调用子类成员</span></strong>，但是这个思想受到了指针指向类型的限制，也就是说表面指针指向了子类成员，但实际上还是只能调用子类成员里的父类成员，这样的思想就变的毫无意义了，如果想要解决这个问题，只要在父类前加上virtual就可以解决了，这里就是利用虚函数实现多态的实例。</p>
+<p>首先还是作为举例来两个类，在之前基础知识的帖子中提到过，空类的大小是一个字节（占位符），函数，静态变量都在编译期就形成了，不用类去分配空间，但是做一个小实验，看一看在定义了虚函数之后，类的大小是多少呢</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 3</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> CFather 
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> AA()　　//虚函数标识符
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 8</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CFather :: AA()</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> BB()
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">12</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CFather  :: BB()</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">15</span> <span style="color: #0000ff;">class</span> CSon : <span style="color: #0000ff;">public</span><span style="color: #000000;"> CFather
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">17</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">18</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> AA()
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">20</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CSon :: AA()</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> BB()
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">24</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CSon :: BB()</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">27</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">29</span>     cout &lt;&lt; <span style="color: #0000ff;">sizeof</span>(CFather) &lt;&lt;<span style="color: #000000;"> endl;     　　　　　　//测试加了虚函数的类
+</span><span style="color: #008080;">30</span> 
+<span style="color: #008080;">31</span>     system(<span style="color: #800000;">"</span><span style="color: #800000;">pause</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">32</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">33</span> }</pre>
+</div>
+<p><img src="./images/c++语言虚函数实现多态的原理（更新版）0.png" alt="" width="151" height="43" /></p>
+<p>很明显类里装了一个 4个字节的东西，除了整形int，就是指针了，没错这里装的就是<span style="font-size: 16px;"><strong>函数指针</strong></span></p>
+<p>先把这个代码，给抽象成图形进行理解，在这CFather为A，CSon为B</p>
+<p><img src="./images/c++语言虚函数实现多态的原理（更新版）1.png" alt="" width="325" height="268" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;此时就是一个单纯的继承的情况，不存在虚函数，然后我new一个对象，A *p = new A；那么 p -&gt; AA(),必然是指向A类中的AA()函数，那么函数的调用有两种方式 一种函数名加（）直接调用，一种是利用函数指针进行调用，在这里我想要调用子类的，就可以利用函数指针进行调用，假设出来两个函数指针，来指向B类中的两个成员函数，如果我父类想要调用子类成员，就可以通过 p指针去调用函数指针，再通过函数指针去调用成员函数</p>
+<p>，<img src="./images/c++语言虚函数实现多态的原理（更新版）2.png" alt="" width="338" height="239" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;每一个函数都可以用一个函数指针去指着，那么每一类中的函数指针都可以形成自己的一个表，这个就叫做虚函数表</p>
+<p><img src="./images/c++语言虚函数实现多态的原理（更新版）3.png" alt="" width="415" height="278" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;那么在创建对象后，为什么类中会有四个字节的内存空间呢？</p>
+<p>在<span style="font-family: 'Times New Roman';">C++</span>的标准规格说明书中说到，编译器必需要保证虚函数表的指针存在于对象中最前面的位置（这是为了保证正确取到虚函数的偏移量）。这意味着我们通过对象实例的地址得到这张虚函数表，然后就可以遍历其中函数指针，并调用相应的函数。也就是说这四个字节的指针，代替了上图中（p-&gt;*pfn）（）的作用，指向了函数指针，也就是说，在使用了虚函数的父类成员函数，<span style="text-decoration: underline;"><strong><span style="font-size: 18px;">虽然写的还是p-&gt;AA(),实际上却是，(p-&gt;*(vfptr[0]))</span></strong></span>,而指向哪个虚函数表就由，创建的对象来决定</p>
+<p><img src="./images/c++语言虚函数实现多态的原理（更新版）4.png" alt="" width="415" height="304" /></p>
+<p>至此，就能理解如何用虚函数这个机制来实现多态的了</p>
+<p><span style="font-size: medium;">下面，我将分别说明&ldquo;无覆盖&rdquo;和&ldquo;有覆盖&rdquo;时的虚函数表的样子。没有覆盖父类的虚函数是毫无意义的。我之所以要讲述没有覆盖的情况，主要目的是为了给一个对比。在比较之下，我们可以更加清楚地知道其内部的具体实现。</span></p>
+<p><span style="font-size: medium;">&nbsp;</span></p>
+<p><span style="font-size: medium;">无虚数覆盖</span></p>
+<p><span style="font-size: medium;">下面，再让我们来看看继承时的虚函数表是什么样的。假设有如下所示的一个继承关系：</span></p>
+<p><span style="font-size: medium;"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/c++语言虚函数实现多态的原理（更新版）5.png" alt="" width="73" height="177" /></span></p>
+<p><span style="font-size: medium;">请注意，在这个继承关系中，子类没有重载任何父类的函数。那么，在派生类的实例中，</span><span style="font-size: medium;"><span style="font-family: 'Times New Roman';">Derive d; </span>的虚函表：</span></p>
+<p><span style="font-size: medium;"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/c++语言虚函数实现多态的原理（更新版）6.png" alt="" width="534" height="103" /></span></p>
+<p><span style="font-size: medium;">我们可以看到下面几点：</span></p>
+<p><span style="font-size: medium;"><span style="font-family: 'Times New Roman';">1）</span>虚函数按照其声明顺序放于表中。</span></p>
+<p><span style="font-size: medium;"><span style="font-family: 'Times New Roman';">2）</span>父类的虚函数在子类的虚函数前面。</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;">有虚数覆盖</span></p>
+<p><span style="font-size: medium;"><span style="font-size: medium;">覆盖父类的虚函数是很显然的事情，不然，虚函数就变得毫无意义。下面，我们来看一下，如果子类中有虚函数重载了父类的虚函数，会是一个什么样子？假设，我们有下面这样的一个继承关系。</span></span></p>
+<p><span style="font-size: medium;"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/c++语言虚函数实现多态的原理（更新版）7.png" alt="" width="75" height="176" /></span></p>
+<p><span style="font-size: medium;">为了让大家看到被继承过后的效果，在这个类的设计中，我只覆盖了父类的一个函数：<span style="font-family: 'Times New Roman';">f()</span>。那么，对于派生类的实例，其虚函数表会是下面的一个样子：</span></p>
+<p><span style="font-size: medium;"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/c++语言虚函数实现多态的原理（更新版）8.png" alt="" width="480" height="130" /></span></p>
+<p><span style="font-size: medium;">我们从表中可以看到下面几点，</span></p>
+<p><span style="font-size: medium;"><span style="font-family: 'Times New Roman';">1）</span>覆盖的<span style="font-family: 'Times New Roman';">f()</span>函数被放到了虚表中原来父类虚函数的位置。</span></p>
+<p><span style="font-size: medium;"><span style="font-family: 'Times New Roman';">2）</span>没有被覆盖的函数依旧。</span></p>
+<p><span style="font-size: medium;">这样，我们就可以看到对于下面这样的程序，</span></p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Base *b = new Derive();</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; b-&gt;f();</p>
+<p><span style="font-size: medium;">由<span style="font-family: 'Times New Roman';">b</span>所指的内存中的虚函数表的<span style="font-family: 'Times New Roman';">f()</span>的位置已经被<span style="font-family: 'Times New Roman';">Derive::f()</span>函数地址所取代，于是在实际调用发生时，是<span style="font-family: 'Times New Roman';">Derive::f()</span>被调用了。这就实现了多态。</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p style="text-align: right;">2019-05-28&nbsp;00:15:30 编程小菜鸟自我反思，今天图画的太丑了，大家多多担待，如果技术上有什么偏差，大家可以踊跃批评我，谢谢！！！</p>
+<p>&nbsp;/*==========================================================手动分割线================================================*/</p>
+<p>感谢@奕韵风华提出的问题，现在将多继承的虚函数实现多态的情况讨论一下，另再加上从代码层面上对这个机制有更深的理解</p>
+<p>讨论多继承还是从有无虚函数覆盖的情况来开始</p>
+<p>无虚函数覆盖</p>
+<p><span style="font-size: medium;">假设有下面这样一个类的继承关系。注意：子类并没有覆盖父类的函数。</span></p>
+<p><span style="font-size: medium;"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/c++语言虚函数实现多态的原理（更新版）9.png" alt="" width="251" height="167" /></span></p>
+<p><span style="font-size: medium;">对于子类实例中的虚函数表，是下面这个样子：</span></p>
+<p><span style="font-size: medium;"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/c++语言虚函数实现多态的原理（更新版）10.png" alt="" width="410" height="139" /></span></p>
+<p><span style="font-size: medium;">我们可以看到：</span></p>
+<p><span style="font-family: 'Times New Roman';"><span style="font-size: medium;">1）</span>&nbsp; </span><span style="font-size: medium;">每个父类都有自己的虚表。</span></p>
+<p><span style="font-family: 'Times New Roman';"><span style="font-size: medium;">2）</span>&nbsp; </span><span style="font-size: medium;">子类的成员函数被放到了第一个父类的表中。（所谓的第一个父类是按照声明顺序来判断的）</span></p>
+<p><span style="font-size: medium;">这样做就是为了解决不同的父类类型的指针指向同一个子类实例，而能够调用到实际的函数。</span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: medium;">有虚函数覆盖</span></p>
+<p><span style="font-size: medium;">下图中，我们在子类中覆盖了父类的<span style="font-family: 'Times New Roman';">f()</span>函数。</span></p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/c++语言虚函数实现多态的原理（更新版）11.png" alt="" width="258" height="156" /></p>
+<p><span style="font-size: medium;">下面是对于子类实例中的虚函数表的图：</span></p>
+<p><span style="font-size: medium;"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/c++语言虚函数实现多态的原理（更新版）12.png" alt="" width="383" height="150" /></span></p>
+<p><span style="font-size: medium;">我们可以看见，三个父类虚函数表中的<span style="font-family: 'Times New Roman';">f()</span>的位置被替换成了子类的函数指针。这样，我们就可以任一静态类型的父类来指向子类，并调用子类的<span style="font-family: 'Times New Roman';">f()</span>了。比如</span></p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;"> Derive d;
+</span><span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span>   Base1 *b1 = &amp;<span style="color: #000000;">d;
+</span><span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span>   Base2 *b2 = &amp;<span style="color: #000000;">d;
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span>   Base3 *b3 = &amp;<span style="color: #000000;">d;
+</span><span style="color: #008080;"> 8</span> 
+<span style="color: #008080;"> 9</span>   b1-&gt;f(); <span style="color: #008000;">//</span><span style="color: #008000;">Derive::f()</span>
+<span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span>   b2-&gt;f(); <span style="color: #008000;">//</span><span style="color: #008000;">Derive::f()</span>
+<span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span>   b3-&gt;f(); <span style="color: #008000;">//</span><span style="color: #008000;">Derive::f()</span>
+<span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span>  
+<span style="color: #008080;">16</span> 
+<span style="color: #008080;">17</span>   b1-&gt;g(); <span style="color: #008000;">//</span><span style="color: #008000;">Base1::g()</span>
+<span style="color: #008080;">18</span> 
+<span style="color: #008080;">19</span>   b2-&gt;g(); <span style="color: #008000;">//</span><span style="color: #008000;">Base2::g()</span>
+<span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span>   b3-&gt;g(); <span style="color: #008000;">//</span><span style="color: #008000;">Base3::g()</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>以上就是对多继承情况的一种讨论</p>
+<p>那么再看看如何在代码的层面上来验证原理呢？</p>
+<p>首先在主函数内声明了一个父类的指针，指向子类对象，那么这个对这个父类指针解引用的话，就能得到一个vfptr指针，和父类，子类对象，但是现在我只需要指向虚函数的指针，那么就可以定义指针只取前四个字节，利用强转，*（int *）p 这个得到了vfptr的地址，那么继续想要获得虚函数表中的虚函数，就是再次解引用了，但是如何进行偏移呢？在整形，浮点型里，指针的偏移量都是指针指向类型所觉得的，而这里是个函数指针，函数指针不允许利用指针指向类型来进行偏移量的取值，因为函数的类型大小是不确定的，但是我们知道，虚函数表里都是函数指针，指针的大小是确定的都是四个字节，那还可以继续利用强转，控制指针每次偏移四个字节，那么这个时候再进行解引用就是我们所取得函数的地址了，如果语言太赘述的话，可以看下面的例子</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;">--------------------------------------------------</span>
+<span style="color: #008080;"> 2</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> CFather
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> AA()
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">11</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CFather::AA</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> BB()
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">15</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CFather::BB</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> CC()
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">19</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CFather::BB</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">21</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> DD()
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">23</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CFather::DD</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">26</span> 
+<span style="color: #008080;">27</span> <span style="color: #0000ff;">class</span> CSon:<span style="color: #0000ff;">public</span><span style="color: #000000;"> CFather
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">29</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">30</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> AA()
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">32</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CSon::AA</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">34</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> BB()
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">36</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CSon::BB</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">38</span>     <span style="color: #0000ff;">void</span><span style="color: #000000;"> DD()
+</span><span style="color: #008080;">39</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">40</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CSon::DD</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">42</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> EE()
+</span><span style="color: #008080;">43</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">44</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">CSon::EE</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">45</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">46</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">47</span> 
+<span style="color: #008080;">48</span> 
+<span style="color: #008080;">49</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">50</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">51</span> 
+<span style="color: #008080;">52</span>     typedef <span style="color: #0000ff;">void</span> (*<span style="color: #000000;">PFUN)();
+</span><span style="color: #008080;">53</span> 
+<span style="color: #008080;">54</span>     cout &lt;&lt; <span style="color: #0000ff;">sizeof</span>(CFather) &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">55</span>     CFather* p = <span style="color: #0000ff;">new</span><span style="color: #000000;"> CSon;
+</span><span style="color: #008080;">56</span>     PFUN aa = (PFUN)*((<span style="color: #0000ff;">int</span>*)*(<span style="color: #0000ff;">int</span>*)p+<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">57</span>     PFUN bb = (PFUN)*((<span style="color: #0000ff;">int</span>*)*(<span style="color: #0000ff;">int</span>*)p+<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">58</span>     PFUN cc = (PFUN)*((<span style="color: #0000ff;">int</span>*)*(<span style="color: #0000ff;">int</span>*)p+<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">59</span>     PFUN dd = (PFUN)*((<span style="color: #0000ff;">int</span>*)*(<span style="color: #0000ff;">int</span>*)p+<span style="color: #800080;">3</span><span style="color: #000000;">);
+</span><span style="color: #008080;">60</span>     PFUN ee = (PFUN)*((<span style="color: #0000ff;">int</span>*)*(<span style="color: #0000ff;">int</span>*)p+<span style="color: #800080;">4</span><span style="color: #000000;">);
+</span><span style="color: #008080;">61</span> 
+<span style="color: #008080;">62</span> 
+<span style="color: #008080;">63</span> 
+<span style="color: #008080;">64</span>     system(<span style="color: #800000;">"</span><span style="color: #800000;">pause</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">65</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">66</span> }</pre>
+</div>
+<p>通过监视就能直接看到（因为vs编译器不允许，利用父类指针直接使用虚函数不覆盖情况下的子类成员函数，利用这个方法也可以查看子类虚函数）</p>
+<p><img src="./images/c++语言虚函数实现多态的原理（更新版）13.png" alt="" width="592" height="114" /></p>
+<p>验证了我上面叙述的原理，首先父类中先 生成了虚函数表，再继承到子类当中，如果子类中有重载的函数，直接重写，没有的话直接添加</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p style="text-align: right;">2019-05-29&nbsp;14:07:19 编程小菜鸟自我反思，大佬可以提出自己的建议和意见，谢谢！！！&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

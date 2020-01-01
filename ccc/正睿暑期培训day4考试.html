@@ -1,0 +1,230 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修正睿暑期培训day4考试' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>正睿暑期培训day4考试</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/11317825.html</div><br>
+    <p><a href="http://zhengruioi.com/contest/363">链接</a></p>
+<h2 id="a">A</h2>
+<p>求出来到每座山的距离后，就可以计算出每只猫等待的时间与出发时间的关系。</p>
+<p>如果出发时间为<span class="math inline">\(x\)</span>,求出来只猫的等待时间。这里用<span class="math inline">\(b_i\)</span>表示第i只猫的等待时间。然后我们将这些时间排序。问题就转化为了，从m个有序的数中，选出p个，每个数字覆盖以其为开头的一段区间。这段区间的贡献为<span class="math inline">\(x\times num-sum\)</span>,其中x为当前选定的数字。<span class="math inline">\(num\)</span>为覆盖区间的长度。<span class="math inline">\(sum\)</span>为覆盖区间的数字和。</p>
+<p>这样就可以得到一个<span class="math inline">\(m^2p\)</span>的朴素dp。<br />
+<span class="math inline">\(f[i][j]\)</span>表示选出i个点，覆盖前j个元素，最小贡献。<br />
+<span class="math inline">\(f[i][j]=\min\limits_{k=1}^i\{f[i-1][k - 1]+b[k]\times j+(j-k)\times b[k]-(sum[j]-sum[k]))\}\)</span></p>
+<p>然后就很斜率优化了。。。</p>
+<pre><code>/*
+* @Author: wxyww
+* @Date: 2019-08-07 19:31:15
+* @Last Modified time: 2019-08-07 19:49:05
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cmath&gt;
+#include&lt;ctime&gt;
+#include&lt;bitset&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;string&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+using namespace std;
+typedef long long ll;
+const int N = 50010,M = 1010;
+#define int ll
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+ll sum[N];
+int n,m,p,f[N],g[N],a[N];
+ll b[N];
+ll B(int x) {
+    return sum[x] - x * b[x] + g[x - 1];
+}
+bool cmp(int x,int y) {
+    return x &gt; y;
+}
+int q[N];
+int calc(int x,int y) {
+    return b[x] * y  + B(x);
+}
+bool check(int p1,int p2,int p3) {
+    return 1ll * (B(p2) - B(p3)) * (b[p3] - b[p1]) &gt; 1ll * (B(p1) - B(p3)) * (b[p3] - b[p2]);
+}
+ main() {
+    n = read(),m = read(),p = read();
+    for(int i = 2;i &lt;= n;++i) a[i] = a[i - 1] + read();
+    for(int i = 1;i &lt;= m;++i) {
+        int x = read(),y = read();
+        b[i] =  y - a[x];
+    }
+
+    sort(b + 1,b + m + 1,cmp);
+
+    for(int i = 1;i &lt;= m;++i) sum[i] = sum[i - 1] + b[i];
+
+    memset(f,0x3f,sizeof(f));
+    f[0] = 0;
+    for(int j = 1;j &lt;= p;++j) {
+        for(int i = 0;i &lt;= m;++i) g[i] = f[i];
+        memset(f,0x3f,sizeof(f));
+        f[0] = 0;
+        int head = 1,tail = 0;
+        for(int i = 1;i &lt;= m;++i) {
+            while(head &lt; tail &amp;&amp; check(q[tail],q[tail - 1],i)) --tail;
+            q[++tail] = i;
+            while(head &lt; tail &amp;&amp; calc(q[head + 1],i) &lt;= calc(q[head],i)) ++head;
+            f[i] = calc(q[head],i) - sum[i];
+        }
+    }
+
+    cout&lt;&lt;f[m]&lt;&lt;endl;
+    return 0;
+}</code></pre>
+<h2 id="b">B</h2>
+<p>非常interesting的一道题。</p>
+<p>考虑倒着做。用某大佬的话说就是&quot;拔地鼠&quot;，只有当某个位置所在的行和列不含有除这个位置外的地鼠，这个位置才可以被&quot;拔出来&quot;。我们将其拔出来之后，将他所在的行和列都标记为灰色。表示可能为白色(有地鼠)，也可能为黑色(无地鼠)。</p>
+<p>然后开始bfs,将尽量多的点刷为灰色。</p>
+<p>最后比较一下非灰色的点是不是与初始状态相同。</p>
+<p>需要特判初始状态本就与终止状态相同的情况。还有，如果某一行和某一列都为灰色，那么他们的交点处初始必须是白色。否则就无法开始。</p>
+<pre><code>/*
+* @Author: wxyww
+* @Date: 2019-08-07 20:10:07
+* @Last Modified time: 2019-08-07 20:26:25
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cmath&gt;
+#include&lt;ctime&gt;
+#include&lt;bitset&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;string&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+using namespace std;
+typedef long long ll;
+const int N = 1010;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+char s1[N][N],s2[N][N];
+int sum1[N],sum2[N],vis1[N],vis2[N],vis[N][N],col[N][N];
+queue&lt;pair&lt;int,int&gt; &gt;q;
+int main() {
+    int n = read(),m = read();
+    int bz = 0;
+    for(int i = 1;i &lt;= n;++i) scanf(&quot;%s&quot;,s1[i] + 1);
+    for(int i = 1;i &lt;= n;++i) scanf(&quot;%s&quot;,s2[i] + 1);
+    for(int i = 1;i &lt;= n;++i) 
+        for(int j = 1;j &lt;= m;++j) 
+            if(s1[i][j] != s2[i][j]) bz = 1;
+    if(!bz) {
+        puts(&quot;1&quot;);return 0;
+    }
+
+    for(int i = 1;i &lt;= n;++i) {
+        for(int j = 1;j &lt;= m;++j) {
+            if(s2[i][j] == &#39;X&#39;) {
+                sum1[i]++;sum2[j]++;
+                col[i][j] = 1;
+            }
+        }
+    }
+
+    for(int i = 1;i &lt;= n;++i) {
+        for(int j = 1;j &lt;= m;++j) {
+            if(s2[i][j] == &#39;X&#39; &amp;&amp; sum1[i] == 1 &amp;&amp; sum2[j] == 1) {
+                q.push(make_pair(i,j));
+                vis[i][j] = 1;
+            }
+        }
+    }
+
+    while(!q.empty()) {
+        int x = q.front().first,y = q.front().second;q.pop();
+        if(vis1[x] &lt;= 2) {
+            vis1[x]++;
+            for(int i = 1;i &lt;= m;++i) {
+                if(col[x][i] == 1) {
+                    sum1[x]--;sum2[i]--;
+                }
+                col[x][i] = 2;
+            }
+            for(int i = 1;i &lt;= m;++i) 
+                if(!vis[x][i] &amp;&amp; !sum1[x] &amp;&amp; !sum2[i])  q.push(make_pair(x,i)),vis[x][i] = 1;
+        }
+        if(vis2[y] &lt;= 1) {
+            vis2[y]++;
+            for(int i = 1;i &lt;= n;++i) {
+                if(col[i][y] == 1) sum1[i]--,sum2[y]--;
+                col[i][y] = 2;
+            }
+            for(int i = 1;i &lt;= n;++i) 
+                if(!vis[i][y] &amp;&amp; !sum1[i] &amp;&amp; !sum2[y]) q.push(make_pair(i,y)),vis[i][y] = 1;
+        }
+    }
+     bz = 0;
+    for(int i = 1;i &lt;= n;++i) {
+        for(int j = 1;j &lt;= m;++j) {
+            if(s1[i][j] == &#39;O&#39; &amp;&amp; vis1[i] &amp;&amp; vis2[j]) bz = 1;
+        }
+    }
+    if(!bz) {
+        puts(&quot;0&quot;);return 0;
+    }
+    bz = 0;
+    for(int i = 1;i &lt;= n;++i) {
+        for(int j = 1;j &lt;= m;++j) {
+            if(!vis1[i] &amp;&amp; !vis2[j] &amp;&amp; s1[i][j] != s2[i][j]) bz = 1; 
+        }
+    }
+    if(bz) puts(&quot;0&quot;);
+    else puts(&quot;1&quot;);
+
+    return 0;
+}</code></pre>
+<h2 id="c">C</h2>
+<p>毒瘤防AK题。。。并不想写。</p>
+<h2 id="总结">总结</h2>
+<p>T1一开始写了一个假的dp，浪费了大量时间。T2骗分成分较大，数据有点水。T3到最后有点着急，没写出来。。。</p>
+<p>T1这种简单题应该做对并及时对拍。T2没思路只能乱搞了。T3.。。。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

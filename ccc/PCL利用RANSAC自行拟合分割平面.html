@@ -1,0 +1,77 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修PCL利用RANSAC自行拟合分割平面' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>PCL利用RANSAC自行拟合分割平面</center></div><div class='banquan'>原文出处:本文由博客园博主BillWong提供。<br/>
+原文连接:https://www.cnblogs.com/billwong/p/10697927.html</div><br>
+    <p>利用PCL中分割算法、</p>
+<p>&nbsp;pcl::SACSegmentation&lt;pcl::PointXYZ&gt; seg;</p>
+<p>，不利用法线参数，只根据模型参数得到的分割面片，与想象的面片差距很大，</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span>  pcl::ModelCoefficients::Ptr coefficients (<span style="color: #0000ff;">new</span><span style="color: #000000;"> pcl::ModelCoefficients ());
+</span><span style="color: #008080;"> 2</span>   pcl::PointIndices::Ptr inliers (<span style="color: #0000ff;">new</span><span style="color: #000000;"> pcl::PointIndices ());
+</span><span style="color: #008080;"> 3</span>   <span style="color: #008000;">//</span><span style="color: #008000;"> 创建分割对象</span>
+<span style="color: #008080;"> 4</span>   pcl::SACSegmentation&lt;pcl::PointXYZ&gt;<span style="color: #000000;"> seg;
+</span><span style="color: #008080;"> 5</span>   <span style="color: #008000;">//</span><span style="color: #008000;"> 可选</span>
+<span style="color: #008080;"> 6</span>   seg.setOptimizeCoefficients (<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 7</span>   <span style="color: #008000;">//</span><span style="color: #008000;"> 必选</span>
+<span style="color: #008080;"> 8</span> <span style="color: #000000;">  seg.setModelType (pcl::SACMODEL_PLANE);
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">  seg.setMethodType (pcl::SAC_RANSAC);
+</span><span style="color: #008080;">10</span>   seg.setMaxIterations (<span style="color: #800080;">1000</span><span style="color: #000000;">);
+</span><span style="color: #008080;">11</span>   seg.setDistanceThreshold (<span style="color: #800080;">0.05</span>);</pre>
+</div>
+<p>后我采用RANSAC拟合的方法，进行面片的分割</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span>     std::vector&lt;<span style="color: #0000ff;">int</span>&gt; inliers;    <span style="color: #008000;">//</span><span style="color: #008000;">存储局内点集合的点的索引的向量
+</span><span style="color: #008080;"> 2</span>     
+<span style="color: #008080;"> 3</span>     <span style="color: #008000;">//</span><span style="color: #008000;">进行RANSAC平面拟合</span>
+<span style="color: #008080;"> 4</span>     pcl::SampleConsensusModelPlane&lt;PointT&gt;::Ptr    model_p(<span style="color: #0000ff;">new</span> pcl::SampleConsensusModelPlane&lt;PointT&gt;(cloud));        <span style="color: #008000;">//</span><span style="color: #008000;">针对平面模型的对象</span>
+<span style="color: #008080;"> 5</span>     pcl::RandomSampleConsensus&lt;PointT&gt;<span style="color: #000000;"> ransacP(model_p);
+</span><span style="color: #008080;"> 6</span>     ransacP.setDistanceThreshold(.<span style="color: #800080;">1</span>);        <span style="color: #008000;">//</span><span style="color: #008000;">与平面距离小于0.1的点作为局内点考虑</span>
+<span style="color: #008080;"> 7</span>     ransacP.computeModel();                    <span style="color: #008000;">//</span><span style="color: #008000;">执行随机参数估计</span>
+<span style="color: #008080;"> 8</span>     ransacP.getInliers(inliers);                <span style="color: #008000;">//</span><span style="color: #008000;">存储估计所得的局内点</span>
+<span style="color: #008080;"> 9</span>     pcl::copyPointCloud&lt;PointT&gt;(*cloud, inliers, *cloud_in);    <span style="color: #008000;">//</span><span style="color: #008000;">复制估算模型的所有局内点到cloud_in中</span>
+<span style="color: #008080;">10</span>     pcl::io::savePCDFile(<span style="color: #800000;">"</span><span style="color: #800000;">./data/seg_RAN/RANSAC_building_1.pcd</span><span style="color: #800000;">"</span>, *cloud_in);</pre>
+</div>
+<p>得到：</p>
+<p><img src="./images/PCL利用RANSAC自行拟合分割平面0.png" alt="" /></p>
+<p>之后我想迭代的进行面片拟合后分割出来，在索引的地方遇到了问题</p>
+<p>于是想出来一个比较笨的办法：</p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; cloud-&gt;points.size(); i++<span style="color: #000000;">)
+</span><span style="color: #008080;">2</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">3</span>         std::vector&lt;<span style="color: #0000ff;">int</span>&gt;::iterator iter =<span style="color: #000000;"> find(inliers.begin(), inliers.end(), i);
+</span><span style="color: #008080;">4</span>         <span style="color: #0000ff;">if</span> (iter ==<span style="color: #000000;"> inliers.end())
+</span><span style="color: #008080;">5</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">6</span>             cloud_out-&gt;points.push_back(cloud-&gt;<span style="color: #000000;">points.at(i));
+</span><span style="color: #008080;">7</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">8</span>     }</pre>
+</div>
+<p>&nbsp;</p>
+<p>等同于自己写了一个分割的方法。</p>
+<p>中间遇到的问题有：</p>
+<p>点云的索引、有序点云与无序点云的写入、智能指针未实例化问题、</p>
+<p>现在仍未搞明白PCL中的索引的使用方法。例如：PointIndices、&nbsp;ExtractIndices 等</p>
+<p>如有了解的小伙伴希望告知、互帮互助、共同进步！</p>
+<p>2019-04-12&nbsp; 19:04:34</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

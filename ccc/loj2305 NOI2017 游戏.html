@@ -1,0 +1,165 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修loj2305 NOI2017 游戏' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>loj2305 NOI2017 游戏</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/loj2305.html</div><br>
+    <p><a href="https://loj.ac/problem/2305"><font size=5>题目链接</font></a></p>
+<h1 id="思路">思路</h1>
+<p>既然<span class="math inline">\(x\)</span>的数量那么小，我们就可以先把每个<span class="math inline">\(x\)</span>搜索一遍。</p>
+<p>枚举x的时候不需要把<span class="math inline">\(a,b,c\)</span>全枚举一遍，只要枚举其中的两个就可以枚举到当前位置选任何车的情况。</p>
+<p>然后就变成了只有<span class="math inline">\(&#39;a&#39;,&#39;b&#39;,&#39;c&#39;\)</span>的序列。寻找满足题目要求的方案。</p>
+<p><span class="math inline">\(2-sat\)</span>模型。</p>
+<p>连边的时候注意一些技巧，否则<span class="math inline">\(if\)</span>写到自闭。。</p>
+<p>在<span class="math inline">\(UOJ\)</span>上会被卡掉<span class="math inline">\(3\)</span>分。实在懒得去卡常了233</p>
+<h1 id="代码">代码</h1>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-04-29 09:08:01
+* @Last Modified time: 2019-04-30 14:32:38
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 100010; 
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+vector&lt;int&gt;e[N];
+char a[N],tmp[N];
+int n,D,m;
+int opp[N];
+#define add(x,y) e[x].push_back(y)
+int val[N];
+
+int tot,dfn[N],low[N],vis[N],sta[N],coljs,col[N],top;
+
+void tarjan(int u) {
+    int k = e[u].size();
+    dfn[u] = low[u] = ++tot;
+    sta[++top] = u;vis[u] = 1;
+    for(int i = 0;i &lt; k;++i) {
+        int v = e[u][i];
+        if(!dfn[v]) {
+            tarjan(v);low[u] = min(low[u],low[v]);
+        }
+        else if(vis[v]) low[u] = min(low[u],low[v]);
+    }
+    if(dfn[u] == low[u]) {
+        ++coljs;
+        do {
+            int x = sta[top--];
+            col[x] = coljs;
+            vis[x] = 0;
+        }while(sta[top + 1] != u);
+    }
+}
+
+
+int t1[N],t2[N];
+char h1[N],h2[N];
+
+int get_u(int x,char y) {
+    if(a[x] == &#39;a&#39;) return y == &#39;B&#39; ? x : x + n;
+    return y == &#39;A&#39; ? x : x + n;
+}
+
+#define ote(x) x &gt; n ? x - n : x + n
+
+void solve() {
+    memset(dfn,0,sizeof(dfn));memset(low,0,sizeof(low));
+    memset(col,0,sizeof(col));
+    coljs = 0,tot = 0;top = 0;
+    for(int i = 1;i &lt;= n + n;++i) e[i].clear();
+    for(int i = 1;i &lt;= m;++i) {
+        if(a[t1[i]] == h1[i] - &#39;A&#39; + &#39;a&#39;) continue;
+        int u = get_u(t1[i],h1[i]);
+        if(a[t2[i]] == h2[i] - &#39;A&#39; + &#39;a&#39;) {
+            add(u,ote(u));
+            continue;
+        }
+        int v = get_u(t2[i],h2[i]);
+        add(u,v);add(ote(v),ote(u));
+    }
+    for(int i = 1;i &lt;= n + n;++i) if(!dfn[i]) tarjan(i);
+
+    for(int i = 1;i &lt;= n;++i) if(col[i] == col[i + n]) return;
+
+    for(int i = 1;i &lt;= n;++i) {
+        if(col[i] &lt; col[i + n]) {
+            if(a[i] == &#39;a&#39;) putchar(&#39;B&#39;);
+            else putchar(&#39;A&#39;);
+        }
+        else {
+            if(a[i] == &#39;c&#39;) putchar(&#39;B&#39;);
+            else putchar(&#39;C&#39;);
+        }
+    }
+    exit(0);
+}
+
+void dfs(int pos) {
+    if(pos == n + 1) {
+        solve();
+        return;
+    }
+    if(tmp[pos] != &#39;x&#39;) dfs(pos + 1);
+    else {
+        a[pos] = &#39;a&#39;;
+        dfs(pos + 1);
+        a[pos] = &#39;b&#39;;
+        dfs(pos + 1);
+    }
+}
+
+int main() {
+    // freopen(&quot;2305/game3.in&quot;,&quot;r&quot;,stdin);
+    n = read(),D = read();
+    scanf(&quot;%s&quot;,tmp + 1);
+    memcpy(a + 1,tmp + 1,n);
+    m = read();
+    for(int i = 1;i &lt;= m;++i) {
+        t1[i] = read();h1[i] = getchar();while(h1[i] != &#39;A&#39; &amp;&amp; h1[i] != &#39;B&#39; &amp;&amp; h1[i] != &#39;C&#39;) h1[i] = getchar();
+        t2[i] = read();h2[i] = getchar();while(h2[i] != &#39;A&#39; &amp;&amp; h2[i] != &#39;B&#39; &amp;&amp; h2[i] != &#39;C&#39;) h2[i] = getchar();
+    }
+
+    dfs(1);
+    puts(&quot;-1&quot;);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

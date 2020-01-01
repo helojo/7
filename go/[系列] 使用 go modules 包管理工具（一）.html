@@ -1,0 +1,121 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[系列] 使用 go modules 包管理工具（一）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[系列] 使用 go modules 包管理工具（一）</center></div><div class='banquan'>原文出处:本文由博客园博主新亮笔记提供。<br/>
+原文连接:https://www.cnblogs.com/xinliangcoder/p/11414398.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#概述">概述</a></li>
+        <li><a href="#初始化">初始化</a></li>
+        <li><a href="#添加依赖包">添加依赖包</a></li>
+        <li><a href="#go-mod-命令">go mod 命令</a></li>
+        <li><a href="#小结">小结</a></li>
+        <li><a href="#源码地址">源码地址</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="概述">概述</h2>
+<p>我想实现一个开箱即用的 API 框架的轮子，这个轮子是基于 Gin 基础上开发的。</p>
+<p>为什么是开箱即用，它会集成哪些功能？</p>
+<p><img src="./images/[系列] 使用 go modules 包管理工具（一）0.png" /></p>
+<p>以上功能点，都是常用的，后期可能还会增加。</p>
+<p>废话不多说，咱们开始吧。</p>
+<p>创建一个项目，咱们首先要考虑一个依赖包的管理工具。</p>
+<p>常见的包管理有，dep、go vendor、glide、go modules 等。</p>
+<p>最开始，使用过 dep，当时被朋友 diss 了，推荐我使用 go modules 。</p>
+<p>现在来说一下 go modules ，这个是随着 Go 1.11 的发布和我们见面的，这是官方提倡的新的包管理。</p>
+<p>说一个环境变量：GO111MODULE，默认值为 auto 。</p>
+<p>当项目中有 go.mod 时，使用 go modules 管理，反之使用 旧的 GOPATH 和 vendor机制。</p>
+<p>如果就想使用 go modules ，可以将 GO111MODULE 设置为 on 。</p>
+<p>直接上手吧。</p>
+<h2 id="初始化">初始化</h2>
+<p>咱们在 GOPATH 之外的地方，新建一个空文件夹 <code>go-gin-api</code> 。</p>
+<pre><code><code>cd go-gin-api &amp;&amp; go mod init go-gin-api</code></pre>
+<p>输出：</p>
+<p>go: creating new go.mod: module go-gin-api</p>
+<p>这时目录中多一个 go.mod 文件，内容如下：</p>
+<pre><code><code>module go-gin-api
+
+go 1.12</code></pre>
+<p>到这，go mod 初始化就完成，接下来添加依赖包 - gin。</p>
+<h2 id="添加依赖包">添加依赖包</h2>
+<p>在目录中创建一个 <code>main.go</code> 的文件，放上如下代码：</p>
+<pre><code><code>package main
+
+import &quot;github.com/gin-gonic/gin&quot;
+
+func main() {
+    r := gin.Default()
+    r.GET(&quot;/ping&quot;, func(c *gin.Context) {
+        c.JSON(200, gin.H{
+            &quot;message&quot;: &quot;pong&quot;,
+        })
+    })
+    r.Run() // listen and serve on 0.0.0.0:8080
+}</code></pre>
+<p>这代码没什么特别的，就是官方的入门Demo。</p>
+<p>接下来，开始下载依赖包。</p>
+<pre><code><code>go mod tidy</code></pre>
+<p>执行完成后，看一下 <code>go.mod</code> 文件：</p>
+<pre><code><code>module go-gin-api
+
+go 1.12
+
+require github.com/gin-gonic/gin v1.4.0</code></pre>
+<p>这时，看到新增一个 gin v1.4.0 的包。</p>
+<p>还生成了一个 go.sum 的文件，这个文件可以暂时先不管。</p>
+<p>这时发现了 2 个问题。</p>
+<p>1、目录中没发现 gin 包，包下载到哪了？</p>
+<p>下载到了 GOPATH/pkg/mod 目录中。</p>
+<p>2、GoLand 编辑器中关于 Gin 的引用变红了？</p>
+<p>在这里编辑器需要设置一下，如图：</p>
+<p><img src="./images/[系列] 使用 go modules 包管理工具（一）1.png" /></p>
+<p>点击 Apply 和 OK 即可。</p>
+<p>如果这招不灵，还可以执行：</p>
+<pre><code><code>go mod vendor</code></pre>
+<p>这个命令是将项目依赖的包，放到项目的 vendor 目录中，这肯定就可以了。</p>
+<h2 id="go-mod-命令">go mod 命令</h2>
+<p><strong>go mod tidy</strong></p>
+<p>拉取缺少的模块，移除不用的模块。</p>
+<p>我常用这个命令。</p>
+<p><strong>go mod vendor</strong></p>
+<p>将依赖复制到vendor下。</p>
+<p>我常用这个命令。</p>
+<p><strong>go mod download</strong></p>
+<p>下载依赖包。</p>
+<p><strong>go mod verify</strong></p>
+<p>检验依赖。</p>
+<p><strong>go mod graph</strong></p>
+<p>打印模块依赖图。</p>
+<p>其他命令，可以执行 <code>go mod</code> ，查看即可。</p>
+<h2 id="小结">小结</h2>
+<p>这篇文章，分享了 go modules 的使用。</p>
+<ul>
+<li>使用 go modules 从零搭建一个项目。</li>
+<li>GoLand 编辑器使用 go modules。</li>
+</ul>
+<p>今天就到这了，下一篇文章开始搭建 API 项目了，写参数验证。</p>
+<h2 id="源码地址">源码地址</h2>
+<p><a href="https://github.com/xinliangnote/go-gin-api" class="uri">https://github.com/xinliangnote/go-gin-api</a></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

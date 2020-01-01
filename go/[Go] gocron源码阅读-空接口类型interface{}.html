@@ -1,0 +1,97 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] gocron源码阅读-空接口类型interface{}' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] gocron源码阅读-空接口类型interface{}</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/11870147.html</div><br>
+    <p>gocron源代码中的Action那个地方，就是个空接口类型Action interface{}，可以传递任意类型进去，这里是传了个函数进去</p>
+<div class="cnblogs_code">
+<pre><code>    command :=<span style="color: #000000;"> cli.Command{
+        Name:   </span><span style="color: #800000;">"</span><span style="color: #800000;">web</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        Usage:  </span><span style="color: #800000;">"</span><span style="color: #800000;">run web server</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        Action: runWeb,
+        Flags:  flags,
+    }</span></pre>
+</div>
+<p>&nbsp;</p>
+<p><br />接口是合约，任何类型只要实现了接口中的方法，那么就可以认为实现了这个接口。对于没有方法的接口interface{}类型，可以看做所有的类型都实现了这个接口，因此可以作为传递参数时传递任意类型。<br />下面的代码声明a是空接口，因此任何类型的数据都可以存进去</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">    var a interface{}
+    a </span>= <span style="color: #800080;">1</span>
+    <span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(a)
+    a </span>= <span style="color: #800000;">"</span><span style="color: #800000;">taoshihan</span><span style="color: #800000;">"</span>
+    <span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(a)
+    a </span>= User{Name: <span style="color: #800000;">"</span><span style="color: #800000;">taoshihan</span><span style="color: #800000;">"</span><span style="color: #000000;">}
+    </span><span style="color: #0000ff;">fmt</span>.Println(a)</pre>
+</div>
+<p>&nbsp;</p>
+<p>作为函数传参的时候也是可以的，但是当作为返回类型时，有时要进行类型断言，把类型转回来才能赋值给别的变量</p>
+<div class="cnblogs_code">
+<pre><code>func test1(str <span style="color: #0000ff;">string</span><span style="color: #000000;">) interface{} {
+    return str
+}
+    var b </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+    b </span>= test1(<span style="color: #800000;">"</span><span style="color: #800000;">taoshihan</span><span style="color: #800000;">"</span>).(<span style="color: #0000ff;">string</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">fmt</span>.Println(b)</pre>
+</div>
+<p>完整源码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type User struct {
+    Name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">空接口作为传参</span>
+<span style="color: #000000;">func test(a interface{}) {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">可以用这个判断类型</span>
+<span style="color: #000000;">    switch a.(type) {
+    </span><span style="color: #0000ff;">case</span> <span style="color: #0000ff;">string</span><span style="color: #000000;">:
+        </span><span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(a)
+    }
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">空接口作为返回</span>
+func test1(str <span style="color: #0000ff;">string</span><span style="color: #000000;">) interface{} {
+    return str
+}
+func main() {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">任何类型都能存进去</span>
+<span style="color: #000000;">    var a interface{}
+    a </span>= <span style="color: #800080;">1</span>
+    <span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(a)
+    a </span>= <span style="color: #800000;">"</span><span style="color: #800000;">taoshihan</span><span style="color: #800000;">"</span>
+    <span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(a)
+    a </span>= User{Name: <span style="color: #800000;">"</span><span style="color: #800000;">taoshihan</span><span style="color: #800000;">"</span><span style="color: #000000;">}
+    </span><span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(a)
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">空接口作为参数</span>
+    test(<span style="color: #800000;">"</span><span style="color: #800000;">taoshihan</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">这里要进行类型断言，把空接口转回string</span>
+    var b <span style="color: #0000ff;">string</span><span style="color: #000000;">
+    b </span>= test1(<span style="color: #800000;">"</span><span style="color: #800000;">taoshihan</span><span style="color: #800000;">"</span>).(<span style="color: #0000ff;">string</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(b)
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

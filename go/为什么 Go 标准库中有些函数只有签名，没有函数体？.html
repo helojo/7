@@ -1,0 +1,59 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修为什么 Go 标准库中有些函数只有签名，没有函数体？' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>为什么 Go 标准库中有些函数只有签名，没有函数体？</center></div><div class='banquan'>原文出处:本文由博客园博主itbsl提供。<br/>
+原文连接:https://www.cnblogs.com/itbsl/p/11410857.html</div><br>
+    <p>如果你看过 Go 语言标准库，应该有见到过，有一些函数只有签名，没有函数体。你有没有感觉到很奇怪？这到底是怎么回事？我们自己可以这么做吗？本文就来解密它。</p>
+<p>首先，函数肯定得有实现，没有函数体，一定是在其他某个地方。Go 中一般有两种形式。</p>
+<h3 id="函数签名使用go然后通过该包中的汇编文件来实现它">函数签名使用Go,然后通过该包中的汇编文件来实现它</h3>
+<p>比如，在标准库 <code>sync/atomic</code> 包中的函数基本只有函数签名。比如：<code>atomic.StoreInt32</code></p>
+<pre><code><code>// StoreInt32 atomically stores val into *addr.
+func StoreInt32(addr *int32, val int32)</code></pre>
+<p>它的函数实现在哪呢？其实只要稍微留意一下发现该目录下有一个文件：asm.s，它提供了具体的实现，即通过汇编来实现：</p>
+<pre class="shell"><code>TEXT ·StoreInt32(SB),NOSPLIT,$0
+    JMP    runtime∕internal∕atomic·Store(SB)</code></pre>
+<p>具体的实现，在 <code>runtime∕internal</code> 文件夹中，有兴趣你可以打开 asm_amd64.s 看看。</p>
+<p>很明显，这种方式一方面会是效率的考虑，另一方面，有一些代码只能汇编实现。<br />
+以上方式，你自己也可以尝试。比如实现一个 <code>Sum(a, b int) int</code>。欢迎评论给出你的代码。</p>
+<h3 id="通过golinkname指令来实现">通过//<a href="go:linkname指令来实现" class="uri">go:linkname指令来实现</a></h3>
+<p>比如，在标准库 <code>time</code> 包中的 <code>Sleep</code> 函数：</p>
+<pre><code><code>// Sleep pauses the current goroutine for at least the duration d.
+// A negative or zero duration causes Sleep to return immediately.
+func Sleep(d Duration)</code></pre>
+<p>它的实现在哪里呢？在 time 包中并没有找到相应的汇编文件。</p>
+<p>按照 Go 源码的风格，这时候一般需要去 <code>runtime</code> 包中找。我们会找到 time.go，其中有一个函数：</p>
+<pre><code><code>// timeSleep puts the current goroutine to sleep for at least ns nanoseconds.
+//go:linkname timeSleep time.Sleep
+func timeSleep(ns int64) {
+    ...
+}</code></pre>
+<p>这就是我们要找的 <code>time.Sleep</code> 的实现。</p>
+<p>如果你有认真跟着学习「每日一学」，对于 <code>//go:linkname</code> 应该不陌生，这里的关键就在于这个指令，它的格式是：</p>
+<pre><code><code>//go:linkname 函数名 包名.函数名</code></pre>
+<p>因此我们在遇到函数没有实现，但汇编又不存在时，可以通过尝试搜索：<code>go:linkname xxx xx.xxx</code> 的形式来找，比如 <code>time.Sleep</code> 就可以通过 <code>//go:linkname timeSleep time.Sleep</code> 来查找具体实现在哪。</p>
+<p>这里面要提示一点，使用 <code>//go:linkname</code>，必须导入 <code>unsafe</code> 包，所以，有时候会见到：<code>import _ &quot;unsafe&quot;</code> 这样的代码。</p>
+<p>一般来说，我们自己的代码不会使用这样的方式，但你会写一个示例试试吗？欢迎评论给出你的代码。</p>
+<p>另外，想想为什么 <code>time.Sleep</code> 的实现要这么搞？</p>
+<p>转载自:<br />
+<a href="https://mp.weixin.qq.com/s?__biz=MzAxMTA4Njc0OQ==&amp;mid=2651436552&amp;idx=1&amp;sn=6f038e546bdf0fcace133631b0247bc2&amp;scene=21#wechat_redirect">为什么 Go 标准库中有些函数只有签名，没有函数体？</a></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

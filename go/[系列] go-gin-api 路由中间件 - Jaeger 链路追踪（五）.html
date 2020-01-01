@@ -1,0 +1,188 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）</center></div><div class='banquan'>原文出处:本文由博客园博主新亮笔记提供。<br/>
+原文连接:https://www.cnblogs.com/xinliangcoder/p/11526730.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#概述">概述</a></li>
+        <li><a href="#如何设计日志记录">如何设计日志记录？</a></li>
+        <li><a href="#开源工具">开源工具</a></li>
+        <li><a href="#jaeger-架构图">Jaeger 架构图</a></li>
+        <li><a href="#jaeger-span">Jaeger Span</a></li>
+        <li><a href="#jaeger-部署">Jaeger 部署</a></li>
+        <li><a href="#jaeger-端口">Jaeger 端口</a></li>
+        <li><a href="#jaeger-采样率">Jaeger 采样率</a></li>
+        <li><a href="#jaeger-缺点">Jaeger 缺点</a></li>
+        <li><a href="#实战">实战</a></li>
+        <li><a href="#源码地址">源码地址</a></li>
+        <li><a href="#go-gin-api-系列文章">go-gin-api 系列文章</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="概述">概述</h2>
+<p>首先同步下项目概况：</p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）0.png" /></p>
+<p>上篇文章分享了，路由中间件 - 捕获异常，这篇文章咱们分享：路由中间件 - Jaeger 链路追踪。</p>
+<p>啥是链路追踪？</p>
+<p>我理解链路追踪其实是为微服务架构提供服务的，当一个请求中，请求了多个服务单元，如果请求出现了错误或异常，很难去定位是哪个服务出了问题，这时就需要链路追踪。</p>
+<p>咱们先看一张图：</p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）1.png" /></p>
+<p>这张图的调用链还比较清晰，咱们想象一下，随着服务的越来越多，服务与服务之间调用关系也越来越多，可能就会发展成下图的情况。</p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）2.png" /></p>
+<p>这调用关系真的是... 看到这，我的内心是崩溃的。</p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）3.png" /></p>
+<p>那么问题来了，这种情况下怎么快速定位问题？</p>
+<h2 id="如何设计日志记录">如何设计日志记录？</h2>
+<p>我们自己也可以设计一个链路追踪，比如当发生一个请求，咱们记录它的：</p>
+<ul>
+<li>请求的唯一标识</li>
+<li>请求了哪些服务？</li>
+<li>请求的服务依次顺序？</li>
+<li>请求的 Request 和 Response 日志？</li>
+<li>对日志进行收集、整理，并友好展示</li>
+</ul>
+<p>怎么去实现请求的唯一标识？</p>
+<p><strong>以 Go 为例</strong> 写一个中间件，在每次请求的 Header 中包含：X-Request-Id，代码如下：</p>
+<pre><code><code>func SetUp() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        requestId := c.Request.Header.Get(&quot;X-Request-Id&quot;)
+        if requestId == &quot;&quot; {
+            requestId = util.GenUUID()
+        }
+        c.Set(&quot;X-Request-Id&quot;, requestId)
+        c.Writer.Header().Set(&quot;X-Request-Id&quot;, requestId)
+        c.Next()
+    }
+}</code></pre>
+<p>每个 Request 和 Response 日志中都要包含 X-Request-Id。</p>
+<p>问题又来了，每次调用都记录日志，当调用的服务过多时，频繁的记录日志，就会有性能问题呀，肿么办？</p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）4.png" /></p>
+<p>哎，这么麻烦，看看市面上有没有一些开源工具呢？</p>
+<h2 id="开源工具">开源工具</h2>
+<ul>
+<li>Jaeger：<a href="https://www.jaegertracing.io" class="uri">https://www.jaegertracing.io</a></li>
+<li>Zipkin：<a href="https://zipkin.io/" class="uri">https://zipkin.io/</a></li>
+<li>Appdash：<a href="https://about.sourcegraph.com/" class="uri">https://about.sourcegraph.com/</a></li>
+</ul>
+<p>这个就不多做介绍了，基本上都能满足需求，至于优缺点，大家可以挨个去瞅瞅，喜欢哪个就用哪个？</p>
+<p><strong>我为什么选择 Jaeger</strong> ？</p>
+<p>因为我目前只会用这个，其他还不会 ...</p>
+<p>咱们一起看下 Jaeger 是怎么回事吧。</p>
+<h2 id="jaeger-架构图">Jaeger 架构图</h2>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）5.png" /></p>
+<p>图片来源于官网。</p>
+<p>简单介绍下上图三个关键组件：</p>
+<p><strong>Agent</strong></p>
+<p>Agent是一个网络守护进程，监听通过UDP发送过来的Span，它会将其批量发送给collector。按照设计，Agent要被部署到所有主机上，作为基础设施。Agent将collector和客户端之间的路由与发现机制抽象了出来。</p>
+<p><strong>Collector</strong></p>
+<p>Collector从Jaeger Agent接收Trace，并通过一个处理管道对其进行处理。目前的管道会校验Trace、建立索引、执行转换并最终进行存储。存储是一个可插入的组件，现在支持Cassandra和elasticsearch。</p>
+<p><strong>Query</strong></p>
+<p>Query服务会从存储中检索Trace并通过UI界面进行展现，该UI界面通过React技术实现，其页面UI如下图所示，展现了一条Trace的详细信息。</p>
+<p>其他组件，大家可以了解下并选择性使用。</p>
+<h2 id="jaeger-span">Jaeger Span</h2>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）6.png" /></p>
+<p>图片来源于官网。</p>
+<p>怎么操作 Span 呢？Span 有哪些可以调用的 API ？</p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）7.png" /></p>
+<h2 id="jaeger-部署">Jaeger 部署</h2>
+<p><strong>All in one</strong></p>
+<p>为了方便大家快速使用，Jaeger 直接提供一个 All in one 包，我们可以直接执行，启动一套完整的 Jaeger tracing 系统。</p>
+<p>启动成功后，访问 <a href="http://localhost:16686" class="uri">http://localhost:16686</a> 就可以看到 Jaeger UI。</p>
+<p><strong>独立部署</strong></p>
+<ul>
+<li>jaeger-agent</li>
+<li>jaeger-collector</li>
+<li>jaeger-query</li>
+<li>jaeger-ingester</li>
+<li>jaeger-operator</li>
+<li>jaeger-cassandra-schema</li>
+<li>jaeger-es-index-cleaner</li>
+<li>spark-dependencies</li>
+</ul>
+<p>可以自由搭配，组合使用。</p>
+<h2 id="jaeger-端口">Jaeger 端口</h2>
+<ul>
+<li>端口：6831</li>
+<li>协议：UDP</li>
+<li>所属模块：Agent</li>
+<li><p>功能：通过兼容性 Thrift 协议，接收 Jaeger thrift 类型数据</p></li>
+<li>端口：14267</li>
+<li>协议：HTTP</li>
+<li>所属模块：Collector</li>
+<li><p>功能：接收客户端 Jaeger thrift 类型数据</p></li>
+<li>端口：16686</li>
+<li>协议：HTTP</li>
+<li>所属模块：Query</li>
+<li><p>功能：客户端前端界面展示端口</p></li>
+</ul>
+<h2 id="jaeger-采样率">Jaeger 采样率</h2>
+<p>分布式追踪系统本身也会造成一定的性能低损耗，如果完整记录每次请求，对于生产环境可能会有极大的性能损耗，一般需要进行采样设置。</p>
+<p><strong>固定采样</strong></p>
+<p>（sampler.type=const）</p>
+<ul>
+<li>sampler.param=1 全采样，</li>
+<li>sampler.param=0 不采样；</li>
+</ul>
+<p><strong>按百分比采样</strong></p>
+<p>（sampler.type=probabilistic）</p>
+<ul>
+<li>sampler.param=0.1 则随机采十分之一的样本；</li>
+</ul>
+<p><strong>采样速度限制</strong></p>
+<p>（sampler.type=ratelimiting）</p>
+<ul>
+<li>sampler.param=2.0 每秒采样两个traces；</li>
+</ul>
+<p><strong>动态获取采样率</strong></p>
+<p>（sampler.type=remote）</p>
+<ul>
+<li>这个是默认配置，可以通过配置从 Agent 中获取采样率的动态设置。</li>
+</ul>
+<h2 id="jaeger-缺点">Jaeger 缺点</h2>
+<ul>
+<li>接入过程有一定的侵入性；</li>
+<li>本身缺少监控和报警机制，需要结合第三方工具来实现，比如配合Grafana 和 Prometheus实现；</li>
+</ul>
+<p>看到这，说的都是理论，大家的心里话可能是：</p>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）8.png" /></p>
+<h2 id="实战">实战</h2>
+<ul>
+<li>Jaeger 部署</li>
+<li>Jaeger 在 Gin 中使用</li>
+<li>Jaeger 在 gRPC 中使用</li>
+</ul>
+<p><img src="./images/[系列] go-gin-api 路由中间件 - Jaeger 链路追踪（五）9.png" /></p>
+<p>关于实战的分享，我准备整理出 4 个服务，然后实现服务与服务之间进行相互调用，目前 Demo 还没写完...</p>
+<p>下篇文章再给大家分享。</p>
+<h2 id="源码地址">源码地址</h2>
+<p><a href="https://github.com/xinliangnote/go-gin-api" class="uri">https://github.com/xinliangnote/go-gin-api</a></p>
+<h2 id="go-gin-api-系列文章">go-gin-api 系列文章</h2>
+<ul>
+<li><a href="https://mp.weixin.qq.com/s/1XNTEgZ0XGZZdxFOfR5f_A">1. 使用 go modules 初始化项目</a></li>
+<li><a href="https://mp.weixin.qq.com/s/11AuXptWGmL5QfiJArNLnA">2. 规划项目目录和参数验证</a></li>
+<li><a href="https://mp.weixin.qq.com/s/eTygPXnrYM2xfrRQyfn8Tg">3. 路由中间件 - 日志记录</a></li>
+<li><a href="https://mp.weixin.qq.com/s/SconDXB_x7Gan6T0Awdh9A">4. 路由中间件 - 捕获异常</a></li>
+</ul>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

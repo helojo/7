@@ -1,0 +1,190 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Linux下onvif客户端获取ipc摄像头 获取能力：GetCapabilities' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Linux下onvif客户端获取ipc摄像头 获取能力：GetCapabilities</center></div><div class='banquan'>原文出处:本文由博客园博主Croxd提供。<br/>
+原文连接:https://www.cnblogs.com/croxd/p/10683503.html</div><br>
+    <p><strong>GetCapabilities:获取能力,主要目的获取设备能力信息（获取媒体服务地址）</strong></p>
+<p><strong>鉴权：</strong>但是在调用获取设备能力之前是需要鉴权的。ONVIF协议规定，部分接口需要鉴权，部分接口不需要鉴权，在调用需要鉴权的接口时不使用鉴权，会导致接口调用失败。实现鉴权的方式之一可以调用gSOAP源码中的&nbsp;soap_wsse_add_UsernameTokenDigest()函数。要安装依赖库OpenSSL<br /><br /></p>
+<p><strong>实现代码：</strong></p>
+<src class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;">  2</span> #include &lt;stdlib.h&gt;
+<span style="color: #008080;">  3</span> #include &lt;<span style="color: #0000ff;">string</span>.h&gt;
+<span style="color: #008080;">  4</span> #include &lt;assert.h&gt;
+<span style="color: #008080;">  5</span>  
+<span style="color: #008080;">  6</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">soapH.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">  7</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">stdsoap2.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">  8</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">soapStub.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">  9</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">wsseapi.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 10</span>  
+<span style="color: #008080;"> 11</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">wsdd.nsmap</span><span style="color: #800000;">"</span> <span style="color: #008000;">//</span><span style="color: #008000;">命名空间</span>
+<span style="color: #008080;"> 12</span>  
+<span style="color: #008080;"> 13</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">struct</span> soap* ONVIF_Initsoap(<span style="color: #0000ff;">struct</span> SOAP_ENV__Header *header, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *was_To, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *was_Action, <span style="color: #0000ff;">int</span><span style="color: #000000;"> timeout)
+</span><span style="color: #008080;"> 14</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 15</span>     <span style="color: #0000ff;">struct</span> soap *soap = NULL;    <span style="color: #008000;">//</span><span style="color: #008000;"> soap环境变量</span>
+<span style="color: #008080;"> 16</span>     unsigned <span style="color: #0000ff;">char</span> macaddr[<span style="color: #800080;">6</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 17</span>     <span style="color: #0000ff;">char</span> _HwId[<span style="color: #800080;">1024</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 18</span>     unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> Flagrand;
+</span><span style="color: #008080;"> 19</span>  
+<span style="color: #008080;"> 20</span>     soap =<span style="color: #000000;"> soap_new();
+</span><span style="color: #008080;"> 21</span>     <span style="color: #0000ff;">if</span>(soap ==<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;"> 22</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 23</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">[%d]soap = NULL\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, __LINE__);
+</span><span style="color: #008080;"> 24</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 25</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 26</span>  
+<span style="color: #008080;"> 27</span>     soap_set_namespaces(soap, namespaces);   <span style="color: #008000;">//</span><span style="color: #008000;"> 设置soap的namespaces，即设置命名空间
+</span><span style="color: #008080;"> 28</span>  
+<span style="color: #008080;"> 29</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 设置超时（超过指定时间没有数据就退出）</span>
+<span style="color: #008080;"> 30</span>     <span style="color: #0000ff;">if</span>(timeout &gt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 31</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 32</span>         soap-&gt;recv_timeout =<span style="color: #000000;"> timeout;
+</span><span style="color: #008080;"> 33</span>         soap-&gt;send_timeout =<span style="color: #000000;"> timeout;
+</span><span style="color: #008080;"> 34</span>         soap-&gt;connect_timeout =<span style="color: #000000;"> timeout;
+</span><span style="color: #008080;"> 35</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 36</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 37</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 38</span>         <span style="color: #008000;">//</span><span style="color: #008000;">Maximum waittime : 20s</span>
+<span style="color: #008080;"> 39</span>         soap-&gt;recv_timeout  = <span style="color: #800080;">20</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 40</span>         soap-&gt;send_timeout  = <span style="color: #800080;">20</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 41</span>         soap-&gt;connect_timeout = <span style="color: #800080;">20</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 42</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 43</span>  
+<span style="color: #008080;"> 44</span> <span style="color: #000000;">    soap_default_SOAP_ENV__Header(soap, header);
+</span><span style="color: #008080;"> 45</span>  
+<span style="color: #008080;"> 46</span>     <span style="color: #008000;">//</span><span style="color: #008000;">Create SessionID randomly,生成uuid(windows下叫guid，linux下叫uuid)，格式为urn:uuid:8-4-4-4-12，由系统随机产生</span>
+<span style="color: #008080;"> 47</span>     srand((<span style="color: #0000ff;">int</span>)time(<span style="color: #800080;">0</span><span style="color: #000000;">));
+</span><span style="color: #008080;"> 48</span>     Flagrand = rand()%<span style="color: #800080;">9000</span> + <span style="color: #800080;">8888</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 49</span>     macaddr[<span style="color: #800080;">0</span>] = <span style="color: #800080;">0x1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 50</span>     macaddr[<span style="color: #800080;">1</span>] = <span style="color: #800080;">0x2</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 51</span>     macaddr[<span style="color: #800080;">2</span>] = <span style="color: #800080;">0x3</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 52</span>     macaddr[<span style="color: #800080;">3</span>] = <span style="color: #800080;">0x4</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 53</span>     macaddr[<span style="color: #800080;">4</span>] = <span style="color: #800080;">0x5</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 54</span>     macaddr[<span style="color: #800080;">5</span>] = <span style="color: #800080;">0x6</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 55</span>     sprintf(_HwId, <span style="color: #800000;">"</span><span style="color: #800000;">urn:uuid:%ud68a-1dd2-11b2-a105-%02X%02X%02X%02X%02X%02X</span><span style="color: #800000;">"</span>, Flagrand, macaddr[<span style="color: #800080;">0</span>], macaddr[<span style="color: #800080;">1</span>], macaddr[<span style="color: #800080;">2</span>],macaddr[<span style="color: #800080;">3</span>],macaddr[<span style="color: #800080;">4</span>],macaddr[<span style="color: #800080;">5</span><span style="color: #000000;">]);
+</span><span style="color: #008080;"> 56</span>     header-&gt;wsa__MessageID = (<span style="color: #0000ff;">char</span> *)<span style="color: #0000ff;">malloc</span>(<span style="color: #800080;">100</span><span style="color: #000000;">);  
+</span><span style="color: #008080;"> 57</span>     memset(header-&gt;wsa__MessageID, <span style="color: #800080;">0</span>, <span style="color: #800080;">100</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 58</span>     strncpy(header-&gt;wsa__MessageID, _HwId, strlen(_HwId));    <span style="color: #008000;">//</span><span style="color: #008000;">wsa__MessageID存放的是uuid</span>
+<span style="color: #008080;"> 59</span>  
+<span style="color: #008080;"> 60</span>     <span style="color: #0000ff;">if</span>(was_Action !=<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;"> 61</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 62</span>         header-&gt;wsa__Action = (<span style="color: #0000ff;">char</span>*)<span style="color: #0000ff;">malloc</span>(<span style="color: #800080;">1024</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 63</span>         memset(header-&gt;wsa__Action, <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span>, <span style="color: #800080;">1024</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 64</span>         strncpy(header-&gt;wsa__Action, was_Action, <span style="color: #800080;">1024</span>); <span style="color: #008000;">//
+</span><span style="color: #008080;"> 65</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 66</span>     <span style="color: #0000ff;">if</span>(was_To !=<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;"> 67</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 68</span>         header-&gt;wsa__To = (<span style="color: #0000ff;">char</span> *)<span style="color: #0000ff;">malloc</span>(<span style="color: #800080;">1024</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 69</span>         memset(header-&gt;wsa__To, <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span>, <span style="color: #800080;">1024</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 70</span>         strncpy(header-&gt;wsa__To, was_To, <span style="color: #800080;">1024</span>);<span style="color: #008000;">//</span><span style="color: #008000;">"urn:schemas-xmlsoap-org:ws:2005:04:discovery";</span>
+<span style="color: #008080;"> 71</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 72</span>     soap-&gt;header =<span style="color: #000000;"> header;
+</span><span style="color: #008080;"> 73</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> soap;
+</span><span style="color: #008080;"> 74</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 75</span>  
+<span style="color: #008080;"> 76</span>  
+<span style="color: #008080;"> 77</span> <span style="color: #008000;">//</span><span style="color: #008000;">释放函数</span>
+<span style="color: #008080;"> 78</span> <span style="color: #0000ff;">void</span> ONVIF_soap_delete(<span style="color: #0000ff;">struct</span> soap *<span style="color: #000000;">soap)
+</span><span style="color: #008080;"> 79</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 80</span>     soap_destroy(soap);                      <span style="color: #008000;">//</span><span style="color: #008000;"> remove deserialized class instances (C++ only)</span>
+<span style="color: #008080;"> 81</span>     soap_end(soap);                          <span style="color: #008000;">//</span><span style="color: #008000;"> Clean up deserialized data (except class instances) and temporary data</span>
+<span style="color: #008080;"> 82</span>     soap_free(soap);                         <span style="color: #008000;">//</span><span style="color: #008000;"> Reset and deallocate the context created with soap_new or soap_copy</span>
+<span style="color: #008080;"> 83</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 84</span>  
+<span style="color: #008080;"> 85</span>  
+<span style="color: #008080;"> 86</span> <span style="color: #008000;">//</span><span style="color: #008000;">鉴权</span>
+<span style="color: #008080;"> 87</span> <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">int</span> ONVIF_SetAuthInfo(<span style="color: #0000ff;">struct</span> soap *soap, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *username, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;">password)
+</span><span style="color: #008080;"> 88</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 89</span>     <span style="color: #0000ff;">int</span> result = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 90</span>     <span style="color: #0000ff;">if</span>((NULL != username) || (NULL !=<span style="color: #000000;"> password)){
+</span><span style="color: #008080;"> 91</span> <span style="color: #000000;">        soap_wsse_add_UsernameTokenDigest(soap, NULL, username, password);
+</span><span style="color: #008080;"> 92</span>     }<span style="color: #0000ff;">else</span><span style="color: #000000;">{
+</span><span style="color: #008080;"> 93</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">un etAuth\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 94</span>         result = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 95</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 96</span>  
+<span style="color: #008080;"> 97</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> result;
+</span><span style="color: #008080;"> 98</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 99</span>  
+<span style="color: #008080;">100</span>  
+<span style="color: #008080;">101</span>  
+<span style="color: #008080;">102</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc,<span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;">103</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">104</span>     <span style="color: #0000ff;">int</span> ret = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">105</span>     <span style="color: #0000ff;">char</span> sercer_addr[] = <span style="color: #800000;">"</span><span style="color: #800000;">http://172.168.0.211/onvif/device_service</span><span style="color: #800000;">"</span>; <span style="color: #008000;">//</span><span style="color: #008000;">设备搜索得到的地址</span>
+<span style="color: #008080;">106</span>  
+<span style="color: #008080;">107</span>     <span style="color: #0000ff;">struct</span><span style="color: #000000;"> SOAP_ENV__Header header;
+</span><span style="color: #008080;">108</span>     <span style="color: #0000ff;">struct</span> soap* soap = ONVIF_Initsoap(&amp;header, NULL, NULL, <span style="color: #800080;">5</span><span style="color: #000000;">);
+</span><span style="color: #008080;">109</span>  
+<span style="color: #008080;">110</span>     <span style="color: #0000ff;">struct</span> _tds__GetCapabilities *<span style="color: #000000;">req;
+</span><span style="color: #008080;">111</span>     <span style="color: #0000ff;">struct</span> _tds__GetCapabilitiesResponse *<span style="color: #000000;">Response;
+</span><span style="color: #008080;">112</span>     
+<span style="color: #008080;">113</span>     <span style="color: #0000ff;">if</span>(NULL == (req = (<span style="color: #0000ff;">struct</span> _tds__GetCapabilities *)<span style="color: #0000ff;">calloc</span>(<span style="color: #800080;">1</span>,<span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">struct</span><span style="color: #000000;"> _tds__GetCapabilities))))
+</span><span style="color: #008080;">114</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">115</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">calloc is error \n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">116</span>         ret = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">117</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;">118</span>     }<span style="color: #0000ff;">else</span><span style="color: #000000;">{
+</span><span style="color: #008080;">119</span>         req-&gt;__sizeCategory = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">120</span>         req-&gt;Category = (<span style="color: #0000ff;">enum</span> tt__CapabilityCategory *)soap_malloc(soap, <span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">int</span><span style="color: #000000;">));
+</span><span style="color: #008080;">121</span>         *(req-&gt;Category) = (<span style="color: #0000ff;">enum</span> tt__CapabilityCategory)<span style="color: #800080;">5</span>; <span style="color: #008000;">//</span><span style="color: #008000;">5表示：tt__CapabilityCategory__Media</span>
+<span style="color: #008080;">122</span>  
+<span style="color: #008080;">123</span>         ONVIF_SetAuthInfo(soap,<span style="color: #800000;">"</span><span style="color: #800000;">admin</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">hk123456</span><span style="color: #800000;">"</span>);  <span style="color: #008000;">//</span><span style="color: #008000;">鉴权，输入摄像头的用户名、密码</span>
+<span style="color: #008080;">124</span>         ret =<span style="color: #000000;"> soap_call___tds__GetCapabilities(soap, sercer_addr, NULL,req, Response);
+</span><span style="color: #008080;">125</span>         <span style="color: #0000ff;">if</span>(soap-&gt;<span style="color: #000000;">error){ 
+</span><span style="color: #008080;">126</span>             ret = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">127</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">soap error: %d, %s, %s\n</span><span style="color: #800000;">"</span>, soap-&gt;error, *soap_faultcode(soap), *<span style="color: #000000;">soap_faultstring(soap));
+</span><span style="color: #008080;">128</span>             <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;">129</span>         }<span style="color: #0000ff;">else</span><span style="color: #000000;">{;
+</span><span style="color: #008080;">130</span>             <span style="color: #0000ff;">if</span>(NULL != Response-&gt;<span style="color: #000000;">Capabilities)
+</span><span style="color: #008080;">131</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">132</span>                 <span style="color: #0000ff;">if</span> (Response-&gt;Capabilities-&gt;Media !=<span style="color: #000000;"> NULL){
+</span><span style="color: #008080;">133</span>                     <span style="color: #0000ff;">if</span> (Response-&gt;Capabilities-&gt;Media-&gt;XAddr !=<span style="color: #000000;"> NULL){
+</span><span style="color: #008080;">134</span>                         printf(<span style="color: #800000;">"</span><span style="color: #800000;"> media_addr: %s \n</span><span style="color: #800000;">"</span>, Response-&gt;Capabilities-&gt;Media-&gt;<span style="color: #000000;">XAddr); 
+</span><span style="color: #008080;">135</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;">136</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;">137</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">138</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">139</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">140</span>  
+<span style="color: #008080;">141</span>     <span style="color: #0000ff;">if</span>(NULL !=<span style="color: #000000;"> req)
+</span><span style="color: #008080;">142</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">143</span>         <span style="color: #0000ff;">free</span><span style="color: #000000;">(req);
+</span><span style="color: #008080;">144</span>         req =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">145</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">146</span>  
+<span style="color: #008080;">147</span> <span style="color: #000000;">    ONVIF_soap_delete(soap);
+</span><span style="color: #008080;">148</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;">149</span> }</code></pre>
+
+<p>&nbsp;</p>
+<p>在编译之前要把：stdsoap2.c &nbsp;soapC.c &nbsp;md5.c dom.c mecevp.c smdevp.c threads.c wsaapi.c wsseapi.c soapClient.c&nbsp; &nbsp;把这些.c 还有有些配套的.h&nbsp; 拷贝到当前工作目录下。</p>
+<p>&nbsp;<img src="./images/Linux下onvif客户端获取ipc摄像头 获取能力：GetCapabilities0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>如果出现以下错误要在编译的时候加：-DWITH_OPENSSL</p>
+<p>/tmp/cccao7U5.o：在函数&lsquo;soap_mec_init&rsquo;中：<br />mecevp.c:(.text+0xe)：对&lsquo;soap_ssl_init&rsquo;未定义的引用<br />/tmp/ccV2yl3Q.o：在函数&lsquo;soap_smd_init&rsquo;中：<br />smdevp.c:(.text+0x24c)：对&lsquo;soap_ssl_init&rsquo;未定义的引用</p>
+<p>&nbsp;<img src="./images/Linux下onvif客户端获取ipc摄像头 获取能力：GetCapabilities1.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>编译：<span style="color: #ff0000;">gcc -o test get_GetCapabilities_test.c stdsoap2.c soapC.c md5.c dom.c mecevp.c smdevp.c threads.c wsaapi.c wsseapi.c soapClient.c -I import/ -DWITH_OPENSSL -lssl -lcrypto -ldl&nbsp;</span></p>
+<p><strong>结果：成功得到我们想要的媒体地址</strong><br /><img src="./images/Linux下onvif客户端获取ipc摄像头 获取能力：GetCapabilities2.png" alt="" /></p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

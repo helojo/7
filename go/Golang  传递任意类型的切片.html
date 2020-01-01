@@ -1,0 +1,125 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Golang  传递任意类型的切片' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Golang  传递任意类型的切片</center></div><div class='banquan'>原文出处:本文由博客园博主朱春雨提供。<br/>
+原文连接:https://www.cnblogs.com/zhuchunyu/p/11253400.html</div><br>
+    <p>肯定有这样的一种场景，写一个函数，该函数可以接收任意类型的切片，完成相应的功能。</p>
+<p>就好比这种情况</p>
+<pre><code><code>intSlice := []int{1,2,3,4,5,6,7,8}
+strSlice := []string{&quot;a&quot;,&quot;b&quot;,&quot;c&quot;,&quot;d&quot;}
+boolSlice := []bool{true,true,false,true}</code></pre>
+<p>还有很多类型的切片，但是我对这些切片的使用，只是for循环每一个元素，执行Print操作就可以了。<br />
+那就定义一个函数，函数的接收参数就是这个切片就行了，但是切片类型太多了，你要根据不同的切片类型，写不同从接收参数类型，但是函数体的代码都是一样，for循环，然后Print就可以。那么有没有一种类型，可以接收所有类型的参数呢?</p>
+<p><code>interface{}</code>: 空接口这个类型，他可以接收任意类型的数据</p>
+<pre><code><code>func faa (arg interface{}) {
+    fmt.Println(arg)
+}
+
+func main() {
+    
+    faa(intSlice)   
+    faa(strSlice)
+    faa(boolSlice)  // 能够成功输出，不会报错
+}</code></pre>
+<p>但是将faa的函数体改下，执行for操作</p>
+<pre><code><code>func faa (arg interface{}) {
+    for _,v := range arg {
+        fmt.Println(v)
+    }
+}</code></pre>
+<p>运行程序，会报错，报错信息:cannot range over arg (type interface {})， interface {}类型不能进行for循环,，那么[] interface {}这种切片类型就可以进行for了吧，</p>
+<pre><code><code>func faa (arg []interface{}) {
+    for _,v := range arg {
+        fmt.Println(v)
+    }
+}
+
+func main() {
+    
+    faa(intSlice)   
+    faa(strSlice)
+    faa(boolSlice)  
+}</code></pre>
+<p>这样的情况的话，我们在调用faa函数的时候，已经报错了，说类型不对，faa的接收参数类型为[]interface{}，但我传递的参数类型为[]int,[]string,[]bool。所以这样是不行的。</p>
+<p>下面是解决方法:</p>
+<ul>
+<li>首先faa接收的参数类型为 interface{}</li>
+<li>将arg进行转化，转为[]interface{}</li>
+<li>最后进行for循环操作</li>
+</ul>
+<p>直接贴代码，我是参考别人的</p>
+<p>该博主的博客: <a href="https://blog.csdn.net/HaoDaWang/article/details/83931629" class="uri">https://blog.csdn.net/HaoDaWang/article/details/83931629</a></p>
+<pre><code><code>// interface{}转为 []interface{}
+func CreateAnyTypeSlice(slice interface{}) ([]interface{}, bool) {
+    val, ok := isSlice(slice)
+
+    if !ok {
+        return nil, false
+    }
+
+    sliceLen := val.Len()
+
+    out := make([]interface{}, sliceLen)
+
+    for i := 0; i &lt; sliceLen; i++ {
+        out[i] = val.Index(i).Interface()
+    }
+
+    return out, true
+}
+
+// 判断是否为slcie数据
+func isSlice(arg interface{}) (val reflect.Value, ok bool) {
+    val = reflect.ValueOf(arg)
+
+    if val.Kind() == reflect.Slice {
+        ok = true
+    }
+
+    return
+}
+
+
+// 看需求写的代码
+func faa(arg interface{}) {
+    slice, ok := CreateAnyTypeSlice(arg)
+    if !ok {
+        return
+    }
+    for index,value := range slice {
+        fmt.Println(index,value)
+    }
+}
+
+func main() {
+    
+    intSlice := []int{1,2,3,4,5,6,7,8}
+    strSlice := []string{&quot;a&quot;,&quot;b&quot;,&quot;c&quot;,&quot;d&quot;}
+    boolSlice := []bool{true,true,false,true}
+    
+    
+    faa(intSlice)   
+    faa(strSlice)
+    faa(boolSlice)  
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

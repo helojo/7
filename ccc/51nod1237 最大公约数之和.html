@@ -1,0 +1,119 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修51nod1237 最大公约数之和' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>51nod1237 最大公约数之和</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/51nod1237.html</div><br>
+    <p><a href="https://www.51nod.com/Challenge/Problem.html#!#problemId=1237"><font size = 5>题目链接</font></a></p>
+<h1 id="题意">题意</h1>
+<p>其实就是求</p>
+<p><span class="math display">\[\sum\limits_{i=1}^n\sum\limits_{j=1}^ngcd(i,j)\]</span></p>
+<h1 id="思路">思路</h1>
+<p>建议先看一下此题的一个<a href="https://www.cnblogs.com/wxyww/p/9534392.html">弱化版</a></p>
+<p>推一下式子</p>
+<p><span class="math display">\[\sum\limits_{i=1}^n\sum\limits_{j=1}^ngcd(i,j)\]</span><br />
+<span class="math display">\[= \sum\limits_{k=1}^nk\sum\limits_{i=1}^n\sum\limits_{j=1}^n[gcd(i,j)=k]\]</span></p>
+<p><span class="math display">\[=\sum\limits_{k=1}^nk\sum\limits_{i=1}^{\frac{n}{k}}\sum\limits_{j=1}^{\frac{n}{k}}[gcd(i,j)=1]\]</span></p>
+<p><span class="math display">\[=\sum\limits_{k=1}^nk\sum\limits_{i=1}^{\frac{n}{k}}2\varphi(i)-1\]</span></p>
+<p>设<span class="math inline">\(\phi(i)=\varphi(1)+\varphi(2)+...+\varphi(i)\)</span></p>
+<p>则原式<br />
+<span class="math display">\[=\sum\limits_{i=1}^ni(2\phi(\frac{n}{i})-1)\]</span></p>
+<p>然后就可以数论分块啦。</p>
+<p>至于怎么比较快的求<span class="math inline">\(\phi(i)\)</span>，基本的杜教筛喽。。</p>
+<h1 id="代码">代码</h1>
+<pre><code>//loj6074
+/*
+* @Author: wxyww
+* @Date:   2019-03-30 12:43:48
+* @Last Modified time: 2019-03-30 19:43:10
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;map&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int mod = 1e9 + 7,N = 1000000 + 100,inv2 = (mod + 1) / 2;
+
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+map&lt;ll,ll&gt;ma;
+ll n,sum[N];
+int dis[N],vis[N],js;
+int dls(ll x) {
+    if(x &lt;= 1000000) return sum[x];
+    if(ma[x]) return ma[x];
+    ll ret = 1ll * x % mod * ((x + 1) % mod) % mod * inv2 % mod;
+    for(ll l = 2,r;l &lt;= x;l = r + 1) {
+        r = x / (x / l);
+        ret -= 1ll * (r - l + 1) % mod * dls(x / l) % mod;
+        ret = (ret + mod) % mod;
+    }
+    return ma[x] = ret;
+}
+void pre() {
+    sum[1] = 1;vis[1] = 1;
+    int NN = min(n,1000000ll);
+    for(int i = 2;i &lt;= NN;++i) {
+        if(!vis[i]) {
+            dis[++js] = i;
+            sum[i] = i - 1;
+        }
+        for(int j = 1;j &lt;= js &amp;&amp; dis[j] * i &lt;= NN;++j) {
+            vis[dis[j] * i] = 1;
+            if(i % dis[j] == 0) {
+                sum[dis[j] * i] = sum[i] * dis[j] % mod;    break;
+            }
+            sum[dis[j] * i] = (dis[j] - 1) * sum[i] % mod;
+        }
+        sum[i] += sum[i - 1];
+        sum[i] %= mod;
+    }
+    
+}
+signed main() {
+    n = read();
+    pre();
+    ll ans = 0;
+    for(ll l = 1,r;l &lt;= n;l = r + 1) {
+        r = n / (n / l);
+        ans = (ans + (1ll * (r - l + 1) % mod * ((r + l) % mod) % mod * inv2 % mod) % mod * ((2ll * dls(n / l) % mod) - 1 + mod) % mod) % mod;  
+    }
+    cout&lt;&lt;ans;
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

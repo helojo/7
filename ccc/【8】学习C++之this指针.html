@@ -1,0 +1,165 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修【8】学习C++之this指针' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>【8】学习C++之this指针</center></div><div class='banquan'>原文出处:本文由博客园博主机智少女不怀孕提供。<br/>
+原文连接:https://www.cnblogs.com/H2Rain/p/10827296.html</div><br>
+    <p>在学习类的时候，我们可以考虑到一种情况：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">class</span><span style="color: #000000;"> Array
+{
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    Array(</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> len);
+    </span>~<span style="color: #000000;">Array();
+    </span><span style="color: #0000ff;">void</span> setLen(<span style="color: #0000ff;">int</span><span style="color: #000000;"> len)
+    {
+        len</span>=len;<span style="color: #008000;">//</span><span style="color: #008000;">此时，左边的len是形参的len，右边的是成员变量的len，这部操作相当于把里面什么都没有的成员变量赋值给形参</span>
+<span style="color: #000000;">    };
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> getLen()
+    {
+        return len;
+    };
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> printInfo()
+    {
+        cout</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">len = </span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">len;
+    };
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> len;
+}</span></pre>
+</div>
+<p>所以这样写是错误的，当然我们可以把其中一个len修改一下，例如可以修改成m_len。</p>
+<p>当然肯定会有一些人头铁，不想换变量的名字，所以这时候就需要this指针登场：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">class</span><span style="color: #000000;"> Array
+{
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    Array(</span><span style="color: #0000ff;">int</span> len）<br /><span style="color: #000000;">    {<br />        this-&gt;len=len;<br />     };
+    </span>~<span style="color: #000000;">Array();
+    </span><span style="color: #0000ff;">void</span> setLen(<span style="color: #0000ff;">int</span><span style="color: #000000;"> len)
+    {
+        </span><span style="color: #0000ff;">this</span>-&gt;len=<span style="color: #000000;">len;
+    };
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> getLen()
+    {
+        renturn len;
+    };
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> printInfo()
+    {
+        cout</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">len = </span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">len;
+    };
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> len;
+}</span></pre>
+</div>
+<p>在这里this指针完美的解决了这个问题，这是因为this 实际上是成员函数的一个形参，在调用成员函数时将对象的地址作为实参传递给 this。不过 this 这个形参是隐式的，它并不出现在代码中，而是在编译阶段由编译器默默地将它添加到参数列表中。<br /><br />this 作为隐式形参，本质上是成员函数的局部变量，所以只能用在成员函数的内部，并且只有在通过对象调用成员函数时才给 this 赋值。</p>
+<p><strong>其中this指针有几点注意事项：</strong></p>
+<ul>
+<li>this 是 const 指针，它的值是不能被修改的，一切企图修改该指针的操作，如赋值、递增、递减等都是不允许的。</li>
+<li>this 只能在成员函数内部使用，用在其他地方没有意义，也是非法的。</li>
+<li>只有当对象被创建后&nbsp;this 才有意义，因此不能在 static 成员函数中使用。</li>
+
+</ul>
+<p><strong>一个关于this指针的骚气用法：</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">#include </span>&lt;iostream&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+
+</span><span style="color: #0000ff;">class</span><span style="color: #000000;"> Array
+{
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    Array(</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> len) 
+    {
+        </span><span style="color: #0000ff;">this</span>-&gt;len =<span style="color: #000000;"> len;
+    };
+    </span>~<span style="color: #000000;">Array() {};
+    Array setLen(</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> len)
+    {
+        </span><span style="color: #0000ff;">this</span>-&gt;len =<span style="color: #000000;"> len;
+        </span><span style="color: #0000ff;">return</span> *<span style="color: #0000ff;">this</span><span style="color: #000000;">;
+    };
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> getLen()
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> len;
+    };
+    Array printInfo()
+    {
+        cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">len = </span><span style="color: #800000;">"</span> &lt;&lt; len &lt;&lt;<span style="color: #000000;"> endl;
+        </span><span style="color: #0000ff;">return</span> *<span style="color: #0000ff;">this</span><span style="color: #000000;">;
+    };
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> len;
+};
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    Array arr1(</span><span style="color: #800080;">10</span><span style="color: #000000;">);
+    arr1.printInfo().setLen(</span><span style="color: #800080;">5</span><span style="color: #000000;">).printInfo();//这种连续的点的使用，觉得超级骚气
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">len = </span><span style="color: #800000;">"</span> &lt;&lt; arr1.getLen() &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>输出结果为：</p>
+<p>len = 10<br />len = 5<br />len = 10</p>
+<p>第一个和第三个printInfo输出的是10，第二个printInfo输出的则是5，正常来讲，第三个printInfo应该输出是5，这是因为在printInfo最后返回的并不是arr1，而是另外一个对象，所以我可以使用引用来避免这种情况。</p>
+<div class="cnblogs_code">
+<pre>#include &lt;iostream&gt;
+
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+
+</span><span style="color: #0000ff;">class</span><span style="color: #000000;"> Array
+{
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    Array(</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> len) 
+    {
+        </span><span style="color: #0000ff;">this</span>-&gt;len =<span style="color: #000000;"> len;
+    };
+    </span>~<span style="color: #000000;">Array() {};
+    Array setLen(</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> len)
+    {
+        </span><span style="color: #0000ff;">this</span>-&gt;len =<span style="color: #000000;"> len;
+        </span><span style="color: #0000ff;">return</span> *<span style="color: #0000ff;">this</span><span style="color: #000000;">;
+    };
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> getLen()
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> len;
+    };
+    Array</span>&amp;<span style="color: #000000;"> printInfo()//在这里加了一个引用符号，传递出去的是arr1的引用
+    {
+        cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">len = </span><span style="color: #800000;">"</span> &lt;&lt; len &lt;&lt;<span style="color: #000000;"> endl;
+        </span><span style="color: #0000ff;">return</span> *<span style="color: #0000ff;">this</span><span style="color: #000000;">;
+    };
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> len;
+};
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    Array arr1(</span><span style="color: #800080;">10</span><span style="color: #000000;">);
+    arr1.printInfo().setLen(</span><span style="color: #800080;">5</span><span style="color: #000000;">).printInfo();
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">len = </span><span style="color: #800000;">"</span> &lt;&lt; arr1.getLen() &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>这样输出就会变成正常。但是为什么在第一种不带引用的写法中，第二个<span style="color: #000000;">printInfo输出却是正常的，这个我也不太清楚，我在之后的学习中如果发现了原因的话，会对本篇随笔进行更改，如果有哪位大佬懂的话，希望留言交流下。</span></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

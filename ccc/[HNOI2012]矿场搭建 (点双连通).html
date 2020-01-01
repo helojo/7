@@ -1,0 +1,125 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[HNOI2012]矿场搭建 (点双连通)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[HNOI2012]矿场搭建 (点双连通)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/10921489.html</div><br>
+    <h2 id="题目">题目</h2>
+<p><a href="https://www.luogu.org/problemnew/show/P3225">[HNOI2012]矿场搭建</a></p>
+<h2 id="解析">解析</h2>
+<p>这个题做的我十分自闭。。<br />
+没看出这个是个点双，然后一晚上+半上午。。<br />
+一看肯定和割点有关，我们找到所有的点双，会发现有这么几种情况</p>
+<ol>
+<li>连通块中一个割点也没有，这时我们至少要建两个出口，以防万一某个出口塌了就GG了，方案的话就从size（联通块大小）个点中随便选两个，也是<span class="math inline">\(\dbinom{size}{2}\)</span>个。</li>
+<li>联通块中有一个割点，如果这个割点塌了就GG了，需要一个出口，但如果塌的不是割点，我们可以通过割点跑到另一个连通块中，所以只需要割点。根据乘法原理，方案数只需要乘上这个连通块的size。</li>
+<li>联通块中大于两个割点的时候，若一个割点塌了，可以通过另一个割点跑到另一个联通块里，所以不需要再加出口。</li>
+</ol>
+<p>需要注意的是<br />
+题目中没有给出具体多少个点，但应该是连续的，<del>因为我按连续的做的</del></p>
+<h2 id="代码">代码</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+#define int long long
+using namespace std;
+const int N = 1e6 + 10;
+int n, m, js, cnt, num, sum, size, tot, ans1, ans2;
+/*  js计数器 
+    sum联通块编号
+    tot联通块中割点个数
+    size联通块中点的个数 
+    ans1第一问答案
+    ans2第二问答案 
+*/
+int head[N], dfn[N], low[N], bel[N];
+bool cut[N], vis[N];
+class node {
+    public :
+        int v, nx;
+} e[N];
+
+template&lt;class T&gt;inline void read(T &amp;x) {
+    x = 0; int f = 0; char ch = getchar();
+    while (!isdigit(ch)) f |= (ch == &#39;-&#39;), ch = getchar();
+    while (isdigit(ch)) x = x * 10 + ch - &#39;0&#39;, ch = getchar();
+    x = f ? -x : x;
+    return;
+}
+
+inline void add(int u, int v) {
+    e[++num].nx = head[u], e[num].v = v, head[u] = num;
+}
+
+void tarjan(int u, int fa) {
+    dfn[u] = low[u] = ++cnt;
+    int child = 0;
+    for (int i = head[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (!dfn[v]) {
+            tarjan(v, u);
+            low[u] = min(low[u], low[v]);
+            if (low[v] &gt;= dfn[u] &amp;&amp; u != fa) cut[u] = 1, vis[u] = 1;
+            if (u == fa) child++;
+        }
+        low[u] = min(low[u], dfn[v]);
+    }
+    if (child &gt;= 2 &amp;&amp; u == fa) cut[u] = 1, vis[u] = 1;
+}
+
+void dfs(int u) {
+    vis[u] = 1;
+    size++;
+    for (int i = head[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (!vis[v] &amp;&amp; !cut[v]) dfs(v);     //没有被访问过且不是割点 
+        if (cut[v] &amp;&amp; bel[v] != sum) bel[v] = sum, tot++;   //用来标记割点在哪个连通块内 
+    }
+}
+
+signed main() {
+    while (scanf(&quot;%lld&quot;, &amp;n) &amp;&amp; n) {
+        num = cnt = m = ans1 = 0;
+        ans2 = 1;
+        memset(e, 0, sizeof (e));
+        memset(dfn, 0, sizeof (dfn));
+        memset(low, 0, sizeof (low));
+        memset(cut, 0, sizeof (cut));
+        memset(vis, 0, sizeof (vis));
+        memset(bel, 0, sizeof (bel));
+        memset(head, -1, sizeof (head));
+        for (int i = 1, x, y; i &lt;= n; ++i) {
+            read(x), read(y);
+            add(x, y), add(y, x);
+            m = max(m, max(x, y));
+        }
+        for (int i = 1; i &lt;= m; ++i) if (!dfn[i]) tarjan(i, i);
+        for (int i = 1; i &lt;= m; ++i) {
+            if (vis[i] || cut[i]) continue;
+            tot = size = 0;
+            sum++;
+            dfs(i);
+            if (tot == 0) ans1 += 2, ans2 *= ((size - 1) * size) &gt;&gt; 1;
+            if (tot == 1) ans1++, ans2 *= size;
+        }
+        printf(&quot;Case %lld: %lld %lld\n&quot;, ++js, ans1, ans2);
+    }
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,88 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修a++与++a，谈谈C++的参数传递' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>a++与++a，谈谈C++的参数传递</center></div><div class='banquan'>原文出处:本文由博客园博主小帆帆耍大牌提供。<br/>
+原文连接:https://www.cnblogs.com/fancyxie/p/11618369.html</div><br>
+    <p>先看一段代码：</p>
+<pre><code>#include&lt;iostream&gt;
+using namespace std;
+
+void func(int a, int b)
+{
+    cout &lt;&lt; a &lt;&lt; &quot; &quot; &lt;&lt; b &lt;&lt; endl;
+}
+
+int main()
+{
+    int a = 0;
+    func(a++, ++a);
+    return 0;
+}</code></pre>
+<p>由于C++是从右向左入栈（与编译器的调用约定有关，不是C++标准的规定），所以刚看到代码的时候，我以为结果会是“1 1”（先将++a入栈，再将a++入栈），然而事实是：<img src="./images/a++与++a，谈谈C++的参数传递0.png" /> 。这是在VS上面运行的，在g++上也是一样的结果。幸好VS还可以查看汇编代码。<br />
+<br><br />
+<strong>由于在VS上有十分方便的反汇编工具，所以接下来说的东西都基于VS2019自带的反汇编。</strong><br />
+设置断点并调试，便可以打开反汇编窗口：<br />
+<img src="./images/a++与++a，谈谈C++的参数传递1.png" /><br />
+<br><br />
+下面这段就是在调用func函数时的汇编代码：<br />
+<img src="./images/a++与++a，谈谈C++的参数传递2.png" /></p>
+<pre><code>mov         eax,dword ptr [a]
+add         eax,1  
+mov         dword ptr [a],eax  //这三行指令将a+1
+mov         ecx,dword ptr [a]  
+mov         dword ptr [ebp-0D0h],ecx  //这两行指令将a的值存储到一个临时地址（寄存器间接寻址）中
+mov         edx,dword ptr [a]  
+add         edx,1  
+mov         dword ptr [a],edx  /这三行指令又将a+1
+mov         eax,dword ptr [a]  
+push        eax   //这两行指令将a压入栈
+mov         ecx,dword ptr [ebp-0D0h]  
+push        ecx  //这两行指令将刚刚存储的临时地址的值压入栈
+
+call        func (0A312E9h)  //调用func函数
+add         esp,8  //esp为栈指针寄存器  </code></pre>
+<p>如果将代码改成</p>
+<blockquote>
+<p>func(++a, ++a);</p>
+</blockquote>
+<p>会是什么结果呢？答案是<img src="./images/a++与++a，谈谈C++的参数传递3.png" /></p>
+<pre><code>mov         eax,dword ptr [a]  
+add         eax,1  
+mov         dword ptr [a],eax  //这三行指令将a+1
+mov         ecx,dword ptr [a]  
+add         ecx,1  
+mov         dword ptr [a],ecx  //这三行指令将a+1
+mov         edx,dword ptr [a]  
+push        edx   //这两行指令将a压入栈
+mov         eax,dword ptr [a]  
+push        eax   //这两行指令将a压入栈
+
+call        func (09912E9h)  
+add         esp,8 </code></pre>
+<p>可以看到，将a++改成++a之后，<strong>指令少了将a的值保存起来的步骤</strong>，并且由于并非在读取参数时就压入栈，而是在所有参数的表达式执行完之后才压入，所以最后压入参数栈的都是最后的变量a。<br />
+那么结合汇编代码就不难理解文章开头为什么是“1 2”了，基本就是这样的区别<strong>（注意：读取参数和执行参数的表达式时也是从右往左的）</strong>：<br />
+<img src="./images/a++与++a，谈谈C++的参数传递4.png" /><br />
+<strong>在调用函数的时候，参数要避免使用自增和自减，避免出现混乱。</strong><br />
+<br><br />
+文章为作者结合个人理解编写，可能会有错漏的地方，如有错误，敬请指正。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

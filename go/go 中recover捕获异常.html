@@ -1,0 +1,89 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go 中recover捕获异常' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go 中recover捕获异常</center></div><div class='banquan'>原文出处:本文由博客园博主周伯通的麦田提供。<br/>
+原文连接:https://www.cnblogs.com/phpper/p/12059701.html</div><br>
+    <p>recover 仅在延迟函数 defer 中有效，在正常的执行过程中，调用 recover 会返回 nil 并且没有其他任何效果.<br />重要的事再说一遍：仅当在一个defer函数中被完成时，调用recover()才生效。</p>
+<p>我们来一段错误的代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func main() {
+    recover() </span><span style="color: #008000;">//</span><span style="color: #008000;"> 无任何作用</span>
+    panic(<span style="color: #800000;">"</span><span style="color: #800000;">停止运行</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    recover() </span><span style="color: #008000;">//</span><span style="color: #008000;"> 不会执行到</span>
+    fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">结束</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+}</span></pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">panic: 停止运行
+
+goroutine </span><span style="color: #800080;">1</span><span style="color: #000000;"> [running]:</span><span style="color: #0000ff;">exit</span> status <span style="color: #800080;">2</span></pre>
+</div>
+<p>修改下，正确的代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func main() {
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">捕获到异常:</span><span style="color: #800000;">"</span><span style="color: #000000;">, recover())
+    }()
+    panic(</span><span style="color: #800000;">"</span><span style="color: #800000;">手动抛出异常</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+}</span></pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code>捕获到异常: 手动抛出异常</pre>
+</div>
+<p>重要的事再说一遍：recover()的调用仅当它在defer函数中被直接调用时才有效。</p>
+<p>继续来看一段错误的代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func doRecover() {
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">捕获到异常 =&gt;</span><span style="color: #800000;">"</span>, recover()) <span style="color: #008000;">//</span><span style="color: #008000;">输出: 捕获到异常 =&gt; &lt;nil&gt;</span>
+<span style="color: #000000;">}
+func main() {
+    defer func() {
+        doRecover() </span><span style="color: #008000;">//</span><span style="color: #008000;">注意：这里间接使用函数，在函数中调用了recover()函数，
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> panic 没有恢复,没有捕获到错误信息</span>
+<span style="color: #000000;">    }()
+    panic(</span><span style="color: #800000;">"</span><span style="color: #800000;">手动抛出异常</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+}</span></pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code>捕获到异常 =&gt; &lt;nil&gt;<span style="color: #000000;">
+panic: 手动抛出异常
+goroutine </span><span style="color: #800080;">1</span><span style="color: #000000;"> [running]:
+main.main()
+</span><span style="color: #0000ff;">exit</span> status <span style="color: #800080;">2</span></pre>
+</div>
+<p>总结：panic配合recover使用，recover要在defer函数中直接调用才生效。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

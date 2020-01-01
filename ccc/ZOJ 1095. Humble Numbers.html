@@ -1,0 +1,806 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修ZOJ 1095. Humble Numbers' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>ZOJ 1095. Humble Numbers</center></div><div class='banquan'>原文出处:本文由博客园博主hoodlum1980提供。<br/>
+原文连接:https://www.cnblogs.com/hoodlum1980/p/11595451.html</div><br>
+    <p>　　题目链接：<a href="https://zoj.pintia.cn/problem-sets/91827364500/problems/91827364594" target="_blank">《Humble Numbers》</a></p>
+<p>　　题意：如果一个数的所有质数因子都来自于 { 2, 3, 5, 7 } 这个集合，就把这个数字叫做&ldquo;谦逊数&rdquo;，或者&ldquo;低调数&rdquo;（Humble Number），现在给出一个数字 i （1 &lt;= i &lt;= 5842），要求输出第 i 个 humble number。比如说，前 20 个 humble number 是：1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 18, 20, 21, 24, 25, 27。</p>
+<p>&nbsp;</p>
+<p>　　分析：这个题目的描述是非常简单的。从 i 的限定范围最大是 5842 以及范例输出来看，很显然出题人暗示了我们这个题目中涉及到的 humber number 不会超出 int 的范围。因此我们可以放心的使用 int，而不用担心超出表示范围。</p>
+<p>　　其次可以很容易的想到，需要一个 int 数组，把需要的所有 humber number 放进去作为供查询的表。但是生成这个表会比较耗时，所以很容易超过 2 秒的运行时间限制。所以我们需要更快的建立这个数组，则观察这个序列，因为所有的数字都是如下形式：</p>
+<p>　　<span style="font-family: courier new, courier; color: #800000;"><span style="font-size: 18px;">x[i] = (2 ^ k[0]) * (3 ^ k[1]) * (5 ^ k[2]) * (7 ^ k[3]);</span></span></p>
+<p>　　这里 k 是一个数组 ( int [ 4 ] )，元素表示 2， 3， 5， 7 这四个因子的幂，因此考虑从 x [ i ] 跳到下一个 x [ i + 1] 时，就是数字的这 4 个因子的幂在发生变化。因此只要知道从 x [ i ] 变化到 x [ i + 1 ] 时，数组 k 如何变化即可。因此我们需要找出前 5842 个 humber number 中的所有规则，这样就可以快速的得到前 5842 个 humber number，组建成我们要查的表。</p>
+<p>　　观察前面几个数字，很容易发现出这些规则，例如：</p>
+<p>　　1-&gt;2, 2-&gt;3, 3-&gt;4, 4-&gt;5, 5-&gt;6, ...</p>
+<p>　　从 10 到 12 本质上还是应用的 5-&gt;6 。因此只有相邻且互质的数字（a, b），才属于我们要找的规则（a -&gt; b），其他的相邻数字都是应用了上述规则中的某一条。</p>
+<p>　　同时这些规则还有优先级的顺序之分，从表面上看，应该是数字 a 和 b 越大，规则越优先。但实际上并非如此，例如：</p>
+<p>　　从 75 到 80 ，应用的实际规则是 15-&gt;16 ，而不是 25-&gt;27 （这会产生从 75 变成 81，跳过了 80）。因此规则的优先级排序需要按照 a-&gt;b 的放大倍数进行从小到大排序。放大倍数（b / a）越小的规则，越优先。考虑到这个规则很多（实际有 76 条），而且涉及的数字很大，所以人工找出所有规则是不现实的。所以我使用一个程序（称之为代码生成器）来专门找出所有的规则，并将其输出成一个函数的代码，函数的名称是 GetNext，含义是根据当前的 humble number ，找出下一个 humble number。如下：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('f199e453-aaca-4f98-bebd-6f3f43c7183a')"><img id="code_img_closed_f199e453-aaca-4f98-bebd-6f3f43c7183a" class="code_img_closed" src="./images/ZOJ 1095. Humble Numbers0.png" alt="" /><img id="code_img_opened_f199e453-aaca-4f98-bebd-6f3f43c7183a" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('f199e453-aaca-4f98-bebd-6f3f43c7183a',event)" src="./images/ZOJ 1095. Humble Numbers1.png" alt="" />
+<div id="cnblogs_code_open_f199e453-aaca-4f98-bebd-6f3f43c7183a" class="cnblogs_code_hide">
+<pre>#include &lt;vector&gt;<span style="color: #000000;">
+#include </span>&lt;algorithm&gt;<span style="color: #000000;">
+#include </span>&lt;iostream&gt;<span style="color: #000000;">
+#include </span>&lt;stdio.h&gt;<span style="color: #000000;">
+#include </span>&lt;<span style="color: #0000ff;">string</span>.h&gt;<span style="color: #000000;">
+
+typedef </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> tagNODE
+{
+    </span><span style="color: #0000ff;">int</span> <span style="color: #0000ff;">from</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> to;
+    </span><span style="color: #0000ff;">double</span> ratio; <span style="color: #008000;">//</span><span style="color: #008000;">= to / from;</span>
+<span style="color: #000000;">} NODE;
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">x1, x2 是否是已经排好序的。</span>
+<span style="color: #0000ff;">bool</span><span style="color: #000000;"> IsSuccessive(NODE x1, NODE x2)
+{
+    </span><span style="color: #0000ff;">return</span> x1.ratio &lt;<span style="color: #000000;"> x2.ratio;
+}
+
+</span><span style="color: #0000ff;">void</span> Init(std::vector&lt;<span style="color: #0000ff;">int</span>&gt; &amp;v1, <span style="color: #0000ff;">int</span><span style="color: #000000;"> nSize)
+{
+    v1.reserve(nSize);
+    v1.clear();
+    v1.push_back(</span><span style="color: #800080;">1</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">int</span> nNumber = <span style="color: #800080;">2</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> tmp;
+    </span><span style="color: #0000ff;">while</span>(v1.size() &lt;<span style="color: #000000;"> nSize)
+    {
+        tmp </span>=<span style="color: #000000;"> nNumber;
+        </span><span style="color: #0000ff;">while</span>((tmp % <span style="color: #800080;">2</span>) == <span style="color: #800080;">0</span>) tmp /= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">while</span>((tmp % <span style="color: #800080;">3</span>) == <span style="color: #800080;">0</span>) tmp /= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">while</span>((tmp % <span style="color: #800080;">5</span>) == <span style="color: #800080;">0</span>) tmp /= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">while</span>((tmp % <span style="color: #800080;">7</span>) == <span style="color: #800080;">0</span>) tmp /= <span style="color: #800080;">7</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">if</span>(tmp == <span style="color: #800080;">1</span><span style="color: #000000;">)
+            v1.push_back(nNumber);
+        </span>++<span style="color: #000000;">nNumber;
+    }
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">x1, x2 是否是互质的（没有公共因子）</span>
+<span style="color: #0000ff;">bool</span> no_comm_factor(<span style="color: #0000ff;">int</span> x1, <span style="color: #0000ff;">int</span><span style="color: #000000;"> x2)
+{
+    </span><span style="color: #0000ff;">if</span>(x1 % <span style="color: #800080;">2</span> == <span style="color: #800080;">0</span> &amp;&amp; x2 % <span style="color: #800080;">2</span> == <span style="color: #800080;">0</span><span style="color: #000000;">)
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">if</span>(x1 % <span style="color: #800080;">3</span> == <span style="color: #800080;">0</span> &amp;&amp; x2 % <span style="color: #800080;">3</span> == <span style="color: #800080;">0</span><span style="color: #000000;">)
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">if</span>(x1 % <span style="color: #800080;">5</span> == <span style="color: #800080;">0</span> &amp;&amp; x2 % <span style="color: #800080;">5</span> == <span style="color: #800080;">0</span><span style="color: #000000;">)
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">if</span>(x1 % <span style="color: #800080;">7</span> == <span style="color: #800080;">0</span> &amp;&amp; x2 % <span style="color: #800080;">7</span> == <span style="color: #800080;">0</span><span style="color: #000000;">)
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">give x, find k;
+</span><span style="color: #008000;">//</span><span style="color: #008000;">x = 2^k[0] * 3^k[1] * 5^k[2] * 7^k[3];</span>
+<span style="color: #0000ff;">void</span> GetK(<span style="color: #0000ff;">int</span> x, <span style="color: #0000ff;">int</span> k[<span style="color: #800080;">4</span><span style="color: #000000;">])
+{
+    memset(k, </span><span style="color: #800080;">0</span>, <span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">int</span>) * <span style="color: #800080;">4</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">while</span>((x &amp; <span style="color: #800080;">1</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">) 
+    {
+        x </span>/= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>]++<span style="color: #000000;">;          
+    }
+    </span><span style="color: #0000ff;">while</span>(x % <span style="color: #800080;">3</span> == <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        x </span>/= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>]++<span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">while</span>(x % <span style="color: #800080;">5</span> == <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        x </span>/= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>]++<span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">while</span>(x % <span style="color: #800080;">7</span> == <span style="color: #800080;">0</span><span style="color: #000000;">)
+    {
+        x </span>/= <span style="color: #800080;">7</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>]++<span style="color: #000000;">;
+    }
+}
+
+</span><span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> argv[])
+{
+    std::vector</span>&lt;<span style="color: #0000ff;">int</span>&gt;<span style="color: #000000;"> v1;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">计算出前 5842 个 humber number，这一步需要花比较长的时间。</span>
+    Init(v1, <span style="color: #800080;">5842</span><span style="color: #000000;">);
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">找出所有策略（即找出所有的相邻的互质的 humber number 对）。</span>
+    std::vector&lt;NODE&gt;<span style="color: #000000;"> nodes;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">5841</span>; i &gt; <span style="color: #800080;">0</span>; --<span style="color: #000000;">i)
+    {
+        </span><span style="color: #0000ff;">if</span>(no_comm_factor(v1[i - <span style="color: #800080;">1</span><span style="color: #000000;">], v1[i]))
+        {
+            NODE item;
+            item.</span><span style="color: #0000ff;">from</span> = v1[i - <span style="color: #800080;">1</span><span style="color: #000000;">];
+            item.to </span>=<span style="color: #000000;"> v1[i];
+            item.ratio </span>= item.to * <span style="color: #800080;">1.0</span> / item.<span style="color: #0000ff;">from</span><span style="color: #000000;">;
+            nodes.push_back(item);
+        }
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">按照放大倍数从小到大进行规则排序。</span>
+<span style="color: #000000;">    std::sort(nodes.begin(), nodes.end(), IsSuccessive);
+
+    </span><span style="color: #0000ff;">int</span> iRule = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">int</span> k1[<span style="color: #800080;">4</span>], k2[<span style="color: #800080;">4</span><span style="color: #000000;">];
+    </span><span style="color: #0000ff;">char</span> buf[<span style="color: #800080;">1024</span>], *<span style="color: #000000;">pos;
+    FILE </span>*fp = fopen(<span style="color: #800000;">"</span><span style="color: #800000;">GetNextK_code.cpp</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">w</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    fputs(</span><span style="color: #800000;">"</span><span style="color: #800000;">void GetNext(int* k)\n{\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, fp);
+    typename std::vector</span>&lt;NODE&gt;<span style="color: #000000;">::const_iterator it;
+    </span><span style="color: #0000ff;">for</span>(it = nodes.begin(); it != nodes.end(); ++<span style="color: #000000;">it)
+    {
+        </span>++<span style="color: #000000;">iRule;
+
+        GetK(it</span>-&gt;<span style="color: #0000ff;">from</span><span style="color: #000000;">, k1);
+        GetK(it</span>-&gt;<span style="color: #000000;">to,   k2);
+
+        </span><span style="color: #0000ff;">if</span>(iRule == <span style="color: #800080;">1</span>) strcpy(buf, <span style="color: #800000;">"</span><span style="color: #800000;">\tif(</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(iRule == nodes.size()) strcpy(buf, <span style="color: #800000;">"</span><span style="color: #800000;">else</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">else</span> strcpy(buf, <span style="color: #800000;">"</span><span style="color: #800000;">\telse if(</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        pos </span>= buf +<span style="color: #000000;"> strlen(buf);
+
+        </span><span style="color: #0000ff;">if</span>(k1[<span style="color: #800080;">0</span><span style="color: #000000;">]) 
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">k[0] &gt;= %d &amp;&amp; </span><span style="color: #800000;">"</span>, k1[<span style="color: #800080;">0</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+        </span><span style="color: #0000ff;">if</span>(k1[<span style="color: #800080;">1</span><span style="color: #000000;">])
+        {    
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">k[1] &gt;= %d &amp;&amp; </span><span style="color: #800000;">"</span>, k1[<span style="color: #800080;">1</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+        </span><span style="color: #0000ff;">if</span>(k1[<span style="color: #800080;">2</span><span style="color: #000000;">])
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">k[2] &gt;= %d &amp;&amp; </span><span style="color: #800000;">"</span>, k1[<span style="color: #800080;">2</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+        </span><span style="color: #0000ff;">if</span>(k1[<span style="color: #800080;">3</span><span style="color: #000000;">])
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">k[3] &gt;= %d &amp;&amp; </span><span style="color: #800000;">"</span>, k1[<span style="color: #800080;">3</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+
+        </span><span style="color: #0000ff;">if</span>(iRule ==<span style="color: #000000;"> nodes.size())
+        {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">最后一条规则</span>
+            sprintf(pos,  <span style="color: #800000;">"</span><span style="color: #800000;"> //(rule %d) %d -&gt; %d (%lf);\n\t{\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, 
+                iRule, it</span>-&gt;<span style="color: #0000ff;">from</span>, it-&gt;to, it-&gt;<span style="color: #000000;">ratio);
+        }
+        </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+        {
+            pos </span>-= <span style="color: #800080;">4</span>; <span style="color: #008000;">//</span><span style="color: #008000;">remove " &amp;&amp; ";</span>
+            sprintf(pos, <span style="color: #800000;">"</span><span style="color: #800000;">) //(rule %d) %d -&gt; %d (%lf);\n\t{\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, 
+                iRule, it</span>-&gt;<span style="color: #0000ff;">from</span>, it-&gt;to, it-&gt;<span style="color: #000000;">ratio);
+        }
+        pos </span>+=<span style="color: #000000;"> strlen(pos);
+
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">From</span>
+        <span style="color: #0000ff;">if</span>(k1[<span style="color: #800080;">0</span><span style="color: #000000;">])
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">\t\tk[0] -= %d;\n</span><span style="color: #800000;">"</span>, k1[<span style="color: #800080;">0</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+        </span><span style="color: #0000ff;">if</span>(k1[<span style="color: #800080;">1</span><span style="color: #000000;">])
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">\t\tk[1] -= %d;\n</span><span style="color: #800000;">"</span>, k1[<span style="color: #800080;">1</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+        </span><span style="color: #0000ff;">if</span>(k1[<span style="color: #800080;">2</span><span style="color: #000000;">])
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">\t\tk[2] -= %d;\n</span><span style="color: #800000;">"</span>, k1[<span style="color: #800080;">2</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+        </span><span style="color: #0000ff;">if</span>(k1[<span style="color: #800080;">3</span><span style="color: #000000;">])
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">\t\tk[3] -= %d;\n</span><span style="color: #800000;">"</span>, k1[<span style="color: #800080;">3</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">To</span>
+        <span style="color: #0000ff;">if</span>(k2[<span style="color: #800080;">0</span><span style="color: #000000;">])
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">\t\tk[0] += %d;\n</span><span style="color: #800000;">"</span>, k2[<span style="color: #800080;">0</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+        </span><span style="color: #0000ff;">if</span>(k2[<span style="color: #800080;">1</span><span style="color: #000000;">])
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">\t\tk[1] += %d;\n</span><span style="color: #800000;">"</span>, k2[<span style="color: #800080;">1</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+        </span><span style="color: #0000ff;">if</span>(k2[<span style="color: #800080;">2</span><span style="color: #000000;">])
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">\t\tk[2] += %d;\n</span><span style="color: #800000;">"</span>, k2[<span style="color: #800080;">2</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+        </span><span style="color: #0000ff;">if</span>(k2[<span style="color: #800080;">3</span><span style="color: #000000;">])
+        {
+            sprintf(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">\t\tk[3] += %d;\n</span><span style="color: #800000;">"</span>, k2[<span style="color: #800080;">3</span><span style="color: #000000;">]);
+            pos </span>+=<span style="color: #000000;"> strlen(pos);
+        }
+        strcpy(pos, </span><span style="color: #800000;">"</span><span style="color: #800000;">\t}\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        fputs(buf, fp);
+        fflush(fp);
+    }
+    fputs(</span><span style="color: #800000;">"</span><span style="color: #800000;">}\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, fp);
+    fclose(fp);
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">Code_Generator</span></div>
+<p>　　使用上面的代码生成器，我们就得到了所有的规则，就可以方便的真正的写用于提交的代码了。</p>
+<p>　　为了从数组 k 计算 humber number 的方便，这里我把 2, 3, 5, 7 的 n 次方提前计算好放到一个数组里，这样就能更快速的计算出 humber number。这样这个题目也就算基本完成了。但是这也只不过是完成了这个题目的一半而已，因此这个题目还有一半大坑在于输出格式中的 &ldquo;-th&rdquo; 后缀！为此我 WA 了 2， 3 次以后才把后缀规则写对。简单来说这里需要特别注意的就是：</p>
+<p>　　所有形如 xx11, xx12, xx13 后缀都是 th （而不仅仅是 11, 12, 13 ），除此以为的 xxx1 用 st，xxx2 用 nd，xxx3 用 rd，所有其他都用 th。例如，1011th, 1012th ,1023th，这里需要特别注意。</p>
+<p>　　最终提交代码如下：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('a9e71424-ca14-48ca-bef6-dfd8e4c6039b')"><img id="code_img_closed_a9e71424-ca14-48ca-bef6-dfd8e4c6039b" class="code_img_closed" src="./images/ZOJ 1095. Humble Numbers0.png" alt="" /><img id="code_img_opened_a9e71424-ca14-48ca-bef6-dfd8e4c6039b" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('a9e71424-ca14-48ca-bef6-dfd8e4c6039b',event)" src="./images/ZOJ 1095. Humble Numbers1.png" alt="" />
+<div id="cnblogs_code_open_a9e71424-ca14-48ca-bef6-dfd8e4c6039b" class="cnblogs_code_hide">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;"> ZOJ1095_HumbleNumbers.cpp
+</span><span style="color: #008000;">//
+</span><span style="color: #000000;">
+#include </span>&lt;vector&gt;<span style="color: #000000;">
+#include </span>&lt;iostream&gt;
+
+<span style="color: #008000;">//</span><span style="color: #008000;">选择出下一组 k 值，按照如下规则。
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> x = (2^k[0]) * (3^k[1]) * (5^k[2]) * (7^k[3]);</span>
+<span style="color: #0000ff;">void</span> GetNext(<span style="color: #0000ff;">int</span>*<span style="color: #000000;"> k);
+
+</span><span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, char*<span style="color: #000000;"> argv[])
+{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> i, x;
+    </span><span style="color: #0000ff;">int</span> k[<span style="color: #800080;">4</span>] = { <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;"> };
+    </span><span style="color: #0000ff;">int</span> a2[<span style="color: #800080;">31</span>] = { <span style="color: #800080;">1</span> }; <span style="color: #008000;">//</span><span style="color: #008000;">a2[k] = 2^k;</span>
+    <span style="color: #0000ff;">int</span> a3[<span style="color: #800080;">20</span>] = { <span style="color: #800080;">1</span> }; <span style="color: #008000;">//</span><span style="color: #008000;">a3[k] = 3^k;</span>
+    <span style="color: #0000ff;">int</span> a5[<span style="color: #800080;">14</span>] = { <span style="color: #800080;">1</span> }; <span style="color: #008000;">//</span><span style="color: #008000;">a5[k] = 5^k;</span>
+    <span style="color: #0000ff;">int</span> a7[<span style="color: #800080;">12</span>] = { <span style="color: #800080;">1</span> }; <span style="color: #008000;">//</span><span style="color: #008000;">a7[k] = 7^k;</span>
+    <span style="color: #0000ff;">for</span>(i = <span style="color: #800080;">1</span>; i &lt; <span style="color: #800080;">31</span>; i++<span style="color: #000000;">)
+    {
+        a2[i] </span>= a2[i - <span style="color: #800080;">1</span>] * <span style="color: #800080;">2</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">if</span>(i &lt; <span style="color: #800080;">20</span>) a3[i] = a3[i - <span style="color: #800080;">1</span>] * <span style="color: #800080;">3</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">if</span>(i &lt; <span style="color: #800080;">14</span>) a5[i] = a5[i - <span style="color: #800080;">1</span>] * <span style="color: #800080;">5</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">if</span>(i &lt; <span style="color: #800080;">12</span>) a7[i] = a7[i - <span style="color: #800080;">1</span>] * <span style="color: #800080;">7</span><span style="color: #000000;">;
+    }
+    std::vector</span>&lt;<span style="color: #0000ff;">int</span>&gt;<span style="color: #000000;"> v1;
+    v1.reserve(</span><span style="color: #800080;">5842</span><span style="color: #000000;">);
+    v1.push_back(</span><span style="color: #800080;">1</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">while</span>(v1.size() &lt; <span style="color: #800080;">5842</span><span style="color: #000000;">)
+    {
+        GetNext(k);
+        x </span>= a2[k[<span style="color: #800080;">0</span>]] * a3[k[<span style="color: #800080;">1</span>]] * a5[k[<span style="color: #800080;">2</span>]] * a7[k[<span style="color: #800080;">3</span><span style="color: #000000;">]];
+        v1.push_back(x);
+    }
+    </span><span style="color: #0000ff;">while</span>(<span style="color: #0000ff;">true</span><span style="color: #000000;">)
+    {
+        std::cin </span>&gt;&gt;<span style="color: #000000;"> i;
+        </span><span style="color: #0000ff;">if</span>(i == <span style="color: #800080;">0</span>) <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(i % <span style="color: #800080;">100</span> != <span style="color: #800080;">11</span> &amp;&amp; i % <span style="color: #800080;">10</span> == <span style="color: #800080;">1</span><span style="color: #000000;">)
+            std::cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">The </span><span style="color: #800000;">"</span> &lt;&lt; i &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">st humble number is </span><span style="color: #800000;">"</span> &lt;&lt; v1[i - <span style="color: #800080;">1</span>] &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">.</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl;
+
+        </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(i % <span style="color: #800080;">100</span> != <span style="color: #800080;">12</span> &amp;&amp; i % <span style="color: #800080;">10</span> == <span style="color: #800080;">2</span><span style="color: #000000;">)
+            std::cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">The </span><span style="color: #800000;">"</span> &lt;&lt; i &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">nd humble number is </span><span style="color: #800000;">"</span> &lt;&lt; v1[i - <span style="color: #800080;">1</span>] &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">.</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl;
+        
+        </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(i % <span style="color: #800080;">100</span> != <span style="color: #800080;">13</span> &amp;&amp; i % <span style="color: #800080;">10</span> == <span style="color: #800080;">3</span><span style="color: #000000;">)
+            std::cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">The </span><span style="color: #800000;">"</span> &lt;&lt; i &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">rd humble number is </span><span style="color: #800000;">"</span> &lt;&lt; v1[i - <span style="color: #800080;">1</span>] &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">.</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl;
+        
+        </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+            std::cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">The </span><span style="color: #800000;">"</span> &lt;&lt; i &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">th humble number is </span><span style="color: #800000;">"</span> &lt;&lt; v1[i - <span style="color: #800080;">1</span>] &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">.</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> std::endl;
+    }
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">以下代码是从另一个程序生成的。
+</span><span style="color: #008000;">//</span><span style="color: #008000;">根据当前的 humble number，选出下一个 humble number。</span>
+<span style="color: #0000ff;">void</span> GetNext(<span style="color: #0000ff;">int</span>*<span style="color: #000000;"> k)
+{
+    </span><span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">13</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 1) 78121827 -&gt; 78125000 (1.000041);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">13</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">10</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">4</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">9</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 2) 645657712 -&gt; 645700815 (1.000067);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">9</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">17</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">4</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">6</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 3) 250000 -&gt; 250047 (1.000188);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">7</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 4) 4374 -&gt; 4375 (1.000229);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">7</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">5</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">8</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 5) 184473632 -&gt; 184528125 (1.000295);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">8</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">10</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">5</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">5</span> &amp;&amp; k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 6) 2400 -&gt; 2401 (1.000417);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">4</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">9</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">5</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 7) 43025920 -&gt; 43046721 (1.000483);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">9</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">16</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">6</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">7</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 8) 52706752 -&gt; 52734375 (1.000524);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">7</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">9</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">10</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">4</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 9) 2458624 -&gt; 2460375 (1.000712);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">10</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">9</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">7</span> &amp;&amp; k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">4</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">6</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 10) 1219784832 -&gt; 1220703125 (1.000753);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">7</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">13</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">14</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">3</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 11) 14336000 -&gt; 14348907 (1.000900);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">14</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">15</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">11</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">3</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 12) 702464 -&gt; 703125 (1.000941);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">11</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">7</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">15</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 13) 32768 -&gt; 32805 (1.001129);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">15</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">8</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">12</span> &amp;&amp; k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">5</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 14) 48771072 -&gt; 48828125 (1.001170);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">12</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">11</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">8</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">3</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 15) 133984375 -&gt; 134217728 (1.001742);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">8</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">27</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">7</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">4</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 16) 66976875 -&gt; 67108864 (1.001971);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">7</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">26</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">10</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 17) 29296875 -&gt; 29360128 (1.002159);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">10</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">22</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">14</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 18) 33480783 -&gt; 33554432 (1.002200);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">14</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">25</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">10</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 19) 282475249 -&gt; 283115520 (1.002267);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">10</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">21</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">8</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">6</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 20) 102515625 -&gt; 102760448 (1.002388);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">8</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">21</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">15</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 21) 358722675 -&gt; 359661568 (1.002617);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">15</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">20</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">6</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 22) 588245 -&gt; 589824 (1.002684);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">16</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">7</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">3</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 23) 26796875 -&gt; 26873856 (1.002873);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">7</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">12</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">8</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">5</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">5</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 24) 4084101 -&gt; 4096000 (1.002913);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">15</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">13</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 25) 1220703125 -&gt; 1224440064 (1.003061);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">13</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">8</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">14</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">3</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 26) 6125 -&gt; 6144 (1.003102);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">11</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">12</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">4</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 27) 1275989841 -&gt; 1280000000 (1.003143);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">12</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">14</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">7</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">9</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 28) 1953125 -&gt; 1959552 (1.003291);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">9</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">7</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">7</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">6</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 29) 5103 -&gt; 5120 (1.003331);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">10</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">5</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 30) 3125 -&gt; 3136 (1.003520);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">13</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 31) 1594323 -&gt; 1600000 (1.003561);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">13</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">9</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">5</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">9</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 32) 40353607 -&gt; 40500000 (1.003628);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">9</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">6</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">7</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 33) 10935 -&gt; 10976 (1.003749);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">7</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">6</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 34) 117649 -&gt; 118098 (1.003816);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">10</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">5</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 35) 16807 -&gt; 16875 (1.004046);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">4</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">4</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">2</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 36) 19600 -&gt; 19683 (1.004235);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">9</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">4</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">4</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 37) 388962 -&gt; 390625 (1.004275);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">8</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">5</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 38) 224 -&gt; 225 (1.004464);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">9</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">4</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 39) 320000 -&gt; 321489 (1.004653);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">9</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">8</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">6</span> &amp;&amp; k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">5</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 40) 15552 -&gt; 15625 (1.004694);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">6</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">10</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 41) 1024 -&gt; 1029 (1.004883);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">10</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">5</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">2</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">3</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 42) 2083725 -&gt; 2097152 (1.006444);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">21</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">6</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">4</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 43) 455625 -&gt; 458752 (1.006863);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">16</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">3</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 44) 1715 -&gt; 1728 (1.007580);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">6</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">4</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 45) 3969 -&gt; 4000 (1.007811);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">3</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 46) 125 -&gt; 126 (1.008000);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">5</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 47) 243 -&gt; 245 (1.008230);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">3</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">4</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 48) 64827 -&gt; 65536 (1.010937);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">16</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">4</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 49) 2025 -&gt; 2048 (1.011358);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">11</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">4</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 50) 2401 -&gt; 2430 (1.012078);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">2</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">3</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 51) 3087 -&gt; 3125 (1.012310);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">5</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">4</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 52) 80 -&gt; 81 (1.012500);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">4</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">5</span> &amp;&amp; k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">3</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 53) 864 -&gt; 875 (1.012731);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">2</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 54) 63 -&gt; 64 (1.015873);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">6</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">3</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 55) 675 -&gt; 686 (1.016296);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 56) 49 -&gt; 50 (1.020408);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">4</span> &amp;&amp; k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 57) 48 -&gt; 49 (1.020833);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">4</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">9</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 58) 512 -&gt; 525 (1.025391);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">9</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 59) 35 -&gt; 36 (1.028571);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">3</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 60) 27 -&gt; 28 (1.037037);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">3</span> &amp;&amp; k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 61) 24 -&gt; 25 (1.041667);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">2</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 62) 20 -&gt; 21 (1.050000);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">7</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 63) 128 -&gt; 135 (1.054688);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">7</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 64) 15 -&gt; 16 (1.066667);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">4</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 65) 14 -&gt; 15 (1.071429);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 66) 25 -&gt; 27 (1.080000);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">5</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 67) 32 -&gt; 35 (1.093750);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 68) 9 -&gt; 10 (1.111111);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">3</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 69) 8 -&gt; 9 (1.125000);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">3</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">3</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 70) 7 -&gt; 8 (1.142857);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">3</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">3</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">1</span> &amp;&amp; k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 71) 6 -&gt; 7 (1.166667);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">3</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">2</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 72) 5 -&gt; 6 (1.200000);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">2</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">2</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 73) 4 -&gt; 5 (1.250000);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">2</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">2</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">1</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 74) 3 -&gt; 4 (1.333333);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">1</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">2</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(k[<span style="color: #800080;">0</span>] &gt;= <span style="color: #800080;">1</span>) <span style="color: #008000;">//</span><span style="color: #008000;">(rule 75) 2 -&gt; 3 (1.500000);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] -= <span style="color: #800080;">1</span><span style="color: #000000;">;
+        k[</span><span style="color: #800080;">1</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span> <span style="color: #008000;">//</span><span style="color: #008000;">(rule 76) 1 -&gt; 2 (2.000000);</span>
+<span style="color: #000000;">    {
+        k[</span><span style="color: #800080;">0</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">Code_ZOJ_1095_HumbleNumbers</span></div>
+<p>　　此外，当然我也想到，代码生成也可以这样，把提前计算好的 5842 个 humble number 依次放入 int 数组，或者一个全局变量数组，应该也是可行的，但这样的代码行数会变更多，显得非常的&ldquo;暴力&rdquo;，我没有去尝试这样做。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

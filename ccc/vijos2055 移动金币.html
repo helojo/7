@@ -1,0 +1,108 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修vijos2055 移动金币' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>vijos2055 移动金币</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/10867685.html</div><br>
+    <p><a href="https://vijos.org/p/2055" target="_blank"><font size=5>题目链接</font></a></p>
+<h2 id="思路">思路</h2>
+<p><strong>首先这是一个阶梯博弈。</strong></p>
+<p>我们将金币两两组合，如果对方移动前一个，那么我们把后一个移动相同的距离，局面相当于没有变化。如果对方移动后一个，就相当于<span class="math inline">\(NIM\)</span>游戏中，取走了一些石子。</p>
+<p>所以这个游戏也就是金币两两组合后，有<span class="math inline">\(\lceil \frac{m}{2}\rceil\)</span> 堆石子，进行<span class="math inline">\(NIM\)</span>游戏</p>
+<p><strong>统计方案</strong></p>
+<p>然后考虑如何统计方案。</p>
+<p>根据上面的结论。也就是我们要找出<span class="math inline">\(\lceil \frac{m}{2}\rceil\)</span>堆石子，使他们个数异或和为0。</p>
+<p><span class="math inline">\(f[i][j]\)</span>表示异或和的前i位异或起来为<span class="math inline">\(0\)</span>，已经有了j个石子的方案数。</p>
+<p>就有如下的转移<span class="math display">\[f[i][j]=\sum\limits_{k=0}^{2 ^{2k}\le j\&amp;k\le \lceil\frac{m}{2}\rceil}{f[i-1][j-2^{2k}]\times (^{\lceil \frac{m}{2} \rceil}_{2k})}\]</span></p>
+<p>然后再考虑这<span class="math inline">\(\lceil \frac{m}{2} \rceil\)</span>堆石子的位置。</p>
+<p>利用隔板法。就相当于把<span class="math inline">\(\frac{m}{2}\)</span>个挡板插到了长度为<span class="math inline">\(n-i\)</span>(i为所放的石子长度)的序列里。</p>
+<h2 id="代码">代码</h2>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-05-11 18:24:32
+* @Last Modified time: 2019-05-15 09:49:57
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 150000 + 100,mod = 1e9 + 9;
+#define int ll
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+int inv[N],f[20][N],jc[N];
+int qm(int x,int y) {
+    int ret = 1;
+    for(;y;y &gt;&gt;= 1,x = 1ll * x * x % mod) 
+        if(y &amp; 1) ret = 1ll * ret * x % mod;
+    return ret;
+}
+int C(int x,int y) {
+    return 1ll * jc[x] * inv[y] % mod * inv[x - y] % mod;
+}
+signed main() {
+    int n = read(),m = read();
+    //预处理
+    jc[0] = 1;
+    for(int i = 1;i &lt;= n + m;++i) jc[i] = 1ll * jc[i - 1] * i % mod;
+    inv[0] = 1;
+    for(int i = 1;i &lt;= n + m;++i) inv[i] = qm(jc[i],mod - 2);
+
+    int ans = C(n,m);
+    n -= m;
+    int num = (m + 1) &gt;&gt; 1;
+    //dp
+    f[0][0] = 1;
+    for(int i = 1;i &lt;= 19;++i) {
+        int z = i - 1;
+        for(int j = 0;j &lt;= n;++j) {
+            for(int k = 0;(k &lt;&lt; z) &lt;= j &amp;&amp; k &lt;= num;k += 2) {
+                f[i][j] += 1ll * f[i - 1][j - (k &lt;&lt; z)] * C(num,k) % mod;
+                f[i][j] %= mod;
+            }
+        }
+    }
+    //统计答案
+    for(int i = 0;i &lt;= n;++i) {
+        ans -= 1ll * f[19][i] * C(m / 2 + n - i,m / 2) % mod;
+        ans = (ans + mod) % mod;
+    }
+    cout&lt;&lt;ans;
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

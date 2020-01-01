@@ -1,0 +1,196 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++17 新特性之 stdoptional（上）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++17 新特性之 stdoptional（上）</center></div><div class='banquan'>原文出处:本文由博客园博主it-hao提供。<br/>
+原文连接:https://www.cnblogs.com/it-hao/p/11929117.html</div><br>
+    <div class="Post-RichTextContainer">
+<div class="RichText ztext Post-RichText">
+<p>最近在学习 c++ 17 的一些新特性，为了加强记忆和理解，把这些内容作为笔记记录下来，有理解不对的地方请指正，欢迎大家留言交流。</p>
+<h2>引言</h2>
+<p>在介绍之前，我们从一个问题出发，C++ 的函数如何返回多个值？</p>
+<p>比较有年代感的一种做法是将返回值作为引用参数传入，函数的返回值用来标识运行状态，比如像下面这样</p>
+<div class="highlight">
+<pre><code><span class="cp">#include <span class="cpf">&lt;iostream&gt;<span class="cp">
+<span class="cp">
+<span class="k">using <span class="k">namespace <span class="n">std<span class="p">;
+
+<span class="kt">int <span class="nf">func<span class="p">(<span class="k">const <span class="n">string<span class="o">&amp; <span class="n">in<span class="p">, <span class="n">string<span class="o">&amp; <span class="n">out1<span class="p">, <span class="n">string<span class="o">&amp; <span class="n">out2<span class="p">) <span class="p">{
+    <span class="k">if <span class="p">(<span class="n">in<span class="p">.<span class="n">size<span class="p">() <span class="o">== <span class="mi">0<span class="p">)
+        <span class="k">return <span class="mi">0<span class="p">;
+    <span class="n">out1 <span class="o">= <span class="s">"hello"<span class="p">;
+    <span class="n">out2 <span class="o">= <span class="s">"world"<span class="p">;
+    <span class="k">return <span class="mi">1<span class="p">;
+<span class="p">}
+
+<span class="kt">int <span class="nf">main<span class="p">() <span class="p">{
+    <span class="n">string <span class="n">out1<span class="p">, <span class="n">out2<span class="p">;
+    <span class="kt">int <span class="n">status <span class="o">= <span class="n">func<span class="p">(<span class="s">"hi"<span class="p">, <span class="n">out1<span class="p">, <span class="n">out2<span class="p">);
+    <span class="k">if <span class="p">(<span class="n">status<span class="p">) <span class="p">{
+        <span class="n">cout <span class="o">&lt;&lt; <span class="n">out1 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+        <span class="n">cout <span class="o">&lt;&lt; <span class="n">out2 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+    <span class="p">}
+    <span class="k">return <span class="mi">0<span class="p">;
+<span class="p">}
+</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></code></pre>
+</div>
+<p>这种做法性能不错，但可读性会比较差，参数列表里既包含了入参也包含了出参，常见通过变量名前缀来标识，尤其是在出入参比较多的时候，后期维护会非常头疼。</p>
+<p>在 C++ 11 中新增了 tuple 这种数据结构的支持，自然也可以使用 tuple 来实现多个返回值</p>
+<div class="highlight">
+<pre><code><span class="cp">#include <span class="cpf">&lt;iostream&gt;<span class="cp">
+<span class="cp">#include <span class="cpf">&lt;tuple&gt;<span class="cp">
+<span class="cp">
+<span class="k">using <span class="k">namespace <span class="n">std<span class="p">;
+
+<span class="n">tuple<span class="o">&lt;<span class="kt">bool<span class="p">, <span class="n">string<span class="p">, <span class="n">string<span class="o">&gt; <span class="n">func<span class="p">(<span class="k">const <span class="n">string<span class="o">&amp; <span class="n">in<span class="p">) <span class="p">{
+    <span class="k">if <span class="p">(<span class="n">in<span class="p">.<span class="n">size<span class="p">() <span class="o">== <span class="mi">0<span class="p">)
+        <span class="k">return <span class="n">make_tuple<span class="p">(<span class="nb">false<span class="p">, <span class="s">""<span class="p">, <span class="s">""<span class="p">);
+    <span class="k">return <span class="nf">make_tuple<span class="p">(<span class="nb">true<span class="p">, <span class="s">"hello"<span class="p">, <span class="s">"world"<span class="p">);
+<span class="p">}
+
+<span class="kt">int <span class="n">main<span class="p">() <span class="p">{
+    <span class="k">if <span class="p">(<span class="k">auto <span class="p">[<span class="n">status<span class="p">, <span class="n">out1<span class="p">, <span class="n">out2<span class="p">] <span class="o">= <span class="n">func<span class="p">(<span class="s">"hi"<span class="p">); <span class="n">status<span class="p">) <span class="p">{
+        <span class="n">cout <span class="o">&lt;&lt; <span class="n">out1 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+        <span class="n">cout <span class="o">&lt;&lt; <span class="n">out2 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+    <span class="p">}
+    <span class="k">return <span class="mi">0<span class="p">;
+<span class="p">}
+</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></code></pre>
+</div>
+<p>上面这段代码中的 `auto [status, out1, out2] = func("hi");` 是 C++ 17 中叫 Structured Bindings 的新特性，效果就是将多个返回值按照顺序绑定到方括号中的变量名中。</p>
+<p>tuple 在这里用起来不是很爽的地方是需要刻意的记忆每个返回值的位置，在返回值数量比较多的时候就会带来比较大的困扰，返回值的语意表达的。</p>
+<p>还有一种做法就是将函数返回值定义成一个结构体，同时要返回函数的运行状态，我们可以考虑把这两部分数据定义成一个 pair ，pair 可以理解为一种特殊的 tuple（只有 2 个元素的 tuple）。</p>
+<div class="highlight">
+<pre><code><span class="cp">#include <span class="cpf">&lt;iostream&gt;<span class="cp">
+<span class="cp">
+<span class="k">using <span class="k">namespace <span class="n">std<span class="p">;
+
+<span class="k">struct <span class="n">Out <span class="p">{
+    <span class="n">string <span class="n">out1 <span class="p">{ <span class="s">"" <span class="p">};
+    <span class="n">string <span class="n">out2 <span class="p">{ <span class="s">"" <span class="p">};
+<span class="p">};
+
+<span class="n">pair<span class="o">&lt;<span class="kt">bool<span class="p">, <span class="n">Out<span class="o">&gt; <span class="n">func<span class="p">(<span class="k">const <span class="n">string<span class="o">&amp; <span class="n">in<span class="p">) <span class="p">{
+    <span class="n">Out <span class="n">o<span class="p">;
+    <span class="k">if <span class="p">(<span class="n">in<span class="p">.<span class="n">size<span class="p">() <span class="o">== <span class="mi">0<span class="p">)
+        <span class="k">return <span class="p">{ <span class="nb">false<span class="p">, <span class="n">o <span class="p">};
+    <span class="n">o<span class="p">.<span class="n">out1 <span class="o">= <span class="s">"hello"<span class="p">;
+    <span class="n">o<span class="p">.<span class="n">out2 <span class="o">= <span class="s">"world"<span class="p">;
+    <span class="k">return <span class="p">{ <span class="nb">true<span class="p">, <span class="n">o <span class="p">};
+<span class="p">}
+
+<span class="kt">int <span class="n">main<span class="p">() <span class="p">{
+    <span class="k">if <span class="p">(<span class="k">auto <span class="p">[<span class="n">status<span class="p">, <span class="n">o<span class="p">] <span class="o">= <span class="n">func<span class="p">(<span class="s">"hi"<span class="p">); <span class="n">status<span class="p">) <span class="p">{
+        <span class="n">cout <span class="o">&lt;&lt; <span class="n">o<span class="p">.<span class="n">out1 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+        <span class="n">cout <span class="o">&lt;&lt; <span class="n">o<span class="p">.<span class="n">out2 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+    <span class="p">}
+    <span class="k">return <span class="mi">0<span class="p">;
+<span class="p">}
+</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></code></pre>
+</div>
+<p>&nbsp;</p>
+<p>目前这种做法可以做到让返回值更富有语意，并且可以很方便的扩展，如果要增加一个新的返回值，只需要扩展现有的结构体就可以了。正如上文所说，在 <a class=" wrap external" href="https://link.zhihu.com/?target=https%3A//isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines%23Rf-out-multi" rel="nofollow noreferrer" target="_blank" data-za-detail-view-id="1043">CppCoreGuidelines</a> 中对于多返回值更建议使用 tuple 或 struct ，这样做能让返回值的语意更加明确。</p>
+<p>最后这种做法中的 pair&lt;bool, Out&gt; 这个数据结构实现的功能就跟本文要介绍 std::optional 很相似了。</p>
+<h2>std::optional</h2>
+<p>From <a class=" wrap external" href="https://link.zhihu.com/?target=http%3A//%253Ccode%253E//en.cpprefer%253C/code%253Eence.com/w/cpp/utility/optional" rel="nofollow noreferrer" target="_blank" data-za-detail-view-id="1043">cppreference -std::optional</a></p>
+<blockquote>The class template <code>std::optional</code> manages an <em>optional</em> contained value, i.e. a value that may or may not be present.<br />A common use case for <code>optional</code> is the return value of a function that may fail. As opposed to other approaches, such as <a class=" wrap external" href="https://link.zhihu.com/?target=http%3A//en.cppreference.com/w/cpp/utility/pair" rel="nofollow noreferrer" target="_blank" data-za-detail-view-id="1043">std::pair</a>&lt;T,bool&gt;, <code>optional</code> handles expensive-to-construct objects well and is more readable, as the intent is expressed explicitly.<br />类模板 <code>std::optional</code> 管理一个<em>可选</em>的容纳值，即可以存在也可以不存在的值。<br />一种常见的 <code>optional</code> 使用情况是一个可能失败的函数的返回值。与其他手段，如 <a class=" wrap external" href="https://link.zhihu.com/?target=http%3A//zh.cppreference.com/w/cpp/utility/pair" rel="nofollow noreferrer" target="_blank" data-za-detail-view-id="1043">std::pair</a>&lt;T,bool&gt; 相比， <code>optional</code> 良好地处理构造开销高昂的对象，并更加可读，因为它显式表达意图。</blockquote>
+<p>std::optional 是在 C++ 17 中引入到标准库中的，C++ 17 之前的版本可以通过 boost::optional 实现几乎相同的功能。</p>
+<p>我们来看一下使用 std::optional 来实现上面那段代码的样子 </p>
+<div class="highlight">
+<pre><code><span class="cp">#include <span class="cpf">&lt;iostream&gt;<span class="cp">
+<span class="cp">#include <span class="cpf">&lt;optional&gt;<span class="cp">
+<span class="cp">
+<span class="k">using <span class="k">namespace <span class="n">std<span class="p">;
+
+<span class="k">struct <span class="n">Out <span class="p">{
+    <span class="n">string <span class="n">out1 <span class="p">{ <span class="s">"" <span class="p">};
+    <span class="n">string <span class="n">out2 <span class="p">{ <span class="s">"" <span class="p">};
+<span class="p">};
+
+<span class="n">optional<span class="o">&lt;<span class="n">Out<span class="o">&gt; <span class="n">func<span class="p">(<span class="k">const <span class="n">string<span class="o">&amp; <span class="n">in<span class="p">) <span class="p">{
+    <span class="n">Out <span class="n">o<span class="p">;
+    <span class="k">if <span class="p">(<span class="n">in<span class="p">.<span class="n">size<span class="p">() <span class="o">== <span class="mi">0<span class="p">)
+        <span class="k">return <span class="n">nullopt<span class="p">;
+    <span class="n">o<span class="p">.<span class="n">out1 <span class="o">= <span class="s">"hello"<span class="p">;
+    <span class="n">o<span class="p">.<span class="n">out2 <span class="o">= <span class="s">"world"<span class="p">;
+    <span class="k">return <span class="p">{ <span class="n">o <span class="p">};
+<span class="p">}
+
+<span class="kt">int <span class="n">main<span class="p">() <span class="p">{
+    <span class="k">if <span class="p">(<span class="k">auto <span class="n">ret <span class="o">= <span class="n">func<span class="p">(<span class="s">"hi"<span class="p">); <span class="n">ret<span class="p">.<span class="n">has_value<span class="p">()) <span class="p">{
+        <span class="n">cout <span class="o">&lt;&lt; <span class="n">ret<span class="o">-&gt;<span class="n">out1 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+        <span class="n">cout <span class="o">&lt;&lt; <span class="n">ret<span class="o">-&gt;<span class="n">out2 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+    <span class="p">}
+    <span class="k">return <span class="mi">0<span class="p">;
+<span class="p">}
+</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></code></pre>
+</div>
+<p>&nbsp;</p>
+<p>这段代码中我们看到了部分 std::optional 的用法，std::nullopt 是 C++ 17 中提供的没有值的 optional 的表达形式，等同于 { } 。</p>
+<p>创建一个 optional 的方法：</p>
+<div class="highlight">
+<pre><code><span class="c1">// 空 optiolal
+<span class="c1"><span class="n">optional<span class="o">&lt;<span class="kt">int<span class="o">&gt; <span class="n">oEmpty<span class="p">;
+<span class="n">optional<span class="o">&lt;<span class="kt">float<span class="o">&gt; <span class="n">oFloat <span class="o">= <span class="n">nullopt<span class="p">;
+
+<span class="n">optional<span class="o">&lt;<span class="kt">int<span class="o">&gt; <span class="n">oInt<span class="p">(<span class="mi">10<span class="p">);
+<span class="n">optional <span class="nf">oIntDeduced<span class="p">(<span class="mi">10<span class="p">);  <span class="c1">// type deduction
+<span class="c1">
+<span class="c1">// make_optional
+<span class="c1"><span class="k">auto <span class="n">oDouble <span class="o">= <span class="n">std<span class="o">::<span class="n">make_optional<span class="p">(<span class="mf">3.0<span class="p">);
+<span class="k">auto <span class="n">oComplex <span class="o">= <span class="n">make_optional<span class="o">&lt;<span class="n">complex<span class="o">&lt;<span class="kt">double<span class="o">&gt;&gt;<span class="p">(<span class="mf">3.0<span class="p">, <span class="mf">4.0<span class="p">);
+
+<span class="c1">// in_place
+<span class="c1"><span class="n">optional<span class="o">&lt;<span class="n">complex<span class="o">&lt;<span class="kt">double<span class="o">&gt;&gt; <span class="n">o7<span class="p">{<span class="n">in_place<span class="p">, <span class="mf">3.0<span class="p">, <span class="mf">4.0<span class="p">};
+
+<span class="c1">// initializer list
+<span class="c1"><span class="n">optional<span class="o">&lt;<span class="n">vector<span class="o">&lt;<span class="kt">int<span class="o">&gt;&gt; <span class="n">oVec<span class="p">(<span class="n">in_place<span class="p">, <span class="p">{<span class="mi">1<span class="p">, <span class="mi">2<span class="p">, <span class="mi">3<span class="p">});
+
+<span class="c1">// 拷贝赋值
+<span class="c1"><span class="k">auto <span class="n">oIntCopy <span class="o">= <span class="n">oInt<span class="p">;
+</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></code></pre>
+</div>
+<p>访问 optional 对象中数据的方法：</p>
+<div class="highlight">
+<pre><code><span class="c1">// 跟迭代器的使用类似，访问没有 value 的 optional 的行为是未定义的
+<span class="c1"><span class="n">cout <span class="o">&lt;&lt; <span class="p">(<span class="o">*<span class="n">ret<span class="p">).<span class="n">out1 <span class="o">&lt;&lt; <span class="n">endl<span class="p">; 
+<span class="n">cout <span class="o">&lt;&lt; <span class="n">ret<span class="o">-&gt;<span class="n">out1 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+
+<span class="c1">// 当没有 value 时调用该方法将 throws std::bad_optional_access 异常
+<span class="c1"><span class="n">cout <span class="o">&lt;&lt; <span class="n">ret<span class="p">.<span class="n">value<span class="p">().<span class="n">out1 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+
+<span class="c1">// 当没有 value 调用该方法时将使用传入的默认值
+<span class="c1"><span class="n">Out <span class="n">defaultVal<span class="p">;
+<span class="n">cout <span class="o">&lt;&lt; <span class="n">ret<span class="p">.<span class="n">value_or<span class="p">(<span class="n">defaultVal<span class="p">).<span class="n">out1 <span class="o">&lt;&lt; <span class="n">endl<span class="p">;
+</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></code></pre>
+</div>
+<p>使用 std::optional 带来的好处：</p>
+<ul>
+<li>省去了运行状态的 bool 值的声明，让代码更简洁，更注重返回值本身的语意</li>
+<li>不用担心额外的动态内存分配，这一点会在后面的文章里详细展开</li>
+</ul>
+<h2>总结</h2>
+<p><img src="./images/C++17 新特性之 stdoptional（上）0.png" alt="" /></p>
+<p>链接：<a href="https://pan.baidu.com/s/1v5gm7n0L7TGyejCmQrMh2g" target="_blank">https://pan.baidu.com/s/1v5gm7n0L7TGyejCmQrMh2g</a>&nbsp;提取码：x2p5<br /><br />免费分享，但是X度限制严重，如若链接失效点击链接或搜索加群 群号<a href="https://jq.qq.com/?_wv=1027&amp;k=5Dg8XlT" target="_blank">744933466</a>。</p>
+<p>通过对多返回值的代码不断的重构，最后通过 std::optional 实现了一个比较满意的版本，不过在这个过程中我们还遗漏了异常处理的部分，目前的实现方式在出异常时我们只知道没有返回值，但为什么出现异常却无从得知，以及 std::optional 在内存和性能上的一些思考，还有 std::optional 其它场景下的应用介绍都放到下一篇文章里啦。</p>
+</div>
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

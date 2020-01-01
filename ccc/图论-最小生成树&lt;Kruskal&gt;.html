@@ -1,0 +1,138 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修图论-最小生成树&lt;Kruskal&gt;' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>图论-最小生成树&lt;Kruskal&gt;</center></div><div class='banquan'>原文出处:本文由博客园博主御&#183;Dragon提供。<br/>
+原文连接:https://www.cnblogs.com/CJYBlog/p/MST.html</div><br>
+    <p>昨天： <strong><a href="https://www.luogu.org/blog/37682/tu-lun-zui-xiao-sheng-cheng-shu-dijkstrafloyd">图论-最小生成树&lt;Dijkstra,Floyd&gt;</a></strong></p>
+<p>以上是昨天的Blog，有需要者请先阅读完以上再阅读今天的Blog。</p>
+<p>可能今天的有点乱，好好理理，认真看完相信你会懂得</p>
+<p>然而，文中提到的所有的算法在本人Blog中都会后期有讲解。<del>推荐Blog</del></p>
+<hr />
+<p>分割线</p>
+<hr />
+<h1 id="第三天">第三天</h1>
+<p>引子：昨天我们<del>简单</del>讲了讲最小生成树&lt;Dijkstra,Floyd&gt;算法，今天的课程就开始啦！</p>
+<p><strong>今天我们要讲的是：最小生成树</strong></p>
+<h2 id="top1最小生成树的概念">Top1：最小生成树的概念</h2>
+<p>最小生成树，听起来好像是树呀，为什么会是图论呢？其实，处理最小生成树问题前给出的东西，就是一个图，只不过进行操作后要求变成一个最小生成树罢了。</p>
+<p><strong>那什么是最小生成树呢？</strong></p>
+<p>我们把这个词语拆开来看。</p>
+<p><strong>树</strong> ，我们都好理解，父亲儿砸祖先啥的<del>如果不知道的话......先百度完树再来看吧</del> ，那么我们根据树的特性可以得出一个结论：</p>
+<pre><code>最小生成树是没有环的</code></pre>
+<p><strong>生成树</strong> ，就是一个点到另一个点的路径是 <strong>唯一的</strong> ，（可以通过树的无环性质证明），也就是 <strong>一个用N-1条边连接的树，且所有点到其他点的路径唯一</strong></p>
+<p><strong>最小</strong> 代表最终生成树的边权和最小（不知道什么是边权的到博主的Blog里面去看吧）。</p>
+<hr />
+<blockquote>
+<p>这里就有一个问题了：为什么会是N-1条边呢，而不是N-2或者N+1条边？</p>
+</blockquote>
+<p>既然要把N个点用最少数量的边（这里不是上面“最小”的定义）将所有点连接起来，（忽略边权）上过小学的都知道，将两个点连起来是要一条边，三个点要两条边，哪里见过三个点用一条边连起来的？用N条边或N+1条边（即上述例子的三条边或四条边），自然就会浪费边了。</p>
+<hr />
+<p>### 主要还是靠自己动手画图思考。</p>
+<h2 id="top2算法-kruskal">Top2：算法-Kruskal</h2>
+<p>概念我们讲完了，进入正题。</p>
+<p>其实最小生成树还有个算法叫做Prim，Prim算法和Kruskal算法在于，一个在稀疏图中更快，一个在稠密图中更快。然而，Kruskal在比赛中会更好用。</p>
+<blockquote>
+<p>那讲了这么多，Kruskal到底怎么用呢？</p>
+</blockquote>
+<p>我们都知道了数没有环，那么只需要每次取权值最小的边，只要加入这条边之后不行成环，就可以。</p>
+<p>有点像贪心，但是要判断有没有环。</p>
+<blockquote>
+<p>怎么判断有环没环呢？</p>
+</blockquote>
+<p>——并查集</p>
+<p>所以代码就很简答啦！</p>
+<pre><code>#include&lt;bits/stdc++.h&gt;
+using namespace std;
+
+const int MAXN = 5000 + 10;
+
+struct Line{
+    int x, y;
+    int dis;
+    bool operator &lt; (const Line&amp; next) const {
+        return dis &gt; next.dis;
+    }
+};
+priority_queue&lt;Line&gt; line;
+int n, m, now;
+int fa[MAXN];
+int ans;
+
+inline int read(){
+    int f = 1, x = 0;
+    char c = getchar();
+
+    while (c &lt; &#39;0&#39; || c &gt; &#39;9&#39;)
+    {
+        if (c == &#39;-&#39;)
+            f = -1;
+        c = getchar();
+    }
+
+    while (c &gt;= &#39;0&#39; &amp;&amp; c &lt;= &#39;9&#39;)
+    {
+        x = x * 10 + c - &#39;0&#39;;
+        c = getchar();
+    }
+
+    return f * x;
+}
+
+int find(int x){
+    if(fa[x] == x)return x;
+    return fa[x] = find(fa[x]);
+}
+
+int main(){
+    n = read(),m = read(); 
+    for(int i = 1;i &lt;= m; i++){
+        int x,y,z;
+        x = read(),y = read(),z = read();
+        Line tot = {x,y,z};
+        line.push(tot);
+    }
+    
+    for(int i = 1;i &lt;= n; i++){
+        fa[i] = i;
+    }
+    
+    while(!line.empty()){
+        Line tot = line.top();
+        line.pop();
+        int nx = tot.x, ny = tot.y;
+        if(find(nx) == find(ny)){
+            continue;
+        } 
+        fa[find(nx)] = find(ny);
+        ans += tot.dis;
+        now++;
+        if(now == n - 1){
+            printf(&quot;%d&quot;,ans);
+            return 0;
+        }
+    } 
+    
+    puts(&quot;orz&quot;);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

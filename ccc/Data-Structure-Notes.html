@@ -1,0 +1,372 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Data-Structure-Notes' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Data-Structure-Notes</center></div><div class='banquan'>原文出处:本文由博客园博主slrn提供。<br/>
+原文连接:https://www.cnblogs.com/simon-slrn/p/11361542.html</div><br>
+    <h2 id="data-structure-notes">Data Structure Notes</h2>
+<h3 id="chapter-1-sorting-algorithm">Chapter-1 Sorting Algorithm</h3>
+<ul>
+<li><strong>Selection Sorting: </strong></li>
+</ul>
+<pre><code>/*
+*   Selection Sort
+*/
+template&lt;typename T&gt;
+void selectionSort(T arr[], int n) {
+    for (int i = 0;i &lt; n;i++) {
+        int minIndex = i;
+        for (int j = i + 1;j &lt; n;j++) {
+            if (arr[j] &lt; arr[minIndex])
+                minIndex = j;
+        }
+        swap(arr[i], arr[minIndex]);
+    }
+}
+
+// From both ends to exchange the elements in original array, it&#39;s a better solution optimize the previous Selection Sort.
+template&lt;typename T&gt;
+void OptimizedselectionSort(T arr[], int n) {
+
+    int left = 0, right = n - 1;
+    while (left &lt; right) {
+        int minIndex = left;
+        int maxIndex = right;
+
+        // In each rounds must assure arr[minIndex] &lt;= arr[maxIndex]
+        if (arr[minIndex] &gt; arr[maxIndex])
+            swap(arr[minIndex], arr[maxIndex]);
+
+        //Traversing the array to choose the match positon.
+        for (int i = left + 1; i &lt; right; i++)
+            if (arr[i] &lt; arr[minIndex])
+                minIndex = i;
+            else if (arr[i] &gt; arr[maxIndex])
+                maxIndex = i;
+
+        swap(arr[left], arr[minIndex]);
+        swap(arr[right], arr[maxIndex]);
+
+        left++;
+        right--;
+    }
+
+    return;
+}</code></pre>
+<ul>
+<li><strong>Bubble Sorting: </strong></li>
+</ul>
+<pre><code>/*
+*   BubbleSort
+*/
+template&lt;typename T&gt;
+void BubbleSort(T arr[], int n) {
+
+    bool swapped;
+
+    do {
+        swapped = false;
+        for (int i = 1; i &lt; n; i++)
+            if (arr[i - 1] &gt; arr[i]) {
+                swap(arr[i - 1], arr[i]);
+                swapped = true;
+
+            }
+
+        // 优化, 每一趟Bubble Sort都将最大的元素放在了最后的位置
+        // 所以下一次排序, 最后的元素可以不再考虑
+        n--;
+
+    } while (swapped);
+}
+
+
+// 我们的第二版bubbleSort,使用newn进行优化
+template&lt;typename T&gt;
+void OptimizedBubbleSort(T arr[], int n) {
+
+    int newn; // 使用newn进行优化
+
+    do {
+        newn = 0;
+        for (int i = 1; i &lt; n; i++)
+            if (arr[i - 1] &gt; arr[i]) {
+                swap(arr[i - 1], arr[i]);
+
+                // 记录最后一次的交换位置,在此之后的元素在下一轮扫描中均不考虑
+                newn = i;
+            }
+        n = newn;
+    } while (newn &gt; 0);
+}</code></pre>
+<ul>
+<li><strong>Shell Sorting: </strong></li>
+</ul>
+<pre><code>template&lt;typename T&gt;
+void shellSort(T arr[], int n) {
+
+    // 计算 increment sequence: 1, 4, 13, 40, 121, 364, 1093...
+    int h = 1;
+    while (h &lt; n / 3)
+        h = 3 * h + 1;
+
+    while (h &gt;= 1) {
+
+        // h-sort the array
+        for (int i = h; i &lt; n; i++) {
+
+            // 对 arr[i], arr[i-h], arr[i-2*h], arr[i-3*h]... 使用插入排序
+            T e = arr[i];
+            int j;
+            for (j = i; j &gt;= h &amp;&amp; e &lt; arr[j - h]; j -= h)
+                arr[j] = arr[j - h];
+            arr[j] = e;
+        }
+
+        h /= 3;
+    }
+}</code></pre>
+<ul>
+<li><strong>Insert Sorting: </strong>对于近乎有序的数组可以降到$ O(n)$的时间复杂度。</li>
+</ul>
+<pre><code>template&lt;typename T&gt;
+void BinaryInsertionSort(T arr[], int n) {
+    int i, j, low, high, mid;
+    for (i = 1;i &lt; n;i++) {
+        T e = arr[i];
+        
+        //Binary Searching in the ordered range of array.
+        low = 0; high = i - 1;
+        while (low&lt;= high)
+        {
+            mid = (low + high) / 2;
+            if (arr[mid] &gt; e) high = mid - 1;
+            else low = mid + 1;
+        }
+        //Moving elements.
+        for (j = i - 1;j &gt;= high + 1;--j) {
+            arr[j + 1] = arr[j];
+        }
+        arr[high + 1] = e;
+    }
+}
+
+template&lt;typename T&gt;
+void OptimizedInsertionSort(T arr[], int n) {
+    for (int i = 1;i &lt; n;i++) {
+
+        // Find right position without exchange frequently.
+        T e = arr[i];
+        int j;
+        for (j = i;j &gt; 0 &amp;&amp; arr[j - 1] &gt; e;j--) {
+            arr[j] = arr[j - 1];
+        }
+        arr[j] = e;
+    }
+}
+</code></pre>
+<ul>
+<li><strong>Merge Sorting: </strong>
+<ul>
+<li><strong>Tips1</strong>：Merge Sort Optimize in nearly ordered array</li>
+</ul>
+<pre><code>void __mergeSort(T arr[], int l, int r) {
+    if (l &gt;= r) return;
+
+    int mid = (l + r) / 2;      // variable &#39;mid&#39; may overflow
+    __mergeSort(arr, l, mid);
+    __mergeSort(arr, mid+1, r);
+    if(arr[mid] &gt; arr[mid+1])   // optimize in nearly ordered array.
+        __merge(arr, l, mid, r);
+}</code></pre>
+<ul>
+<li><strong>Tips2</strong>：When the sorting range of array in a short length, using InsertSort replace MergeSort can be more faster.</li>
+</ul>
+<pre><code> template&lt;typename T&gt;
+void __mergeSort(T arr[], int l, int r) {
+    //if (l &gt;= r) return;
+    if (r - l &lt;= 15) {           // The &#39;15&#39; is a constant represent the minmum judge range.
+        InsertionSort(arr, l, r);
+        return;
+    }
+    int mid = (l + r) / 2;      // variable &#39;mid&#39; may overflow
+    __mergeSort(arr, l, mid);
+    __mergeSort(arr, mid+1, r);
+    if(arr[mid] &gt; arr[mid+1])   // optimize in nearly ordered array.
+        __merge(arr, l, mid, r);
+}</code></pre></li>
+<li><strong>Botton to Up Merge Sorting :</strong> The algorithm can be usd in the LinkedList . The original MergeSort may preform better than this algorithm in normal situation.
+<ul>
+<li>Standard</li>
+</ul>
+<pre><code>template&lt;typename T&gt;
+void mergeSortBottonToUp(T arr[], int n) {
+    for(int size = 1; size &lt;= n; size += size)
+        // In order to assure exist two sperate array, setting (i+size &lt; n) not (i &lt; n)
+        for (int i = 0; i + size &lt; n ; i += size + size) {      
+            // merge arr[i ... i+size-1] and arr[i+size ... i+2*size-1]
+            // In order to assure latter array isn&#39;t overflow so use min(i + size + size - 1, n-1) to choosing a right part.
+            __merge(arr, i, i + size - 1, min(i + size + size - 1, n-1));
+        }
+}</code></pre>
+<ul>
+<li>Optimization</li>
+</ul>
+<pre><code>template &lt;typename T&gt;
+void mergeSortBU2(T arr[], int n){
+
+    // 对于小规模数组, 使用插入排序
+    for( int i = 0 ; i &lt; n ; i += 16 )
+        insertionSort(arr,i,min(i+15,n-1));
+
+    // 一次性申请aux空间, 并将这个辅助空间以参数形式传递给完成归并排序的各个子函数
+    T* aux = new T[n];
+    for( int sz = 16; sz &lt;= n ; sz += sz )
+        for( int i = 0 ; i &lt; n - sz ; i += sz+sz )
+            // 对于arr[mid] &lt;= arr[mid+1]的情况,不进行merge
+            // 对于近乎有序的数组非常有效,但是对于一般情况,有一定的性能损失
+            if( arr[i+sz-1] &gt; arr[i+sz] )
+                __merge2(arr, aux, i, i+sz-1, min(i+sz+sz-1,n-1) );
+    delete[] aux; // 使用C++, new出来的空间不要忘记释放掉:)
+}
+</code></pre></li>
+<li><strong>QuickSort</strong> (Divide-and-Conquer Algorithm)
+<ul>
+<li><p><strong>Partition</strong></p></li>
+<li><strong>Insert Sort Optimization</strong></li>
+</ul>
+<pre><code>    // sort the range of [l ... r]
+template &lt;typename T&gt;
+void __quickSort(T arr[], int l, int r) {
+    //if (l &gt;= r) return;
+    if (r - l &lt;= 15) {
+        OptimizedInsertionSort(arr, l, r);
+        return;
+    }
+    int p = __partition(arr, l, r);
+    __quickSort(arr, l, p - 1);
+    __quickSort(arr, p + 1, r);
+}</code></pre>
+<ul>
+<li><p><strong>Optimization in the face of nearly ordered array</strong><br />
+Compare to MergeSort, the Sorting Tree generate by Quick Sort is more unbalanced.The worst situation the effience of quick sort can be deteriorate to $O(n^2)$<br />
+Tradinational Method using the left element to be demarcating element. In order to solving the problem, we select the demarcating element randomly.</p>
+<p>```cpp</p></li>
+</ul>
+<p>template <typename T><br />
+int __partition(T arr[], int l, int r) {</p>
+<pre><code>  swap(arr[l], arr[rand() % (r - l + 1) + l]);  // Add this process to randomly choose demarcating element.
+  T v = arr[l];
+
+  //arr[l+i ... j] &lt; v;arr[j+1 ... i] &gt; v
+  int j = l;
+  for (int i = l + 1;i &lt;= r;i++) {
+      if (arr[i] &lt; v) {
+          swap(arr[j + 1], arr[i]);
+          j++;
+      }
+  }
+
+  swap(arr[l], arr[j]);
+  return j;</code></pre>
+<p>}</p>
+<p>template <typename T><br />
+void quickSort(T arr[], int n) {<br />
+srand(time(NULL)); // The partial of randomly select.<br />
+__quickSort(arr, 0, n - 1);<br />
+}</p>
+<p>```</p>
+<ul>
+<li><strong>Optimization in the face of many repeating Numbers. (<em>Dual Qucik Sort</em>)</strong><br />
+When face many repeating numbers, the speration of array may unbalanced. In this situation, Quick Sort can be degraded to $O(n^2)$.</li>
+</ul>
+<p><strong>Solution :</strong></p>
+<pre><code>
+template &lt;typename T&gt;
+int __partition2(T arr[], int l, int r) {
+    swap(arr[l], arr[rand() % (r - l + 1) + l]);  // Add this process to randomly choose demarcating element.
+    T v = arr[l];
+
+    //arr[l+i ... j] &lt; v; arr[j+1 ... i] &gt; v
+    int i = l + 1, j = r;
+    while (true) {
+        //From front to behind to find a even bigger number.
+        //From behind to front to find a even smaller number.
+        while (i &lt;= r&amp;&amp; arr[i] &lt; v) i++;
+        while (j &gt;= l + 1 &amp;&amp; arr[j] &gt; v) j--;
+        if (i &gt; j) break;
+        swap(arr[i], arr[j]);
+        i++;
+        j--;
+    }
+
+    swap(arr[l], arr[j]);
+
+    return j;
+}
+</code></pre>
+<ul>
+<li><strong>Optimization in the face of many repeating Numbers. (<em>Qucik Sort 3 Ways</em>)</strong></li>
+</ul>
+<pre><code>template &lt;typename T&gt;
+void __quickSort3(T arr[], int l, int r) {
+    //if (l &gt;= r) return;
+    if (r - l &lt;= 15) {
+        OptimizedInsertionSort(arr, l, r);
+        return;
+    }
+
+    // partition
+    swap(arr[l], arr[rand() % (r - l + 1) + l]);
+    T v = arr[l];
+
+    int lt = l;     //arr[l+1 ... lt] &lt; v
+    int gt = r + 1; //arr[gt ... r] &gt; v
+    int i = l + 1;  //arr[lt+1 ... i] == v
+    while (i &lt; gt) {
+        if (arr[i] &lt; v) {
+            swap(arr[i], arr[lt + 1]);
+            lt++;
+            i++;
+        }
+        else if(arr[i] &gt; v) {
+            swap(arr[i], arr[gt - 1]);
+            gt--;
+        }
+        else {// arr[i] == v
+            i++;
+        }
+    }
+
+    swap(arr[l], arr[lt]);
+
+    __quickSort3(arr, l, lt - 1);
+    __quickSort3(arr, gt, r);
+}
+
+template &lt;typename T&gt;
+void quickSort(T arr[], int n) {
+    srand(time(NULL));      // The partial of randomly select.
+    __quickSort3(arr, 0, n - 1);
+}</code></pre></li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,187 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修delphi中WMI的使用（网卡是否接入）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>delphi中WMI的使用（网卡是否接入）</center></div><div class='banquan'>原文出处:本文由博客园博主黄浩#提供。<br/>
+原文连接:https://www.cnblogs.com/hhmm99/p/10648416.html</div><br>
+    <p>WMI（Windows Management Instrumentation,Windows 管理规范）是一项核心的 Windows 管理技术；用户可以使用 WMI 管理本地和远程计算机。</p>
+<p>通过使用WMI，我们可以很方便的获取到电脑的系统信息，但是很遗憾的是，我在网上找到的基本上都是对于某个功能的实现，比如查询IP，获取计算机名称，检测操作系统信息等等，如果只是在工作中用到了来查一下是没有问题的，但是，要想全面的了解WMI中的类库，来系统的掌握就很困难，WMI中有哪些系统的类，里面有哪些属性，这些属性都代表什么意思？MSND上面对于vbscript脚本实现的教程很详细，但是具体在delphi中对应的类型和参数名称是不一样的。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">unit</span><span style="color: #000000;"> Unit1;
+
+</span><span style="color: #0000ff;">interface</span>
+
+<span style="color: #0000ff;">uses</span><span style="color: #000000;">
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, StdCtrls ,ActiveX,comobj;
+
+</span><span style="color: #0000ff;">type</span><span style="color: #000000;">
+  TForm1 </span>= <span style="color: #0000ff;">class</span><span style="color: #000000;">(TForm)
+    Button1: TButton;
+    Edit1: TEdit;
+    </span><span style="color: #0000ff;">procedure</span><span style="color: #000000;"> Button1Click(Sender: TObject);
+  </span><span style="color: #0000ff;">private</span>
+    <span style="color: #008000;">{</span><span style="color: #008000;"> Private declarations </span><span style="color: #008000;">}</span>
+  <span style="color: #0000ff;">public</span>
+    <span style="color: #008000;">{</span><span style="color: #008000;"> Public declarations </span><span style="color: #008000;">}</span>
+  <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  Form1: TForm1;
+
+</span><span style="color: #0000ff;">implementation</span>
+
+<span style="color: #008000;">{</span><span style="color: #008000;">$R *.dfm</span><span style="color: #008000;">}</span>
+
+
+ <span style="color: #008000;">//</span><span style="color: #008000;">网卡是否接入</span>
+<span style="color: #0000ff;">function</span> GetNetworkConnected(<span style="color: #0000ff;">const</span> sName: <span style="color: #0000ff;">string</span><span style="color: #000000;">): boolean;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  C: Cardinal;
+  Enum: IEnumVariant;
+  Wmi, Objs, Obj, V: OleVariant;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Result :</span>=<span style="color: #000000;"> False;
+  Wmi :</span>= CreateOleObject(<span style="color: #800000;">'</span><span style="color: #800000;">WbemScripting.SWbemLocator</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+  </span><span style="color: #0000ff;">try</span>
+    <span style="color: #008000;">//</span><span style="color: #008000;"> ConnectServer无参表示连接本机      NetConnectionStatus=2 表示已经接入 7表示断开</span>
+    Objs := Wmi.ConnectServer().ExecQuery(<span style="color: #800000;">'</span><span style="color: #800000;">Select * from Win32_NetworkAdapter WHERE NetConnectionStatus=2</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+    Enum :</span>=<span style="color: #000000;"> IEnumVariant(IUnknown(Objs._NewEnum));
+    Enum.Reset;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">迭代信息</span>
+    <span style="color: #0000ff;">while</span> Enum.Next(<span style="color: #800080;">1</span>, Obj, C) = S_OK <span style="color: #0000ff;">do</span>
+    <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+      V :</span>= Obj.Properties_.Item(<span style="color: #800000;">'</span><span style="color: #800000;">Name</span><span style="color: #800000;">'</span>, <span style="color: #800080;">0</span><span style="color: #000000;">).Value;
+      </span><span style="color: #0000ff;">if</span> VarIsClear(V) <span style="color: #0000ff;">or</span> VarIsNull(V) <span style="color: #0000ff;">then</span><span style="color: #000000;">
+        Continue;
+      </span><span style="color: #0000ff;">if</span> V=sName <span style="color: #0000ff;">then</span>
+      <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+         Result:</span>=<span style="color: #000000;">True;
+         Break
+      </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">finally</span><span style="color: #000000;">
+    Wmi :</span>=<span style="color: #000000;"> Unassigned;
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+
+
+
+</span><span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TForm1.Button1Click(Sender: TObject);
+
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  ShowMessage(booltostr(GetNetworkConnected(Edit1.Text)));
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">end</span>.</pre>
+</div>
+<p>&nbsp;</p>
+<p>因为WMI中通用的类大多是Win32_开头的，这里只需要传递后面的部分。</p>
+<p>那么下一步，怎么知道我需要的是什么参数呢？以获取计算机名为例：</p>
+<p>str := GetWMIProperty('OperatingSystem','CSName');即可获得。</p>
+<p>当然，计算机名信息是比较常用的，在好几个类里面都有。</p>
+<p>Win32_开头的类有：</p>
+<div>
+<div align="left">Win32_Account</div>
+<div align="left">Win32_ActiveRoute</div>
+<div align="left">Win32_AutochkSetting</div>
+<div align="left">
+<div>Win32_BaseBoard</div>
+<div>Win32_BaseService</div>
+</div>
+<div align="left">
+<div>Win32_BIOS</div>
+<div>Win32_BootConfiguration</div>
+<div>Win32_Bus</div>
+<div>Win32_ComputerSystem</div>
+<div>Win32_ComputerSystemWindowsProductActivation</div>
+<div>Win32_Desktop</div>
+<div>Win32_DesktopMonitor</div>
+<div>Win32_DeviceSettings</div>
+<div>Win32_DiskDrive</div>
+<div>Win32_DiskDrivePhysicalMedia</div>
+<div>Win32_DisplayConfiguration</div>
+<div>Win32_Environment</div>
+<div>Win32_FontIntoAction</div>
+<div>Win32_Group</div>
+<div>Win32_IDEController</div>
+<div>Win32_IP4PersistedRouteTable<br />Win32_IP4RouteTable</div>
+<div>Win32_Keyboard</div>
+<div>Win32_LogicalDisk</div>
+<div>Win32_LogicalProgramGroup</div>
+<div>Win32_LogonSession</div>
+<div>Win32_MappedLogicalDisk</div>
+<div>Win32_MemoryDevice</div>
+<div>Win32_MotherboardDevice</div>
+<div>Win32_NetworkAdapter<br />Win32_NetworkAdapterConfiguration<br />Win32_NetworkAdapterSetting</div>
+<div>Win32_NetworkClient<br />Win32_NetworkConnection</div>
+
+</div>
+<div align="left">Win32_OperatingSystem</div>
+<div align="left">Win32_PerfFormattedData_RemoteAccess_RASPort</div>
+<div align="left">
+<div>Win32_PerfFormattedData_RemoteAccess_RASTotal</div>
+<div>Win32_PerfRawData_RemoteAccess_RASPort</div>
+
+Win32_PhysicalMedia</div>
+<div align="left">
+<div>Win32_PhysicalMemory</div>
+<div>Win32_PNPDevice</div>
+<div>Win32_PortConnector</div>
+<div>Win32_POTSModem<br />Win32_POTSModemToSerialPort</div>
+<div>Win32_Printer<br />Win32_PrinterConfiguration</div>
+<div>Win32_Process</div>
+<div>Win32_Processor</div>
+<div>Win32_Product</div>
+<div>Win32_ProgramGroup</div>
+<div>Win32_ScheduledJob</div>
+<div>Win32_SerialPort<br />Win32_SerialPortConfiguration<br />Win32_SerialPortSetting</div>
+<div>
+<div>Win32_Service</div>
+<div>Win32_ServiceControl</div>
+
+Win32_SoundDevice</div>
+<div>Win32_StartupCommand</div>
+<div>
+<div>Win32_SystemAccount</div>
+
+Win32_SystemBIOS</div>
+<div>Win32_SystemSetting</div>
+<div>Win32_SystemTimeZone</div>
+<div>Win32_SystemUsers</div>
+
+Win32_TapeDrive</div>
+<div align="left">Win32_TemperatureProbe&nbsp;</div>
+<div align="left">Win32_USBController<br />Win32_USBControllerDevice</div>
+<div align="left">
+<div>Win32_UserAccount</div>
+
+Win32_VideoController<br />Win32_VideoSettings</div>
+<div align="left">Win32_WindowsProductActivation</div>
+
+</div>
+<p>&nbsp;</p>
+<h1 class="title-article">Win32_NetworkAdapter 网卡 参数说明</h1>
+<p>AdapterType &nbsp;--适配器的类型<br />AdapterTypeID &nbsp;--适配器的类型ID<br />AutoSense &nbsp;--如果为True，网络适配器能自动判断连接或网络媒体的速度<br />Availability &nbsp;--可用性和设备的状态<br />Caption &nbsp;--设备的简短描述<br />ConfigManagerErrorCode &nbsp;--Windows配置管理器错误代码<br />ConfigManagerUserConfig &nbsp;--如果为True，该设备使用用户定义的配置<br />CreationClassName &nbsp;--第一个具体类的名称出现在创建实例所使用的继承链<br />Description &nbsp;--描述<br />DeviceID &nbsp;--系统中的其他设备的网络适配器的唯一标识符<br />ErrorCleared &nbsp;--如果为True，在上一个错误代码报告现已清除<br />ErrorDescription &nbsp;--错误的描述信息<br />GUID &nbsp;--全局唯一标识符进行连接<br />Index &nbsp;--存储在系统注册表中网络适配器的索引号<br />InstallDate &nbsp;--日期和时间对象安装<br />Installed &nbsp;--如果为True，网络适配器安装在系统中<br />InterfaceIndex &nbsp;--索引值唯一标识本地网络接口<br />LastErrorCode &nbsp;--报告的逻辑设备上一个错误代码<br />MACAddress &nbsp;--MAC地址<br />Manufacturer &nbsp;--制造商的名称<br />MaxNumberControlled &nbsp;--通过这个网络适配器支持直接寻址的端口的最大数量<br />MaxSpeed &nbsp;--最大速度，以每秒位数，为网络适配器<br />Name &nbsp;--适配器的名称<br />NetConnectionID &nbsp;--网络连接的名称出现在网络连接控制面板程序<br />NetConnectionStatus &nbsp;--网络适配器连接至网络的状态<br />NetEnabled &nbsp;--指明适配器是否已启用。如果为True，适配器已启用。您可以启用或通过启用和禁用方法禁用网卡。<br />NetworkAddresses &nbsp;--适配器的IP地址<br />PermanentAddress &nbsp;--网络地址硬编码到一个适配器。这种硬编码地址，可以通过固件升级或软件配置进行更改<br />PhysicalAdapter &nbsp;--指明适配器是否是物理或逻辑适配器。如果为True，适配器是物理<br />PNPDeviceID &nbsp;--即插即用逻辑设备的播放设备标识符<br />PowerManagementCapabilities &nbsp;--逻辑设备的特定功率相关的能力阵列<br />PowerManagementSupported &nbsp;--如果为True，该设备可以是电源管理（可放进入暂停模式，等等）<br />ProductName &nbsp;--网络适配器的产品名称<br />ServiceName &nbsp;--网络适配器的服务名<br />Speed &nbsp;--估计当前带宽比特每秒<br />Status &nbsp;--对象的当前状态<br />StatusInfo &nbsp;--对象的当前状态详细信息<br />SystemCreationClassName &nbsp;--该作用域计算机的创建类别名称属性的值<br />SystemName &nbsp;--系统名称</p>
+<p>TimeOfLastReset &nbsp;--最后复位日期和时间的网络适配器</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

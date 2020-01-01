@@ -1,0 +1,134 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修bzoj4520 K远点对' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>bzoj4520 K远点对</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/bzoj4520.html</div><br>
+    <p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=4520"><font size=5>题目链接</font></a></p>
+<h1 id="思路">思路</h1>
+<p>这个&quot;<span class="math inline">\(K\)</span>远“点对一直理解成了距离第<span class="math inline">\(K\)</span>大的点对<span class="math inline">\(233\)</span>。</p>
+<p>要求第<span class="math inline">\(K\)</span>远，那么我们只要想办法求出来最远的<span class="math inline">\(K\)</span>个点对就可以了。</p>
+<p>用一个大小为<span class="math inline">\(2K\)</span>(因为每个点对会被统计两次)的小头堆维护距离最大的<span class="math inline">\(K\)</span>个点对，然后在<span class="math inline">\(KD-tree\)</span>上查询最远点对，如果查到的点对之间的距离比堆顶大，那么就把堆顶弹出来，当前距离插进去。</p>
+<p>最后堆顶元素就是答案。</p>
+<h1 id="代码">代码</h1>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-06-13 07:45:59
+* @Last Modified time: 2019-06-13 08:47:21
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+#define int ll
+const int N = 100100,INF = 1e9;
+#define ls TR[rt].ch[0]
+#define rs TR[rt].ch[1]
+priority_queue&lt;int,vector&lt;int&gt;,greater&lt;int&gt; &gt;q;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+int mul(int x) {
+    return x * x;
+}
+struct node {
+    int ch[2],d[2],mx[2],mn[2];
+}TMP,TR[N],a[N];
+int D;
+bool cmp(const node &amp;A,const node &amp;B) {
+    return A.d[D] &lt; B.d[D];
+}
+void up(int rt) {
+    for(int i = 0;i &lt;= 1;++i) {
+        if(ls) TR[rt].mx[i] = max(TR[ls].mx[i],TR[rt].mx[i]),
+            TR[rt].mn[i] = min(TR[ls].mn[i],TR[rt].mn[i]);
+        if(rs) TR[rt].mx[i] = max(TR[rs].mx[i],TR[rt].mx[i]),
+            TR[rt].mn[i] = min(TR[rs].mn[i],TR[rt].mn[i]);
+    }
+}
+int build(int l,int r,int now) {
+    D = now;
+    int mid = (l + r) &gt;&gt; 1;
+    nth_element(a + l,a + mid,a + r + 1,cmp);
+    TR[mid] = a[mid];
+    for(int i = 0;i &lt;= 1;++i) TR[mid].mx[i] = TR[mid].mn[i] = TR[mid].d[i];
+    int rt = mid;
+    if(l &lt; mid) ls = build(l,mid - 1,now ^ 1);
+    if(r &gt; mid) rs = build(mid + 1,r,now ^ 1);
+    up(mid);
+    return mid;
+}
+int dis(const node &amp;A,const node &amp;B) {
+    return mul(A.d[0] - B.d[0]) + mul(A.d[1] - B.d[1]);
+}
+int get(const node &amp;A,const node &amp;B) {
+    int ret = 0;
+    for(int i = 0;i &lt;= 1;++i)
+        ret += mul(max(abs(A.d[i] - B.mx[i]),abs(A.d[i] - B.mn[i])));
+    return ret;
+}
+void query(int rt) {
+    int K = dis(TMP,TR[rt]);
+    if(K &gt; q.top()) q.pop(),q.push(K);
+    int dl = -INF,dr = -INF;
+    if(ls) dl = get(TMP,TR[ls]);
+    if(rs) dr = get(TMP,TR[rs]);
+    if(dl &gt; dr) {
+        if(dl &gt; q.top()) query(ls);
+        if(dr &gt; q.top()) query(rs);
+    }
+    if(dr &gt; dl) {
+        if(dr &gt; q.top()) query(rs);
+        if(dl &gt; q.top()) query(ls);
+    }
+}
+int X[N],Y[N];
+signed main() {
+    int n = read(),K = read();
+    for(int i = 1;i &lt;= n;++i) {
+        X[i] = a[i].d[0] = read();Y[i] = a[i].d[1] = read();
+    }
+    int root = build(1,n,0);
+    for(int i = 1;i &lt;= K * 2;++i) q.push(0);
+    for(int i = 1;i &lt;= n;++i) {
+        TMP.d[0] = X[i],TMP.d[1] = Y[i];
+        query(root);
+    }
+    cout&lt;&lt;q.top();
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

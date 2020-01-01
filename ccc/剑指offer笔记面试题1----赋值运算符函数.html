@@ -1,0 +1,174 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修剑指offer笔记面试题1----赋值运算符函数' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>剑指offer笔记面试题1----赋值运算符函数</center></div><div class='banquan'>原文出处:本文由博客园博主奔跑的亮仔提供。<br/>
+原文连接:https://www.cnblogs.com/tangliang39/p/11694889.html</div><br>
+    <h2 id="题目如下为类型cmystring的声明请为该类型添加赋值运算符函数">题目：如下为类型CMyString的声明，请为该类型添加赋值运算符函数。</h2>
+<pre><code>class CMyString{
+public:
+    CMyString(char* pData = nullptr);
+    CMyString(const CMyString&amp; str);
+    ~CMyString(void);
+private:
+    char* m_pData;
+}; </code></pre>
+<h2 id="注意点">注意点：</h2>
+<ul>
+<li>是否把返回值的类型声明为该类型的引用，并在函数结束前返回实例自身的引用（*this）。只有返回一个引用，才可以允许连续赋值。否则，如果函数的返回值是void，则应用该赋值运算符将不能进行连续赋值。</li>
+<li>是否把传入的参数类型声明为常量引用。如果传入的参数不是引用而是实例，那么从形参到实参会调用一次复制构造函数。把参数声明为引用可以避免这样的无谓消耗，能提高代码的效率。同时，我们在复制运算符函数内不会改变传入的实例状态，因此应该为传入的引用参数加上const关键字。</li>
+<li>是否释放实例自身已有的内存。如果我们忘记在分配新内存之前释放自身已有的空间，则程序将出现内存泄漏。</li>
+<li>判断传入的参数和当前的实例（<em>this）是不是同一个实例。如果是同一个，则不进行复制操作，直接返回。如果事先不判断就进行赋值，那么在释放实例自身内存的时候就会导致严重的问题：当</em>this和传入的参数是同一个实例时，一旦释放了自身的内存，传入的参数的内存也同时被释放了，因此再也找不到需要赋值的内容了。</li>
+</ul>
+<h2 id="经典的解法适用于初级程序员">经典的解法，适用于初级程序员</h2>
+<pre><code>    //当我们完整的考虑了上述4个方面后，可以写出如下的代码：
+    CMyString&amp; CMyString::operator=(const CMyString&amp; str){
+        if(this == &amp;str)
+            return *this;
+        delete[] m_pData;
+        m_pData = nullptr;
+        m_pData = new char[strlen(str.m_pData) + 1];
+        strcpy(m_Data, str.m_pData);
+        return *this;
+    }</code></pre>
+<h2 id="考虑异常安全性的解法高级程序员必备">考虑异常安全性的解法，高级程序员必备</h2>
+<pre><code>    /*在前面的函数中，我们分配内存之前先用delete释放了实例m_pData的内存。如果此时内存不足导致new char抛出异常，则m_pData将是一个指针，这样非常容易导致程序崩溃。也就是说，一旦在复制运算符函数内部抛出一个异常，CMyString的实例不在保持有效的状态，这就违背了异常安全性（Exception Safety）原则。要想在赋值运算符函数中实现异常安全性，我们可以先创建一个临时实例，再交换临时实例和原来的实例。下面是这种思路的参考代码：*/
+    CMyString&amp; CMyString::operator=(const CMyString&amp; str){
+        if(this != &amp;str){
+            CMyString strTemp(str);
+            char* pTemp = strTemp.m_pData;
+            strTemp.m_pData = m_pData;
+            m_pData = pTemp;
+        }
+        return *this;
+    }</code></pre>
+<h2 id="测试用例">测试用例：</h2>
+<ul>
+<li>把一个CMyString的实例赋值给另一个实例。</li>
+<li>把一个CMyString的实例赋值给它自己。</li>
+<li>连续赋值。</li>
+</ul>
+<h2 id="测试代码">测试代码：</h2>
+<pre><code>    void CMyString::Print(){
+        printf(&quot;%s&quot;, m_pData);
+    } 
+    
+    void Test1(){
+        printf(&quot;Test1 begins:\n&quot;);
+        char* text = &quot;Hello world&quot;;
+        CMyString str1(text);
+        CMyString str2;
+        str2 = str1;
+        printf(&quot;The expected result is: %s.\n&quot;, text);
+        printf(&quot;The actual result is: &quot;);
+        str2.Print();
+        printf(&quot;.\n&quot;);
+    }
+    
+    //赋值给自己
+    void Test2(){
+        printf(&quot;Test2 begins:\n&quot;);
+        char* text = &quot;Hello world&quot;;
+        CMyString str1(text);
+        str1 = str1;
+        printf(&quot;The excepted result is: %s.\n&quot;, text);
+        printf(&quot;The actual result is: &quot;);
+        str1.Print();
+        printf(&quot;.\n&quot;);
+    } 
+    
+    //连续赋值
+    void Test3(){
+        printf(&quot;Test3 begins:\n&quot;);
+        char* text = &quot;Hello world&quot;;
+        CMyString str1(text);
+        CMyString str2, str3;
+        str3 = str2 = str1;
+        printf(&quot;The expected result is: %s.\n&quot;, text);
+        printf(&quot;The actual result is: &quot;);
+        str2.Print();
+        printf(&quot;.\n&quot;);
+        printf(&quot;The expected result is: %s.\n&quot;, text);
+        printf(&quot;The actual result is: &quot;);
+        str3.Print();
+        printf(&quot;.\n&quot;);
+    } </code></pre>
+<h2 id="本题考点">本题考点：</h2>
+<ul>
+<li>考查应聘者对C++基础语法的理解，如运算符函数、常量引用等。</li>
+<li>考查与应聘者对内存泄漏的理解。</li>
+<li>对于高级C++程序员，面试官还将考查应聘者对代码异常安全性的理解。</li>
+</ul>
+<h2 id="实现代码">实现代码：</h2>
+<pre><code>    #include &lt;cstring&gt;
+    #include &lt;cstdio&gt;
+    
+    class CMyString{
+    public:
+        CMyString(char* pData = nullptr);
+        CMyString(const CMyString&amp; str);
+        ~CMyString(void);
+        
+        CMyString&amp; operator=(const CMyString&amp; str);
+        void Print();
+    private:
+        char* m_pData;
+    };
+    
+    CMyString::CMyString(char* pData){
+        if(pData == nullptr){
+            m_pData = new char[1];
+            m_pData[0] = &#39;\0&#39;;
+        }
+        else{
+            int length = strlen(pData);
+            m_pData = new char[length + 1];
+            strcpy(m_pData, pData);
+        }
+    }
+    
+    CMyString::CMyString(const CMyString&amp; str){
+        int length = strlen(str.m_pData);
+        m_pData = new char[length + 1];
+        strcpy(m_pData, str.m_pData);
+    }
+    
+    CMyString::~CMyString(){
+        delete[] m_pData;
+    }
+    
+    CMyString&amp; CMyString::operator=(const CMyString&amp; str){
+        if(this == &amp;str)
+            return *this;
+        delete[] m_pData;
+        m_pData = nullptr;
+        m_pData = new char[strlen(str.m_pData) + 1];
+        strcpy(m_pData, str.m_pData);
+        return *this; 
+    }
+    int main(){
+        Test1();
+        Test2();
+        Test3();
+        return 0;
+    } </code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

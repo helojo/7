@@ -1,0 +1,161 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修从头开始的点分治' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>从头开始的点分治</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/10225550.html</div><br>
+    <blockquote>
+<p>今天发现之前有篇随笔忘发布了……</p>
+</blockquote>
+<p><a href="https://www.luogu.org/problemnew/show/P4178">TREE</a></p>
+<p>【题意】给你一棵树,以及这棵树上边的距离.问有多少对点它们两者间的距离小于等于K。</p>
+<p>【分析】考虑树根rt，可以处理出rt到其子树中的节点的距离，设为dis[]。利用dis数组的值，我们可以<del>轻易地</del>得到所有“端点在rt的子树中，长度≤k的，且经过rt的路径”数量（具体做法是将dis的值排序，然后双指针扫描）。要去除其中的非简单路径数量，只需要对rt的每个“儿子的子树”做一遍类似的过程（区别在于儿子的子树中的路径长度需要≤k-len[rt,儿子]），减去新得到的数量。将这一过程称为s()。</p>
+<p>再考虑计算“不经过rt的路径”数量，显然此时两个端点必处于rt的某个儿子的子树中，因此我们递归处理“儿子的子树”即可。这一过程恰属“分治”范畴。</p>
+<p>稍微动脑就知道这种做法很不科学。（举个例子：链式图）为了得出更稳得算法，我们先需要明确“所有递归深度相同的s()过程的总时间复杂度不超过O(n+nlogn)”。因此一个有效的优化方向是减少递归的层数。我们在一棵树中选出一个节点使得以之为根时，各子树大小尽量均匀（最大的子树的小尽量小，即该节点为树的重心），就能很好地达到这一目的。可以发现，这样做的递归层数是对数级别的。</p>
+<p>【实现】</p>
+<pre><code>int rt,sum,fiz[N],siz[N];
+int dis[N],tmp[N],top;
+bool ban[N];
+long long ans;
+
+void addEdge(int x,int y,int w) {
+    static int cnt=0;
+    to[++cnt]=y;
+    len[cnt]=w;
+    last[cnt]=head[x];
+    head[x]=cnt;
+}
+void getRoot(int x,int pa) {
+    siz[x]=1;
+    fiz[x]=0;
+    for(int i=head[x]; i; i=last[i]) {
+        if(to[i]==pa||ban[to[i]]) continue;
+        getRoot(to[i],x);
+        siz[x]+=siz[to[i]];
+        fiz[x]=max(fiz[x],siz[to[i]]);
+    }
+    fiz[x]=max(fiz[x],sum-siz[x]);
+    if(fiz[x]&lt;fiz[rt]) rt=x; 
+}
+void getDis(int x,int pa) {
+    tmp[++top]=dis[x];
+    for(int i=head[x]; i; i=last[i]) {
+        if(to[i]==pa||ban[to[i]]) continue;
+        dis[to[i]]=dis[x]+len[i];
+        getDis(to[i],x);
+    } 
+}
+int calc(int x,int preLen) {
+    top=0;
+    dis[x]=preLen;
+    getDis(x,0);
+    sort(tmp+1,tmp+top+1);
+    int ret=0,l=1,r=top;
+    while(l&lt;r) {
+        if(tmp[l]+tmp[r]&lt;=k) ret+=r-l, l++;
+        else r--;
+    }
+    return ret;
+}
+void solveAt(int x) {
+    ban[x]=true; // 把以后的过程中不会再涉及到的点ban掉。
+    ans+=calc(x,0);
+    for(int i=head[x]; i; i=last[i]) {
+        if(ban[to[i]]) continue;
+        ans-=calc(to[i],len[i]);
+        rt=0;
+        sum=siz[to[i]];
+        getRoot(to[i],0);
+        solveAt(rt);
+    }
+}
+
+int main() {
+    scanf(&quot;%d&quot;,&amp;n);
+    for(int x,y,w,i=n; --i; ) {
+        scanf(&quot;%d%d%d&quot;,&amp;x,&amp;y,&amp;w);
+        addEdge(x,y,w);
+        addEdge(y,x,w);
+    }
+    scanf(&quot;%d&quot;,&amp;k);
+    sum=n;
+    fiz[0]=0x3f3f3f3f;
+    getRoot(1,0);
+    solveAt(rt); 
+    printf(&quot;%lld\n&quot;,ans);
+    return 0;
+} </code></pre>
+<p><a href="https://www.luogu.org/problemnew/show/P4149">[IOI2011] Race</a></p>
+<p>【题意】给一棵树，每条边有权。求一条简单路径，权值和等于 k（一组询问），且边的数量最小。<br />
+【分析】tmp再记录个所用边的数量。每次calc维护bin[i]表示i条边、权值和为k的路径条数。最后输出最小的i使得bin[i]&gt;0即可。<br />
+【实现】</p>
+<pre><code>bool youBiYaoTieMa=false; </code></pre>
+<p><a href="https://www.luogu.org/problemnew/show/P3806">模板-点分治1</a></p>
+<p>【题意】多次询问，判断是否存在路径长度为k的点对。<br />
+【分析】第一题的变形，因为是判断可行性，就不需要容斥了，代码也很好写。<br />
+【实现】</p>
+<pre><code>// ques[i]是第i个询问的内容。
+// ans[i]是第i个询问的答案。
+void calc(int x) {
+    int num=0;
+    for(int i=head[x]; i; i=last[i]) {
+        if(ban[to[i]]) continue;
+        tot=0;
+        dis[to[i]]=len[i];
+        getDist(to[i], x);
+        for(int j=tot; j; --j) for(int k=1; k&lt;=m; ++k)
+            if(ques[k]&gt;=tmp[j]) ans[k]|=mem[ques[k]-tmp[j]];
+        for(int j=tot; j; --j)
+            all[++num]=tmp[j], mem[tmp[j]]=1;   
+    }
+    for(int i=num; i; --i) mem[all[i]]=0;
+}
+void solveAt(int x) {
+    ban[x]=1;
+    mem[0]=1;
+    calc(x);
+    for(int i=head[x]; i; i=last[i]) {
+        if(ban[to[i]]) continue;
+        sum=size[to[i]];
+        mxn[rt=0]=2e9;
+        getRoot(to[i], 0);
+        solveAr(rt);
+    }
+}</code></pre>
+<p><a href="https://www.luogu.org/problemnew/show/P2634">聪聪可可</a></p>
+<p>【题意】给你一棵树，求边权和为3的倍数的路径数目与总路径数目的最简分数表达，路径的端点可以重合。<br />
+【实现】</p>
+<pre><code>bool youBiYaoTieMa=false;</code></pre>
+<p><a href="https://www.luogu.org/problemnew/show/P4886">快递员</a></p>
+<p>【题意】不好概括自个儿读吧。<br />
+【分析】任然是点分治。考虑在树上选个点rt作为根，并且快递中心就选这儿。计算出所有配送的代价（2*两段之和），设他们的最大值为Max。若此时存在下列情况时，可以判定Max已经为最优解。</p>
+<p>1）存在代价为Max的配送(u,v)且uv分别属于rt的不同的两个“儿子的子树”。<br />
+2）存在代价为Max的配送(u1,v1)(u2,v2)且u1u2分别属于rt的不同的两个“儿子的子树”。<br />
+3）存在代价为Max的配送(u1,v1)(u2,v2)且v1v2分别属于rt的不同的两个“儿子的子树”。</p>
+<p><del>但是若1）不存在，2）、3）不就是一种情况了吗，滑稽</del>。 概括一下就是当所欲代价为Max的配送的端点所属于的“儿子的子树”不唯一，则已达到最优解，证明就上边那三种情况。</p>
+<p>如果都不满足的话，那么更优的选点应在Max的配送(u,v)的u（=v）所属于的那个“儿子的子树”里。分治下去就好。</p>
+<p>【实现】<a href="https://www.cnblogs.com/nosta/p/10230090.html">传送门</a></p>
+<p><a href="https://www.luogu.org/problemnew/show/P3714">[BJOI2017]树的难题</a></p>
+<p>【题意】不好概括自个儿读吧。<br />
+【分析】按照常规思路，选一个点x作为分治中心，拼接x出发到子树各点的路径。对于拼接时两段接口处（即x连出的那条边，若没有，设为0号边：颜色为0，长度为0，到达0号儿子）颜色的影响，可以记录每段的路径权值、边数以及该段的接口，将所有的路径以接口颜色为第一关键字，接口编号为第二关键字排序。显然，对于同一接口的路径必为连续的一段序列。这样枚举每个路径，找到之前出现的符合边数和的要求的最大的路径权值即可。用两颗线段树维护，一棵维护与本路径不同颜色的，一颗维护与本路径颜色相同但接口不同的（因为简单路径的拼接要满足两个端点不在同一个子树内）。<br />
+【实现】<a href="https://www.cnblogs.com/nosta/p/10230167.html">传送门</a></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

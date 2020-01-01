@@ -1,0 +1,117 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Gin上传文件到MongoDB gridfs' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Gin上传文件到MongoDB gridfs</center></div><div class='banquan'>原文出处:本文由博客园博主daryl。提供。<br/>
+原文连接:https://www.cnblogs.com/daryl-blog/p/11002995.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#上传图片">上传图片</a></li>
+        <li><a href="#下载图片">下载图片</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="上传图片">上传图片</h2>
+<pre><code><code>func imagePost(c *gin.Context) {
+    image, err := c.FormFile(&quot;file&quot;)
+    if err != nil {
+        errMsg := err.Error()
+        logger.Error(errMsg)
+        autorestapi.RespErr(c, errMsg)
+        return
+    }
+    fileImage, err := image.Open()
+    if err != nil {
+        errMsg := err.Error()
+        logger.Error(errMsg)
+        autorestapi.RespErr(c, errMsg)
+        return
+    }
+    defer fileImage.Close()
+    imageGridFS, err := model.GetGridFS(&quot;image&quot;)
+    if err != nil {
+        errMsg := err.Error()
+        logger.Error(errMsg)
+        autorestapi.RespErr(c, errMsg)
+        return
+    }
+    now := self_time.GetNowTimeStamp()
+    nowStr := strconv.FormatInt(now, 10)
+    file, err := imageGridFS.Create(nowStr)
+    if err != nil {
+        errMsg := err.Error()
+        logger.Error(errMsg)
+        autorestapi.RespErr(c, errMsg)
+        return
+    }
+    file.SetName(nowStr)
+    _, err = io.Copy(file, fileImage)
+    if err != nil {
+        errMsg := err.Error()
+        logger.Error(errMsg)
+        autorestapi.RespErr(c, errMsg)
+        return
+    }
+
+    err = file.Close()
+    if err != nil {
+        errMsg := err.Error()
+        logger.Error(errMsg)
+        autorestapi.RespErr(c, errMsg)
+        return
+    }
+
+    autorestapi.RespData(c, nowStr)
+}</code></pre>
+<h2 id="下载图片">下载图片</h2>
+<pre><code><code>func imageGet(c *gin.Context) {
+    imagename := c.Param(&quot;imagename&quot;)
+    imageGridFS, err := model.GetGridFS(&quot;image&quot;)
+    if err != nil {
+        errMsg := err.Error()
+        logger.Error(errMsg)
+        autorestapi.RespErr(c, errMsg)
+        return
+    }
+    file, err := imageGridFS.Open(imagename)
+    if err != nil {
+        errMsg := err.Error()
+        logger.Error(errMsg)
+        autorestapi.RespErr(c, errMsg)
+        return
+    }
+    size := file.Size()
+    io.Copy(c.Writer, file)
+    err = file.Close()
+    if err != nil {
+        errMsg := err.Error()
+        logger.Error(errMsg)
+        autorestapi.RespErr(c, errMsg)
+        return
+    }
+    c.Writer.WriteHeader(http.StatusOK)
+    c.Header(&quot;Content-Disposition&quot;, fmt.Sprintf(&quot;attachment; filename=%s&quot;, imagename))
+    c.Header(&quot;Content-Type&quot;, &quot;application/text/plain&quot;)
+    c.Header(&quot;Accept-Length&quot;, fmt.Sprintf(&quot;%d&quot;, size))
+}</code></pre>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

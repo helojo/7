@@ -1,0 +1,125 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[WC2013] 糖果公园' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[WC2013] 糖果公园</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/11022262.html</div><br>
+    <p><del>治好了我的树上莫队/带修莫队恐惧症……</del></p>
+<p>对树的分块要求块内的元素都联通，可以参考[SCOI 2005]王室联邦的分块做法。对于路径的修改，若已经存在x-y的路径，要转化到X-Y的路径（此处所言路径不包含两点的lca），可以发现路径X-Y等于路径x-y、路径X-x、路径Y-y这三者的对称差（异或？），最后在临时计入点lca(X,Y)即可。</p>
+<p>然后时模拟时间（修改颜色、撤销修改），当块大小为n^{2/3}时复杂度最优为O(n^{5/3})，（认为q与n同阶）。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+#define ll long long 
+using namespace std;
+const int N=1e5+10;
+
+int n,m,Q,ccnt,qcnt;
+int ehd[N],to[N&lt;&lt;1],lst[N&lt;&lt;1],fa[N][20],dep[N];
+int top,tot,B,bl[N],stk[N],a[N],V[N],W[N],num[N];
+ll ans,out[N];
+bool vis[N];
+
+struct TimeCh {int p,x;} c[N];
+struct PathCh {
+    int x,y,t,id;
+    bool operator&lt;(const PathCh&amp;d) const {
+        if(bl[x]!=bl[d.x]) return bl[x]&lt;bl[d.x];
+        if(bl[y]!=bl[d.y]) return bl[y]&lt;bl[d.y];
+        return t&lt;d.t;
+    }
+} q[N];
+
+void insert(int x,int y) {
+    static int cnt=0;
+    to[++cnt]=y,lst[cnt]=ehd[x],ehd[x]=cnt;
+    to[++cnt]=x,lst[cnt]=ehd[y],ehd[y]=cnt;
+}
+void dfs(int x) {
+    int pre=top; 
+    for(int i=1; (1&lt;&lt;i)&lt;=dep[x]; ++i) fa[x][i]=fa[fa[x][i-1]][i-1];
+    for(int i=ehd[x]; i; i=lst[i]) if(to[i]!=fa[x][0]) {
+        int y=to[i]; dep[y]=dep[fa[y][0]=x]+1; dfs(y);
+        if(top-pre&gt;=B) {
+            tot++;
+            do bl[stk[top--]]=tot;
+            while(top!=pre);
+        }
+    }
+    stk[++top]=x;
+}
+int lca(int x,int y) {
+    if(dep[x]&lt;dep[y]) swap(x,y);
+    int dif=dep[x]-dep[y];
+    for(int i=19; ~i; --i) if((dif&gt;&gt;i)&amp;1) x=fa[x][i];
+    if(x==y) return x;
+    for(int i=19; ~i; --i) if(fa[x][i]^fa[y][i]) x=fa[x][i],y=fa[y][i];
+    return fa[x][0];
+}
+void point(int p) {
+    if(vis[p]) ans-=1LL*V[a[p]]*W[num[a[p]]--];
+    else ans+=1LL*V[a[p]]*W[++num[a[p]]];
+    vis[p]^=1;
+}
+void time(int t) {
+    if(vis[c[t].p]) point(c[t].p),swap(c[t].x,a[c[t].p]),point(c[t].p);
+    else swap(c[t].x,a[c[t].p]);
+}
+void path(int x,int y) {
+    if(dep[x]&lt;dep[y]) swap(x,y);
+    while(dep[x]&gt;dep[y]) point(x),x=fa[x][0];
+    while(x!=y) point(x),point(y),x=fa[x][0],y=fa[y][0]; //去掉lca
+}
+
+int main() {
+    scanf(&quot;%d%d%d&quot;,&amp;n,&amp;m,&amp;Q); B=pow(n,0.66);
+    for(int i=1; i&lt;=m; ++i) scanf(&quot;%d&quot;,V+i);
+    for(int i=1; i&lt;=n; ++i) scanf(&quot;%d&quot;,W+i);
+    for(int x,y,i=n; --i; ) scanf(&quot;%d%d&quot;,&amp;x,&amp;y),insert(x,y);
+    for(dfs(1); top; ) bl[stk[top--]]=tot;
+    for(int i=1; i&lt;=n; ++i) scanf(&quot;%d&quot;,a+i);
+    for(int type,i=Q; i--; ) {
+        scanf(&quot;%d&quot;,&amp;type);
+        if(type==0) {
+            ccnt++;
+            scanf(&quot;%d%d&quot;,&amp;c[ccnt].p,&amp;c[ccnt].x);
+        } else {
+            scanf(&quot;%d%d&quot;,&amp;q[qcnt].x,&amp;q[qcnt].y);
+            q[qcnt].t=ccnt;
+            q[qcnt].id=qcnt;
+            qcnt++;
+        }
+    }
+    sort(q,q+qcnt); 
+    int x=1,y=1,now=0;
+    for(int i=0; i&lt;qcnt; ++i) {
+        path(x,q[i].x); x=q[i].x;
+        path(y,q[i].y); y=q[i].y;
+        while(now&lt;q[i].t) time(++now);
+        while(now&gt;q[i].t) time(now--);
+        int d=lca(x,y); point(d);
+        out[q[i].id]=ans;
+        point(d);
+    }
+    for(int i=0; i&lt;qcnt; ++i) printf(&quot;%lld\n&quot;,out[i]);
+    return 0;
+}
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

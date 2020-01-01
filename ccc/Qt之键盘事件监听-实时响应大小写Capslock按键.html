@@ -1,0 +1,259 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Qt之键盘事件监听-实时响应大小写Capslock按键' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Qt之键盘事件监听-实时响应大小写Capslock按键</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11522980.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一开篇">一、开篇</a></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三实现思路">三、实现思路</a><ul>
+        <li><a href="#重写qllinedit">1、重写QLlinEdit</a></li>
+        <li><a href="#全局应用程序事件">2、全局应用程序事件</a></li>
+        <li><a href="#windows钩子">3、windows钩子</a></li>
+        </ul></li>
+        <li><a href="#四相关文章">四、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11522980.html">Qt之键盘事件监听-实时响应大小写Capslock按键</a></p>
+<h2 id="一开篇">一、开篇</h2>
+<p>假期总是转眼即逝，想想今天就是中秋节最后一天了，明天又要开始挤地铁了，好像还有一篇文章需要完成，前一段时间做了一个小功能，当用户输入密码时，如果键盘开启了大写，则需要重点提示用户，否则有些用户可能会误以为自己密码输入错误。</p>
+<blockquote>
+<p>今天博主就来分析下当时的实现过程。</p>
+</blockquote>
+<p>本篇文章主要讲解怎么实现实时监听大小写的过程，其他内容不做详细说明。文章分析的主线路是按博主当时完成此项功能的一个思路，虽然最后的解决方案才是对的，但前边一些尝试性的解决方案，博主这里还是都写了下来。一方面可以避免大家再去做无用的尝试，另一方面也是对自己实现这一功能时的一个总结。</p>
+<h2 id="二效果展示">二、效果展示</h2>
+<p>按照惯例先上图，看看是不是同学们想想中的效果。</p>
+<html>
+<center>
+<div>
+    <img src="./images/Qt之键盘事件监听-实时响应大小写Capslock按键0.png" />
+</div>
+</center>
+</html>
+<h2 id="三实现思路">三、实现思路</h2>
+<p>以下分几个小结来分析博主当时实现大小写监听的一个思路，虽然前两种方式不能达到最后的需求，但是大家也可以看看，或许他更适合于你另一种需求下的场景呢！</p>
+<p>在讲各种实现方案时，我们先来搞清楚怎么获取当前键盘是否开启了大写，方法比较简单，只修要通过<code>LOBYTE(GetKeyState(VK_CAPITAL))</code>函数即可获取。</p>
+<p>最终我们的键盘相应函数可能会像下面这样，当发现了键盘按下(抬起)事件时，我们就调用这个函数重新设置大写提示</p>
+<pre><code>void CPasswordEdit::UpdateCapslockTip()
+{
+    if (LOBYTE(GetKeyState(VK_CAPITAL)) == false)
+    {
+        m_ActCaps-&gt;setIcon(QIcon(&quot;:/PasswordWidget/64.png&quot;));
+    }
+    else
+    {
+        m_ActCaps-&gt;setIcon(QIcon());
+    }
+}</code></pre>
+<p>知道了如何判断是否开启键盘大写后，下一步就是需要搞清楚这个函数的触发时机，下面是博主的各种尝试过程。</p>
+<h3 id="重写qllinedit">1、重写QLlinEdit</h3>
+<p>要监听键盘事件，博主第一时间想到的就是继承这个控件，重写该控件的键盘回调函数，当该回调函数被触发时，就是有键盘按键被按下。</p>
+<pre><code>virtual void keyPressEvent(QKeyEvent * event) override;
+virtual void keyReleaseEvent(QKeyEvent * event) override;</code></pre>
+<p>以上两个函数就是我们需要重写的两个按钮回调函数，函数的实现比较简单，判断当前是否是大小写按钮事件，如果有就执行UpdateCapslockTip函数，更新当前给用户的提示。</p>
+<pre><code>void CPasswordEdit::keyPressEvent(QKeyEvent * event)
+{
+    if (event-&gt;key() == Qt::Key_CapsLock)
+    {
+        UpdateCapslockTip();
+    }
+
+    QLineEdit::keyPressEvent(event);
+}
+
+void CPasswordEdit::keyReleaseEvent(QKeyEvent * event)
+{
+    if (event-&gt;key() == Qt::Key_CapsLock)
+    {
+        UpdateCapslockTip();
+    }
+
+    QLineEdit::keyReleaseEvent(event);
+}
+</code></pre>
+<p>实现起来是不是还挺简单的。进行一下简单测试，当编辑框获取焦点时，我们按下大小写按键，程序可以正常的执行啦。</p>
+<blockquote>
+<p>如果多测试测试，你可能就会发现，当编辑框没有焦点时，也就是说焦点在我们的程序的其他控件上时，这个两个函数就进不来了。</p>
+</blockquote>
+<p>为什么会出现这个情况呢，对Qt的事件循环稍微熟悉的同学应该都会比较清楚，因为其他有焦点的控件有优先处理该键盘事件，并且人家也把事件处理了，那么Qt的事件循环就会被中断掉，我们的控件自然就收不到消息了。</p>
+<p>为了解决这个问题，博主想到了另外一种方法，那就是继承QApplication类，重写notify接口，当发现是大小写按键事件时，我们优先响应下，但是绝对不中断事件循环，这样不就完成我们的工了嘛！</p>
+<h3 id="全局应用程序事件">2、全局应用程序事件</h3>
+<p>要获取全局应用程序事件，前边提到了重写QApplication类的notify接口，还有另外一种更加轻量的方式，那就是通过<code>installNativeEventFilter</code>接口安装全局事件过滤器。</p>
+<p>想要过滤全局事件，首先我们的类需要继承自QAbstractNativeEventFilter这个类，像下面声明代码这样。</p>
+<pre><code>class CPasswordEdit : public QLineEdit, public QAbstractNativeEventFilter
+{
+    ...
+    virtual bool nativeEventFilter(const QByteArray &amp;eventType, void *message, long *result) override;
+    ...
+};</code></pre>
+<p>事件过滤函数nativeEventFilter函数的第二个参数在windows下就可以转换为MSG对象，然后进行事件处理。</p>
+<p>之前博主也写过几篇关于全局事件过滤的文章，有兴趣的同学可以去了解下</p>
+<ol>
+<li><a href="https://www.cnblogs.com/swarmbees/diary/2016/11/15/6066787.html">Qt之nativeEventFilter和notify</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/5632765.html">qt捕获全局windows消息</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/diary/2016/11/09/6048302.html">Qt之模拟窗口失去焦点隐藏</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/8145342.html">Qt之移动硬盘热插拔监控</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/5789482.html">Qt之自定义托盘</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/6032744.html">Qt之自定义检索框</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/5812031.html">Qt之自定义托盘(二)</a></li>
+<li><a href="https://zzk.cnblogs.com/my/s/blogpost-p?Keywords=nativeEventFilter">Qt之股票组件-股票检索--支持搜索结果预览、鼠标、键盘操作</a></li>
+</ol>
+<pre><code>bool CPasswordEdit::nativeEventFilter( const QByteArray &amp;eventType, void *message, long *result )
+{
+    if (&quot;windows_dispatcher_MSG&quot; == eventType
+        || &quot;windows_generic_MSG&quot; == eventType)
+    {
+        MSG * msg = reinterpret_cast&lt;MSG *&gt;(message);
+        if(msg-&gt;message == WM_DEVICECHANGE)
+        {
+            case WM_KEYUP:
+            case WM_KEYDOWN:
+            if (((KBDLLHOOKSTRUCT *)lParam)-&gt;vkCode == 20)
+            {
+                UpdateCapslockTip();
+            }
+            break;
+        }
+    }
+
+    return __super::nativeEvent(eventType, message, result);
+}</code></pre>
+<p>过滤了全局事件循环后，无论在我们的程序哪个地方按下键盘按键，我们的编辑框都可以获取事件，这下好像没有问题了。</p>
+<blockquote>
+<p>如果再多测试测试，你可能就会发现，当我们的程序没有焦点时，也就是说焦点在其他应用程序上时，过滤本App的事件循环也不好使。</p>
+</blockquote>
+<p>思来想去，如果一直纠结于本程序的事件处理好像这个功能很难完成，最后还是得借助于windows的钩子。</p>
+<h3 id="windows钩子">3、windows钩子</h3>
+<p>windwos钩子是windwos系统提供给我们的一个很方便的函数，我们可以使用钩子把我们的函数挂载在windows系统的事件处理流程中，具体挂载在哪个位置，系统已经帮我们想好了，我们就不用操心了，重点是我们需要明白，我们可以处理全局事件。</p>
+<blockquote>
+<p>这样windows这样的设计是把所有人调用该接口的人都当做是一个好人了，假设说有一个App首先拿到了事件处理权，如果他执行完事件处理函数后没有把钩子交还给下一个人处理，那么本次事件循环也就到此结束，其他钩子、或者本应该处理消息的程序也就收不到该事件。</p>
+</blockquote>
+<blockquote>
+<p>所以使用钩子时，有一个规范，那就是我们调用完钩子处理函数后，需要调用CallNextHookEx函数让事件循环继续下去。</p>
+</blockquote>
+<p>有了以上简单说明，也用到了windows钩子，那么我们的程序实现功能肯定没啥问题。</p>
+<p>下面就是博主为了更优化的实现钩子而声明的一个类。该类的构造函数中我们把回调函数帮到系统事件循环中，当类析构时，再把钩子析构掉。</p>
+<pre><code>class LowLevelKeyboardHook
+{
+public:
+    LowLevelKeyboardHook();
+    ~LowLevelKeyboardHook();
+
+public:
+    static LRESULT CALLBACK keyHookEvent(int nCode, WPARAM wParam, LPARAM lParam);
+
+    void SetKeyboardCall(const std::function&lt;void ()&gt; &amp; func){ m_func = func; }
+
+private:
+    static HHOOK keyborard_hook_;
+    static std::function&lt;void()&gt; m_func;
+};</code></pre>
+<p>钩子的使用上一定要小心，因为钩子属于系统级的事件处理，如果发生了错误则会影响其他应用程序的执行，所以钩子的使用范围我们也应该尽可能的小。</p>
+<pre><code>LowLevelKeyboardHook::LowLevelKeyboardHook()
+{
+    Q_ASSERT(!keyborard_hook_);
+    keyborard_hook_ = SetWindowsHookEx(WH_KEYBOARD_LL, (HOOKPROC)keyHookEvent, GetModuleHandle(NULL), 0);
+}       
+
+LowLevelKeyboardHook::~LowLevelKeyboardHook()
+{
+    if (nullptr != keyborard_hook_) {
+        UnhookWindowsHookEx(keyborard_hook_);
+        keyborard_hook_ = nullptr;
+    }
+}
+</code></pre>
+<p>有了完美的绑定回调函数的方式，下面来看看回到函数的处理流程&gt;</p>
+<pre><code>LRESULT CALLBACK LowLevelKeyboardHook::keyHookEvent(int code, WPARAM wParam, LPARAM lParam)
+{
+    if (code &lt; 0)
+        return CallNextHookEx(keyborard_hook_, code, wParam, lParam);
+    if (wParam == WM_KEYDOWN)
+    {
+        //用户按下了Capslock键
+        //Capslock对应键码为20
+        if (((KBDLLHOOKSTRUCT *)lParam)-&gt;vkCode == 20)
+        {
+            if (m_func)
+            {
+                m_func();
+            }
+        }
+    }
+    return CallNextHookEx(keyborard_hook_, code, wParam, lParam);
+}</code></pre>
+<p>当有大小写按键触发时，执行了名为<code>m_func</code>的回调函数。该回调函数就是我们构造LowLevelKeyboardHook对象时注册进来的函数，当钩子的回调函数执行<code>m_func()</code>函数时，就相当于执行了被注册进来的回调函数。</p>
+<p>如下代码是构造了一个钩子辅助类LowLevelKeyboardHook对象，并把CPasswordEdit类的UpdateCapslockTip函数绑定给了钩子，当执行<code>m_func()</code>函数时，就相当于执行了UpdateCapslockTip函数。</p>
+<pre><code>static LowLevelKeyboardHook keyboard;
+keyboard.SetKeyboardCall(std::bind(&amp;CPasswordEdit::UpdateCapslockTip, this));</code></pre>
+<p>UpdateCapslockTip函数第三小节开始的时候已经说过，这里就不在说明。</p>
+<p><strong>到这里本篇文章所有内容基本讲述完毕，总共有3重键盘事件监听方式，但是只有第三种方式才可以满足我们当前的需求</strong></p>
+<h2 id="四相关文章">四、相关文章</h2>
+<ol>
+<li><a href="https://www.cnblogs.com/swarmbees/diary/2016/11/15/6066787.html">Qt之nativeEventFilter和notify</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/5632765.html">qt捕获全局windows消息</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/diary/2016/11/09/6048302.html">Qt之模拟窗口失去焦点隐藏</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/8145342.html">Qt之移动硬盘热插拔监控</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/5789482.html">Qt之自定义托盘</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/6032744.html">Qt之自定义检索框</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/5812031.html">Qt之自定义托盘(二)</a></li>
+<li><a href="https://zzk.cnblogs.com/my/s/blogpost-p?Keywords=nativeEventFilter">Qt之股票组件-股票检索--支持搜索结果预览、鼠标、键盘操作</a></li>
+<li><a href="https://blog.csdn.net/herojia_1/article/details/88862089">Qt获取Capslock键（大小写键）状态</a></li>
+<li><a href="https://blog.csdn.net/robertkun/article/details/38081301">Qt判断大小写键Caps Lock状态</a></li>
+</ol>
+<hr />
+<p><strong>值得一看的优秀文章：</strong></p>
+<ol>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/6707798.html">财联社-产品展示</a></strong></li>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/10836505.html">广联达-产品展示</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95527107">Qt定制控件列表</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95526527">牛逼哄哄的Qt库</a></strong></li>
+</ol>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

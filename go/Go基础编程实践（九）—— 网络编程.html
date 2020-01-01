@@ -1,0 +1,113 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go基础编程实践（九）—— 网络编程' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go基础编程实践（九）—— 网络编程</center></div><div class='banquan'>原文出处:本文由博客园博主GaiheiluKamei提供。<br/>
+原文连接:https://www.cnblogs.com/GaiHeiluKamei/p/11154026.html</div><br>
+    <h3 id="下载网页">下载网页</h3>
+<pre><code><code>package main
+
+import (
+    &quot;io/ioutil&quot;
+    &quot;net/http&quot;
+    &quot;fmt&quot;
+)
+
+func main() {
+    url := &quot;http://www.cnblogs.com/GaiheiluKamei&quot;
+    response, err := http.Get(url)
+    if err != nil {
+        panic(err)
+    }
+    defer response.Body.Close()
+    html, err2 := ioutil.ReadAll(response.Body)
+    if err2 != nil {
+        panic(err2)
+    }
+    // ReadAll返回[]byte
+    fmt.Println(string(html))
+}
+// 这种直接下载下来的网页用处不大，旨在提供思路</code></pre>
+<h3 id="下载文件">下载文件</h3>
+<pre><code><code>package main
+
+import (
+    &quot;net/http&quot;
+    &quot;io&quot;
+    &quot;os&quot;
+    &quot;fmt&quot;
+)
+
+func main() {
+    // 获取文件
+    imageUrl := &quot;http://pic.uzzf.com/up/2015-7/20157816026.jpg&quot;
+    response, err := http.Get(imageUrl)
+    if err != nil {
+        panic(err)
+    }
+    defer response.Body.Close()
+    // 创建保存位置
+    file, err2 := os.Create(&quot;pic.jpg&quot;)
+    if err2 != nil {
+        panic(err2)
+    }
+    // 保存文件
+    _, err3 := io.Copy(file, response.Body)
+    if err3 != nil {
+        panic(err3)
+    }
+
+    file.Close()
+    fmt.Println(&quot;Image downloading is successful.&quot;)
+}</code></pre>
+<h3 id="创建web服务器">创建Web服务器</h3>
+<pre><code><code>// 运行程序，打开浏览器，根据输入的查询参数将返回不同的值
+// 例如：&quot;http://localhost:8000/?planet=World&quot; 将在页面显示&quot;Hello, World&quot;
+package main
+
+import (
+    &quot;net/http&quot;
+    &quot;log&quot;
+)
+
+func sayHello(w http.ResponseWriter, r *http.Request) {
+    // Query方法解析RawQuery字段并返回其表示的Values类型键值对。
+    planet := r.URL.Query().Get(&quot;planet&quot;)
+    w.Write([]byte(&quot;Hello, &quot; + planet))
+}
+
+func main() {
+    http.HandleFunc(&quot;/&quot;, sayHello)
+    log.Fatalln(http.ListenAndServe(&quot;:8000&quot;, nil)) 
+}</code></pre>
+<h3 id="创建文件服务器">创建文件服务器</h3>
+<pre><code><code>// 在本程序同目录下创建images文件夹，放入一些文件
+// 打开浏览器访问&quot;http://localhost:5050&quot;将会看到文件
+package main
+
+import &quot;net/http&quot;
+
+func main() {
+    http.Handle(&quot;/&quot;, http.FileServer(http.Dir(&quot;./images&quot;)))
+    http.ListenAndServe(&quot;:5050&quot;, nil)
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

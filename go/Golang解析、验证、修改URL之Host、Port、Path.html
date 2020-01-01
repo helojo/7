@@ -1,0 +1,125 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Golang解析、验证、修改URL之Host、Port、Path' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Golang解析、验证、修改URL之Host、Port、Path</center></div><div class='banquan'>原文出处:本文由博客园博主GaiheiluKamei提供。<br/>
+原文连接:https://www.cnblogs.com/GaiHeiluKamei/p/11469030.html</div><br>
+    <ul>
+<li><strong>URL解析验证问题</strong>
+<ul>
+<li><code>net.ParseIP()</code>只能解析不带冒号以及端口号的IP4/IP6
+<ul>
+<li>✔: <code>127.0.0.1</code>、<code>2001:db8::68</code></li>
+<li>✖: <code>127.0.0.1:8080</code>、<code>www.baidu.com</code></li>
+</ul></li>
+<li><code>url.Parse()</code>最好只用来解析标准<strong>URL</strong>，不能用来验证<strong>URL</strong>的正确性</li>
+</ul></li>
+</ul>
+<pre><code><code>
+func main() {
+    IP1 := &quot;www.baidu.com&quot;
+    IP2 := &quot;127.0.0.1&quot;
+    IP3 := &quot;127.0.0.1:8080&quot;
+    parsedIP1 := net.ParseIP(IP1)
+    parsedIP2 := net.ParseIP(IP2)
+    parsedIP3 := net.ParseIP(IP3)
+    fmt.Println(&quot;net.ParseIP: &quot;, parsedIP1, parsedIP2, parsedIP3)
+
+    fmt.Println()
+
+    Url1 := &quot;127.0.0&quot;
+    Url2 := &quot;abc&quot;
+    Url3 := &quot;127.0.0.1:8080&quot;
+    Url4 := &quot;http://127.0.0.1:8080/url&quot;
+
+    parsedUrl1, err := url.Parse(Url1)
+    if err != nil {
+        fmt.Println(&quot;Error: &quot;, err)
+    }
+    parsedUrl2, err := url.Parse(Url2)
+    if err != nil {
+        fmt.Println(&quot;Error: &quot;, err)
+    }
+    parsedUrl3, err := url.Parse(Url3)
+    if err != nil {
+        fmt.Println(&quot;Error: &quot;, err)
+    }
+    parsedUrl4, err := url.Parse(Url4)
+    if err != nil {
+        fmt.Println(&quot;Error: &quot;, err)
+    }
+    fmt.Println(&quot;1: &quot;, parsedUrl1, &quot;2: &quot;, parsedUrl2, &quot;3: &quot;, parsedUrl3, &quot;4: &quot;, parsedUrl4)
+}
+/*
+输出结果：
+net.ParseIP:  &lt;nil&gt; 127.0.0.1 &lt;nil&gt;
+
+Error:  parse 127.0.0.1:8080: first path segment in URL cannot contain colon
+1:  127.0.0 2:  abc 3:  &lt;nil&gt; 4:  http://127.0.0.1:8080/url
+
+*/</code></pre>
+<ul>
+<li><strong>正确的URL验证方式</strong>
+<ul>
+<li><code>go get github.com/asaskevich/govalidator</code><br />
+</li>
+<li><code>govalidator.IsURL()</code></li>
+</ul></li>
+<li><strong>获取并修改URL之Host、Port、Path</strong></li>
+</ul>
+<pre><code><code>func main() {
+    rawUrl := &quot;http://127.0.0.1:8080/url/123&quot;
+    changeHost := &quot;192.168.1.1&quot;
+
+    newUrl, _ := url.Parse(rawUrl)
+
+    // Host
+    newUrlHost := newUrl.Hostname()
+    // Port
+    newUrlPort := newUrl.Port()
+    // Path
+    newUrlPath := newUrl.Path
+    // URL类型转string
+    stringUrl := newUrl.String()
+    // 修改URl Host
+    newUrl.Host = changeHost + &quot;:&quot; + newUrl.Port()
+
+    fmt.Println(newUrlHost, newUrlPort, newUrlPath, stringUrl, newUrl)
+}</code></pre>
+<blockquote>
+<p>其他相关方法:</p>
+<ul>
+<li><strong>Host、Port</strong>
+<ul>
+<li><code>net.SplitHostPort()</code> ==&gt; <code>Host、Port、error</code></li>
+<li><code>u := strings.Split(url, &quot;:&quot;)</code> ==&gt; <code>Host := u[0]</code></li>
+</ul></li>
+<li><strong>Path</strong>
+<ul>
+<li><code>url := http://www.a.com/123</code> ==&gt; <code>base := path.Base(url)</code></li>
+<li><code>fmt.Println(base)</code> ==&gt; <code>123</code><br />
+<br><br />
+<p align="center"><strong>以上结合可完成关于Golang操作URL的大部分问题</strong></p></li>
+</ul></li>
+</ul>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

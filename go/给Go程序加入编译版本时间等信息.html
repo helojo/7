@@ -1,0 +1,199 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修给Go程序加入编译版本时间等信息' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>给Go程序加入编译版本时间等信息</center></div><div class='banquan'>原文出处:本文由博客园博主就想叫yoko提供。<br/>
+原文连接:https://www.cnblogs.com/notokoy/p/11746785.html</div><br>
+    <h4 id="先看效果">先看效果</h4>
+<pre><code><code>$./myapp -v
+GitCommitLog=d97d098e5bb4ad38a2a7968f273a256e10a0108f mod bininfo comment
+GitStatus=cleanly
+BuildTime=2019.10.26.194341
+GoVersion=go version go1.13 darwin/amd64
+runtime=darwin/amd64</code></pre>
+<p>myapp 是一个演示用的 demo 程序，输入 <code>-v</code> 参数运行时，打印出程序的一些信息。以上信息对应的说明如下：</p>
+<!-- more -->
+<pre><code><code># GitCommitLog
+  d97d098e5bb4ad38a2a7968f273a256e10a0108f: 源码最近一次 commit 的 sha 值
+  mod bininfo comment: 源码最近一次 commit 的描述信息
+# GitStatus
+  cleanly: 表示本地代码相对于最近一次 commit，并没有任何修改
+  如果本地代码有修改，此处会显示修改过的文件
+# BuildTime
+  2019.10.26.194341: 程序的编译时间为2019年10月26号19点43分41秒
+# GoVersion
+  go version go1.13 darwin/amd64: 程序编译使用的 Go 版本为1.13，darwin 即 macos
+# runtime
+  程序运行时的平台，因为 Go 的跨平台编译做的比较好，为了避免混淆，我
+  们在 GoVersion 打印了编译平台的同时，把运行平台也打印出来</code></pre>
+<p>ok，下面就来介绍是如何实现的。</p>
+<h4 id="依赖的知识点">依赖的知识点</h4>
+<p>Go 语言编译时，可以通过 <code>go build -ldflags</code> 的方式向程序中指定的包中的变量传递值。</p>
+<p>拿下面这个十来行的程序做个演示：</p>
+<pre class="golang"><code>package main
+
+import &quot;fmt&quot;
+
+var Foo string
+
+func main() {
+    if Foo == &quot;&quot; {
+        fmt.Println(&quot;Foo is empty.&quot;)
+    } else {
+        fmt.Printf(&quot;Foo=%s\n&quot;, Foo)
+    }
+}</code></pre>
+<p>如果直接使用 <code>go build</code> 编译，运行的结果是 <code>Foo is empty.</code>。</p>
+<p>如果使用 <code>go build -ldflags &quot;-X 'main.Foo=test'&quot;</code> 编译，则运行的结果为 <code>Foo=test</code>。它的格式为 <code>-X '&lt;包名&gt;.&lt;变量名&gt;=&lt;值&gt;'</code></p>
+<h4 id="编译期将感兴趣的信息传入程序中">编译期将感兴趣的信息传入程序中</h4>
+<p>通过上面这种手法，我们可以编写一个用于编译 Go 程序的 shell 脚本，在脚本中获取一些编译时期的信息，传递到程序中。</p>
+<p>比如：</p>
+<pre><code><code># 获取源码最近一次 git commit log，包含 commit sha 值，以及 commit message
+GitCommitLog=`git log --pretty=oneline -n 1`
+# 检查源码在最近一次 git commit 基础上，是否有本地修改，且未提交的文件
+GitStatus=`git status -s`
+# 获取当前时间
+BuildTime=`date +&#39;%Y.%m.%d.%H%M%S&#39;`
+# 获取Go的版本
+BuildGoVersion=`go version`
+
+# 之后将上面这些变量传递到 go build -ldflags 中，编译 Go 程序。
+# 完整的 shell 脚本地址后文有。</code></pre>
+<h4 id="更进一步">更进一步</h4>
+<p>其实前面也提到， Go 不仅仅支持在编译时向 main 包中的变量传递值，也支持向非 main 包传递。</p>
+<p>基于以上前提，为了以后写不同应用程序时，减少模板代码的拷贝，我专门写了一个 package （<a href="https://github.com/q191201771/naza/blob/master/pkg/bininfo/bininfo.go">package bininfo github地址</a>），代码如下：</p>
+<pre class="golang"><code>package bininfo
+
+import (
+    &quot;fmt&quot;
+    &quot;runtime&quot;
+    &quot;strings&quot;
+)
+
+var (
+    // 初始化为 unknown，如果编译时没有传入这些值，则为 unknown
+    GitCommitLog   = &quot;unknown&quot;
+    GitStatus      = &quot;unknown&quot;
+    BuildTime      = &quot;unknown&quot;
+    BuildGoVersion = &quot;unknown&quot;
+)
+
+// 返回单行格式
+func StringifySingleLine() string {
+    return fmt.Sprintf(&quot;GitCommitLog=%s. GitStatus=%s. BuildTime=%s. GoVersion=%s. runtime=%s/%s.&quot;,
+        GitCommitLog, GitStatus, BuildTime, BuildGoVersion, runtime.GOOS, runtime.GOARCH)
+}
+
+// 返回多行格式
+func StringifyMultiLine() string {
+    return fmt.Sprintf(&quot;GitCommitLog=%s\nGitStatus=%s\nBuildTime=%s\nGoVersion=%s\nruntime=%s/%s\n&quot;,
+        GitCommitLog, GitStatus, BuildTime, BuildGoVersion, runtime.GOOS, runtime.GOARCH)
+}
+
+// 对一些值做美化处理
+func beauty() {
+    if GitStatus == &quot;&quot; {
+        // GitStatus 为空时，说明本地源码与最近的 commit 记录一致，无修改
+        // 为它赋一个特殊值
+        GitStatus = &quot;cleanly&quot;
+    } else {
+        // 将多行结果合并为一行
+        GitStatus = strings.Replace(strings.Replace(GitStatus, &quot;\r\n&quot;, &quot; |&quot;, -1), &quot;\n&quot;, &quot; |&quot;, -1)
+    }
+}
+
+func init() {
+    beauty()
+}</code></pre>
+<p>然后我们用一个 demo 程序 <a href="https://github.com/q191201771/naza/blob/master/demo/myapp/main.go">myapp.go</a> 来演示如何使用，代码如下：</p>
+<pre class="golang"><code>package main
+
+import (
+    &quot;flag&quot;
+    &quot;fmt&quot;
+    &quot;os&quot;
+
+    &quot;github.com/q191201771/naza/pkg/bininfo&quot;
+)
+
+func main() {
+    v := flag.Bool(&quot;v&quot;, false, &quot;show bin info&quot;)
+    flag.Parse()
+    if *v {
+        _, _ = fmt.Fprint(os.Stderr, bininfo.StringifyMultiLine())
+        os.Exit(1)
+    }
+
+    fmt.Println(&quot;my app running...&quot;)
+    fmt.Println(&quot;bye...&quot;)
+}</code></pre>
+<p>最后，是我们的 <a href="https://github.com/q191201771/naza/blob/master/build.sh">build.sh</a> 脚本，源码如下：</p>
+<pre><code><code>#!/usr/bin/env bash
+
+set -x
+
+# 获取源码最近一次 git commit log，包含 commit sha 值，以及 commit message
+GitCommitLog=`git log --pretty=oneline -n 1`
+# 将 log 原始字符串中的单引号替换成双引号
+GitCommitLog=${GitCommitLog//\&#39;/\&quot;}
+# 检查源码在git commit 基础上，是否有本地修改，且未提交的内容
+GitStatus=`git status -s`
+# 获取当前时间
+BuildTime=`date +&#39;%Y.%m.%d.%H%M%S&#39;`
+# 获取 Go 的版本
+BuildGoVersion=`go version`
+
+# 将以上变量序列化至 LDFlags 变量中
+LDFlags=&quot; \
+    -X &#39;github.com/q191201771/naza/pkg/bininfo.GitCommitLog=${GitCommitLog}&#39; \
+    -X &#39;github.com/q191201771/naza/pkg/bininfo.GitStatus=${GitStatus}&#39; \
+    -X &#39;github.com/q191201771/naza/pkg/bininfo.BuildTime=${BuildTime}&#39; \
+    -X &#39;github.com/q191201771/naza/pkg/bininfo.BuildGoVersion=${BuildGoVersion}&#39; \
+&quot;
+
+ROOT_DIR=`pwd`
+
+# 如果可执行程序输出目录不存在，则创建
+if [ ! -d ${ROOT_DIR}/bin ]; then
+  mkdir bin
+fi
+
+# 编译多个可执行程序
+cd ${ROOT_DIR}/demo/add_blog_license &amp;&amp; go build -ldflags &quot;$LDFlags&quot; -o ${ROOT_DIR}/bin/add_blog_license &amp;&amp;
+cd ${ROOT_DIR}/demo/add_go_license &amp;&amp; go build -ldflags &quot;$LDFlags&quot; -o ${ROOT_DIR}/bin/add_go_license &amp;&amp;
+cd ${ROOT_DIR}/demo/taskpool &amp;&amp; go build -ldflags &quot;$LDFlags&quot; -o ${ROOT_DIR}/bin/taskpool &amp;&amp;
+cd ${ROOT_DIR}/demo/slicebytepool &amp;&amp; go build -ldflags &quot;$LDFlags&quot; -o ${ROOT_DIR}/bin/slicebytepool &amp;&amp;
+cd ${ROOT_DIR}/demo/myapp &amp;&amp; go build -ldflags &quot;$LDFlags&quot; -o ${ROOT_DIR}/bin/myapp &amp;&amp;
+ls -lrt ${ROOT_DIR}/bin &amp;&amp;
+cd ${ROOT_DIR} &amp;&amp; ./bin/myapp -v &amp;&amp;
+echo &#39;build done.&#39;</code></pre>
+<h4 id="写在最后">写在最后</h4>
+<p>本文中的 package bininfo，编译脚本，示例代码都在我的 github 项目 <a href="https://github.com/q191201771/naza">naza</a> (<a href="https://github.com/q191201771/naza" class="uri">https://github.com/q191201771/naza</a>) 中。</p>
+<p>这个仓库包含了我平时学习 Go 练手写的一些基础库代码。有些已经在我的线上服务中使用了。后续我还会写一些文章介绍这个仓库中的其他包。</p>
+<p>感谢阅读，如果觉得文章还不错的话，顺手给我的 <a href="https://github.com/q191201771/naza">github 项目</a> 来个 star 就更好啦。 :)</p>
+<blockquote>
+<p><strong>原文链接：</strong> <a href="https://pengrl.com/p/37397/" class="uri">https://pengrl.com/p/37397/</a><br />
+<strong>原文出处：</strong> <a href="https://pengrl.com">yoko blog</a> (<a href="https://pengrl.com" class="uri">https://pengrl.com</a>)<br />
+<strong>原文作者：</strong> yoko<br />
+<strong>版权声明：</strong> 本文欢迎任何形式转载，转载时完整保留本声明信息（包含原文链接、原文出处、原文作者、版权声明）即可。本文后续所有修改都会第一时间在原始地址更新。</p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

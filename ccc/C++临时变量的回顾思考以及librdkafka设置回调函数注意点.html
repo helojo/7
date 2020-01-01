@@ -1,0 +1,87 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++临时变量的回顾思考以及librdkafka设置回调函数注意点' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++临时变量的回顾思考以及librdkafka设置回调函数注意点</center></div><div class='banquan'>原文出处:本文由博客园博主uagvdu提供。<br/>
+原文连接:https://www.cnblogs.com/uagvdu/p/11492376.html</div><br>
+    <p>1 生命周期</p>
+<p>　　如果仅仅是临时变量，并没有调用new来在堆上创建空间，那么注意 ： 生命周期仅在该作用域中，即声明该临时变量的｛｝中；</p>
+<p>2 使用（librdkafka C++回调使用）</p>
+<p>　　在创建临时变量后，如果想使用该变量的指针，那么一定要注意其生命周期，当程序运行的时候出了这个作用域，此时该作用域栈销毁，哪怕该变量有值也不是准确的值，所以一定要注意好；</p>
+<p>此处用最近写的一个code module来描述一下。</p>
+<p><span style="color: #ff00ff;">注意： 下面的event_cb 在整个代码使用中是一个错误示范：</span></p>
+<div class="cnblogs_Highlighter">
+<pre>//回调类：：回调函数
+
+class ExampleEventCb : public RdKafka::EventCb {
+ public:
+    void event_cb (RdKafka::Event &amp;event) ;
+};
+
+RdKafka::Conf *<span style="color: #ff00ff;">conf</span> = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
+
+void Init() { //初始化进行消费者的配置，创建，订阅主题
+
+      ExampleEventCb <span style="color: #ff00ff;">event_cb</span>; 　　　　
+　　　
+     if(RdKafka::Conf::CONF_OK!=conf-&gt;set("event_cb",&amp;event_cb,errstr))
+　　　{
+
+        cout&lt;&lt;"\033conf err\033[0m ["&lt;&lt;__FILE__&lt;&lt;":"&lt;&lt;__LINE__&lt;&lt;"]"&lt;&lt;endl;  
+   　}
+　　　　/.../
+　　
+
+　　<span style="color: #ff00ff;">consumer</span> = RdKafka::KafkaConsumer::<span style="color: #ff00ff;">create</span>(conf,errstr);
+　　if (!consumer) 
+    {
+        std::cerr &lt;&lt; "\033[31m Failed to create consumer: \033[0m" &lt;&lt;     errstr &lt;&lt;" "&lt;&lt; __FILE__&lt;&lt;":"&lt;&lt;__LINE__&lt;&lt;std::endl;
+        exit(1);
+    }
+
+　　 //<span style="color: #ff00ff;">delete tconf</span>; 是否要删除，要考虑create是用的指针还是copy，因为是临时变量
+　　　　
+    
+}
+//等待Init执行完之后，再调用下方函数
+void BeginConsume()
+{
+      while (1) {
+        RdKafka::Message *msg = <span style="color: #ff00ff;">consumer</span>-&gt;consume(1000);// 该函数会调用Init中设置的回调函数如event_cb；
+        msg_consume(msg, NULL);
+        delete msg;
+  }
+}　　    
+</pre>
+</div>
+<p>　　</p>
+<p>以上代码：由于consume会调用event_cb回调函数，所以</p>
+<p>当event_cb为全局变量，或者生命周期不局限于Init的时候，程序才是正确的，否则会报段错误；&rsquo;</p>
+<p>由于librdkafka库函数的设计原则，在使用回调类的回调函数时：一定要注意回调类对象的生命周期；</p>
+<p>&nbsp;</p>
+<p>3 指针+段错误：</p>
+<p>　　对于指针来说：如果一直使用该指针，则需要保证其在使用期间的生命周期。.<br />　　段错误一般就是指针为NULL，访问NULL的数据,所以在报错的时候，看看<span style="color: #ff00ff;">有关联的变量指针或者函数指针</span>的生命周期；</p>
+<p>4 查看源码的建议：</p>
+<p>　　看源码后在写代码的时候，如果源码位置处出现了<span style="text-decoration: underline;"><span style="color: #ff00ff; text-decoration: underline;">&nbsp;&lsquo;delete 指针</span>&lsquo; </span>或者<span style="text-decoration: underline; color: #ff00ff;"> &lsquo;销毁指针的函数&rsquo;</span>，那在编写类似代码的时候一定要注意该指针的生命周期；</p>
+<p>eg：如上的conf变量，，，是否要删除，那你需要考虑创建&nbsp;RdKafka::KafkaConsumer::create(conf,errstr)该函数内部实现使用的conf是其指针还是其copy的内容；避免调用一个已经delete的指针变量</p>
+<p>　　</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

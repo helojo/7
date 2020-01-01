@@ -1,0 +1,304 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修DFS（四）：剪枝策略' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>DFS（四）：剪枝策略</center></div><div class='banquan'>原文出处:本文由博客园博主aTeacher提供。<br/>
+原文连接:https://www.cnblogs.com/cs-whut/p/11168463.html</div><br>
+    <p>&nbsp; &nbsp; &nbsp; 顾名思义，剪枝就是通过一些判断，剪掉搜索树上不必要的子树。在采用DFS算法搜索时，有时候我们会发现某个结点对应的子树的状态都不是我们要的结果，这时候我们没必要对这个分支进行搜索，砍掉这个子树，就是剪枝。<br />&nbsp; &nbsp; &nbsp; 在DFS搜索算法中，剪枝策略就是寻找过滤条件，提前减少不必要的搜索路径。应用剪枝策略的核心问题是设计剪枝判断方法，即确定哪些枝条应当舍弃，哪些枝条应当保留的方法。</p>
+<p>&nbsp; &nbsp; &nbsp;剪枝策略按照其判断思路可大致分成两类：可行性剪枝及最优性剪枝。</p>
+<p>&nbsp; &nbsp; <strong>&nbsp; 1.可行性剪枝</strong></p>
+<p>&nbsp; &nbsp; &nbsp;可行性剪枝就是把能够想到的不可能出现的情况给它剪掉 。该方法判断继续搜索能否得出答案，如果不能直接回溯。</p>
+<p><span style="font-size: 16px;"><strong>【例1】Sum It Up （POJ 1564）</strong></span></p>
+<p><strong>Description</strong></p>
+<p>Given a specified total t and a list of n integers, find all distinct sums using numbers from the list that add up to t. For example, if t = 4, n = 6, and the list is [4, 3, 2, 2, 1, 1], then there are four different sums that equal 4: 4, 3+1, 2+2, and 2+1+1. (A number can be used within a sum as many times as it appears in the list, and a single number counts as a sum.) Your job is to solve this problem in general.<br /><strong>Input</strong></p>
+<p>The input will contain one or more test cases, one per line. Each test case contains t, the total, followed by n, the number of integers in the list, followed by n integers x 1 , . . . , x n . If n = 0 it signals the end of the input; otherwise, t will be a positive integer less than 1000, n will be an integer between 1 and 12 (inclusive), and x 1 , . . . , x n will be positive integers less than 100. All numbers will be separated by exactly one space. The numbers in each list appear in nonincreasing order, and there may be repetitions.<br /><strong>Output</strong></p>
+<p>For each test case, first output a line containing `Sums of', the total, and a colon. Then output each sum, one per line; if there are no sums, output the line `NONE'. The numbers within each sum must appear in nonincreasing order. A number may be repeated in the sum as many times as it was repeated in the original list. The sums themselves must be sorted in decreasing order based on the numbers appearing in the sum. In other words, the sums must be sorted by their first number; sums with the same first number must be sorted by their second number; sums with the same first two numbers must be sorted by their third number; and so on. Within each test case, all sums must be distinct; the same sum cannot appear twice.<br /><strong>Sample Input</strong></p>
+<p>4 6 4 3 2 2 1 1<br />5 3 2 1 1<br />400 12 50 50 50 50 50 50 25 25 25 25 25 25<br />0 0<br /><strong>Sample Output</strong></p>
+<p>Sums of 4:<br />4<br />3+1<br />2+2<br />2+1+1<br />Sums of 5:<br />NONE<br />Sums of 400:<br />50+50+50+50+50+50+25+25+25+25<br />50+50+50+50+50+25+25+25+25+25+25</p>
+<p>&nbsp; &nbsp; &nbsp; （1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; 由于题中给出待选数的顺序就是从大到小的，因此我们从第一个数开始，依次往后搜索，将可能的数据都记录下来，每遇到一种满足题意的组合就输出，一直搜索下去，得到所有答案。若没有答案，输出NONE。</p>
+<p>&nbsp; &nbsp; &nbsp; 定义全局数组int a[12]来保存给出的待选数列表，为输出和式，定义int b[12]保存选中的数据。</p>
+<p>&nbsp; &nbsp; &nbsp; 递归函数void dfs(int i,int j,int sum)表示从数组a的第i个元素开始选择数据加入到和值sum中，选中的数据a[i]保存到b[j]中。</p>
+<p>&nbsp; &nbsp; &nbsp; 因为题目中所有待选数都是正数，因此一旦发现当前的和值sum都已经大于t了，那么之后不管怎么选，和值都不可能回到t，所有当sum &gt; t时，可以直接剪掉。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;if&nbsp; (sum &gt; t)&nbsp; &nbsp;return;</p>
+<p>&nbsp; &nbsp; 由于给出的N个数中可以有重复的数，求N个数中取若干个数，这若干个数的和为T的所有情况，但这些情况不能重复。因此，程序中还需要去重。</p>
+<p>&nbsp; &nbsp; &nbsp; 如果不去重，则对于第1组测试数据4 6 4 3 2 2 1 1，会输出</p>
+<p style="margin-left: 30px;">Sums of 4:<br />4<br />3+1&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; // 式子中的1是倒数第2个1<br />3+1&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; // 式子中的1是最后1个1<br />2+2<br />2+1+1&nbsp; &nbsp; &nbsp; &nbsp;// 式子中的2是第3个2<br />2+1+1&nbsp; &nbsp; &nbsp; &nbsp;// 式子中的2是第4个2</p>
+<p style="margin-left: 30px;">由于待选数从大到小排列，相同的数据连续放在一起，因此用循环</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; while(k&lt;n &amp;&amp; a[k]==a[k+1])&nbsp; &nbsp; &nbsp;k++;</p>
+<p>可以简单地去重。即某个数作为和式中的加数第1次被选中时，其后连续相同的数不能作为和式中的第1次被选中的加数。</p>
+<p>&nbsp; &nbsp; &nbsp; 这个去重操作也会剪掉一些枝叶，也可以看成是一个剪枝。</p>
+<p>&nbsp; &nbsp; &nbsp; （2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">#define N&nbsp; 12</p>
+<p style="margin-left: 30px;">int a[N],b[N];</p>
+<p style="margin-left: 30px;">int t,n,ok;</p>
+<p style="margin-left: 30px;">void dfs(int i,int j,int sum)</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; int k;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; if(sum&gt;t) return;&nbsp;&nbsp;&nbsp; // 剪枝1</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; if(sum==t)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf ("%d",b[0]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (k=1;k&lt;j;k++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("+%d",b[k]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("\n");</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ok=1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; for(k=i;k&lt;n;k++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; b[j]=a[k];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dfs(k+1,j+1,sum+a[k]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; while(k&lt;n &amp;&amp; a[k]==a[k+1])&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //&nbsp; 去重</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; k++;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int sum;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while (1)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; scanf("%d%d",&amp;t,&amp;n);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (t==0 &amp;&amp; n==0) break;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sum=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int i=0;i&lt;n;i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d",&amp;a[i]);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sum=sum+a[i];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("Sums of %d:\n",t);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ok=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (sum&lt;t)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("NONE\n");</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; continue;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dfs(0,0,0);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(!ok)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("NONE\n");</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+<p>&nbsp;</p>
+<p><span style="font-size: 16px;"><strong>【例2】Sticks （POJ 1011）。</strong></span><br /><strong>Description</strong></p>
+<p>George took sticks of the same length and cut them randomly until all parts became at most 50 units long. Now he wants to return sticks to the original state, but he forgot how many sticks he had originally and how long they were originally. Please help him and design a program which computes the smallest possible original length of those sticks. All lengths expressed in units are integers greater than zero.<br /><strong>Input</strong></p>
+<p>The input contains blocks of 2 lines. The first line contains the number of sticks parts after cutting, there are at most 64 sticks. The second line contains the lengths of those parts separated by the space. The last line of the file contains zero.<br /><strong>Output</strong></p>
+<p>The output should contains the smallest possible length of original sticks, one per line.<br /><strong>Sample Input</strong></p>
+<p>9<br />5 2 1 5 2 1 5 2 1<br />4<br />1 2 3 4<br />0<br /><strong>Sample Output</strong></p>
+<p>6<br />5</p>
+<p>&nbsp; &nbsp; &nbsp; （1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; 定义数组int* stick=new int[n];来保存所输入的n根木棒的长度，数组bool* visit=new bool[n]; 来记录对应的n根木棒是否被用过，初始时值全为false。</p>
+<p>&nbsp; &nbsp; &nbsp; 由于木棒越长，拼接灵活度越低，因此搜索前先对所有的棒子按降序排序，即将stick数组的元素按从大到小排序。</p>
+<p>&nbsp; &nbsp; &nbsp; 编写一个递归的搜索函数bool dfs(int* stick,bool* visit,int len,int InitLen,int s,int num)，其中参数 len表示当前正在组合的棒长、InitLen表示所求的目标棒长、s（stick[s]）表示搜索的起点、num代表已用的棒子数量。如果按InitLen长度拼接，可以将n根木棒全用掉，则函数返回true，搜索成功；否则函数返回false，表示InitLen不可能是所求的最短原始棒长。</p>
+<p>&nbsp; &nbsp; &nbsp; 令InitLen为所求的最短原始棒长，maxlen为给定的棒子堆中最长的棒子（maxlen=stick[0]）;，sumlen为这堆棒子的长度之和，那么所要搜索的原始棒长InitLen必定在范围[maxlen，sumlen]中。</p>
+<p>&nbsp; &nbsp; &nbsp; 实际上，如果能在[maxlen，sumlen-InitLen]范围内找到最短的InitLen，该InitLen必也是[maxlen，sumlen]范围内的最短；若不能在[maxlen，sumlen-InitLen]范围内找到最短的InitLen，则必有InitLen=sumlen。因此，可以只在[maxlen，sumlen-InitLen]范围内搜索原始棒长。即搜索的循环为：for(int InitLen=maxlen;InitLen&lt;=sumlen-InitLen;InitLen++)</p>
+<p>&nbsp; &nbsp; &nbsp; 在搜索时，为提高效率，还可以进行剪枝。具体是：</p>
+<p>&nbsp; &nbsp; &nbsp; 1）由于所有原始棒子等长，那么必有sumlen%Initlen==0，因此，若sumlen%Initlen!=0，则无需对Initlen值进行搜索判断。</p>
+<p>&nbsp; &nbsp; &nbsp; 2）由于所有棒子已降序排列，在DFS搜索时，若某根棒子不合适，则跳过其后面所有与它等长的棒子。</p>
+<p>&nbsp; &nbsp; &nbsp; 3）对于某个目标InitLen，在每次构建新的长度为InitLen的原始棒时，检查新棒的第一根棒子stick[i]，若在搜索完所有stick[]后都无法组合，则说明stick[i]无法在当前组合方式下组合，不用往下搜索（往下搜索只会令stick[i]被舍弃），直接返回上一层。</p>
+<p>&nbsp; &nbsp; &nbsp; （2）源程序</p>
+<p style="margin-left: 30px;">#include&lt;iostream&gt;</p>
+<p style="margin-left: 30px;">#include&lt;algorithm&gt;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">using namespace std;&nbsp;</p>
+<p style="margin-left: 30px;">int n;&nbsp; // 木棒数量&nbsp;</p>
+<p style="margin-left: 30px;">int cmp(const void* a,const void* b)&nbsp;</p>
+<p style="margin-left: 30px;">{&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; return *(int*)b-*(int*)a;&nbsp;</p>
+<p style="margin-left: 30px;">}&nbsp;</p>
+<p style="margin-left: 30px;">bool dfs(int* stick,bool* visit,int len,int InitLen,int s,int num);</p>
+<p style="margin-left: 30px;">int main()&nbsp;</p>
+<p style="margin-left: 30px;">{&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; while(cin&gt;&gt;n &amp;&amp; n)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; {&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int* stick=new int[n];&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bool* visit=new bool[n];&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; int sumlen=0,i;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp; bool flag;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(i=0;i&lt;n;i++)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cin&gt;&gt;stick[i];&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sumlen+=stick[i];&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; visit[i]=false;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; qsort(stick,n,sizeof(stick),cmp);&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;int maxlen=stick[0];&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flag=false;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(int InitLen=maxlen;InitLen&lt;=sumlen-InitLen;InitLen++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(!(sumlen%InitLen) )&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 剪枝（1）</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (dfs(stick,visit,0,InitLen,0,0))&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;cout&lt;&lt;InitLen&lt;&lt;endl;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;flag=true;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;break;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(!flag)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cout&lt;&lt;sumlen&lt;&lt;endl;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; delete stick;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; delete visit;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;&nbsp;</p>
+<p style="margin-left: 30px;">}&nbsp;</p>
+<p style="margin-left: 30px;">bool dfs(int* stick,bool* visit,int len,int InitLen,int s,int num)</p>
+<p style="margin-left: 30px;">{&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp; if(num==n)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return true;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp; int sample=-1;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp; for(int i=s;i&lt;n;i++)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp; {&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(visit[i] || stick[i]==sample)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; continue;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //&nbsp; 剪枝（2）</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; visit[i]=true;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(len+stick[i]&lt;InitLen)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(dfs(stick,visit,len+stick[i],InitLen,i,num+1))&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return true;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sample=stick[i];&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else if(len+stick[i]==InitLen)&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(dfs(stick,visit,0,InitLen,0,num+1))&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return true;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sample=stick[i];&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; visit[i]=false;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(len==0)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 剪枝（3）</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; break;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return false;&nbsp;</p>
+<p style="margin-left: 30px;">}&nbsp;&nbsp;</p>
+<p><strong>&nbsp; &nbsp; &nbsp; 2.最优性剪枝</strong></p>
+<p>&nbsp; &nbsp; &nbsp; 最优性剪枝，又称为上下界剪枝，是一种重要的剪枝策略。它记录当前得到的最优值，如果当前结点已经无法产生比当前最优解更优的解时，可以提前回溯。<br />&nbsp; &nbsp; &nbsp; 对于求最优解的一类问题，通常可以用最优性剪枝。比如在求迷宫最短路的时候，如果发现当前的步数已经超过了当前最优解，那从当前状态开始的搜索都是多余的，因为这样搜索下去永远都搜不到更优的解。通过这样的剪枝，可以省去大量冗余的计算。</p>
+<div class="ptt" lang="en-US"><span style="font-size: 16px;"><strong>【例3】The Robbery （POJ 3900）。</strong></span></div>
+<div class="plm"><strong>Description</strong></div>
+<div class="ptx" lang="en-US">In the downtown of Bucharest there is a very big bank with a very big vault. Inside the vault there are N very big boxes numbered from 1 to N. Inside the box with number k there are k very big diamonds, each of weight Wk and cost Ck.&nbsp;<br />John and Brus are inside the vault at the moment. They would like to steal everything, but unfortunately they are able to carry diamonds with the total weight not exceeding M.&nbsp;<br />Your task is to help John and Brus to choose diamonds with the total weight less than or&nbsp;<br />equal to M and the maximal possible total cost.</div>
+<p class="pst"><strong>Input</strong></p>
+<div class="ptx" lang="en-US">The first line contains single integer T &ndash; the number of test cases. Each test case starts with a line containing two integers N and M separated by a single space. The next line contains N integers Wk separated by single spaces. The following line contains N integers Ck separated by single spaces.</div>
+<p class="pst"><strong>Output</strong></p>
+<div class="ptx" lang="en-US">For each test case print a single line containing the maximal possible total cost of diamonds.</div>
+<p class="pst"><strong>Sample Input</strong></p>
+<pre>2 
+2 4 
+3 2 
+5 3 
+3 100 
+4 7 1 
+5 9 2</pre>
+<p class="pst"><strong>Sample Output</strong></p>
+<pre>6 
+29</pre>
+<p class="pst">Hint</p>
+<div class="ptx" lang="en-US"><strong>Constraints:</strong>&nbsp;<br />1 &le; T &le; 74,&nbsp;<br />1 &le; N &le; 15,&nbsp;<br />1 &le; M &le; 1000000000 (10<sup>9</sup>),&nbsp;<br />1 &le; Wk, Ck &le; 1000000000 (10<sup>9</sup>).</div>
+<p>&nbsp; &nbsp; &nbsp; （1）编程思路。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; 利用贪心的思想先对箱子进行排序，关键字为性价比（Ck/Wk）。也就是单位重量的价值最高的排第一。搜索的时候采用的剪枝策略有：</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;剪枝1：之后所有的钻石价值+目前已经得到的价值&lt;=ans，则剪枝。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;剪枝2：剩下的重量全部装目前最高性价比的钻石+目前已经得到的价值&lt;=ans，则剪枝。</p>
+<p>&nbsp; &nbsp; &nbsp; （2）源程序。</p>
+<p style="margin-left: 30px;">#include &lt;iostream&gt;</p>
+<p style="margin-left: 30px;">#include&lt;algorithm&gt;</p>
+<p style="margin-left: 30px;">using namespace std;</p>
+<p style="margin-left: 30px;">typedef __int64 ll;</p>
+<p style="margin-left: 30px;">int m,n;</p>
+<p style="margin-left: 30px;">ll ans;</p>
+<p style="margin-left: 30px;">bool flag;</p>
+<p style="margin-left: 30px;">struct node</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; ll w,c;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int num;</p>
+<p style="margin-left: 30px;">}lcm[20];</p>
+<p style="margin-left: 30px;">ll bsum[20];</p>
+<p style="margin-left: 30px;">int cmp(struct node a,struct node b)</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;return a.c * b.w &gt; b.c * a.w;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;// 按性价比降序排列</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">void dfs(int cur,ll sum,int remain)</p>
+<p style="margin-left: 30px;">// cur搜到的当前位置，sum当前的总价值,remain当前还剩多少重量</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; if(remain &lt; 0) return;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; if(flag)&nbsp;&nbsp; return;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; if(cur == n)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(ans &lt; sum)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ans = sum;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; if(sum + bsum[cur] &lt;= ans)&nbsp;&nbsp; return;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;// 剪枝1</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; if(sum + remain*(lcm[cur].c*1.0/lcm[cur].w) &lt;= ans)&nbsp; &nbsp; // 剪枝2</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; if(remain == 0) // 因为先贪心了一下，所以第一次恰好凑成m的重量的一定是最优解</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ans = sum;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flag = true;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; for(int i = lcm[cur].num;i &gt;= 0;i --)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (remain &gt;= i * lcm[cur].w)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dfs(cur + 1,sum + i * lcm[cur].c,remain - i * lcm[cur].w);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ans = sum &gt; ans?sum:ans;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">}</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int t,i;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; scanf("%d",&amp;t);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while(t--)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ll sumw,sumc;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sumw = sumc = 0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d%d",&amp;n,&amp;m);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(i = 0;i &lt; n;i ++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%I64d",&amp;lcm[i].w);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; lcm[i].num = i + 1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sumw += lcm[i].w * (i + 1);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(i = 0;i &lt; n;i ++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%I64d",&amp;lcm[i].c);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sumc += lcm[i].c * (i + 1);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if(sumw &lt;= m)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("%I64d\n",sumc);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; continue;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; sort(lcm,lcm + n,cmp);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; memset(bsum,0,sizeof(bsum));</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for(i = n - 1;i &gt;= 0;i --)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bsum[i] = lcm[i].num * lcm[i].c;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; bsum[i] += bsum[i + 1];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; flag = false;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ans = 0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; dfs(0,0,m);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("%I64d\n",ans);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">}</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

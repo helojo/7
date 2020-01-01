@@ -1,0 +1,380 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修高仿富途牛牛-组件化(二)-磁力吸附' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>高仿富途牛牛-组件化(二)-磁力吸附</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11042704.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一概述">一、概述</a></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三磁力吸附">三、磁力吸附</a><ul>
+        <li><a href="#限制鼠标区域">1、限制鼠标区域</a></li>
+        <li><a href="#修正窗口可以移动的区域">2、修正窗口可以移动的区域</a></li>
+        <li><a href="#获取最邻近的可被吸附的窗口">3、获取最邻近的可被吸附的窗口</a></li>
+        </ul></li>
+        <li><a href="#四其他">四、其他</a></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="一概述">一、概述</h2>
+<p>上一篇文章<a href="https://www.cnblogs.com/swarmbees/p/11027429.html">高仿富途牛牛-组件化(一)-支持页签拖拽、增删、小工具</a>我们讲述了组件化的一些基础东西，并有了一个基本的雏形，使用过富途牛牛的同学应该对其中的gif图比较熟悉了。虽然效果糙了一点儿，但是该有的基础功能是已经有了。</p>
+<ul>
+<li>工具栏页签拖拽</li>
+<li>工具栏之间页签拖拽</li>
+<li>小工具</li>
+<li>多页签架构</li>
+<li>小窗口</li>
+</ul>
+<p>上述几个功能在上一篇文章中都已经有了，今天我们来讲述下第二个关键功能--<strong>磁力吸附</strong>和一些其他小功能</p>
+<h2 id="二效果展示">二、效果展示</h2>
+<p>磁力吸附，顾名思义就是说窗口移动时，快要接近另一个窗口边缘时，会有一种磁性，把正在拖拽的窗口直接吸过去，效果图如下图所示。<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/高仿富途牛牛-组件化(二)-磁力吸附0.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<h2 id="三磁力吸附">三、磁力吸附</h2>
+<p><a href="https://www.cnblogs.com/swarmbees/p/11027429.html">高仿富途牛牛-组件化(一)-支持页签拖拽、增删、小工具</a>文章最后，我列出了工程中所有的类，并做了每个类的功能说明。</p>
+<p>本篇文章的工程代码在上一版本的基础上进行了一些优化，代码的结构也更加的清晰，阅读起来更容易，主要是增加了磁力吸附和一些同步功能。</p>
+<p>下面来思考下磁力吸附这个功能。</p>
+<p>首先我们来考虑下磁力吸附，什么是磁力吸附，明白我们自己的需求是什么样子的？</p>
+<p>磁力表现出来可能像下面这样：</p>
+<ol>
+<li>不同子窗口之间希望进行磁力吸附，也就是说窗口移动时，可以被吸附到邻近的窗口边框上</li>
+<li>不同页签之间不需要关联</li>
+<li>鼠标不能移动到subPanel之外</li>
+</ol>
+<blockquote>
+<p>别名：被拖拽窗口（A）、吸附窗口（B）、事件处理（C）</p>
+</blockquote>
+<p>有了清晰的需求之后，我们下面就来考虑怎么实现我们的需求，既然要做到小窗口之间进行吸附，想一想，这个事件处理不管写到A窗口还是B窗口都不是那么合适。那么可想而知，除过被拖拽的窗口A和将要的吸附窗口B之外，必然需要引入一个第三者C，进行事件处理，他不一定是一个窗口，主要是要能代理A和B的事件，并且进行各种处理即可。</p>
+<p>有了第三者C之后，接下来我们在第三者C中去处理A的移动事件，循环去判断是否和其中某个窗口满足了吸附条件。一旦满足吸附条件，我们就触发吸附后操作</p>
+<p>处理吸附事件时，可能像下面这样</p>
+<p>假设我们有10个窗口，分别是A1、A2、A3、A4...A9、A10等</p>
+<ol>
+<li>当我们拖拽A1窗口时，其他窗口都是吸附窗口（B）</li>
+<li>当我们拖拽A2窗口时，A1和其他窗口都是吸附窗口（B）</li>
+<li>同理，当我们拖拽其他An窗口时，除过An的窗口都是吸附窗口（B）</li>
+</ol>
+<p>当要引入第三者窗口时，我们可能需要思考如下几个问题</p>
+<ul>
+<li>怎么样引入第三者事件处理类呢？</li>
+<li>他是怎么初始化的？</li>
+<li>他的作用范围？</li>
+</ul>
+<p><strong>思考如上3个问题，怎么去解决他们！我第一时间就想到了Qt中提供的QButtonGroup类，这个类的作用是用于管理其中的按钮，在他里边包含的按钮不允许有两个同时选中。</strong> 是不是很相似，也是管理一堆相同的控件，但是他们中，其中一个控件的操作会对其他所有的控件产生相同的效果。</p>
+<p>也就是说：<strong>我们可以新增一个SmallGroup类，专门负责处理移动的窗口和其他窗口之间的事件</strong></p>
+<p>这个类可能就像这边这样！他提供了新增一个小窗口和移除一个小窗口的接口，添加进来的小窗口我们都可以进行磁力吸附管理。</p>
+<pre><code>class SmallGroup : public QObject
+{
+public:
+    SmallGroup(QObject * object = nullptr);
+    ~SmallGroup(){}
+
+public:
+    void AddSmall(SmallWidget *);
+    void RemoveSmall(SmallWidget *);
+
+    void MagneticEnable(bool);
+
+    void LimitCursor(bool);//限制鼠标移动范围
+    void MoveStart(SmallWidget *, const QPoint &amp;);//开始移动 
+    void MovingDistance(SmallWidget *, const QPoint &amp;);//距离开始移动时的偏差距离
+
+protected:
+    virtual bool eventFilter(QObject *, QEvent *) override;
+
+private:
+    QPoint MagneticPos(SmallWidget *, const QRect &amp;);
+
+private:
+    bool m_bMagnetic;
+    QPoint m_startPos;
+    QVector&lt;SmallWidget *&gt; m_smallVec;
+    SmallWidget * m_pMoveWidget;
+};</code></pre>
+<p>这个类的思路不难，只是里边有一些比较繁杂的实现，这里我主要说3点</p>
+<ol>
+<li>限制鼠标区域</li>
+<li>修正窗口可以移动的区域</li>
+<li>获取最邻近的可被吸附的窗口</li>
+</ol>
+<h3 id="限制鼠标区域">1、限制鼠标区域</h3>
+<p>限制鼠标可移动区域的接口上边已经列出来来了，根据参数动态的去限制鼠标移动区域，或者不限制</p>
+<pre><code>LimitCursor(bool)</code></pre>
+<p>当进行拖拽小窗口时，我们需要限制鼠标不能移除subPanel，如果不理解subPanel是什么东西，需要仔细去阅读下上一篇文章<a href="https://www.cnblogs.com/swarmbees/p/11027429.html">高仿富途牛牛-组件化(一)-支持页签拖拽、增删、小工具</a>。</p>
+<p>限制鼠标移动区域的代码如下所示，主要是使用了ClipCursor这个win32接口，代码比较简单，这里就不做详细说明了。</p>
+<pre><code>void SmallGroup::LimitCursor(bool limit)
+{
+#ifdef Q_OS_WIN
+    if (limit)
+    {
+        if (QWidget * subPanel = dynamic_cast&lt;QWidget *&gt;(parent()))
+        {
+            QRect q_rect = subPanel-&gt;geometry();
+            QPoint g_pos = subPanel-&gt;mapToGlobal(QPoint(0, 0));
+
+            CRect w_rect;
+            w_rect.left = g_pos.x();
+            w_rect.top = g_pos.y();
+            w_rect.right = g_pos.x() + q_rect.width();
+            w_rect.bottom = g_pos.y() + q_rect.height();
+
+            ClipCursor(&amp;w_rect);
+        }
+    }
+    else
+    {
+        ClipCursor(nullptr);
+    }
+#endif 
+}</code></pre>
+<h3 id="修正窗口可以移动的区域">2、修正窗口可以移动的区域</h3>
+<p>看到这个标题是不是有点儿蒙圈，其实这个也很简单，这里主要说明的是，我们移动小窗口时，小窗口不能移出subPanel，也就是说当subPanel显示时，其中的小窗口都可以全部显示出来，或者被其他小窗口遮挡。</p>
+<p>当然了，这个也是需要根据需求来定的，我最开始做的就是4个边都不能出subPanel，但是后来发现，富途牛牛的代码是只有顶部不能出去。因此代码里我注释了3个if修正操作，大家可以根据自家的需求进行修改。</p>
+<pre><code>QRect CorrentRect(const QRect &amp; rect, const QRect &amp; subPanel)
+{
+    QRect correntRect = rect;
+    //if (correntRect.left() &lt; subPanel.left())
+    //{
+    //  correntRect.moveLeft(subPanel.left());
+    //}
+    if (correntRect.top() &lt; subPanel.top())
+    {
+        correntRect.moveTop(subPanel.top());
+    }
+    //if (correntRect.right() &gt; subPanel.right())
+    //{
+    //  correntRect.moveRight(subPanel.right());
+    //}
+    //if (correntRect.bottom() &gt; subPanel.bottom())
+    //{
+    //  correntRect.moveBottom(subPanel.bottom());
+    //}
+
+    return correntRect;
+}</code></pre>
+<h3 id="获取最邻近的可被吸附的窗口">3、获取最邻近的可被吸附的窗口</h3>
+<p>磁力吸附最复杂的地方可能就是这个功能了，当我们移动一个窗口时，我们需要判断各种情况，然后去修正我们的位置。</p>
+<p>划重点1：<strong>磁力吸附是说当我们靠近某个小窗口边框时，我们拖拽的窗口可以被吸附过去，但是需要特别注意，我们实际移动的距离根本没有到达那么多，因此，当我们鼠标稍微往远移动一下，窗口应该像被弹开一样。</strong></p>
+<p>划重点2：<strong>要实现重点1，那么我们在移动窗口时，就需要有一定的技巧，需要记录小窗口开始移动的位置，和当前移动的距离。根据移动后的距离判断是否可以被吸附，如果被吸附了，那么我们直接把窗口移动多一点(或者少一点)距离，达到吸附的位置，但是实际上这个时候，我们鼠标移动的距离并不等于我们实际移动的距离，这样是为了当我们鼠标在次偏移时，我们可以继续去判断是否满足吸附条件，如果不满足则按实际的移动距离。这样就达到了被弹开的视觉效果</strong></p>
+<p>上边的描述可能理解起来会比较费劲，这里我在用公式说明下，理解不了就多看几遍吧</p>
+<p>startMovePos：开始移动时，鼠标按下的位置<br />
+offsetPos：鼠标当前位置距离开始移动时的位置之间的距离<br />
+truthPos：按照鼠标位移，将要移动到的位置。<br />
+movePos:窗口将要被移动到的位置。磁力吸附后，会在truthPos上有所偏差</p>
+<p>如上四个变量所示，当我们移动窗口时，可能会产生以下几个情况</p>
+<ol>
+<li>没有磁力吸附，直接移动到truthPos</li>
+<li>有磁力吸附，移动到被吸附的窗口边框跟前（会产生一个便宜值value，被吸过去了）</li>
+<li>上一次有磁力吸附，本次不满足处理吸附，直接移动到truthPos，产生弹开的感觉。因为之前被吸附了，有一个偏移值value。</li>
+</ol>
+<p><strong>磁力吸附需要处理4个方向的事件，这里我们只讲下左侧吸附，其他情况类似，这里不做介绍</strong></p>
+<p>如下代码所示，就是处理吸附位置时的主流程，代码里我只保留了处理做边框吸附的，其他边框代码已删，逻辑都差不多。</p>
+<pre><code>QPoint SmallGroup::MagneticPos(SmallWidget * widget, const QRect &amp; rect)
+{
+    QPoint pos(rect.topLeft());
+
+    if (QWidget * subPanel = dynamic_cast&lt;QWidget *&gt;(parent()))
+    {
+        QRect panelRect = subPanel-&gt;rect();
+
+        QRect correntRect = CorrentRect(rect, panelRect);
+        if (m_bMagnetic == false)
+        {
+            return correntRect.topLeft();
+        }
+
+        //修改位置后的ps  更准确
+        pos = correntRect.topLeft();
+
+        QVector&lt;SmallWidget *&gt; smallWidgets = m_smallVec;
+        smallWidgets.removeOne(widget);
+
+        int distance = 0;
+        //左边框与subPanel左测比较
+        if (CanMagneticPanel(ME_LEFT, rect.left(), panelRect, distance))
+        {
+            pos.setX(panelRect.left());
+        }
+        else 
+        {
+            //左边框与其他窗口右边框比较
+            if (CanMagneticSmall(ME_LEFT, rect.left(), smallWidgets, distance))
+            {
+                pos.setX(distance);
+            }
+        }
+        ...
+    }
+}</code></pre>
+<p>左侧吸附具体分两个情况</p>
+<ol>
+<li>移动窗口A和subPanel之间的吸附</li>
+<li>移动窗口A的左边框和被吸附窗口B的右边框之间的吸附</li>
+</ol>
+<h4 id="aa窗口和subpanel面板之间的吸附">a、A窗口和subPanel面板之间的吸附</h4>
+<p><strong>吸附规则时：A窗口左边框吸附subPanel面板的左边框，同理其他边框都是一样</strong></p>
+<pre><code>bool CanMagneticPanel(MagneticEdge edge, int s, const QRect &amp; subPanel, int &amp; distance)
+{
+    int value;
+    switch (edge)
+    {
+    case ME_LEFT:
+        value = subPanel.left();
+        break;
+    case ME_TOP:
+        value = subPanel.top();
+        break;
+    case ME_RIGHT:
+        value = subPanel.right();
+        break;
+    case ME_BOTTOM:
+        value = subPanel.bottom();
+        break;
+    default:
+        break;
+    }
+    distance = qFabs(s - value);
+    if (distance &lt;= MagneticDistance)
+    {
+        return true;
+    }
+
+    return false;
+}</code></pre>
+<h4 id="ba窗口的左边框和被吸附窗口b的右边框之间的吸附">b、A窗口的左边框和被吸附窗口B的右边框之间的吸附</h4>
+<p>循环判断其他可被吸附的窗口，找到一个距离最近可悲吸附的窗口，然后进行位置修正。当函数返回为真时，distance就是最后要被修复的位置。</p>
+<p><strong>值得注意的是，如果有多个满足吸附的窗口边框，我们需要找到一个距离最近的窗口进行修复，也就是说呗吸附的窗口边框和我们正在拖拽的窗口边框距离最近。</strong></p>
+<p><strong>不同于和subPanel之间的吸附规则，子窗口之间的吸附规则是，A窗口的左边框会吸附B窗口的右边框；A窗口的顶边框会吸附B窗口的低边框，规则是不是很清晰了，刚好是反的。左对右、顶对低、右对左和低对顶</strong></p>
+<pre><code>bool CanMagneticSmall(MagneticEdge edge, int moving, const QVector&lt;SmallWidget *&gt; &amp; allWidget, int &amp; distance)
+{
+    distance = 10000;
+    bool result = false;
+    int minDistance = 10000;
+    //根据edge的值  动态去获取窗口的边
+    //例如：edge为ME_LEFT时 需要获取其他窗口的ME_RIGHT  去对比
+    for each (SmallWidget  * widget in allWidget)
+    {
+        int otherValue = -1; 
+        switch (edge)
+        {
+        case ME_LEFT:
+            otherValue = widget-&gt;geometry().right() + 2;
+            break;
+        case ME_TOP:
+            otherValue = widget-&gt;geometry().bottom() + 2;
+            break;
+        case ME_RIGHT:
+            otherValue = widget-&gt;geometry().left() - 1;
+            break;
+        case ME_BOTTOM:
+            otherValue = widget-&gt;geometry().top() - 1;
+            break;
+        default:
+            break;
+        }
+        if (otherValue != -1)
+        {
+            int tmp = qFabs(moving - otherValue);
+            if (minDistance &gt; tmp)
+            {
+                minDistance = tmp;
+
+                if (minDistance &lt;= MagneticDistance)
+                {
+                    result = true;
+                    distance = otherValue;
+                }
+            }
+        }
+    }
+
+    return result;
+}</code></pre>
+<h2 id="四其他">四、其他</h2>
+<p>工具箱窗口和工具栏工具按钮联动，按理说这个功能属于比较常见的功能，但是这里我也想拿出来跟大家分享下，这里我主要是借助了QAction这个类，把工具栏种的按钮QToolButton和工具箱窗口进行了绑定，这样不需要过多的信号餐同步，我们就可以很简单的实现功能联动</p>
+<p>以前的时候我都是使用信号槽进行同步的，后来才发现这个比较取巧的办法，不是多么高端，主要是可以让代码更清晰。当有越来越多的复杂业务时，QAction的联动同步优势就出来了。</p>
+<p>下面是QToolButton和工具箱同步状态的代码</p>
+<pre><code>//工具箱，关闭时，同步工具栏按钮状态
+void ToolBoxDialog::BindAction(QAction * act)
+{
+    connect(m_pToolBoxAct, &amp;QAction::triggered, act, &amp;QAction::setChecked, Qt::UniqueConnection);
+}
+
+connect(m_pTitle, &amp;ToolBoxTitle::CloseWindow, this, [this](){
+        m_pToolBoxAct-&gt;triggered(false);
+        setVisible(false);
+    });
+    
+//点击工具栏按钮时，打开工具箱
+void TemplateLayout::ShowToolBox(bool visible)
+{
+    if (m_pToolBox == nullptr)
+    {
+        m_pToolBox = new ToolBoxDialog(this);
+        m_pToolBox-&gt;BindAction(m_pToolBar-&gt;GetToolBoxButton());
+        connect(m_pToolBox, &amp;ToolBoxDialog::SubWindowClicked, m_pPanel, &amp;ContentPanel::CreateSubWindow);
+    }
+
+    if (visible)
+    {
+        m_pToolBox-&gt;show();
+    }
+    else
+    {
+        m_pToolBox-&gt;hide();
+    }
+}</code></pre>
+<h2 id="五相关文章">五、相关文章</h2>
+<p><a href="https://www.cnblogs.com/swarmbees/p/11027429.html">高仿富途牛牛-组件化(一)-支持页签拖拽、增删、小工具</a></p>
+<p><strong>以上的内容，基本上就是本篇文章的内容所有内容啦！磁力吸附功能基本完成，希望可以帮到大家。</strong></p>
+<p><br></p>
+<html>
+    <div style='font-weight:600;'>
+    如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！
+    </div>
+<center>
+    <div>
+        <table>
+        <tr>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td>
+        </tr>
+        </table>
+    </div>
+</center>
+</html>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

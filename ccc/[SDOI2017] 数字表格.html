@@ -1,0 +1,93 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[SDOI2017] 数字表格' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[SDOI2017] 数字表格</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/10637295.html</div><br>
+    <p>反演拾遗，设'~'表示min(n,m)，推狮子<br />
+<span class="math display">\[
+\prod_{i=1}^n\prod_{j=1}^n\mathbb{fib}_{\gcd(a,b)}
+=\prod_{d=1}^\sim\mathbb{pow}(\mathbb{fib}_d,\sum_{i=1}^{n/d}\sum_{j=1}^{m/d}\epsilon(\gcd(n,m)))\\
+=\prod_{d=1}^\sim\mathbb{pow}(\mathbb{fib}_d,\sum_{t=1}^{\sim/d}\mu(t)\frac{n}{dt}\frac{m}{dt})\\
+=\prod_{q=1}^\sim\prod_{d|q}\mathbb{pow}(\mathbb{fib}_d,\mu(\frac{q}{d})\frac{n}{q}\frac{m}{q})\\
+=\prod_{q=1}^\sim\mathbb{pow}(\prod_{d|q}\mathbb{pow}(\mathbb{fib}_d,\mu(\frac{q}{d})),\frac{n}{q}\frac{m}{q})
+\]</span><br />
+预处理处外层pow的底数设为w[q]，求其前缀积，每组询问分块。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+#define LL long long 
+using namespace std;
+const int N=1e6+10;
+const int P=1e9+7;
+
+inline int qpow(LL x,LL y) {
+    int c=1;
+    for(; y; y&gt;&gt;=1,x=x*x%P) 
+        if(y&amp;1) c=x*c%P;
+    return c;
+}
+
+int pri[N],mu[N],fib[N],fiv[N],cnt;
+long long w[N];
+bool vis[N];
+
+void initial() {
+    mu[1]=1;
+    for(int i=2; i&lt;N; ++i) {
+        if(!vis[i]) pri[++cnt]=i,mu[i]=-1;
+        for(int j=1; j&lt;=cnt&amp;&amp;i*pri[j]&lt;N; ++j) {
+            vis[i*pri[j]]=1;
+            if(i%pri[j]==0) break;
+            else mu[i*pri[j]]=-mu[i];
+        }
+    }
+    fib[1]=w[0]=w[1]=fiv[0]=fiv[1]=1;
+    for(int i=2; i&lt;N; ++i) {
+        fib[i]=(fib[i-1]+fib[i-2])%P;
+        fiv[i]=qpow(fib[i],P-2);
+        w[i]=1;
+    }
+    for(int d=1; d&lt;N; ++d) {
+        for(int q=d; q&lt;N; q+=d) {
+            if(mu[q/d]&gt;0) w[q]=w[q]*fib[d]%P;
+            else if(mu[q/d]&lt;0) w[q]=w[q]*fiv[d]%P;
+        }
+        w[d]=w[d-1]*w[d]%P;
+    }
+}
+int main() {
+    initial(); //0.32s
+    int T,n,m; 
+    scanf(&quot;%d&quot;,&amp;T);
+    while(T--) {
+        scanf(&quot;%d%d&quot;,&amp;n,&amp;m);
+        int c=1,sim=min(n,m);
+        for(int l=1,r; l&lt;=sim; l=r+1) {
+            r=min(n/(n/l),m/(m/l));
+            c=1LL*c*qpow(w[r]*qpow(w[l-1],P-2)%P,1LL*n/l*(m/l)%(P-1))%P;
+        }
+        printf(&quot;%d\n&quot;,c);
+    }
+    return 0;
+}
+</code></pre>
+<p><del>把<span class="math inline">\(\mu\)</span>求成<span class="math inline">\(\varphi\)</span>是要闹哪样啊</del></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

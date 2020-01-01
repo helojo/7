@@ -1,0 +1,112 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修PHP转Go系列：字符串' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>PHP转Go系列：字符串</center></div><div class='banquan'>原文出处:本文由博客园博主张以诺提供。<br/>
+原文连接:https://www.cnblogs.com/enochzzg/p/11000425.html</div><br>
+    <h2 id="字符串的赋值">字符串的赋值</h2>
+<p>在PHP中，字符串的赋值虽然只有一行，其实包含了两步，一是声明变量，二是赋值给变量，同一个变量可以任意重新赋值。</p>
+<pre><code><code>$str = &#39;Hello World!&#39;;
+$str = &#39;hia&#39;;</code></pre>
+<p>Go语言实现上述两步也可以用一行语句解决，就是通过标识<code>var</code>赋值时同时声明变量，切记等号右侧的字符串不能用单引号，对变量的后续赋值也不能再重新声明，否则会报错。除此之外，定义的变量不使用也会报错，从这点来看，Go还是比PHP严格很多的，规避了很多在开发阶段产生的性能问题。</p>
+<pre class="go"><code>var str = &quot;Hello World!&quot;
+str = &quot;hia&quot;</code></pre>
+<p>关于声明，Go提供了一种简化方式，不需要在行首写var，只需将等号左侧加上一个冒号就好了，切记这只是替代了声明语句，它并不会像PHP那样用一个赋值符号来统一所有的赋值操作。</p>
+<pre class="go"><code>str := &quot;Hello World!&quot;
+str = &quot;hia&quot;</code></pre>
+<h2 id="字符串的输出">字符串的输出</h2>
+<p>PHP中的输出非常简单，一个echo就搞定了。</p>
+<pre><code><code>&lt;?php
+    echo &#39;Hello World!&#39;;
+?&gt;</code></pre>
+<p>而Go不一样的是，调用它的输出函数前需要先引入包<code>fmt</code>，这个包提供了非常全面的输入输出函数，如果只是输出普通字符串，那么和PHP对标的函数就是<code>Print</code>了，从这点来看，Go更有一种万物皆对象的感觉。</p>
+<pre class="go"><code>import &quot;fmt&quot;
+
+func main() {
+    fmt.Print(&quot;Hello world!&quot;)
+}</code></pre>
+<p>在PHP中还有一个格式化输出函数<code>sprintf</code>，可以用占位符替换字符串。</p>
+<pre><code><code>echo sprintf(&#39;name:%s&#39;, &#39;平也&#39;);  //name:平也</code></pre>
+<p>在Go中也有同名同功能的字符串格式化函数。</p>
+<pre class="go"><code>fmt.Print(fmt.Sprintf(&quot;name:%s&quot;, &quot;平也&quot;))</code></pre>
+<p>官方提供的默认占位符有以下几种，感兴趣的同学可以自行了解。</p>
+<pre><code><code>bool:                    %t
+int, int8 etc.:          %d
+uint, uint8 etc.:        %d, %#x if printed with %#v
+float32, complex64, etc: %g
+string:                  %s
+chan:                    %p
+pointer:                 %p</code></pre>
+<h2 id="字符串的相关操作">字符串的相关操作</h2>
+<h3 id="字符串长度">字符串长度</h3>
+<p>在PHP中通过<code>strlen</code>计算字符串长度。</p>
+<pre><code><code>echo strlen(&#39;平也&#39;);  //output: 6</code></pre>
+<p>在Go中也有类似函数<code>len</code>。</p>
+<pre class="go"><code>fmt.Print(len(&quot;平也&quot;))   //output: 6</code></pre>
+<p>因为统计的是ASCII字符个数或字节长度，所以两个汉字被认定为长度6，如果要统计汉字的数量，可以使用如下方法，但要先引入<code>unicode/utf8</code>包。</p>
+<pre class="go"><code>import (
+    &quot;fmt&quot;
+    &quot;unicode/utf8&quot;
+)
+
+func main() {
+    fmt.Print(utf8.RuneCountInString(&quot;平也&quot;))    //output: 2
+}</code></pre>
+<h3 id="字符串截取">字符串截取</h3>
+<p>PHP有一个<code>substr</code>函数用来截取任意一段字符串。</p>
+<pre><code><code>echo substr(&#39;hello,world&#39;, 0, 3); //output: hel</code></pre>
+<p>Go中的写法有些特别，它是将字符串当做数组，截取其中的某段字符，比较麻烦的是，在PHP中可以将第二个参数设置为负数进行反向取值，但是Go无法做到。</p>
+<pre class="go"><code>str := &quot;hello,world&quot;
+fmt.Print(str[0:3])  //output: hel</code></pre>
+<h3 id="字符串搜索">字符串搜索</h3>
+<p>PHP中使用<code>strpos</code>查询某个字符串出现的位置。</p>
+<pre><code><code>echo strpos(&#39;hello,world&#39;, &#39;l&#39;); //output: 2</code></pre>
+<p>Go中需要先引入<code>strings</code>包，再调用<code>Index</code>函数来实现。</p>
+<pre class="go"><code>fmt.Print(strings.Index(&quot;hello,world&quot;, &quot;l&quot;)) //output: 2</code></pre>
+<h3 id="字符串替换">字符串替换</h3>
+<p>PHP中替换字符串使用<code>str_replace</code>内置函数。</p>
+<pre><code><code>echo str_replace(&#39;world&#39;, &#39;girl&#39;, &#39;hello,world&#39;); //output: hello,girl</code></pre>
+<p>Go中依然需要使用<code>strings</code>包中的函数<code>Replace</code>，不同的是，第四个参数是必填的，它代表替换的次数，可以为0，代表不替换，但没什么意义。还有就是字符串在PHP中放在第三个参数，在Go中是第一个参数。</p>
+<pre class="go"><code>fmt.Print(strings.Replace(&quot;hello,world&quot;, &quot;world&quot;, &quot;girl&quot;, 1)) //output: hello,girl</code></pre>
+<h3 id="字符串连接">字符串连接</h3>
+<p>在PHP中最经典的就是用点来连接字符串。</p>
+<pre><code><code>echo &#39;hello&#39; . &#39;,&#39; . &#39;world&#39;; //output: hello,world</code></pre>
+<p>在Go中用加号来连接字符串。</p>
+<pre class="go"><code>fmt.Print(&quot;hello&quot; + &quot;,&quot; + &quot;world&quot;) //output: hello,world</code></pre>
+<p>除此之外，还可以使用<code>strings</code>包中的<code>Join</code>函数连接，这种写法非常类似与PHP中的数组拼接字符串函数<code>implode</code>。</p>
+<pre class="go"><code>str := []string{&quot;hello&quot;, &quot;world&quot;}
+fmt.Print(strings.Join(str, &quot;,&quot;)) //output: hello,world</code></pre>
+<h3 id="字符串编码">字符串编码</h3>
+<p>PHP中使用内置函数<code>base64_encode</code>来进行编码。</p>
+<pre><code><code>echo base64_encode(&#39;hello, world&#39;); //output: aGVsbG8sIHdvcmxk</code></pre>
+<p>在Go中要先引入<code>encoding/base64</code>包，并定义一个切片，再通过<code>StdEncoding.EncodeToString</code>函数对切片编码，比PHP要复杂一些。</p>
+<pre class="go"><code>import (
+    &quot;encoding/base64&quot;
+    &quot;fmt&quot;
+)
+
+func main() {
+    str := []byte(&quot;hello, world&quot;)
+    fmt.Print(base64.StdEncoding.EncodeToString(str))
+}</code></pre>
+<p>以上是PHP与Go在常用的字符串处理场景中的区别，感兴趣的同学可以自行了解。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

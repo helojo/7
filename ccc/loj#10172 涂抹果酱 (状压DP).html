@@ -1,0 +1,99 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修loj#10172 涂抹果酱 (状压DP)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>loj#10172 涂抹果酱 (状压DP)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/11650244.html</div><br>
+    <h2 id="题目">题目：</h2>
+<p><a href="https://loj.ac/problem/10172">#10172. 「一本通 5.4 练习 1」涂抹果酱</a></p>
+<h2 id="解析">解析：</h2>
+<p>三进制的状压DP<br />
+经过简单的打表发现，在<span class="math inline">\(m=5\)</span>时最多有<span class="math inline">\(48\)</span>种合法状态<br />
+然后就向二进制一样枚举当前状态和上一层的状态进行转移就好了<br />
+由于第<span class="math inline">\(k\)</span>行是给定的，所以转移时要特判一下第<span class="math inline">\(k\)</span>行，并且注意下一<span class="math inline">\(k=1\)</span>的情况<br />
+设<span class="math inline">\(f[i][j]\)</span>表示第<span class="math inline">\(i\)</span>行<span class="math inline">\(j\)</span>状态时的方案数<br />
+<span class="math inline">\(f[i][j] += f[i - 1][k],k是上一行的状态\)</span></p>
+<h2 id="代码">代码：</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+#define int long long
+using namespace std;
+
+const int N = 1e5 + 10;
+const int mod = 1e6;
+
+int n, m, k, num, sum = 1, sta, kk, ans;
+/*
+    sum为状态上节
+    sta是第k行状态
+    num是合法状态数
+*/
+int state[N], f[10010][50];
+//state记录状态
+//f[i][j]表示dp 到第i行j状态的方案数
+
+bool check(int x) {     //判断状态是否合法
+    int len = 0;
+    int b[10];
+    while (x) b[++len] = x % 3, x /= 3;
+    if (len &lt; m - 1) return 0;
+    for (int i = 2; i &lt;= len; ++i) if (b[i] == b[i - 1]) return 0;
+    return 1;   
+}
+
+bool cmp(int x, int y) {    //判断两个状态是否可以相邻
+    for (int i = 1; i &lt;= m; ++i) {
+        if ((x % 3) == (y % 3)) return 0;
+        x /= 3, y /= 3;
+    }
+    return 1;
+}
+
+signed main() {
+    cin &gt;&gt; n &gt;&gt; m &gt;&gt; k;
+    for (int i = 1, x; i &lt;= m; ++i) cin &gt;&gt; x, kk = kk * 3 + x - 1;
+    for (int i = 1; i &lt;= m; ++i) sum *= 3;
+    for (int i = 0; i &lt; sum; ++i) if (check(i)) {
+            state[++num] = i;
+            if (i == kk) sta = num;
+        }
+    if (sta == 0) {
+        cout &lt;&lt; 0;
+        return 0;
+    }
+    for (int i = 1; i &lt;= n; ++i) {
+        if (i == k) {
+            if (i == 1) f[1][sta] = 1;
+            else for (int j = 1; j &lt;= num; ++j)
+                    if (cmp(state[sta], state[j]))
+                        (f[i][sta] += f[i - 1][j]) %= mod;
+        } else {
+            if (i == 1) for (int j = 1; j &lt;= num; ++j) f[i][j] = 1;
+            else for (int j = 1; j &lt;= num; ++j)
+                    for (int pre = 1; pre &lt;= num; ++pre)
+                        if (cmp(state[j], state[pre])) 
+                            (f[i][j] += f[i - 1][pre]) %= mod;
+        }
+    }
+    for (int i = 1; i &lt;= num; ++i) (ans += f[n][i]) %= mod;
+    cout &lt;&lt; ans;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

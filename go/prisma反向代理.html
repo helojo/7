@@ -1,0 +1,227 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修prisma反向代理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>prisma反向代理</center></div><div class='banquan'>原文出处:本文由博客园博主wang_yb提供。<br/>
+原文连接:https://www.cnblogs.com/wang_yb/p/11411840.html</div><br>
+    <ul>
+<li><a href="#sec-1">概要</a></li>
+<li><a href="#sec-2">为什么要做 prisma 的反向代理</a></li>
+<li><a href="#sec-3">反向代理示例(by golang)</a>
+<ul>
+<li><a href="#sec-3-1">prisma 服务</a></li>
+<li><a href="#sec-3-2">gateway 服务</a>
+<ul>
+<li><a href="#sec-3-2-1">整体流程</a></li>
+<li><a href="#sec-3-2-2">认证</a></li>
+<li><a href="#sec-3-2-3">反向代理</a></li>
+<li><a href="#sec-3-2-4">权限</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#sec-4">总结</a></li>
+</ul>
+<h1 id="概要">概要<a id="sec-1"></a></h1>
+<p>接触 prisma 有段时间了, 期间也使用过其他几种 graphql 接口自动生成的框架. 总的来说, 还是 prisma 生成的接口比较丰富, 使用上也比较方便, 和数据库之间耦合也低.</p>
+<p>prisma 文档: <a href="https://www.prisma.io/docs" class="uri">https://www.prisma.io/docs</a> (写本文时是 1.34 版)</p>
+<h1 id="为什么要做-prisma-的反向代理">为什么要做 prisma 的反向代理<a id="sec-2"></a></h1>
+<p>prisma 服务虽然自动生成了接口, 但是这些接口其实不建议直接暴露给前端来用, 因为实际项目中, 最基本的要对接口进行认证和权限控制. 甚至还有其他需求, 不可能只用自动生成的接口就能完成所有的功能.</p>
+<p>所以, 一般在使用 prisma 服务的时候, 一般都会再封装一层(可以称为 gateway), 在 gateway 上做认证, 权限等等, 只有合法的请求才会最终转发到 prisma 服务上. prisma 服务本身可以导出 client SDK, 用来方便 gateway 的编写, 目前支持 4 种格式 (javascript, typescript, golang, flow), javascript 和 typescript 的是 client SDK 功能比较全, golang 功能弱一些, flow 没有尝试过.</p>
+<p>我在使用 golang client SDK 写 gateway 的时候, 发现 golang 的 graphql server 相关的库没有 js/ts 那么完善. 于是, 就想用反向代理的方式, 拦截前端的 graphql 请求, 做了相应操作之后直接再将请求内容转发给 prisma 服务. 这种方式不使用 prisma 生成的 client SDK, 也突破语言的限制, 除了 golang, java, C# 等其他语言也可以作为 prisma 的 gateway</p>
+<h1 id="反向代理示例by-golang">反向代理示例(by golang)<a id="sec-3"></a></h1>
+<p>采用 golang 的 <a href="http://github.com/gin-gonic/gin">gin</a> 作为 gateway 的 web 服务框架. 认证部分使用 <a href="http://github.com/appleboy/gin-jwt">gin-jwt</a> 中间件. 反向代理和权限部分没有使用现成的框架.</p>
+<p>整个 gateway 的示例包含:</p>
+<ol>
+<li>prisma 服务(prisma + mysql): 这部分有现成的 docker image, 只要配置示例的表和字段即可</li>
+<li>gateway (golang gin): golang gin 的 api 服务</li>
+</ol>
+<h2 id="prisma-服务">prisma 服务<a id="sec-3-1"></a></h2>
+<ol>
+<li><p>prisma.yml</p>
+<pre><code><code>endpoint: http://${env:PRISMA_HOST}:${env:PRISMA_PORT}/illuminant/${env:PRISMA_STAGE}
+datamodel: datamodel.prisma
+
+secret: ${env:PRISMA_MANAGEMENT_API_SECRET}
+
+generate:
+  - generator: go-client
+    output: ./</code></pre></li>
+<li><p>.env</p>
+<pre><code><code>PRISMA_HOST=localhost
+PRISMA_PORT=4466
+PRISMA_STAGE=dev
+PRISMA_MANAGEMENT_API_SECRET=secret-key</code></pre></li>
+<li><p>datamodel.prisma</p>
+<pre><code><code>type User {
+  id: ID! @id
+  name: String! @unique
+  realName: String!
+  password: String!
+
+  createdAt: DateTime! @createdAt
+  updatedAt: DateTime! @updatedAt
+}</code></pre></li>
+<li><p>docker-compose.yml</p>
+<pre><code><code>version: &#39;3&#39;
+services:
+  illuminant:
+    image: prismagraphql/prisma:1.34
+    # restart: always
+    ports:
+    - &quot;4466:4466&quot;
+    environment:
+      PRISMA_CONFIG: |
+        port: 4466
+        managementApiSecret: secret-key
+        databases:
+          default:
+            connector: mysql
+            host: mysql-db
+            user: root
+            password: prisma
+            # rawAccess: true
+            port: 3306
+            migrations: true
+
+  mysql-db:
+    image: mysql:5.7
+    # restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: prisma
+    volumes:
+      - mysql:/var/lib/mysql
+volumes:
+  mysql: ~</code></pre></li>
+</ol>
+<p>以上文件放在同一个目录即可, 包含了所有 prisma 服务和 mysql 服务所需要的文件</p>
+<h2 id="gateway-服务">gateway 服务<a id="sec-3-2"></a></h2>
+<p>gateway 服务是关键, 也是今后扩展的部分. 采用 golang gin 框架来编写.</p>
+<h3 id="整体流程">整体流程<a id="sec-3-2-1"></a></h3>
+<ol>
+<li>HTTP 请求</li>
+<li>route 路由</li>
+<li>认证 Check</li>
+<li>权限 Check</li>
+<li>请求转发 prisma 服务(这一步一般都是转发到 prisma, 如果有上传/下载, 或者统计之类的需求, 需要另外写 API)</li>
+<li>返回 Response</li>
+</ol>
+<h3 id="认证">认证<a id="sec-3-2-2"></a></h3>
+<pre class="go"><code>authMiddleware := controller.JwtMiddleware()
+apiV1 := r.Group(&quot;/api/v1&quot;)
+
+// no auth routes
+apiV1.POST(&quot;/login&quot;, authMiddleware.LoginHandler)
+
+// auth routes
+authRoute := apiV1.Group(&quot;/&quot;)
+authRoute.GET(&quot;/refresh_token&quot;, authMiddleware.RefreshHandler)
+authRoute.Use(authMiddleware.MiddlewareFunc())
+{
+  // proxy prisma graphql
+  authRoute.POST(&quot;/graphql&quot;, ReverseProxy())
+}</code></pre>
+<p><strong>/api/v1/graphql</strong> 在满足 jwt 认证的情况下才可以访问.</p>
+<h3 id="反向代理">反向代理<a id="sec-3-2-3"></a></h3>
+<pre class="go"><code>func ReverseProxy() gin.HandlerFunc {
+
+  return func(c *gin.Context) {
+    director := func(req *http.Request) {
+      req.URL.Scheme = &quot;http&quot;
+      req.URL.Host = primsa-host
+      req.URL.Path = primsa-endpoint
+      delete(req.Header, &quot;Authorization&quot;)
+      req.Header[&quot;Authorization&quot;] = []string{&quot;Bearer &quot; + primsa-token}
+
+    }
+
+    // 解析出 body 中的内容, 进行权限检查
+    body, err := c.GetRawData()
+    if err != nil {
+      fmt.Println(err)
+    }
+
+    // 对 body 进行权限 check
+    // 权限 Check, 解析出 graphql 中请求的函数, 然后判断是否有权限
+    // 目前的方式是根据请求中函数的名称来判断权限, 也就是只能对表的 CURD 权限进行判断, 对于表中的字段权限还无法检查
+    // 如果权限检查没有通过, 直接返回, 不要再进行下面的请求转发
+
+    // 将 body 反序列化回请求中, 转发给 prisma 服务
+    c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
+    proxy := &amp;httputil.ReverseProxy{Director: director}
+    proxy.ModifyResponse = controller.RewriteBody
+    proxy.ServeHTTP(c.Writer, c.Request)
+  }
+}</code></pre>
+<h3 id="权限">权限<a id="sec-3-2-4"></a></h3>
+<pre class="go"><code>// 检查权限
+func CheckAuthority(body []byte, userId string) bool {
+        var bodyJson struct {
+                Query string `json:&quot;query&quot;`
+        }
+        log := logger.GetLogger()
+        if err := json.Unmarshal(body, &amp;bodyJson); err != nil {
+                log.Error(&quot;body convert to json error: %s&quot;, err.Error())
+                return false
+        }
+
+        graphqlFunc := RegrexGraphqlFunc(bodyJson.Query)
+        if graphqlFunc == &quot;&quot; {
+                return false
+        }
+
+        // 这里的 userId 是从 jwt 中解析出来的, 然后再判断用户是否有权限
+
+        if graphqlFunc == &quot;users&quot; {
+                return false
+        }
+        return true
+}
+
+// 匹配 graphql 请求的函数
+func RegrexGraphqlFunc(graphqlReq string) string {
+        graphqlReq = strings.TrimSpace(graphqlReq)
+        // reg examples:
+        // { users {id} }
+        // { users(where: {}) {id} }
+        // mutation{ user(data: {}) {id} }
+        var regStrs = []string{
+                `^\{\s*(\w+)\s*\{.*\}\s*\}$`,
+                `^\{\s*(\w+)\s*\(.*\)\s*\{.*\}\s*\}$`,
+                `^mutation\s*\{\s*(\w+)\s*\(.*\)\s*\{.*\}\s*\}$`,
+        }
+
+        for _, regStr := range regStrs {
+                r := regexp.MustCompile(regStr)
+                matches := r.FindStringSubmatch(graphqlReq)
+                if matches != nil &amp;&amp; len(matches) &gt; 1 {
+                        return matches[1]
+                }
+        }
+
+        return &quot;&quot;
+}</code></pre>
+<p>这里的权限检查是个实现思路, 不是最终的代码.<br />
+其中用正则表达式的方式来匹配请求中的函数只是临时的方案, 不是最好的方式,<br />
+最好的方式应该用 golang 对应的 graphql 解析库来解析出请求的结构, 然后再判断解析出的函数时候有权限</p>
+<h1 id="总结">总结<a id="sec-4"></a></h1>
+<p>采用反向代理的方式, 是为了突破 prisma client SDK 的限制, 如果以后 client SDK 完善之后, 还是基于 client SDK 来开发 gateway 更加可靠.</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

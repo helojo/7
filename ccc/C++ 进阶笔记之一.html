@@ -1,0 +1,80 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ 进阶笔记之一' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ 进阶笔记之一</center></div><div class='banquan'>原文出处:本文由博客园博主源码分析提供。<br/>
+原文连接:https://www.cnblogs.com/aiaitie/p/12010034.html</div><br>
+    <h1>优化相关</h1>
+<ul>
+<li>使用灵活的、动态分配的数据，不要使用固定大小多数组；</li>
+<li>
+<p>优先使用线性算法或者尽可能快的算法：</p>
+<ol>
+<li>push_back 散列表查询：O(1)</li>
+<li>set/map lower_bound/upper_bound: O(logN)</li>
+<li>vector::insert for_each O(N)</li>
+</ol></li>
+<li>
+<p>尽可能避免劣于线性复杂性的算法，永远不要使用指数复杂性的算法；</p>
+</li>
+<li>不要进行不成熟的优化：<ol>
+<li>可以用通过引用传递的时候，却定义了通过值传递的方式传递参数；</li>
+<li>可以使用前缀++、--运算的时候，却使用了后缀的方式；</li>
+<li>构造函数中使用赋值操作而非初始化列表</li>
+</ol></li>
+</ul>
+<h1>并发编程</h1>
+<ul>
+<li>尽量减少全局和共享数据<br />避免使用名字空间作用域中具有外部连接的数据或者作为静态类成员的数据。如果不得不用，一定要对其仔细进行初始化。在不同编译单位中这种对象的初始化顺序是未定义的，为此需要高度注意；另外，名字空间作用域中的对象、静态数据成员对象或者跨线程（进程）共享的对象会减少并行性，往往是产生性能和可伸缩性瓶劲的原因。</li>
+
+</ul>
+<p>例外情况： cin/cout/cerr 比较特殊： cout &lt;&lt; "hello world" 等价于<br />（cout, "hello world");</p>
+<ul>
+<li>
+<p>使用C++编写可靠的多线程的代码，认真考虑下面的建议：</p>
+<ol>
+<li>参考目标平台的文档，了解改平台的同步原语，比如原子操作、内存屏障</li>
+<li>最好将平台的原语用自己设计的抽象包装起来：比如使用pthread;</li>
+<li>确保正在使用的类型在多线程程序中使用是安全的：<br /><strong>保证非共享的对象独立；<br /></strong>确定在不同线程中使用该类型的同一个对象到底是不是需要加锁、考虑最合适的加锁粒度；</li>
+
+</ol></li>
+<li>
+<p>如果编写可能用于多线程的类型，必须完成两项任务：</p>
+<ol>
+<li>确保不同线程可以不加锁地使用该类型的不同对象；</li>
+<li>必须明确且提供不同线程使用该类型的同一个对象需要做的操作：<br /><strong>是否需要考虑外部加锁： 调用者自己负责加锁<br /></strong>是否需要内部加锁：为每个公有成员函数的操作加锁。比如生产者-消费者模型通常使用内部加锁。需要考虑：<br />第一、 确认该类型的对象总是要被跨线程共享；<br />第二、类型接口的设计应该有利于粗粒度、自给自足的操作。如果内部的锁加得很合适，那么对调用者而言是透明无感的。<br />第三、不变对象（只读的、常量字符串）不需加锁。</li>
+
+</ol></li>
+<li>确保资源为对象所拥有，使用显式的RAII和智能指针<ol>
+<li>使用RAII时，小心复制构造函数和赋值构造函数；</li>
+<li>使用智能指针而非原始指针来保存动态分配的资源：shared_ptr&lt;T *&gt;</li>
+<li>应该显式地执行资源分配（比如new）;</li>
+<li>马上将申请分配的资源赋予给管理对象：</li>
+
+</ol></li>
+
+</ul>
+<p>比如：<br />void Fun(shared_ptr&lt;Widget&gt; sp1, shared_ptr&lt;Widget&gt; sp2);<br />Fun(shared_ptr&lt;Widget&gt;(new Widget), shared_ptr&lt;Widget&gt;(new Widget));</p>
+<p>由于参数初始化的顺序可能因为编译器的不同而改变，一种极端的情况是：<br />同时执行了对两个对象的new 操作的内存分配操作，然后再试图调用两个Widget 构造函数。如果这个时候某个构造函数调用抛出异常，另外一个对象的内存就永远没有机会释放了。</p>
+<p>解决方法：绝对不要在一条语句中分配一个以上的资源，应该显式地执行资源分配（比如new),然后马上将申请分配的资源赋予给管理对象。例如：</p>
+<p>shared_ptr&lt;Widget&gt; sp1(new Widget);<br />shared_ptr&lt;Widget&gt; sp2(new Widget);</p>
+<p>Fun(sp1, sp2);</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,116 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修BZOJ1003 [ZJOI2006]物流运输(最短路+DP)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>BZOJ1003 [ZJOI2006]物流运输(最短路+DP)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/11347171.html</div><br>
+    <h2 id="题目">题目：</h2>
+<p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=1003">1003: [ZJOI2006]物流运输</a></p>
+<h2 id="解析">解析：</h2>
+<p>最短路+DP<br />
+我们用<span class="math inline">\(no[i][j]\)</span>来表示<span class="math inline">\(i\)</span>在第<span class="math inline">\(j\)</span>天不可以经过<br />
+用<span class="math inline">\(cost[i][j]\)</span>表示第<span class="math inline">\(i\)</span>天到第<span class="math inline">\(j\)</span>天的花费<br />
+在最短路的时候判断一下在第<span class="math inline">\(i\)</span>天到第<span class="math inline">\(j\)</span>天中哪些码头不可以走，在做最短路时跳过</p>
+<p>最后设f[i]表示到第i天时的最小花费<br />
+转移方程<br />
+<span class="math inline">\(f[i] = min(f[i], f[j]+k+cost[j+1][i]*(i-j))\)</span></p>
+<h2 id="代码">代码：</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+
+using namespace std;
+
+const int N = 1010;
+const int INF = 0x3f3f3f3f;
+
+int n, m, k, E, num, t;
+int head[N], dis[N];
+
+long long f[N], cost[N][N];
+
+bool vis[N], no[N][N], mark[N];
+
+struct node {
+    int v, nx, w;
+} e[N];
+
+struct edge {
+    int id, dis;
+    bool operator &lt;(const edge &amp;oth) const {
+        return dis &gt; oth.dis;
+    }
+};
+
+inline void add(int u, int v, int w) {
+    e[++num] = (node) {v, head[u], w}, head[u] = num;
+}
+
+priority_queue&lt;edge&gt;q;
+void dijkstra(int s, int from, int to) {
+    memset(dis, INF, sizeof dis);
+    memset(vis, 0, sizeof vis);
+    memset(mark, 0, sizeof mark);
+    for (int i = 1; i &lt;= m; ++i)
+        for (int j = from; j &lt;= to; ++j)
+            if (no[i][j]) mark[i] = 1;
+    dis[s] = 0; 
+    q.push((edge) {s, 0});
+    while (!q.empty()) {
+        int u = q.top().id;
+        q.pop();
+        if (vis[u]) continue;
+        vis[u] = 1;
+        for (int i = head[u]; ~i; i = e[i].nx) {
+            int v = e[i].v;
+            if (mark[v]) continue;
+            if (dis[v] &gt; dis[u] + e[i].w) 
+                q.push((edge) {v, dis[v] = dis[u] + e[i].w});
+        }
+    }
+}
+
+signed main() {
+    memset(head, -1, sizeof head);
+    cin &gt;&gt; n &gt;&gt; m &gt;&gt; k &gt;&gt; E;
+    for (int i = 1, x, y, z; i &lt;= E; ++i) {
+        cin &gt;&gt; x &gt;&gt; y &gt;&gt; z;
+        add(x, y, z), add(y, x, z);
+    }
+    cin &gt;&gt; t;
+    for (int i = 1, x, y, z; i &lt;= t; ++i) {
+        cin &gt;&gt; x &gt;&gt; y &gt;&gt; z;
+        for (int j = y; j &lt;= z; ++j) no[x][j] = 1;
+    }
+    for (int i = 1; i &lt;= n; ++i)
+        for (int j = i; j &lt;= n; ++j) {
+            dijkstra(1, i, j);
+            cost[i][j] = dis[m];
+        }
+    for (int i = 1; i &lt;= n; ++i) ;
+    for (int i = 1; i &lt;= n; ++i) {
+        f[i] = cost[1][i] * i;
+        for (int j = 1; j &lt;= i; ++j) {
+            f[i] = min(f[i], f[j] + k + cost[j + 1][i] * (i - j));
+        }
+    }
+    cout &lt;&lt; f[n];
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

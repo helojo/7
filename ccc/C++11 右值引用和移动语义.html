@@ -1,0 +1,260 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++11 右值引用和移动语义' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++11 右值引用和移动语义</center></div><div class='banquan'>原文出处:本文由博客园博主Ligo丶提供。<br/>
+原文连接:https://www.cnblogs.com/Ligo-Z/p/11149587.html</div><br>
+    <h2 id="前言">前言</h2>
+<p>因为工作室要求写技术博客记录学习到的知识点,自己之前是没有写过博客的,所以现在用一篇介绍右值引用和移动语义的博客作为博客的第一篇,可能对于移动语义的理解还不够深刻,但可以作为一个简单的介绍博客</p>
+<h3 id="右值引用">右值引用</h3>
+<h4 id="要理解好右值引用首先要知道什么是左值什么是右值">要理解好右值引用首先要知道什么是左值?什么是右值?</h4>
+<p>1.左值是表达式结束后依然存在的持久化对象<br />
+2.右值则是表达式结束时就不再存在的值</p>
+<h4 id="便捷区别方法对表达式取地址如果能是左值否则是右值"><strong>便捷区别方法:对表达式取地址,如果能,是左值,否则是右值</strong></h4>
+<pre><code>int a=10; 
+int b=5; //这是一个左值
+&amp;(a+b);    //这是一个右值
+
+//区别方法
+&amp;a       //因为a是个左值,可以对其取地址
+&amp;(a+b)  //因为(a+b)是个临时变量,是右值,并不能对其取地址</code></pre>
+<h3 id="下面先来对左值引用作一些介绍">下面先来对左值引用作一些介绍</h3>
+<h4 id="由于修饰符不同可以分为非常量左值和常量左值">由于修饰符不同可以分为非常量左值和常量左值</h4>
+<h5 id="非常量左值只能绑定左值">1.非常量左值只能绑定左值</h5>
+<h5 id="常量左值是个奇葩因为他不仅可以绑定左值非常量和常量也能够绑定右值">2.常量左值是个奇葩,因为他不仅可以绑定左值(非常量和常量),也能够绑定右值</h5>
+<h5 id="为什么它能够绑定右值呢">为什么它能够绑定右值呢?</h5>
+<h5 id="在于他们绑定了右值后延长了右值的生命周期使之像一个左值一样但有一个东西是只能读不能改">在于他们绑定了右值后,延长了右值的生命周期,使之像一个左值一样,但有一个东西是只能读不能改</h5>
+<pre><code>int a=10;       
+int c=10;//非常量左值
+const int b=5;  //常量左值
+
+int&amp; d=a; //可以
+int&amp; d=a+c; //报错 a+b是右值
+int&amp; d=b;   //报错 b是常量左值
+
+const int&amp; e=a;
+const int&amp; e=b;
+const int&amp; e=a+c; 
+//上面的三条式子都不会报错,因为常量左值都可以绑定</code></pre>
+<h4 id="在c11中添加了右值引用的概念用来表示右值引用">在c++11中添加了右值引用的概念,用&amp;&amp;来表示右值引用</h4>
+<h4 id="原本右值是个临时变量表达式结束时其生命也就结束了但可以通过右值引用使其被存储到特定的位置且可以获得该位置的地址">原本右值是个临时变量,表达式结束时其生命也就结束了,但可以通过右值引用使其被存储到特定的位置,且可以获得该位置的地址</h4>
+<h4 id="换句说左值引用可以比作一个拥有姓名的人给其取个别名而右值引用则是一个没有姓名的人然后给其取个别名">换句说:左值引用可以比作一个拥有姓名的人给其取个别名,而右值引用则是一个没有姓名的人然后给其取个别名</h4>
+<pre><code>int a=10;
+int b=10;
+int&amp;&amp; c=a+b; //一个简单的右值引用</code></pre>
+<h3 id="为什么要引入右值引用呢目的之一则是下面要讲到的移动语义的实现">为什么要引入右值引用呢?目的之一则是下面要讲到的移动语义的实现</h3>
+<h4 id="移动语义是实际文件还留在原来的地方而只修改记录.">移动语义是实际文件还留在原来的地方,而只修改记录.</h4>
+<p>用下面一个Useless类来说明(具体实现就不说了)</p>
+<pre><code>#ifndef __USELESS_H
+#define __USELESS_H
+
+#include&lt;iostream&gt;
+
+class Useless
+{
+public:
+    Useless();
+    Useless(int k);
+    Useless(int k, char ch);
+    Useless(const Useless&amp; f);  //复制构造函数
+    Useless(Useless&amp;&amp; f);       //移动构造函数
+    ~Useless(); 
+    Useless operator+(const Useless&amp; f) const;
+    void ShowData() const;
+private:
+    int n; 
+    char* pc;
+    static int ct;   //统计对象的数量
+    void ShowObject() const;
+};
+
+
+#endif // __USELESS_H</code></pre>
+<pre><code>#include &quot;Useless.h&quot;
+
+int Useless::ct = 0;
+Useless::Useless()
+{
+    ++ct;
+    n = 0;
+    pc = nullptr;
+    std::cout &lt;&lt; &quot;default construct called;number of object: &quot; &lt;&lt; ct &lt;&lt; std::endl;
+    ShowObject();
+}
+
+Useless::Useless(int k): n(k)
+{
+    ++ct;
+    std::cout &lt;&lt; &quot;int construct called;number of objects: &quot; &lt;&lt; ct &lt;&lt; std::endl;
+    pc = new char[n];
+    ShowObject();
+}
+
+Useless::Useless(int k, char ch):n(k)
+{
+    ++ct;
+    std::cout &lt;&lt; &quot;int char construct called;number of objects: &quot; &lt;&lt; ct &lt;&lt; std::endl;
+    pc = new char[n];
+    for (int i = 0; i &lt; n; i++)
+        pc[i] = ch;
+    ShowObject();
+}
+
+Useless::Useless(const Useless &amp; f):n(f.n)
+{
+    ++ct;
+    std::cout &lt;&lt; &quot;copy const called;number of objects: &quot; &lt;&lt; ct &lt;&lt; std::endl;
+    pc = new char[n];
+    for (int i = 0; i &lt; n; i++)
+        pc[i] = f.pc[i];
+    ShowObject();
+}
+
+Useless::Useless(Useless &amp;&amp; f):n(f.n)
+{
+    ++ct;
+    std::cout &lt;&lt; &quot; move construct called;number of objects: &quot; &lt;&lt; ct &lt;&lt; std::endl;
+    pc = f.pc;
+    f.pc = nullptr; //give old object nothing in return 
+    f.n = 0;
+    ShowObject();
+}
+
+Useless::~Useless()
+{
+    std::cout &lt;&lt; &quot;destructor called;number of objects: &quot; &lt;&lt; --ct &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;deleted object:\n&quot;;
+    ShowObject();
+    delete[] pc;
+}
+
+Useless Useless::operator+(const Useless &amp; f) const
+{
+    std::cout &lt;&lt; &quot;Entering operator+()\n&quot;;
+    Useless temp = Useless(n + f.n);
+    for (int i = 0; i &lt; n; i++)
+        temp.pc[i] = pc[i];
+    for (int i = n; i &lt; temp.n; i++)
+        temp.pc[i] = f.pc[i - n];
+    std::cout &lt;&lt; &quot;temp object:\n&quot;;
+    std::cout &lt;&lt; &quot;Leaving operator+()\n&quot;;
+    return temp;
+}
+
+void Useless::ShowData() const
+{
+    if (n==0)
+    {
+        std::cout &lt;&lt; &quot;(object empty)&quot;;
+    }
+    else
+    {
+        for (int i = 0; i &lt; n; i++)
+            std::cout &lt;&lt; pc[i];
+    }
+    std::cout &lt;&lt; std::endl;
+}
+
+void Useless::ShowObject() const
+{
+    std::cout &lt;&lt; &quot;Number of elements: &quot; &lt;&lt; n;
+    std::cout &lt;&lt; &quot; Data address: &quot; &lt;&lt; (void *)pc &lt;&lt; std::endl;
+}
+</code></pre>
+<pre><code>#include&quot;Useless.h&quot;
+#include&lt;utility&gt;
+
+int main()
+{
+    {
+        Useless one(10, &#39;x&#39;);
+        Useless two = one;  //深拷贝
+        Useless three(20, &#39;0&#39;);
+        Useless four(one + three);  //operator+()
+        std::cout &lt;&lt; &quot;object one: &quot;;
+        one.ShowData();
+        std::cout &lt;&lt; &quot;object two: &quot;;
+        two.ShowData();
+        std::cout &lt;&lt; &quot;object three: &quot;;
+        three.ShowData();
+        std::cout &lt;&lt; &quot;object four: &quot;;
+        four.ShowData();
+    }
+    system(&quot;pause&quot;);
+    return 0;
+}</code></pre>
+<h5 id="首先看下复制构造函数">首先看下复制构造函数</h5>
+<h5 id="useless-two-one把one对象左值赋给了two在这期间会调用复制构造函数uselessconst-useless-f来实现复制">Useless two = one;把one对象(左值)赋给了two,在这期间会调用复制构造函数Useless(const Useless&amp; f)来实现复制;</h5>
+<h5 id="再来看看useless-fourone-three这条语句onethree会调用operatoe来产出了一个右值这个右值作为参数调用了uselessuseless-f这个构造函数">再来看看Useless four(one + three)这条语句,one+three会调用operatoe+()来产出了一个右值,这个右值作为参数调用了Useless(Useless &amp;&amp; f)这个构造函数,</h5>
+<h5 id="我们称其为移动构造函数你没有提供的话系统会提供一个默认的移动构造函数">我们称其为移动构造函数(你没有提供的话系统会提供一个默认的移动构造函数)</h5>
+<h4 id="现在再深入探究下一些函数的具体实现">现在再深入探究下一些函数的具体实现:</h4>
+<p>一丶<strong>首先把移动构造函数的声明和定义注释掉</strong></p>
+<p>1.首先参数<strong>one+three</strong>里面调用一个构造函数创建一个temp对象,然后通过一个复制构造函数来创建一个临时复制对象,然后指向了这个对象(即函数返回了这个临时对象);接下来,删除这个temp对象;</p>
+<pre><code>Useless Useless::operator+(const Useless &amp; f) const
+{
+    ......
+    Useless temp = Useless(n + f.n);
+    for (int i = 0; i &lt; n; i++)
+        temp.pc[i] = pc[i];
+    for (int i = n; i &lt; temp.n; i++)
+        temp.pc[i] = f.pc[i - n];
+    ......
+    return temp;
+}</code></pre>
+<p>2.因为常量左值引用可以绑定右值,所以会调用下面这个函数</p>
+<pre><code>Useless::Useless(const Useless &amp; f):n(f.n)
+{
+    .....
+    pc = new char[n];
+    for (int i = 0; i &lt; n; i++)
+        pc[i] = f.pc[i];
+    .......
+}</code></pre>
+<p>所以会新建一个four对象.使其使用这个临时对象中的内存,接下来删除了这个临时对象</p>
+<h4 id="这个表明了总共创建了三个对象">这个表明了总共创建了三个对象</h4>
+<p><img src="./images/C++11 右值引用和移动语义0.png" /></p>
+<p>这里可以调用了复制构造函数,但其只调用了一次</p>
+<p>因为编译器会优化返回值,然后在编译时加上-fno-elide-constructors选项即可关闭返回值优化<br />
+在GCC编译时关闭这个返回值可以看到其调用了两次复制构造函数</p>
+<p>二丶把移动构造函数的声明和定义的注释取消掉</p>
+<p>1.这个one+three同样调用了operator+()这个函数</p>
+<p>2.(1)因为参数one+three是个临时对象,是个右值,所以编译器会先调用移动构造函数而不是复制构造函数</p>
+<p>(2)与复制构造函数不同的是,他直接指向了这个临时对象,然后把原来指向这个临时对象的指针改为nullptr(相当于一个对象的所有权的转移,把临时对象的所以权夺了过来)</p>
+<p>(3)把原来指向临时对象的指针改为nullptr是让这个对象析构不会使原来的内存被释放掉,不然这个移动构造函数没有意义</p>
+<p>这样便省去了复制构造函数中创建一个临时对象的过程,总共创建了两个对象;</p>
+<p><img src="./images/C++11 右值引用和移动语义1.png" /></p>
+<p>可以看到调用了一次移动构造函数,而一些无关的工作量减少</p>
+<p><strong>而移动语义目的之一就是消除这些额外的工作.</strong></p>
+<p>一旦工作量变大,就会导致一些额外的资源申请和释放的操作;使用移动语义就既能够够节省资源,也能够节省时间</p>
+<p>当然除了移动构造函数,还有移动赋值函数(在这里就不讲了,大致原理是一样的</p>
+<h3 id="stdmove">std::move()</h3>
+<p>std::move()在头文件<strong>utility</strong>中</p>
+<p>有时候左值是一个局部变量,即表明他也是有临时的生命周期,那么能不能也是调用移动语义而不是复制语义呢?</p>
+<p>c++11提供了std::move()来解决这个问题,他可以把左值强制转化为右值引用,使左值可用于移动语义中</p>
+<pre><code>Useless four(one);  //调用复制构造函数
+Useless four(std::move(one));  //调用移动构造函数 </code></pre>
+<p>如果我们没有提供移动构造函数,std::move()会失效但不会报错,因为会调用复制构造函数(const &amp;)</p>
+<p>可能有待续写......</p>
+<p><strong>作者：<a href="https://www.cnblogs.com/Ligo-Z">Ligo丶</a></strong></p>
+<p><strong>出处：<a href="https://www.cnblogs.com/Ligo-Z/" class="uri">https://www.cnblogs.com/Ligo-Z/</a></strong></p>
+<p><strong>本文版权归作者和博客园共有，欢迎转载，但必须给出原文链接，并保留此段声明，否则保留追究法律责任的权利。</strong></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

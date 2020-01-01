@@ -1,0 +1,950 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修多线程学习：win32多线程编程基本概念(转)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>多线程学习：win32多线程编程基本概念(转)</center></div><div class='banquan'>原文出处:本文由博客园博主小公鸡提供。<br/>
+原文连接:https://www.cnblogs.com/chaoyingLi/p/11236070.html</div><br>
+    <h2>一、定义：</h2>
+<div class="para">
+<h3>1.进程和线程的区别</h3>
+<p><span style="font-family: 宋体; font-size: 14px;">进程：是程序的执行过程，具有动态性，即运行的程序就叫进程，不运行就叫程序 ，每个进程包含一到多个线程。</span><br /><span style="font-family: 宋体; font-size: 14px;">线程：系统中的最小执行单元，同一进程中有多个线程，线程可以共享资源，一旦出现共享资源，必须注意线程安全！！</span></p>
+<p><span style="font-family: 宋体; font-size: 14px;"><strong>先阐述一下进程和线程的概念和区别，这是一个许多大学老师也讲不清楚的问题。</strong><br /><br />　 　进程（Process）是具有一定独立功能的程序关于某个数据集合上的一次运行活动，是系统进行资源分配和调度的一个独立单位。<strong>程序只是一组指令的有序集合，它本身没有任何运行的含义，只是一个静态实体。而进程则不同，它是程序在某个数据集上的执行，是一个动态实体。它<span style="color: #0000ff;">因创建而产生，因调度而运行，因等待资源或事件而被处于等待状态，因完成任务而被撤消</span>，反映了一个程序在一定的数据集上运行的全部动态过程。</strong><br /><br />　　线程（Thread）是进程的一个实体，是CPU调度和分派的基本单位。线程不能够独立执行，必须依存在应用程序中，由应用程序提供多个线程执行控制。<br /><br />　 　线程和进程的关系是：线程是属于进程的，线程运行在进程空间内，同一进程所产生的线程共享同一内存空间，当进程退出时该进程所产生的线程都会被强制退出 并清除。线程可与属于同一进程的其它线程共享进程所拥有的全部资源，但是其本身基本上不拥有系统资源，只拥有一点在运行中必不可少的信息(如程序计数器、 一组寄存器和栈)。</span></p>
+<p><span style="font-family: 宋体; font-size: 14px;">&nbsp; &nbsp;<strong> &nbsp;根据进程与线程的设置，操作系统大致分为如下类型：&nbsp;</strong><br /><br />　　（1）单进程、单线程，MS-DOS大致是这种操作系统；<br />　　（2）多进程、单线程，多数UNIX（及类UNIX的LINUX）是这种操作系统；<br />　　（3）多进程、多线程，Win32（Windows NT/2000/XP等）、Solaris 2.x和OS/2都是这种操作系统；<br />　　（4）单进程、多线程，VxWorks是这种操作系统。<br /><br />　　在操作系统中引入线程带来的主要好处是：<br /><br />　　（1）在进程内创建、终止线程比创建、终止进程要快；<br />　　（2）同一进程内的线程间切换比进程间的切换要快，尤其是用户级线程间的切换。</span></p>
+<p><span style="font-family: 宋体; font-size: 14px;">&nbsp; &nbsp; 另外，线程的出现还因为以下几个原因：<br />　　（1）并发程序的并发执行，在多处理环境下更为有效。一个并发程序可以建立一个进程,而这个并发程序中的若干并发程序段就可以分别建立若干线程,使这些线程在不同的处理机上执行。<br />　　（2）每个进程具有独立的地址空间，而该进程内的所有线程共享该地址空间。这样可以解决父子进程模型中，子进程必须复制父进程地址空间的问题。<br />　　（3）线程对解决客户/服务器模型非常有效。<br /><br /><strong>&nbsp; &nbsp;Win32进程间通信的方式主要有：</strong><br /><br />　　（1）剪贴板(Clip Board)；<br /><br />　　（2）动态数据交换(Dynamic Data Exchange)；<br /><br />　　（3）部件对象模型(Component&nbsp;Object&nbsp;Model)；<br /><br />　　（4）文件映射(File Mapping)；<br /><br />　　（5）邮件槽(Mail Slots)；<br /><br />　　（6）管道(Pipes)；<br /><br />　　（7）Win32套接字(Socket)；<br /><br />　　（8）远程过程调用(Remote Procedure Call)；<br /><br />　　（9）WM_COPYDATA消息(WM_COPYDATA Message)。</span></p>
+<p><span style="font-family: 宋体; font-size: 14px;"><strong>2、获取进程信息</strong></span></p>
+<p><span style="font-family: 宋体; font-size: 14px;"><br />　　在WIN32中，可使用在PSAPI .DLL中提供的Process status Helper函数帮助我们获取进程信息。<br /><br />　　（1）EnumProcesses()函数可以获取进程的ID，其原型为：<br /><br /></span></p>
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>BOOL EnumProcesses(DWORD * lpidProcess, DWORD cb, DWORD*cbNeeded);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+<p><span style="font-family: 宋体; font-size: 14px;">
+<br />　　参数lpidProcess：一个足够大的DWORD类型的数组，用于存放进程的ID值；<br /><br />　　参数cb：存放进程ID值的数组的最大长度，是一个DWORD类型的数据；<br /><br />　　参数cbNeeded：指向一个DWORD类型数据的指针，用于返回进程的数目；<br /><br />　　函数返回值：如果调用成功，返回TRUE，同时将所有进程的ID值存放在lpidProcess参数所指向的数组中，进程个数存放在cbNeeded参数所指向的变量中；如果调用失败，返回FALSE。<br /><br />　　（2）GetModuleFileNameExA()函数可以实现通过进程句柄获取进程文件名，其原型为：<br /><br /></span></p>
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>DWORD GetModuleFileNameExA(HANDLE hProcess, HMODULE hModule,LPTSTR lpstrFileName, DWORD nsize);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+<p><span style="font-family: 宋体; font-size: 14px;">
+<br />　　参数hProcess：接受进程句柄的参数，是HANDLE类型的变量；<br /><br />　　参数hModule：指针型参数，在本文的程序中取值为NULL；<br /><br />　　参数lpstrFileName：LPTSTR（表示指向字符/字符串的指针）类型的指针，用于接受主调函数传递来的用于存放进程名的字符数组指针；<br /><br />　　参数nsize：lpstrFileName所指数组的长度；<br /><br />　　函数返回值：如果调用成功，返回一个大于0的DWORD类型的数据，同时将hProcess所对应的进程名存放在lpstrFileName参数所指向的数组中；加果调用失败，则返回0。<br /><br />　　通过下列代码就可以遍历系统中的进程，获得进程列表：<br /></span></p>
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>//获取当前进程总数<br />EnumProcesses(process_<a class="bluekey" href="http://www.yesky.com/key/1756/1756.html" rel="nofollow">ids</a>, sizeof(process_ids), &amp;num_processes);<br />//遍历进程<br />for (int i = 0; i &lt; num_processes; i++)<br />{<br />　//根据进程ID获取句柄&nbsp;<br />　process[i] = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, 0,<br />　process_ids[i]);<br />　//通过句柄获取进程文件名<br />　if (GetModuleFileNameExA(process[i], NULL, File_name, sizeof(fileName)))<br />　　cout &lt;&lt; fileName &lt;&lt; endl;<br />}<br /><br /></td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+</div>
+<div class="table-box">&nbsp;</div>
+<div class="table-box"><strong>Win32线程</strong><br /><br />　　WIN32靠线程的优先级（<strong>达到<span style="color: #0000ff;">抢占式多任务</span>的目的</strong>）及分配给线程的CPU时间来调度线程。WIN32本身的许多应用程序也利用了多线程的特性，如任务管理器等。<br />　　<strong>本质而言，一个处理器同一时刻只能执行一个线程（"微观串行"）。WIN32多任务机制使得CPU好像在同时处理多个任务一样，实现了"宏观并行"。</strong></div>
+<div class="table-box">其多线程调度的机制为：<br /><br />　　（1）运行一个线程，直到被中断或线程必须等待到某个资源可用；<br />　　（2）保存当前执行线程的描述表(上下文)；<br />　　（3）装入下一执行线程的描述表(上下文)；<br />　　（4）若存在等待被执行的线程，则重复上述过程。<br /><br />　　WIN32下的线程可能具有不同的优先级，优先级的范围为0～31，共32级，其中31表示最高优先级，优先级0为系统保留。它们可以分成两类，即实时优先级和可变优先级：<br /><br />　　（1）实时优先级从16到31，是实时程序所用的高优先级线程，如许多监控类应用程序；<br />　　（2）可变优先级从1到15，绝大多数程序的优先级都在这个范围内。。WIN32调度器为了优化系统响应时间，在它们执行过程中可动态调整它们的优先级。<br /><br />　　多线程确实给应用开发带来了许多好处，但并非任何情况下都要使用多线程，一定要根据应用程序的具体情况来综合考虑。一般来说，在以下情况下可以考虑使用多线程：<br /><br />　　（1）应用程序中的各任务相对独立；<br />　　（2）某些任务耗时较多；<br />　　（3）各任务需要有不同的优先级。<br /><br />　　另外，对于一些实时系统应用，应考虑多线程。Win32核心对&nbsp;　　WIN32核心对象包括进程、线程、文件、事件、信号量、互斥体和管道，核心对象可能有不只一个拥有者，甚至可以跨进程。有一组WIN32 API与核心对象息息相关：</div>
+<div class="table-box">
+<div><em><em>　　<strong>（1）WaitForSingleObject</strong>，用于等待对象的"激活"，其函数原型为：<br /><br /></em></em>
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>DWORD WaitForSingleObject(<br />　HANDLE hHandle, // 等待对象的句柄<br />　DWORD dwMilliseconds // 等待毫秒数，INFINITE表示无限等待<br />);</td>
+
+
+</tr>
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+<em id="__mceDel">
+
+<br /></em>　<span class="Apple-converted-space"><span class="Apple-converted-space">&nbsp;　可以作为WaitForSingleObject第一个参数的对象包括：Change notification（变更通知）、Console input（控制台标准输入）、Event、Job、Memory resource notification、Mutex、Process、Semaphore、Thread和Waitable timer。<br /><br />　　如果等待的对象不可用，那么线程就会挂起，直到对象可用线程才会被唤醒。对不同的对象，WaitForSingleObject表现为不同的含义。例如，使用 WaitForSingleObject(hThread,&hellip;)可以判断一个线程是否结束；使用WaitForSingleObject (hMutex,&hellip;)可以判断是否能够进入临界区；而WaitForSingleObject (hProcess,&hellip; )则表现为等待一个进程的结束。<br /><br /></span></span><span class="Apple-converted-space"><span class="Apple-converted-space">　　与WaitForSingleObject对应还有一个WaitForMultipleObjects函数，可以用于等待多个对象，其原型为：</span></span><span class="Apple-converted-space"><span class="Apple-converted-space"><br /><br /></span></span>
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>DWORD WaitForMultipleObjects(DWORD nCount,const HANDLE* pHandles,BOOL bWaitAll,DWORD dwMilliseconds);</td>
+
+
+</tr>
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+
+
+<span class="Apple-converted-space"><span class="Apple-converted-space"><br />　　<strong>（2）CloseHandle</strong>，用于关闭对象，其函数原型为：<br /><br /></span></span>
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>BOOL CloseHandle(HANDLE hObject);</td>
+
+
+</tr>
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+
+
+<span class="Apple-converted-space"><span class="Apple-converted-space"><br />　　如果函数执行成功，则返回TRUE；否则返回FALSE，我们可以通过GetLastError函数进一步可以获得错误原因。<br /><br /><strong>　　C运行时库</strong><br /><br />　　在VC++6.0中，有两种多线程编程方法：一是使用C运行时库及WIN32 API函数，另一种方法是使用MFC，MFC对多线程开发有强大的支持。<br />标准C运行时库是1970年问世的，当时还没有多线程的概念。因此，C运行时库早期的设计者们不可能考虑到让其支持多线程应用程序。<br />Visual C++提供了两种版本的C运行时库，一个版本供单线程应用程序调用，另一个版本供多线程应用程序调用。多线程运行时库与单线程运行时库有两个重大差别：<br /><br />　　（1）类似<strong>errno</strong>（<strong>errno</strong> 是记录系统的最后一次错误代码）的全局变量，每个线程单独设置一个；<br />这样从每个线程中可以获取正确的错误信息。<br />　　（2）多线程库中的数据结构以同步机制加以保护。<br /><br />　　这样可以避免访问时候的冲突。<br /><br /></span></span><span class="Apple-converted-space"><span class="Apple-converted-space">　　Visual C++提供的多线程运行时库又分为静态链接库和动态链接库两类，而每一类运行时库又可再分为debug版和release版，因此Visual C++共提供了6个运行时库。如下表：</span></span><em><em><span class="Apple-converted-space"><span class="Apple-converted-space"><br /><br /></span></span></em></em>
+<div class="table-box">
+<table style="width: 90%;" border="1" cellspacing="0" cellpadding="2" align="center">
+<tbody>
+<tr>
+<td><span style="background-color: #888888;">C运行时库</span></td>
+<td><span style="background-color: #888888;">库文件</span></td>
+
+
+</tr>
+<tr>
+<td>Single thread(static link)</td>
+<td>libc.lib</td>
+
+
+</tr>
+<tr>
+<td>Debug single thread(static link)</td>
+<td>Libcd.lib</td>
+
+
+</tr>
+<tr>
+<td>MultiThread(static link)</td>
+<td>libcmt.lib</td>
+
+
+</tr>
+<tr>
+<td>Debug multiThread(static link)</td>
+<td>libcmtd.lib</td>
+
+
+</tr>
+<tr>
+<td>MultiThread(dynamic link)</td>
+<td>msvert.lib</td>
+
+
+</tr>
+<tr>
+<td>Debug multiThread(dynamic link)</td>
+<td>msvertd.lib</td>
+
+
+</tr>
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+<span class="Apple-converted-space"><span class="Apple-converted-space"><br /></span></span><span class="Apple-converted-space"><span class="Apple-converted-space">　　如果不使用VC多线程C运行时库来生成多线程程序，必须执行下列操作：</span></span><span class="Apple-converted-space"><span class="Apple-converted-space"><br /><br />　　（1）使用标准 C 库（基于单线程）并且只允许可重入函数集进行库调用；<br /><br />　　（2）使用 Win32 API 线程管理函数，如 CreateThread；<br /><br />　　（3）通过使用 Win32 服务（如信号量和 EnterCriticalSection 及 LeaveCriticalSection 函数），为不可重入的函数提供自己的同步。<br /><br />　　如果使用标准 C 库而调用VC运行时库函数，则在程序的link阶段会提示如下错误：</span></span><span class="Apple-converted-space"><span class="Apple-converted-space"><br /></span></span><em><em><span class="Apple-converted-space"><span class="Apple-converted-space"><br /></span></span></em></em>
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>error LNK2001: unresolved external symbol __endthreadex<br />error LNK2001: unresolved external symbol __beginthreadex</td>
+
+
+</tr>
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+<em id="__mceDel">
+
+<span class="Apple-converted-space"><br /></span></em>
+<h2><span class="Apple-converted-space">二．深入浅出Win32多线程程序设计之线程控制</span></h2>
+
+
+</div>
+<div>&nbsp;</div>
+<div>WIN32线程控制主要实现线程的创建、终止、挂起和恢复等操作，这些操作都依赖于WIN32提供的一组API和具体编译器的C运行时库函数。<br /><br />　<strong>　1.线程函数</strong><br /><br />　　在启动一个线程之前，必须为线程编写一个全局的线程函数，这个线程函数接受一个32位的LPVOID（没有类型的指针）作为参数，返回一个UINT，线程函数的结构为：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>UINT ThreadFunction(LPVOID pParam)<br />{<br />　//线程处理代码<br />　return0;<br />}</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　在线程处理代码部分通常包括一个死循环，该循环中先等待某事情的发生，再处理相关的工作：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>while(1)<br />{<br />　WaitForSingleObject(&hellip;,&hellip;);//或WaitForMultipleObjects(&hellip;)<br />　//Do something<br />}</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　一般来说，C++的类成员函数不能作为线程函数。这是因为在类中定义的成员函数，编译器会给其加上this指针。请看下列程序：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>#include "windows.h"<br />#include &lt;process.h&gt;<br />class ExampleTask&nbsp;<br />{&nbsp;<br />　public:&nbsp;<br />　　void taskmain(LPVOID param);&nbsp;<br />　　void StartTask();&nbsp;<br />};&nbsp;<br />void ExampleTask::taskmain(LPVOID param)&nbsp;<br />{}&nbsp;<br /><br />void ExampleTask::StartTask()&nbsp;<br />{&nbsp;<br />　_beginthread(taskmain,0,NULL);<br />}&nbsp;<br /><br />int main(int argc, char* argv[])<br />{<br />　ExampleTask realTimeTask;<br />　realTimeTask.StartTask();<br />　return 0;<br />}</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　程序编译时出现如下错误：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>error C2664: '_beginthread' : cannot convert parameter 1 from 'void (void *)' to 'void (__cdecl *)(void *)'<br />None of the functions with this name in scope match the target type</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　再看下列程序：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>#include "windows.h"<br />#include &lt;process.h&gt;<br />class ExampleTask&nbsp;<br />{&nbsp;<br />　public:&nbsp;<br />　　void taskmain(LPVOID param);&nbsp;<br />};&nbsp;<br /><br />void ExampleTask::taskmain(LPVOID param)&nbsp;<br />{}&nbsp;<br /><br />int main(int argc, char* argv[])<br />{<br />　ExampleTask realTimeTask;<br />　_beginthread(ExampleTask::taskmain,0,NULL);<br />　return 0;<br />}</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　程序编译时会出错：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>error C2664: '_beginthread' : cannot convert parameter 1 from 'void (void *)' to 'void (__cdecl *)(void *)'<br />None of the functions with this name in scope match the target type</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　如果一定要以类成员函数作为线程函数，通常有如下解决方案：<br /><br />　<span style="color: #0000ff;">　（1）将该成员函数声明为static类型，去掉this指针；</span><br /><br />　　我们将上述二个程序改变为：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>#include "windows.h"<br />#include &lt;process.h&gt;<br />class ExampleTask&nbsp;<br />{&nbsp;<br />　public:&nbsp;<br />　　void static taskmain(LPVOID param);&nbsp;<br />　　void StartTask();&nbsp;<br />};&nbsp;<br /><br />void ExampleTask::taskmain(LPVOID param)&nbsp;<br />{}&nbsp;<br /><br />void ExampleTask::StartTask()&nbsp;<br />{&nbsp;<br />　_beginthread(taskmain,0,NULL);<br />}&nbsp;<br /><br />int main(int argc, char* argv[])<br />{<br />　ExampleTask realTimeTask;<br />　realTimeTask.StartTask();<br />　return 0;<br />}<br />和<br />#include "windows.h"<br />#include &lt;process.h&gt;<br />class ExampleTask&nbsp;<br />{&nbsp;<br />　public:&nbsp;<br />　　void static taskmain(LPVOID param);&nbsp;<br />};&nbsp;<br /><br />void ExampleTask::taskmain(LPVOID param)&nbsp;<br />{}&nbsp;<br /><br />int main(int argc, char* argv[])<br />{<br />　_beginthread(ExampleTask::taskmain,0,NULL);<br />　return 0;<br />}</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　均编译通过。<br /><br />　　将成员函数声明为静态虽然可以解决作为线程函数的问题，但是它带来了新的问题，那就是static成员函数只能访问static成员。<span style="color: #0000ff;">解决此问题的一种途径是可以在调用类静态成员函数（线程函数）时将this指针作为参数传入，并在改线程函数中用强制类型转换将this转换成指向该类的指针，通过该指针访问非静态成员。</span><br />　　（2）不定义类成员函数为线程函数，而将线程函数定义为类的友元函数。这样，线程函数也可以有类成员函数同等的权限；&nbsp;<br /><br />　　我们将程序修改为：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>#include "windows.h"<br />#include &lt;process.h&gt;<br />class ExampleTask&nbsp;<br />{&nbsp;<br />　public:&nbsp;<br />　　friend void taskmain(LPVOID param);&nbsp;<br />　　void StartTask();&nbsp;<br />};&nbsp;<br /><br />void taskmain(LPVOID param)&nbsp;<br />{&nbsp;<br />　ExampleTask * pTaskMain = (ExampleTask *) param;&nbsp;<br />　//通过pTaskMain指针引用&nbsp;<br />}&nbsp;<br /><br />void ExampleTask::StartTask()&nbsp;<br />{&nbsp;<br />　_beginthread(taskmain,0,this);<br />}<br />int main(int argc, char* argv[])<br />{<br />　ExampleTask realTimeTask;<br />　realTimeTask.StartTask();<br />　return 0;<br />}</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　（3）可以对非静态成员函数实现回调，并访问非静态成员，此法涉及到一些高级技巧，在此不再详述。</div>
+<div><br /><strong>2.创建线程</strong><br /><br />　　进程的主线程由操作系统自动生成，Win32提供了CreateThread API来完成用户线程的创建，该API的原型为：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>HANDLE CreateThread(<br />　LPSECURITY_ATTRIBUTES lpThreadAttributes,//Pointer to a SECURITY_ATTRIBUTES structure<br />　SIZE_T dwStackSize, //Initial size of the stack, in bytes.<br />　LPTHREAD_START_ROUTINE lpStartAddress,<br />　LPVOID lpParameter, //Pointer to a variable to be passed to the thread<br />　DWORD dwCreationFlags, //Flags that control the creation of the thread<br />　LPDWORD lpThreadId //Pointer to a variable that receives the thread identifier<br />);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　注意：如果使用C/C++语言编写多线程应用程序，一定不能使用操作系统提供的CreateThread API，而应该使用C/C++运行时库中的_beginthread（或_beginthreadex），其函数原型为：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>uintptr_t _beginthread(&nbsp;<br />　void( __cdecl *start_address )( void * ), //Start address of routine that begins execution of new thread<br />　unsigned stack_size, //Stack size for new thread or 0.<br />　void *arglist //Argument list to be passed to new thread or NULL<br />);<br />uintptr_t _beginthreadex(&nbsp;<br />　void *security,//Pointer to a SECURITY_ATTRIBUTES structure<br />　unsigned stack_size,<br />　unsigned ( __stdcall *start_address )( void * ),<br />　void *arglist,<br />　unsigned initflag,//Initial state of new thread (0 for running or CREATE_SUSPENDED for suspended);&nbsp;<br />　unsigned *thrdaddr&nbsp;<br />);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　_beginthread函数与Win32 API 中的CreateThread函数类似，但有如下差异：&nbsp;<br /><br />　　（1）通过_beginthread函数我们可以利用其参数列表arglist将多个参数传递到线程；&nbsp;<br /><br />　　（2）_beginthread 函数初始化某些 C 运行时库变量，在线程中若需要使用 C 运行时库。&nbsp;</div>
+<div><br /><br /><strong>　　3.终止线程</strong><br /><br />　　线程的终止有如下四种方式：<br /><br />　　（1）线程函数返回；<br />　　（2）线程自身调用ExitThread 函数即终止自己，其原型为：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>VOID ExitThread(UINT fuExitCode );</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　它将参数fuExitCode设置为线程的退出码。<br /><br />　　注意：如果使用C/C++编写代码，我们应该使用C/C++运行时库函数_endthread (_endthreadex)终止线程，决不能使用ExitThread！<br />_endthread 函数对于线程内的条件终止很有用。例如，专门用于通信处理的线程若无法获取对通信端口的控制，则会退出。<br /><br />　　（3）同一进程或其他进程的线程调用TerminateThread函数，其原型为：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>BOOL TerminateThread(HANDLE hThread,DWORD dwExitCode);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　该函数用来结束由hThread参数指定的线程，并把dwExitCode设成该线程的退出码。当某个线程不再响应时，我们可以用其他线程调用该函数来终止这个不响应的线程。<br /><br />　　（4）包含线程的进程终止。<br /><br />　　最好使用第1种方式终止线程，第2~4种方式都不宜采用。<br /><br />　<strong>　4.挂起与恢复线程</strong><br /><br />　　当我们创建线程的时候，如果给其传入CREATE_SUSPENDED标志，则该线程创建后被挂起，我们应使用ResumeThread恢复它：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>DWORD ResumeThread(HANDLE hThread);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　如果ResumeThread函数运行成功，它将返回线程的前一个暂停计数，否则返回0x FFFFFFFF。<br /><br />　　对于没有被挂起的线程，程序员可以调用SuspendThread函数强行挂起之：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>DWORD SuspendThread(HANDLE hThread);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　一个线程可以被挂起多次。线程可以自行暂停运行，但是不能自行恢复运行。如果一个线程被挂起n次，则该线程也必须被恢复n次才可能得以执行。</div>
+<div><br /><strong>5.设置线程优先级</strong><br /><br />　　当一个线程被首次创建时，它的优先级等同于它所属进程的优先级。在单个进程内可以通过调用SetThreadPriority函数改变线程的相对优先级。一个线程的优先级是相对于其所属进程的优先级而言的。<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>BOOL SetThreadPriority(HANDLE hThread, int nPriority);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　其中参数hThread是指向待修改优先级线程的句柄，线程与包含它的进程的优先级关系如下：<br /><br />　　　线程优先级 = 进程类基本优先级 + 线程相对优先级<br /><br />　　进程类的基本优先级包括：<br /><br />　　（1）实时：REALTIME_PRIORITY_CLASS；<br /><br />　　（2）高：HIGH _PRIORITY_CLASS；<br /><br />　　（3）高于正常：ABOVE_NORMAL_PRIORITY_CLASS；<br /><br />　　（4）正常：NORMAL _PRIORITY_CLASS；<br /><br />　　（5）低于正常：BELOW_ NORMAL _PRIORITY_CLASS；<br /><br />　　（6）空闲：IDLE_PRIORITY_CLASS。</div>
+<div>&nbsp;</div>
+<div>
+<div><strong>&nbsp; &nbsp; &nbsp;6.睡眠</strong><br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>VOID Sleep(DWORD dwMilliseconds);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　该函数可使线程暂停自己的运行，直到dwMilliseconds毫秒过去为止。它告诉系统，自身不想在某个时间段内被调度。<br /><br /><strong>　　7.其它重要API</strong><br /><br />　　获得线程优先级<br /><br />　　一个线程被创建时，就会有一个默认的优先级，但是有时要动态地改变一个线程的优先级，有时需获得一个线程的优先级。<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>Int GetThreadPriority (HANDLE hThread);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　如果函数执行发生错误，会返回THREAD_PRIORITY_ERROR_RETURN标志。如果函数成功地执行，会返回优先级标志。<br /><br />　　获得线程退出码<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>BOOL WINAPI GetExitCodeThread(<br />　HANDLE hThread,<br />　LPDWORD lpExitCode<br />);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　如果执行成功，GetExitCodeThread返回TRUE，退出码被lpExitCode指向内存记录；否则返回FALSE，我们可通过GetLastError()获知错误原因。如果线程尚未结束，lpExitCode带回来的将是STILL_ALIVE。</div>
+<div>&nbsp;</div>
+<div>获得/设置线程上下文<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td><br />BOOL WINAPI GetThreadContext(<br />　HANDLE hThread,<br />　LPCONTEXT lpContext<br />);<br />BOOL WINAPI SetThreadContext(<br />　HANDLE hThread,<br />　CONST CONTEXT *lpContext<br />);</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　 　由于GetThreadContext和SetThreadContext可以操作CPU内部的寄存器，因此在一些高级技巧的编程中有一定应用。譬如， 调试器可利用GetThreadContext挂起被调试线程获取其上下文，并设置上下文中的标志寄存器中的陷阱标志位，最后通过 SetThreadContext使设置生效来进行单步调试。</div>
+<div><br /><br />　<strong>　8.实例</strong><br /><br />　　以下程序使用CreateThread创建两个线程，在这两个线程中Sleep一段时间，主线程通过GetExitCodeThread来判断两个线程是否结束运行：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>#define WIN32_LEAN_AND_MEAN<br />#include &lt;stdio.h&gt;<br />#include &lt;stdlib.h&gt;<br />#include &lt;windows.h&gt;<br />#include &lt;conio.h&gt;<br /><br />DWORD WINAPI ThreadFunc(LPVOID);<br /><br />int main()<br />{<br />　HANDLE hThrd1;<br />　HANDLE hThrd2;<br />　DWORD exitCode1 = 0;<br />　DWORD exitCode2 = 0;<br />　DWORD threadId;<br /><br />　hThrd1 = CreateThread(NULL, 0, ThreadFunc, (LPVOID)1, 0, &amp;threadId );<br />　if (hThrd1)<br />　　printf("Thread 1 launched\n");<br /><br />　hThrd2 = CreateThread(NULL, 0, ThreadFunc, (LPVOID)2, 0, &amp;threadId );<br />　if (hThrd2)<br />　　printf("Thread 2 launched\n");<br /><br />　// Keep waiting until both calls to GetExitCodeThread succeed AND<br />　// neither of them returns STILL_ACTIVE.<br />　for (;;)<br />　{<br />　　printf("Press any key to exit..\n");<br />　　getch();<br /><br />　　GetExitCodeThread(hThrd1, &amp;exitCode1);<br />　　GetExitCodeThread(hThrd2, &amp;exitCode2);<br />　　if ( exitCode1 == STILL_ACTIVE )<br />　　　puts("Thread 1 is still running!");<br />　　if ( exitCode2 == STILL_ACTIVE )<br />　　　puts("Thread 2 is still running!");<br />　　if ( exitCode1 != STILL_ACTIVE &amp;&amp; exitCode2 != STILL_ACTIVE )<br />　　　break;<br />　}<br /><br />　CloseHandle(hThrd1);<br />　CloseHandle(hThrd2);<br /><br />　printf("Thread 1 returned %d\n", exitCode1);<br />　printf("Thread 2 returned %d\n", exitCode2);<br /><br />　return EXIT_SUCCESS;<br />}<br /><br />/*<br />* Take the startup value, do some simple math on it,<br />* and return the calculated value.<br />*/<br />DWORD WINAPI ThreadFunc(LPVOID n)<br />{<br />　Sleep((DWORD)n*1000*2);<br />　return (DWORD)n * 10;<br />}</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　通过下面的程序我们可以看出多线程程序运行顺序的难以预料以及WINAPI的CreateThread函数与C运行时库的_beginthread的差别：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>#define WIN32_LEAN_AND_MEAN<br />#include &lt;stdio.h&gt;<br />#include &lt;stdlib.h&gt;<br />#include &lt;windows.h&gt;<br /><br />DWORD WINAPI ThreadFunc(LPVOID);<br /><br />int main()<br />{<br />　HANDLE hThrd;<br />　DWORD threadId;<br />　int i;<br /><br />　for (i = 0; i &lt; 5; i++)<br />　{<br />　　hThrd = CreateThread(NULL, 0, ThreadFunc, (LPVOID)i, 0, &amp;threadId);<br />　　if (hThrd)<br />　　{<br />　　　printf("Thread launched %d\n", i);<br />　　　CloseHandle(hThrd);<br />　　}<br />　}<br />　// Wait for the threads to complete.<br />　Sleep(2000);<br /><br />　return EXIT_SUCCESS;<br />}<br /><br />DWORD WINAPI ThreadFunc(LPVOID n)<br />{<br />　int i;<br />　for (i = 0; i &lt; 10; i++)<br />　　printf("%d%d%d%d%d%d%d%d\n", n, n, n, n, n, n, n, n);<br />　return 0;<br />}</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+
+<br />　　运行的输出具有很大的随机性，这里摘取了几次结果的一部分（几乎每一次都不同）</div>
+<div>&nbsp; &nbsp; &nbsp; &nbsp; 如果我们使用标准C库函数而不是多线程版的运行时库，则程序可能输出"3333444444"这样的结果，而使用多线程运行时库后，则可避免这一问题。<br /><br />　　下列程序在主线程中创建一个SecondThread，在SecondThread线程中通过自增对Counter计数到1000000，主线程一直等待其结束：<br /><br />
+<div class="table-box">
+<table style="width: 90%;" border="1" align="center" bgcolor="#e3e3e3">
+<tbody>
+<tr>
+<td>#include &lt;Win32.h&gt;<br />#include &lt;stdio.h&gt;<br />#include &lt;process.h&gt;<br /><br />unsigned Counter;<br />unsigned __stdcall SecondThreadFunc(void *pArguments)<br />{<br />　printf("In second thread...\n");<br /><br />　while (Counter &lt; 1000000)<br />　　Counter++;<br /><br />　_endthreadex(0);<br />　return 0;<br />}<br /><br />int main()<br />{<br />　HANDLE hThread;<br />　unsigned threadID;<br /><br />　printf("Creating second thread...\n");<br /><br />　// Create the second thread.<br />　hThread = (HANDLE)_beginthreadex(NULL, 0, &amp;SecondThreadFunc, NULL, 0, &amp;threadID);<br /><br />　// Wait until second thread terminates&nbsp;<br />　WaitForSingleObject(hThread, INFINITE);<br />　printf("Counter should be 1000000; it is-&gt; %d\n", Counter);<br />　// Destroy the thread object.<br />　CloseHandle(hThread);<br />}</td>
+
+
+
+
+</tr>
+
+
+
+
+</tbody>
+
+
+
+
+</table>
+
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

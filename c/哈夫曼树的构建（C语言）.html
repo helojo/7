@@ -1,0 +1,153 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修哈夫曼树的构建（C语言）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>哈夫曼树的构建（C语言）</center></div><div class='banquan'>原文出处:本文由博客园博主Drran提供。<br/>
+原文连接:https://www.cnblogs.com/drrany/p/11911343.html</div><br>
+    <h2 class="md-end-block md-heading md-focus"><span class="md-plain">哈夫曼树的构建（C语言）</span></h2>
+<p class="md-end-block md-p"><span><strong>算法思路</strong><span class="md-plain">：</span></span></p>
+<p class="md-end-block md-p"><span class="md-tab"> <span class="md-plain">主要包括两部分算法，一个是<span><strong>在数组中找到权值最小、且无父结点两个结点位置</strong><span class="md-plain">，因为只有无父结点才能继续组成树；<span class="md-linebreak"> <span class="md-linebreak-mark"> <span class="md-plain">​<span class="md-tab"> <span class="md-plain">另一个就是根据这两个结点来修改相关结点值。 </span></span></span></span></span></span></span></span></span></p>
+<ol class="ol-list" start="">
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain md-expand">结构定义和头文件</span></p>
+<pre><code>&nbsp;</code></pre>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span>  #include &lt;<span style="color: #0000ff;">malloc</span>.h&gt;
+<span style="color: #008080;"> 3</span>  #include &lt;stdlib.h&gt;
+<span style="color: #008080;"> 4</span>  #include &lt;<span style="color: #0000ff;">string</span>.h&gt;
+<span style="color: #008080;"> 5</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;"> 6</span>  <span style="color: #0000ff;">#define</span> OVERFLOW -1
+<span style="color: #008080;"> 7</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;"> 8</span>  typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+</span><span style="color: #008080;"> 9</span>      <span style="color: #0000ff;">int</span> weight;<span style="color: #008000;">//</span><span style="color: #008000;">结点权值</span>
+<span style="color: #008080;">10</span>      <span style="color: #0000ff;">int</span> lchild, rchild, parent;<span style="color: #008000;">//</span><span style="color: #008000;">结点左、右孩子、父结点</span>
+<span style="color: #008080;">11</span>  }HNode,*HTree;</code></pre>
+
+<p>&nbsp;</p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">在数组中找到目前权值最小的两个结点<span class="md-linebreak"> <span class="md-linebreak-mark"> <span class="md-plain">由于哈夫曼树规定结点左子树权值小于右子树，所以我这里把权值较小的那个结点位置赋给p1 </span></span></span></span></p>
+<blockquote>
+<p class="md-end-block md-p"><span class="md-plain">这部分我先找到前两个无父结点的结点位置赋给p1和p2，再继续遍历之后的与当前的p1和p2位置的结点权值比较</span></p>
+<ul class="ul-list" data-mark="-">
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">若结点有父结点，直接跳过</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">若结点无父结点，且权值小于p1，则将该位置赋给p1，令p2等于之前的p1</span></p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">若结点无父结点，且权值大于p1、小于p2，则将该位置赋给p2</span></p>
+</li>
+</ul>
+</blockquote>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span>  <span style="color: #0000ff;">void</span> selectMin(HTree HT,<span style="color: #0000ff;">int</span> length, <span style="color: #0000ff;">int</span>* p1, <span style="color: #0000ff;">int</span>* p2) {<span style="color: #008000;">//</span><span style="color: #008000;">搜索当前数组中无父结点的权值最小的两个结点的下标</span>
+<span style="color: #008080;"> 2</span>      <span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>;<span style="color: #008000;">//</span><span style="color: #008000;">数组下标从1开始，0不用</span>
+<span style="color: #008080;"> 3</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;"> 4</span>      <span style="color: #0000ff;">while</span> (HT[i].parent!= <span style="color: #800080;">0</span> &amp;&amp; i &lt;= length)<span style="color: #008000;">//</span><span style="color: #008000;">遍历到第一个无父结点的结点位置</span>
+<span style="color: #008080;"> 5</span>          i++<span style="color: #000000;">;
+</span><span style="color: #008080;"> 6</span>      *p1 = i;        i++<span style="color: #000000;">;
+</span><span style="color: #008080;"> 7</span>      <span style="color: #0000ff;">while</span> (HT[i].parent!= <span style="color: #800080;">0</span> &amp;&amp; i &lt;= length)<span style="color: #008000;">//</span><span style="color: #008000;">遍历到第二个无父结点的结点位置</span>
+<span style="color: #008080;"> 8</span>          i++<span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span>      *p2 = i;        i++<span style="color: #000000;">;
+</span><span style="color: #008080;">10</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;">11</span>      <span style="color: #0000ff;">if</span> (HT[*p1].weight &gt; HT[*p2].weight) {<span style="color: #008000;">//</span><span style="color: #008000;">令p1始终指向较小权值的结点位置</span>
+<span style="color: #008080;">12</span>          <span style="color: #0000ff;">int</span> temp = *<span style="color: #000000;">p1;
+</span><span style="color: #008080;">13</span>          *p1 = *<span style="color: #000000;">p2;
+</span><span style="color: #008080;">14</span>          *p2 =<span style="color: #000000;"> temp;
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">     }
+</span><span style="color: #008080;">16</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;">17</span>      <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> n = i; n &lt;= length; n++) {<span style="color: #008000;">//</span><span style="color: #008000;">继续遍历,比较之后的无父结点的结点权值与p1、p2</span>
+<span style="color: #008080;">18</span>          <span style="color: #0000ff;">if</span> (HT[n].parent != <span style="color: #800080;">0</span>)<span style="color: #008000;">//</span><span style="color: #008000;">若该结点有父结点，直接跳过</span>
+<span style="color: #008080;">19</span>              <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+</span><span style="color: #008080;">20</span>          <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (HT[n].weight &lt; HT[*p1].weight) {<span style="color: #008000;">//</span><span style="color: #008000;">若该结点权值小于p1，令p1等于n，p2等于p1</span>
+<span style="color: #008080;">21</span>              *p2 = *<span style="color: #000000;">p1;
+</span><span style="color: #008080;">22</span>              *p1 =<span style="color: #000000;"> n;
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">         }
+</span><span style="color: #008080;">24</span>          <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (HT[n].weight &gt; HT[*p1].weight&amp;&amp; HT[n].weight &lt; HT[*p2].weight)<span style="color: #008000;">//</span><span style="color: #008000;">若该结点权值大于p1，小于p2，令*p2=n</span>
+<span style="color: #008080;">25</span>              *p2 =<span style="color: #000000;"> n;
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">     }
+</span><span style="color: #008080;">27</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;">28</span>      <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;">29</span>  }</code></pre>
+
+<p>&nbsp;</p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">构建哈夫曼树</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span>  <span style="color: #0000ff;">void</span> createHuffmanTree() {<span style="color: #008000;">//</span><span style="color: #008000;">构建哈夫曼树</span>
+<span style="color: #008080;"> 2</span>      <span style="color: #0000ff;">int</span> lnode;<span style="color: #008000;">//</span><span style="color: #008000;">哈夫曼树叶子结点数</span>
+<span style="color: #008080;"> 3</span>      printf(<span style="color: #800000;">"</span><span style="color: #800000;">input leafnode number:</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 4</span>      scanf_s(<span style="color: #800000;">"</span><span style="color: #800000;">%d</span><span style="color: #800000;">"</span>, &amp;<span style="color: #000000;">lnode);
+</span><span style="color: #008080;"> 5</span>      <span style="color: #0000ff;">int</span> length=<span style="color: #800080;">2</span>*lnode-<span style="color: #800080;">1</span>;<span style="color: #008000;">//</span><span style="color: #008000;">哈夫曼树结点数=2*叶子节点数-1</span>
+<span style="color: #008080;"> 6</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;"> 7</span>      HTree HT = (HTree)<span style="color: #0000ff;">malloc</span>(<span style="color: #0000ff;">sizeof</span>(HNode) * (length + <span style="color: #800080;">1</span>));<span style="color: #008000;">//</span><span style="color: #008000;">数组下标从1开始，所以分配(length+1)大小空间</span>
+<span style="color: #008080;"> 8</span>      <span style="color: #0000ff;">if</span> (!<span style="color: #000000;">HT)        exit(OVERFLOW);
+</span><span style="color: #008080;"> 9</span>      memset(HT, <span style="color: #800080;">0</span>, <span style="color: #0000ff;">sizeof</span>(HNode) * (length + <span style="color: #800080;">1</span>));<span style="color: #008000;">//</span><span style="color: #008000;">将数组内元素都初始化为0</span>
+<span style="color: #008080;">10</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;">11</span>      HTree p =<span style="color: #000000;"> HT;
+</span><span style="color: #008080;">12</span>      <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = lnode + <span style="color: #800080;">1</span>; i &lt;=length; i++) {<span style="color: #008000;">//</span><span style="color: #008000;">把所有非叶子节点的结点权值规定为无穷大，否则会影响接下来选择结点最小值</span>
+<span style="color: #008080;">13</span>          (p + i)-&gt;weight = <span style="color: #800080;">65535</span><span style="color: #000000;">;
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">     }
+</span><span style="color: #008080;">15</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;">16</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;">17</span>      printf(<span style="color: #800000;">"</span><span style="color: #800000;">input leafnode weight:</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">18</span>      <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= lnode; i++) {<span style="color: #008000;">//</span><span style="color: #008000;">输入叶子结点权值</span>
+<span style="color: #008080;">19</span>          scanf_s(<span style="color: #800000;">"</span><span style="color: #800000;">%d</span><span style="color: #800000;">"</span>, &amp;(p+i)-&gt;<span style="color: #000000;">weight);
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">     }
+</span><span style="color: #008080;">21</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;">22</span>      <span style="color: #0000ff;">int</span><span style="color: #000000;"> p1, p2;
+</span><span style="color: #008080;">23</span>      <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = lnode+<span style="color: #800080;">1</span>; i &lt;= length; i++) {<span style="color: #008000;">//</span><span style="color: #008000;">从第一个非叶子结点开始遍历</span>
+<span style="color: #008080;">24</span>          selectMin(p, length, &amp;p1, &amp;<span style="color: #000000;">p2);
+</span><span style="color: #008080;">25</span>          (p + i)-&gt;lchild = p1;<span style="color: #008000;">//</span><span style="color: #008000;">修改左子树的值</span>
+<span style="color: #008080;">26</span>          (p + i)-&gt;rchild = p2;<span style="color: #008000;">//</span><span style="color: #008000;">修改左子树的值</span>
+<span style="color: #008080;">27</span>          (p + i)-&gt;weight = (p + p1)-&gt;weight + (p + p2)-&gt;weight;<span style="color: #008000;">//</span><span style="color: #008000;">修改权值</span>
+<span style="color: #008080;">28</span>          (p + p1)-&gt;parent = i;<span style="color: #008000;">//</span><span style="color: #008000;">修改左子树的父结点值</span>
+<span style="color: #008080;">29</span>          (p + p2)-&gt;parent = i;<span style="color: #008000;">//</span><span style="color: #008000;">修改右子树的父结点值</span>
+<span style="color: #008080;">30</span> <span style="color: #000000;">     }
+</span><span style="color: #008080;">31</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;">32</span>      <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= length; i++<span style="color: #000000;">) {
+</span><span style="color: #008080;">33</span>          printf(<span style="color: #800000;">"</span><span style="color: #800000;">%3d    %3d   %3d   %3d   %3d\n</span><span style="color: #800000;">"</span>, i, (p + i)-&gt;weight, (p + i)-&gt;parent, (p + i)-&gt;lchild, (p + i)-&gt;rchild);<span style="color: #008000;">//</span><span style="color: #008000;">遍历输出</span>
+<span style="color: #008080;">34</span> <span style="color: #000000;">     }
+</span><span style="color: #008080;">35</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;">36</span>      <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;">37</span>  }</code></pre>
+
+<p>&nbsp;</p>
+</li>
+<li class="md-list-item">
+<p class="md-end-block md-p"><span class="md-plain">主函数及具体实例</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span>  <span style="color: #0000ff;">int</span><span style="color: #000000;"> main() {
+</span><span style="color: #008080;">2</span> <span style="color: #000000;"> ​
+</span><span style="color: #008080;">3</span> <span style="color: #000000;">     createHuffmanTree();
+</span><span style="color: #008080;">4</span>      <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">5</span>  }</code></pre>
+
+<p>&nbsp;</p>
+</li>
+</ol>
+<h3 class="md-end-block md-heading"><span class="md-plain">自我总结</span></h3>
+<p class="md-end-block md-p"><span class="md-plain">写这部分时候动态数组分配和使用那里耗了点时间，主要原因还是不太熟以及vs的操作太迷了。经过这次训练又加深了一点理解，vs的调试也逐渐能够熟练使用了，还是挺开心的。</span></p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

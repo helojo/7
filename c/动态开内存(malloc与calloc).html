@@ -1,0 +1,77 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修动态开内存(malloc与calloc)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>动态开内存(malloc与calloc)</center></div><div class='banquan'>原文出处:本文由博客园博主奔_gis提供。<br/>
+原文连接:https://www.cnblogs.com/ben-/p/11277271.html</div><br>
+    <p>malloc与calloc</p>
+<p>1.函数原型</p>
+<p>&nbsp; &nbsp;#include&lt;stdlib.h&gt;</p>
+<p>&nbsp; &nbsp;void *malloc(unsigned int size);&nbsp; &nbsp; &nbsp;//申请size字节的内存</p>
+<p>&nbsp; &nbsp;void *calloc(unsigned int num, unsigned size);&nbsp; &nbsp; //申请num*size字节的内存</p>
+<p>2.函数的返回值为void*类型，使用时需强制转换为所需要的类型；</p>
+<p>&nbsp; &nbsp;如果内存申请失败，则返回NULL，所以使用申请到的内存时需要先进行判断。</p>
+<p>&nbsp; &nbsp;如：char* p = (char*)malloc(6 * sizeof(char));</p>
+<p>3.申请的内存位于堆中，不再需要使用时，需调用free函数释放</p>
+<p>&nbsp; &nbsp;void free(void *p);</p>
+<p>注意：</p>
+<p>1.void *与NULL</p>
+<p>&nbsp; int *p=NULL;</p>
+<p>&nbsp; void *p;</p>
+<p>2.malloc与数组的比较：</p>
+<p>（1）传给malloc函数的实参可以是一个表达式，从而可以&ldquo;动态&rdquo;申请一块内存；</p>
+<p>（2）使用malloc函数申请的内存可以从函数中返回；而使用数组则不可以（存放在栈中，当函数返回时，内存已经被释放），示例代码如下：</p>
+<src class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> #include&lt;stdlib.h&gt;
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> func1();
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> func2();
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> pf1;
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> pf2;
+</span><span style="color: #008080;"> 9</span>     pf1 =<span style="color: #000000;"> func1();
+</span><span style="color: #008080;">10</span>     pf2 =<span style="color: #000000;"> func2();
+</span><span style="color: #008080;">11</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span>, pf1);    <span style="color: #008000;">//</span><span style="color: #008000;">输出f1</span>
+<span style="color: #008080;">12</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span>, pf2);    <span style="color: #008000;">//</span><span style="color: #008000;">输出乱码，错误信息-返回局部变量的地址</span>
+<span style="color: #008080;">13</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> func1()
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">char</span>* p = (<span style="color: #0000ff;">char</span>*)<span style="color: #0000ff;">malloc</span>(<span style="color: #800080;">3</span> * <span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">char</span><span style="color: #000000;">));
+</span><span style="color: #008080;">18</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;"> (p)
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">20</span>         p[<span style="color: #800080;">0</span>] = <span style="color: #800000;">'</span><span style="color: #800000;">f</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">21</span>         p[<span style="color: #800080;">1</span>] = <span style="color: #800000;">'</span><span style="color: #800000;">1</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">22</span>         p[<span style="color: #800080;">2</span>] = <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">23</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> p;
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">27</span> 
+<span style="color: #008080;">28</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> func2()
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">30</span>     <span style="color: #0000ff;">char</span> p[<span style="color: #800080;">3</span>] = <span style="color: #800000;">"</span><span style="color: #800000;">f2</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">31</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> p;
+</span><span style="color: #008080;">32</span> }</code></pre>
+
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

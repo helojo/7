@@ -1,0 +1,131 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[NOIP2016]天天爱跑步-题解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[NOIP2016]天天爱跑步-题解</center></div><div class='banquan'>原文出处:本文由博客园博主frank3215提供。<br/>
+原文连接:https://www.cnblogs.com/topsecret/p/noip2016-running.html</div><br>
+    <p><a href="https://www.luogu.org/problem/P1600">题面传送门</a></p>
+<h2 id="解答">解答</h2>
+<p>设第<span class="math inline">\(j\)</span>号玩家在<span class="math inline">\(V_j\)</span>时刻出发。</p>
+<p>弱化问题：如果树退化成了一条链。则在<span class="math inline">\(j\)</span>处的观察员能观察到的<span class="math inline">\(i\)</span>号玩家当且仅当<br />
+<span class="math display">\[
+i玩家经过j，且
+\begin{cases}
+dep_j - W_j = dep_{S_i} - V_j, &amp;i向下跑步 \\
+dep_j + W_j = dep_{S_i} + V_j, &amp;i向上跑步
+\end{cases}
+\]</span><br />
+一个点在树上的贡献是连续的，可以考虑把路径在LCA处（倍增找LCA）拆成两条链用离线+树上差分统计人经过每个点的时刻。</p>
+<h3 id="树上差分">树上差分</h3>
+<p>如何只让一段树上的链被更新呢？（类比左闭右开区间，考虑下端为“闭”节点，上端为“开”节点的链）</p>
+<p>考虑树上的一个点，只有链的一端在它的子树内部时才被链覆盖。<br />
+所以在dfs子树之前记下答案，在dfs之后更新链端点，实际的答案就是答案的差。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+const int mx = 3e5+10, LOG = 20, inf = 1e9;
+
+int n, m, ans[mx], s[mx], t[mx], w[mx];
+int head[mx], nxt[mx&lt;&lt;1], to[mx&lt;&lt;1], tot;
+int dep[mx] = {-1}, fa[mx][LOG];
+int down[mx&lt;&lt;2], up[mx&lt;&lt;1];
+vector&lt;pair&lt;int, int&gt; &gt; v[mx];
+
+void add(int u, int v) {
+    ++tot;
+    nxt[tot] = head[u];
+    to[tot] = v;
+    head[u] = tot;
+}
+
+void dfs0(int u) {
+    for (int i = 1; i &lt; LOG; ++i) {
+        fa[u][i] = fa[fa[u][i-1]][i-1];
+    }
+    for (int e = head[u], v; e; e = nxt[e]) {
+        if ((v=to[e]) == fa[u][0]) continue;
+        fa[v][0] = u;
+        dep[v] = dep[u]+1;
+        dfs0(v);
+    }
+}
+
+int lca(int u, int v) {
+    if (dep[u] &lt; dep[v]) swap(u, v);
+    for (int i = LOG-1; ~i; --i)
+        if (dep[fa[u][i]] &gt;= dep[v])
+            u = fa[u][i];
+    if (u == v) return u;
+    for (int i = LOG-1; ~i; --i)
+        if (fa[u][i] != fa[v][i])
+            u = fa[u][i], v = fa[v][i];
+    return fa[u][0];
+}
+
+#define pb push_back
+#define mp make_pair
+#define fi first
+#define se second
+
+void addr(int s, int t, int w=0) {
+    assert(dep[s] != dep[t]);
+    if (dep[s] &lt; dep[t]) w += inf, swap(s, t);
+    v[s].pb(mp(w, 1));
+    v[t].pb(mp(w, -1));
+}
+
+void dfs(int u) {
+    ans[u] -= up[dep[u]+w[u]] + down[(mx&lt;&lt;1) + dep[u]-w[u]];
+    for (int e = head[u]; e; e = nxt[e]) {
+        if (to[e] == fa[u][0]) continue;
+        dfs(to[e]);
+    }
+    for (int i = 0; i &lt; (int)v[u].size(); ++i) {
+        if (v[u][i].fi &gt; inf/2) down[(mx&lt;&lt;1) + v[u][i].fi-inf] += v[u][i].se;
+        else up[v[u][i].fi] += v[u][i].se;
+    }
+    ans[u] += up[dep[u]+w[u]] + down[(mx&lt;&lt;1) + dep[u]-w[u]];
+}
+
+int main() {
+    scanf(&quot;%d%d&quot;, &amp;n, &amp;m);
+    int u, v;
+    for (int i = 0; i &lt; n-1; ++i) {
+        scanf(&quot;%d%d&quot;, &amp;u, &amp;v);
+        add(u, v), add(v, u);
+    }
+    dfs0(1);
+    for (int i = 1; i &lt;= n; ++i) scanf(&quot;%d&quot;, w+i);
+    for (int i = 1; i &lt;= m; ++i) {
+        scanf(&quot;%d%d&quot;, s+i, t+i);
+        u = lca(s[i], t[i]);
+        if (u == s[i]) addr(fa[s[i]][0], t[i], dep[s[i]]);
+        else if (u == t[i]) addr(s[i], fa[t[i]][0], dep[s[i]]);
+        else {
+            addr(s[i], fa[u][0], dep[s[i]]);
+            addr(u, t[i], dep[u] - (dep[s[i]]-dep[u]));
+        }
+    }
+    dfs(1);
+    for (int i = 1; i &lt;= n; ++i) printf(&quot;%d%c&quot;, ans[i], &quot; \n&quot;[i==n]);
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

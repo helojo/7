@@ -1,0 +1,238 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++中对象的构造顺序' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++中对象的构造顺序</center></div><div class='banquan'>原文出处:本文由博客园博主子宇24提供。<br/>
+原文连接:https://www.cnblogs.com/dishengAndziyu/p/10906308.html</div><br>
+    <p align="left">1，C++ 中的类可以定义多个对象，那么对象构造顺序是怎样的？</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，很多的 bug 是由对象的构造顺序造成的，虽然它不难；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，对象的构造往往和构造函数牵涉在一起，构造函数的函数体又可能由非常复杂的程序逻辑组成的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，这样就有可能引入了一个问题，不同类的它们的构造函数中的程序逻辑也许是相互依赖的，当这种相互依赖一旦发生，那么对象的构造顺序就很可能导致程序中非常难以调试的 bug 出现；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，在工程中，由于对象的构造顺序而造成的软件 bug 非常之多，因此有必要梳理下对象的构造顺序；</p>
+<p align="left">&nbsp;</p>
+<p align="left">2，对于局部对象：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，当程序执行流到达对象的定义语句时进行构造；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，构造时调用构造函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">3，局部对象的构造顺序实例分析：</p>
+<p align="left">&nbsp; &nbsp; 　1，代码示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> mi;
+</span><span style="color: #008080;"> 7</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 8</span>     Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> i)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">10</span>         mi =<span style="color: #000000;"> i;
+</span><span style="color: #008080;">11</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Test(int i): %d\n</span><span style="color: #800000;">"</span>, mi);  <span style="color: #008000;">//</span><span style="color: #008000;"> 打印语句对实验非常有用；</span>
+<span style="color: #008080;">12</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">13</span>     
+<span style="color: #008080;">14</span>     Test(<span style="color: #0000ff;">const</span> Test&amp;<span style="color: #000000;"> obj)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">16</span>         mi =<span style="color: #000000;"> obj.mi;
+</span><span style="color: #008080;">17</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Test(const Test&amp; obj): %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, mi);
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">23</span>     <span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">24</span>     Test a1 = i;  <span style="color: #008000;">//</span><span style="color: #008000;"> 第一个被构造的对象</span>
+<span style="color: #008080;">25</span>         
+<span style="color: #008080;">26</span>     <span style="color: #0000ff;">while</span>( i &lt; <span style="color: #800080;">3</span><span style="color: #000000;"> )
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">28</span>         Test a2 = ++i;  <span style="color: #008000;">//</span><span style="color: #008000;"> 第二个被构造的对象；反复的被构造三次对象；</span>
+<span style="color: #008080;">29</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">30</span>     
+<span style="color: #008080;">31</span> <span style="color: #008000;">//</span><span style="color: #008000;"> goto End;  </span><span style="color: #008000;">//</span><span style="color: #008000;"> 下面的输出不会执行了；程序执行流跳过了程序调用的定义，则对象就没有被构造了； </span>
+<span style="color: #008080;">32</span>     <span style="color: #0000ff;">if</span>( i &lt; <span style="color: #800080;">4</span><span style="color: #000000;"> )  
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">34</span>         Test a = a1;  <span style="color: #008000;">//</span><span style="color: #008000;"> 第三个被构造的对象；Test(const Test&amp; obj): 3</span>
+<span style="color: #008080;">35</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">36</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">37</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">38</span>         Test a(<span style="color: #800080;">100</span><span style="color: #000000;">);
+</span><span style="color: #008080;">39</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">40</span> <span style="color: #008000;">//</span><span style="color: #008000;"> End:</span>
+<span style="color: #008080;">41</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">42</span> }</pre>
+</div>
+<p align="left">　　2，这个实验说明：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　　1，程序执行流直接和局部对象的构造顺序息息相关，如果非法的改变程序执行流，那么程序可能产生灾难性的错误，参见如下示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> mi;
+</span><span style="color: #008080;"> 7</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 8</span>     Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> i)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">10</span>         mi =<span style="color: #000000;"> i;
+</span><span style="color: #008080;">11</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Test(int i): %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, mi);
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">13</span>     
+<span style="color: #008080;">14</span>     Test(<span style="color: #0000ff;">const</span> Test&amp;<span style="color: #000000;"> obj)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">16</span>         mi =<span style="color: #000000;"> obj.mi;
+</span><span style="color: #008080;">17</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Test(const Test&amp; obj): %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, mi);
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span>     
+<span style="color: #008080;">20</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> getMi()
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">22</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> mi;
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">25</span> 
+<span style="color: #008080;">26</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">28</span>     <span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">29</span>     Test a1 = i; <span style="color: #008000;">//</span><span style="color: #008000;"> Test(int i): 0</span>
+<span style="color: #008080;">30</span>         
+<span style="color: #008080;">31</span>     <span style="color: #0000ff;">while</span>( i &lt; <span style="color: #800080;">3</span><span style="color: #000000;"> )
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">33</span>         Test a2 = ++i; <span style="color: #008000;">//</span><span style="color: #008000;"> Test(int i): 1, 2, 3</span>
+<span style="color: #008080;">34</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">35</span> <span style="color: #0000ff;">goto</span><span style="color: #000000;"> End;       
+</span><span style="color: #008080;">36</span>         Test a(<span style="color: #800080;">100</span>);  <span style="color: #008000;">//</span><span style="color: #008000;"> 这里程序执行流跳过了对象的定义，因此 a 这个对象是没有被构造的，没有被构造意味着 a 这个对象它的状态是没有被初始化的，如果后面使用这个对象，则会产生灾难性的错误；g++ 可以帮助我们报出这个错误，但是其它编译器有可能不能，因为这不是标准，比如 Visual Studio 中的编译器；</span>
+<span style="color: #008080;">37</span> <span style="color: #000000;">End:
+</span><span style="color: #008080;">38</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">a.mi = %d\n</span><span style="color: #800000;">"</span>, a.getMi());  <span style="color: #008000;">//</span><span style="color: #008000;"> 这里打印随机值；a 对象没有被初始化，因为构造函数没有被调用； </span>
+<span style="color: #008080;">39</span>     
+<span style="color: #008080;">40</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">41</span> }</pre>
+</div>
+<p align="left">　　　　2，这个实验说明：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　　　　1，对象的构造如果不是显示的调用，则只发生在对象定义（运行时）之时；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　　　　2，编译时只产生没有初始化的对象（这里很模糊，不清楚）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　　　　3，程序执行流和程序的编译不相关，编译还是会都编译的。执行确定了构造函数的调用，而编译则是生成空间；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">4，对于堆对象：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，当程序执行流到达 new 语句时创建对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，创建对象就要触发构造函数的调用；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，其实堆对象构造顺序也和程序执行流相关，只不过说由于引入了 new 关键字，堆对象的构造顺序比局部对象更容易确认些；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，使用 new 创建对象将自动触发构造函数的调用；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">5，堆对象的构造顺序编程实验：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> mi;
+</span><span style="color: #008080;"> 7</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 8</span>     Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> i)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">10</span>         mi =<span style="color: #000000;"> i;
+</span><span style="color: #008080;">11</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Test(int i): %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, mi);
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">13</span>     
+<span style="color: #008080;">14</span>     Test(<span style="color: #0000ff;">const</span> Test&amp;<span style="color: #000000;"> obj)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">16</span>         mi =<span style="color: #000000;"> obj.mi;
+</span><span style="color: #008080;">17</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Test(const Test&amp; obj): %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, mi);
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span>     
+<span style="color: #008080;">20</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> getMi()
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">22</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> mi;
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">25</span> 
+<span style="color: #008080;">26</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">28</span>     <span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">29</span>     Test* a1 = <span style="color: #0000ff;">new</span> Test(i); <span style="color: #008000;">//</span><span style="color: #008000;"> Test(int i): 0</span>
+<span style="color: #008080;">30</span>         
+<span style="color: #008080;">31</span>     <span style="color: #0000ff;">while</span>( ++i &lt; <span style="color: #800080;">10</span><span style="color: #000000;"> )
+</span><span style="color: #008080;">32</span>         <span style="color: #0000ff;">if</span>( i % <span style="color: #800080;">2</span><span style="color: #000000;"> )
+</span><span style="color: #008080;">33</span>             <span style="color: #0000ff;">new</span> Test(i); <span style="color: #008000;">//</span><span style="color: #008000;"> Test(int i): 1, 3, 5, 7, 9</span>
+<span style="color: #008080;">34</span>         
+<span style="color: #008080;">35</span>     <span style="color: #0000ff;">if</span>( i &lt; <span style="color: #800080;">4</span><span style="color: #000000;"> )
+</span><span style="color: #008080;">36</span>         <span style="color: #0000ff;">new</span> Test(*<span style="color: #000000;">a1);
+</span><span style="color: #008080;">37</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">38</span>         <span style="color: #0000ff;">new</span> Test(<span style="color: #800080;">100</span>); <span style="color: #008000;">//</span><span style="color: #008000;"> Test(int i): 100</span>
+<span style="color: #008080;">39</span>         
+<span style="color: #008080;">40</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">41</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，堆对象的创建也会受到 goto 语句的影响，因为 goto 语句会改变程序执行流，也就可能绕过堆对象的创建；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">6，对于全局对象：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，全局对象的构造顺序是不确定的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，这里带来的 bug 是非常多的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，C++ 标准没有定义全局对象的构造顺序；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，不同的编译器使用不同的规则确定构造顺序；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">7，全局对象的构造顺序：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，test.h文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">#ifndef _TEST_H_
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">#define</span> _TEST_H_
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 9</span>     Test(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> s)
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">11</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, s);
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> <span style="color: #0000ff;">#endif</span></pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，t1.cpp 文件：</p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">test.h</span><span style="color: #800000;">"</span></span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">2</span> </span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">3</span> Test t1(<span style="color: #800000;">"</span><span style="color: #800000;">t1</span><span style="color: #800000;">"</span>);</span>&nbsp;</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，t2.cpp 文件：</p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">test.h</span><span style="color: #800000;">"</span></span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">2</span> </span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">3</span> Test t2(<span style="color: #800000;">"</span><span style="color: #800000;">t2</span><span style="color: #800000;">"</span>);</span>&nbsp;</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，t3.cpp 文件：</p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">test.h</span><span style="color: #800000;">"</span></span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">2</span> </span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">3</span> Test t3(<span style="color: #800000;">"</span><span style="color: #800000;">t3</span><span style="color: #800000;">"</span>);</span>&nbsp;</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 5，主函数：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">test.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">2</span> 
+<span style="color: #008080;">3</span> Test t4(<span style="color: #800000;">"</span><span style="color: #800000;">t4</span><span style="color: #800000;">"</span>);  <span style="color: #008000;">//</span><span style="color: #008000;"> 全局对象的构造一定会在 main 函数之前完成，和程序执行流没有关系；main() 函数执行之前，没有程序执行流的概念，如果出现多个全局对象的时候，它们的构造顺序就不确定了；尤其是两个不同的操作系统更是不同；</span>
+<span style="color: #008080;">4</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">6</span>     Test t5(<span style="color: #800000;">"</span><span style="color: #800000;">t5</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">7</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，在以后的开发过程中，要避免全局对象之间的相互依赖；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，当今的软件开发领域，尽量的不使用全局变量的，其中原因之一就是全局的变量它们的初始化顺序是不确定的，面向对象领域就变成了全局对象的构造顺序是不确定的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，goto 语句也是禁用的，因为它会改变程序执行流，这样会造成局部对象构造顺序产生错乱，有可能导致程序里面局部对象构造出现问题，进而产生不可预计的灾难性错误；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">8，小结：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，局部对象的构造顺序依赖于程序的执行流；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，堆对象的构造顺序依赖于 new 的使用顺序；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，全局对象的构造顺序是不确定的；</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

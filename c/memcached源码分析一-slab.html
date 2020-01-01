@@ -1,0 +1,93 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修memcached源码分析一-slab' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>memcached源码分析一-slab</center></div><div class='banquan'>原文出处:本文由博客园博主yangzd~提供。<br/>
+原文连接:https://www.cnblogs.com/yang-zd/p/11340990.html</div><br>
+    <p>&nbsp; Slab作为一种内存管理方案，其作用主要有以下2点：</p>
+<p>a) 避免频繁的内存分配释放造成的内存碎片</p>
+<p>b) 减少内存分配操作产生的性能开销</p>
+<p>Linux内核数据结构中也有slab的设计，Linux提供了一套接口，使用这套接口可以动态创建与释放一个slab结构，该slab的chunk大小通过接口指定， 创建成功后就可以从该slab中动态申请与释放chunk大小的内存用于存储目标数据，例如内核中用于表示进程的结构体task_struc就是使用的slab方式进行管理。memcached与linux内核不同，memcached中在程序启动时即初始化一个slabclass_t的全局数组，每一个slabclass_t结构的chunk大小不同，构成一个全局slab池。memcached中的slab相关操作源码主要集中在源文件slabs.c中，下面对它进行分析。</p>
+<h3>1.&nbsp;&nbsp;&nbsp; 结构体slabclass_t</h3>
+<p>&nbsp; &nbsp; 以下是memcached中对slabclass_t的定义，</p>
+<div class="cnblogs_code">
+<pre><code>typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    unsigned </span><span style="color: #0000ff;">int</span> size;      <span style="color: #008000;">/*</span><span style="color: #008000;"> sizes of items </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    unsigned </span><span style="color: #0000ff;">int</span> perslab;   <span style="color: #008000;">/*</span><span style="color: #008000;"> how many items per slab </span><span style="color: #008000;">*/</span>
+
+    <span style="color: #0000ff;">void</span> *slots;           <span style="color: #008000;">/*</span><span style="color: #008000;"> list of item ptrs </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    unsigned </span><span style="color: #0000ff;">int</span> sl_curr;   <span style="color: #008000;">/*</span><span style="color: #008000;"> total free items in list </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+
+    unsigned </span><span style="color: #0000ff;">int</span> slabs;     <span style="color: #008000;">/*</span><span style="color: #008000;"> how many slabs were allocated for this class </span><span style="color: #008000;">*/</span>
+
+    <span style="color: #0000ff;">void</span> **slab_list;       <span style="color: #008000;">/*</span><span style="color: #008000;"> array of slab pointers </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    unsigned </span><span style="color: #0000ff;">int</span> list_size; <span style="color: #008000;">/*</span><span style="color: #008000;"> size of prev array </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+
+    size_t requested; </span><span style="color: #008000;">/*</span><span style="color: #008000;"> The number of requested bytes </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+} slabclass_t;</span></code></pre>
+
+<p>slabclass_t对内存的组织可以粗略的用图1-1表示，</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/memcached源码分析一-slab0.png" alt="" /></p>
+<p style="text-align: center;">图1-1 slabclass_t内存组织方式</p>
+<p style="text-align: left;">&nbsp;</p>
+<p>&nbsp; &nbsp; slab_list是一个可以动态分配的数组，数组大小以list_size表示，数组中已存储元素数目以slabs表示，数组中每一个元素都表示一个page大小的可用内存(page也称为slab)。在为该slabclass_t新增加内存时，如果slabs等于list_size即表示数据空间已全部占用，需要使用realloc重新分配数组。</p>
+<p>&nbsp; &nbsp; slabclass_t中的可用内存总是切割为size大小的chunks，一个page共可以切分为perslab个chunk。</p>
+<p>&nbsp; &nbsp; slabclass_t中未被使用的chunk以单链表的方式进行组织，slots即是该单链表的链表头。当从该slabclass_t中申请内存时，返回slots指向的第一个chunk内存；当使用者释放从slabclass_t中申请的内存时，总是插入该chunk到链表头。sl_curr表示当前空闲的chunk数目，即单链表的元素数目。</p>
+<p>&nbsp; &nbsp; 为了构成单链表，每一个chunk中总是需要存在一个next指针，事实上，每一个chunk大小至少是一个item结构体的大小, memcached中以item表示一个存储对象，item的数据及item结构体实例总是被存储在同一个chunk中，数据紧接在结构体实例之后。而item中包含一个next指针，slabclass_t复用了该指针来组织空闲的chunk。</p>
+<p>&nbsp; &nbsp; 当为该slabclass_t新增加一个page的可用内存时，该page会被切分为一个一个的空闲chunk，并被插入到slots指向的单链表头。因此slabclass_t中的内存要么属于空闲chunk，由slots管理，要么属于被使用的item，被hashtable索引。</p>
+<h3>2.&nbsp;&nbsp;&nbsp; 特殊的slabclass[0]</h3>
+<p>&nbsp; &nbsp; memcached中以一个全局数组slabclass[MAX_NUMBER_OF_SLAB_CLASSES]存储所有的slabclass_t，每一个元素具有不同的chunk大小。但是这之中，slabclass[0]被设计成一个特殊的slabclass_t，item不会存储在slabclass[0]之中，相反，slabclass[0]用来为其它slabclass_t提供内存。</p>
+<p>&nbsp; &nbsp; 由于item不会存储在slabclass[0]之中，因此slabclass[0]中的slab_list中指向的page都是可用的，当其它slabclass_t需要增加一个page时，可以直接将slab_list中的最后一个page直接移到目的slabclass_t的slab_list的末尾。如果slabclass[0]不存在可用page时，再使用malloc或者其它方式分配内存。</p>
+<h3>3.&nbsp;&nbsp;&nbsp; slabclass_t之间移动page</h3>
+<p>&nbsp; &nbsp; 除了从特殊的slabclass[0]移出page以外，有时也需要在其它slabclass_t之间移动page，以根据需要平衡内存分布。Memcached根据一定的策略选择源与目的slabclass_t，将源slabclass_t的slab_list[0]移动到目的slabcalss_t的slab_list末尾。由于可能有item存储在源端的slab_list[0]指向的内存之中，因此在移动page之前需要做一定的处理。移动page的处理流程可以大致以图3-1表示。</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/memcached源码分析一-slab1.png" alt="" /></p>
+<p style="text-align: center;">图3-1 移动page的处理流程</p>
+<h3>4.&nbsp; &nbsp; 部分相关函数功能说明</h3>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span> slabs_init(<span style="color: #0000ff;">const</span> size_t limit, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">double</span> factor, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">bool</span> prealloc, <span style="color: #0000ff;">const</span> uint32_t *slab_sizes) </code></pre>
+
+<p>&nbsp; &nbsp; 初始化全局slabclass[MAX_NUMBER_OF_SLAB_CLASSES]，确定每一级slabclass_t的chunk 大小。limit代表slabs可以分配的内存上限；factor表示每一级slabclass_t的chunk大小的倍增因子；prealloc代表是否预分配一块内存；slab_sizes是一个整形数组，如果提供了该数组，各级slabclass_t的chunk大小由数组中的值决定。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">static</span> <span style="color: #0000ff;">int</span> grow_slab_list (<span style="color: #0000ff;">const</span> unsigned <span style="color: #0000ff;">int</span> id)</code></pre>
+
+<p>&nbsp; &nbsp; 确保slabclass[id]中的slab_list数组有足够的空间容纳新增加page，如果空间不足则调用realloc重新分配空间。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> split_slab_page_into_freelist(<span style="color: #0000ff;">char</span> *ptr, <span style="color: #0000ff;">const</span> unsigned <span style="color: #0000ff;">int</span> id) </code></pre>
+
+<p>&nbsp; &nbsp;&nbsp;将新分配的page切割成chunk,并将chunk连接到slabclass[id]的slots链表头。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">static</span> <span style="color: #0000ff;">int</span> do_slabs_newslab(<span style="color: #0000ff;">const</span> unsigned <span style="color: #0000ff;">int</span> id) </code></pre>
+
+<p>&nbsp; &nbsp;&nbsp;为slabclass[id]增加一个新的page，它会调用grow_slab_list确保slab_list空间，从slabclass[0]或者其它方式获得新的page，调用split_slab_page_into_freelist处理新的page。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> *do_slabs_alloc(<span style="color: #0000ff;">const</span> size_t size, unsigned <span style="color: #0000ff;">int</span> id, uint64_t *total_bytes, unsigned <span style="color: #0000ff;">int</span> flags) </code></pre>
+
+<p>&nbsp; &nbsp; 从slabclass[id]中获取一个未使用的chunk，除了做一些必要的检查之外，获取的方式相当简单，直接从slots链表头获取一个chunk即可。另外返回的chunk会做一些初始化设置，如清除ITEM_SLABBED标志，表示该chunk已被使用，设置引用计数为1等。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> do_slabs_free(<span style="color: #0000ff;">void</span> *ptr, <span style="color: #0000ff;">const</span> size_t size, unsigned <span style="color: #0000ff;">int</span> id)</code></pre>
+
+<p>&nbsp; &nbsp; 释放ptr指向的item，新该chunk重新插入到slots链表头。初始化一些参数，如flag设置为ITEM_SLABBED表示该chunk未被使用。参数size为item实际使用的内存大小，用作一些信息统计，并非chunk的大小。另外有一种称为chunked的item(见其它解析)，它的flag被设置为ITEM_CHUNKED，释放时需要调用do_slabs_free_chunked函数，以释放相关的chunk。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">static</span> <span style="color: #0000ff;">int</span> slab_rebalance_move(<span style="color: #0000ff;">void</span>)</code></pre>
+
+<p>&nbsp; 做移动page时的处理操作，确保要移动的page中存储的item已被移动到其它的page中。</p>
+<p>&nbsp; memcached中有一个称为slab_rebalance_thread的线程，该线程的作为即在各个slabclass_t中移动page，平衡内存分配。线程中使用一个条件信号量slab_rebalance_cond，当没有平衡任务时，线程一直等待该信号量，处于休眠状态。外界调用slabs_reassign函数启动平衡任务，该函数将发送条件信号量，激活线程。线程按照图3-1的流程，调用slab_rebalance_start设置内存检查pos等，然后调用slab_rebalance_move完成page清理工作，最后调用函数slab_rebalance_finish完成平衡任务，线程再次进入休眠，等待新的平衡任务。</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

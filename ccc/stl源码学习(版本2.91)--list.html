@@ -1,0 +1,239 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修stl源码学习(版本2.91)--list' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>stl源码学习(版本2.91)--list</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11796148.html</div><br>
+    <p>stl源码学习(版本2.91)--list</p>
+<h4 id="一阅读list构造函数的收获">一，阅读list()构造函数的收获</h4>
+<p>1，默认构造函数的作用和被调用的时机</p>
+<pre><code>struct no{
+  no(int i){}
+  //no(){
+  //  std::cout &lt;&lt; &quot;s&quot; &lt;&lt; std::endl;
+  //}
+  long data;
+};
+
+struct A{
+  no n;
+};
+
+int main(){
+  A a;
+}</code></pre>
+<p>这段代码报错，提示无法构造A类的a对象，编译器会给A类提供默认构造函数，但是A类的默认构造函数去构造它成员no类的n时，发现no类没有构造函数（理由：因为自己定义了no(int)构造函数，所以编译器就不提供no类的默认构造函数了），所以就无法构造n对象，也就无法构造a对象了。</p>
+<h4 id="知识点">知识点：</h4>
+<ul>
+<li>如果类没有自己提供构造函数，则编译器会提供一个默认构造函数</li>
+<li>当类A里的成员里有类成员b时，当构造A时，就会去找b的构造函数，如果类b有构造函数或者默认构造函数则构造b成功。</li>
+</ul>
+<pre><code>1.cpp: In function ‘int main()’:
+1.cpp:22:5: error: use of deleted function ‘A::A()’
+   A a;
+     ^
+1.cpp:12:8: note: ‘A::A()’ is implicitly deleted because the default definition would be ill-formed:
+</code></pre>
+<p>2，allocator和定位new的用法</p>
+<ul>
+<li>allocator：用于开辟内存空间，但是不调用构造函数</li>
+<li>定位new：不开辟内存空间，只调用构造函数</li>
+</ul>
+<p>stl_list.h源码节选</p>
+<pre><code>template &lt;class T&gt;
+struct __list_node {
+  typedef void* void_pointer;
+  void_pointer next;
+  void_pointer prev;
+  T data;
+};
+
+template &lt;class T, class Alloc = alloc&gt;
+class list {
+protected:
+  typedef __list_node&lt;T&gt; list_node;
+  typedef simple_alloc&lt;list_node, Alloc&gt; list_node_allocator;
+public:      
+  typedef list_node* link_type;
+
+protected:
+  link_type node;//list唯一的成员，是end()函数的返回值
+  
+public:
+  list() { empty_initialize(); }
+protected:
+  void empty_initialize() { 
+    node = get_node();
+    node-&gt;next = node;
+    node-&gt;prev = node;
+  }
+protected:
+  link_type get_node() { return list_node_allocator::allocate(); }
+                
+  link_type create_node(const T&amp; x) {
+    link_type p = get_node();
+    __STL_TRY {
+      construct(&amp;p-&gt;data, x);
+    }
+    __STL_UNWIND(put_node(p));
+    return p;
+  }
+  S
+  iterator insert(iterator position, const T&amp; x) {
+    link_type tmp = create_node(x);
+    tmp-&gt;next = position.node;
+    tmp-&gt;prev = position.node-&gt;prev;
+    (link_type(position.node-&gt;prev))-&gt;next = tmp;
+    position.node-&gt;prev = tmp;
+    return tmp;
+  }</code></pre>
+<p>stl_alloc.h</p>
+<pre><code>template&lt;class T, class Alloc&gt;
+class simple_alloc {
+
+public:
+    static T *allocate(size_t n)
+                { return 0 == n? 0 : (T*) Alloc::allocate(n * sizeof (T)); }
+    static T *allocate(void)
+                { return (T*) Alloc::allocate(sizeof (T)); }</code></pre>
+<p>stl_construct.h</p>
+<pre><code>template &lt;class T1, class T2&gt;
+inline void construct(T1* p, const T2&amp; value) {
+  new (p) T1(value);
+}</code></pre>
+<p>从以上的stl list源码可以看出：</p>
+<ul>
+<li>list的构造函数list()，只开辟了node的内存空间，并没有构造node里的data对象。理由：这个node的哨兵node不是list里保存数据的节点。</li>
+<li>但调用insert方法时，会调用create_node，这里面既开辟了节点的内存空间（通过调用get_node();）又调用了节点里data的构造方法（通过调用construct(&amp;p-&gt;data, x);），然后在construct里使用了定位new(new (p) T1(value);)</li>
+<li>stl里开辟空间和构造对象是分开的</li>
+<li>stl里使用专用的allocator类来开辟空间</li>
+</ul>
+<h4 id="二阅读list析构函数的收获">二，阅读list()析构函数的收获</h4>
+<ul>
+<li>释放节点的方法：
+<ul>
+<li>先调用节点里元素的析构方法（pointer-&gt;~T();）</li>
+<li>在释放节点的空间（Alloc::deallocate(p, sizeof (T));）</li>
+</ul></li>
+</ul>
+<p>stl_list.h源码节选</p>
+<pre><code>public:
+  ~list() {
+    clear();//释放list里存的元素的空间
+    put_node(node);//释放list的唯一的node成员变量的空间
+  }
+  void clear();
+
+protected:
+//调用list_node_allocator的static的deallocate方法，释放空间
+//list_node_allocator是simple_alloc&lt;list_node, Alloc&gt;
+void put_node(link_type p) { list_node_allocator::deallocate(p); }
+
+template &lt;class T, class Alloc = alloc&gt;
+class list {
+protected:
+  typedef void* void_pointer;
+  typedef __list_node&lt;T&gt; list_node;
+  typedef simple_alloc&lt;list_node, Alloc&gt; list_node_allocator;
+  
+  //使用方法destroy，来调用节点里data对象的析构方法，并使用方法put_node释放这个节点的空间
+  void destroy_node(link_type p) {
+    destroy(&amp;p-&gt;data);//destroy是个inline方法，定义在下面的stl_construct.h
+    put_node(p);
+  }
+  
+template &lt;class T, class Alloc&gt; 
+void list&lt;T, Alloc&gt;::clear()
+{
+  //得到第一个节点
+  link_type cur = (link_type) node-&gt;next;
+  //从第一个节点开始，依次释放每个节点
+  while (cur != node) {
+    link_type tmp = cur;
+    cur = (link_type) cur-&gt;next;
+    destroy_node(tmp);
+  }
+  //形成环形队列，让node的前后节点都指向它自己
+  node-&gt;next = node;
+  node-&gt;prev = node;
+}</code></pre>
+<p>stl_alloc.h</p>
+<pre><code>template&lt;class T, class Alloc&gt;
+class simple_alloc {
+  static void deallocate(T *p, size_t n)
+            { if (0 != n) Alloc::deallocate(p, n * sizeof (T)); }
+  static void deallocate(T *p)
+            { Alloc::deallocate(p, sizeof (T)); }</code></pre>
+<p>stl_construct.h</p>
+<pre><code>template &lt;class T&gt;
+inline void destroy(T* pointer) {
+    pointer-&gt;~T();
+}</code></pre>
+<h5 id="三由写erase函数发生的segmentation-fault错误产生的反省">三，由写erase函数发生的Segmentation fault错误，产生的反省</h5>
+<p>erase函数代码如下：</p>
+<pre><code>template&lt;typename T, typename Alloc&gt;
+typename list&lt;T, Alloc&gt;::iterator list&lt;T, Alloc&gt;::erase(iterator first, iterator last){
+  //for( ; first != last; ++first) erase(first);//--------①
+  while(first != last) erase(first++);//------------------②
+  return iterator(last);
+}
+
+template&lt;typename T, typename Alloc&gt;
+typename list&lt;T, Alloc&gt;::iterator list&lt;T, Alloc&gt;::erase(iterator position){
+  link_type n = position.node-&gt;next;
+  link_type p = position.node-&gt;prev;
+  p-&gt;next = n;
+  n-&gt;prev = p;
+  destroy_node(position.node);
+  return iterator(n);
+}
+
+//下面是iterator的++i和i++的运算符重载
+//iterator类里只有一个成员变量node
+  //++i
+  self&amp; operator++() {
+    node = node-&gt;next;//------③
+    return *this;
+  }
+  //i++
+  self operator++(int){
+    self tmp = *this;
+    ++*this;
+    return tmp;
+  }
+bool operator!=(const self &amp; x){ return node != x.node; }</code></pre>
+<p>1，如果打开①处的注释，就会发生Segmentation fault错误。</p>
+<ul>
+<li><font color="red">错误原因：第一次执行erase(first)后，first里的node指向的空间已经被释放了，所以first.node指向一个不明区域，变成了一个野指针；然后执行++first，也就是类iterator的重载运算符前++方法，也就是执行到了③处，node本身就是first.node，已经是野指针了，所以node-&gt;next就导致了Segmentation fault错误。</font></li>
+</ul>
+<p>2，注释掉①处的代码，使用②处的代码，就能够正确处理了。</p>
+<ul>
+<li><font color="blue">变正确的原因：释放first.node之前，已经让first.node指向了first.node-&gt;next了.</font></li>
+</ul>
+<h4 id="四通过list的size方法了解了iterator_traits技术">四，通过list的size方法，了解了iterator_traits技术</h4>
+<p><a href="https://www.cnblogs.com/xiaoshiwang/p/11937275.html">stl标准库 iterator_traits</a></p>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/stl源码学习(版本2.91)--list0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

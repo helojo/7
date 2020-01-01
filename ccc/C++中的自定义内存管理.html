@@ -1,0 +1,419 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++中的自定义内存管理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++中的自定义内存管理</center></div><div class='banquan'>原文出处:本文由博客园博主子宇24提供。<br/>
+原文连接:https://www.cnblogs.com/dishengAndziyu/p/10920093.html</div><br>
+    <p align="left">1，问题：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，new 关键字创建出来的对象位于什么地方？</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，位于堆空间；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，有没有可能位于其它地方？</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，有；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，通过一些方式可以使动态创建的对象位于静态存储区；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，这个存储区在程序结束后释放；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">2，new/delete 被忽略的事实：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，new/delete 的本质是 C++ 预定义的操作符；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，new/delete 是关键字，但本质是预定义的操作符；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，C++ 中操作符可以重载；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，C++ 对这两个操作符做了严格的行为定义；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，new：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，获取足够大的内存空间（默认为堆空间）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，在获取的空间中调用构造函数创建对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，delete：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，调用析构函数销毁对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，归还对象所占用的空间（默认为堆空间）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，在 C++ 中能够重载 new/delete 操作符：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，全局重载（不推荐）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，实际工程开发中不建议这样做</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，局部重载（针对具体类型进行重载）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，针对具体的类重载；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，重载 new/delete 的意义在于改变动态对象创建时的内存分配方式；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，可以将创建的对象放到其它的内存空间里面去；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，new/delete 的重载方式：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，代码示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;"> static member function</span>
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">void</span>* <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">new</span>(unsinged <span style="color: #0000ff;">int</span> size)  <span style="color: #008000;">//</span><span style="color: #008000;"> 第一步获取内存，参数表示需要获取的内存大小；</span>
+<span style="color: #008080;"> 3</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 4</span>      <span style="color: #0000ff;">void</span>* ret =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 5</span>                   
+<span style="color: #008080;"> 6</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> ret point to allocated memory </span><span style="color: #008000;">*/</span>  <span style="color: #008000;">//</span><span style="color: #008000;"> 第二步在内存中调用构造函数创建对象；</span>
+<span style="color: #008080;"> 7</span>                   
+<span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span> <span style="color: #008000;">//</span><span style="color: #008000;"> static member function</span>
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">void</span> <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">delete</span> (<span style="color: #0000ff;">void</span>* p)  <span style="color: #008000;">//</span><span style="color: #008000;"> p 指针指向对应的对象地址，也就是要释放的地址；</span>
+<span style="color: #008080;">13</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">14</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> free the memory which is pointed by p </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">15</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，通过函数来对这两个操作符进行重载；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，一般针对具体类来重载，所以说 new/delete 的重载函数就是类的成员函数，并且这两个重载函数默认为静态成员函数，写不写 static 都是静态成员函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">3，静态存储区中创建动态对象编程实验：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">const</span> unsigned <span style="color: #0000ff;">int</span> COUNT = <span style="color: #800080;">4</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span>     
+<span style="color: #008080;">10</span>     <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">char</span> c_buffer[];  <span style="color: #008000;">//</span><span style="color: #008000;"> 本质是这里申请空间而下面只是标记使用而已；</span>
+<span style="color: #008080;">11</span>     <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">char</span><span style="color: #000000;"> c_map[];
+</span><span style="color: #008080;">12</span>     
+<span style="color: #008080;">13</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> m_value;
+</span><span style="color: #008080;">14</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">void</span>* <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">new</span> (unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> size)
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">17</span>         <span style="color: #0000ff;">void</span>* ret = NULL;  <span style="color: #008000;">//</span><span style="color: #008000;"> 如果这片内存已经满了，返回空；</span>
+<span style="color: #008080;">18</span>         
+<span style="color: #008080;">19</span>         <span style="color: #008000;">/*</span><span style="color: #008000;"> 查找在 c_buffer 里面那些位置是空闲的，可以用来创建 Test 对象 </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">20</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;COUNT; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">22</span>             <span style="color: #0000ff;">if</span>( !c_map[i] )  <span style="color: #008000;">//</span><span style="color: #008000;"> 当前空间不可用了；</span>
+<span style="color: #008080;">23</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">24</span>                 c_map[i] = <span style="color: #800080;">1</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 标记为不可用；</span>
+<span style="color: #008080;">25</span>                 
+<span style="color: #008080;">26</span>                 ret = c_buffer + i * <span style="color: #0000ff;">sizeof</span>(Test);  <span style="color: #008000;">//</span><span style="color: #008000;"> 查找 c_buffer 这片可用内存空间的首地址，并返回这片空间；</span>
+<span style="color: #008080;">27</span>                 
+<span style="color: #008080;">28</span>                 cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">succeed to allocate memory: </span><span style="color: #800000;">"</span> &lt;&lt; ret &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">29</span>                 
+<span style="color: #008080;">30</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">33</span>         
+<span style="color: #008080;">34</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">36</span>     
+<span style="color: #008080;">37</span>     <span style="color: #0000ff;">void</span> <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">delete</span> (<span style="color: #0000ff;">void</span>*<span style="color: #000000;"> p)
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">39</span>         <span style="color: #0000ff;">if</span>( p != NULL )  <span style="color: #008000;">//</span><span style="color: #008000;"> 空指针时候什么都不处理；</span>
+<span style="color: #008080;">40</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">41</span>             <span style="color: #0000ff;">char</span>* mem = reinterpret_cast&lt;<span style="color: #0000ff;">char</span>*&gt;<span style="color: #000000;">(p);
+</span><span style="color: #008080;">42</span>             <span style="color: #0000ff;">int</span> index = (mem - c_buffer) / <span style="color: #0000ff;">sizeof</span>(Test);  <span style="color: #008000;">//</span><span style="color: #008000;"> 得到要释放的动态对象在 c_map 中的位置； </span>
+<span style="color: #008080;">43</span>             <span style="color: #0000ff;">int</span> flag = (mem - c_buffer) % <span style="color: #0000ff;">sizeof</span>(Test);  <span style="color: #008000;">//</span><span style="color: #008000;"> 这些位置必须是固定的，如果 flag 不为 0，指针则不合法；</span>
+<span style="color: #008080;">44</span>             
+<span style="color: #008080;">45</span>             <span style="color: #0000ff;">if</span>( (flag == <span style="color: #800080;">0</span>) &amp;&amp; (<span style="color: #800080;">0</span> &lt;= index) &amp;&amp; (index &lt;<span style="color: #000000;"> COUNT) )
+</span><span style="color: #008080;">46</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">47</span>                 c_map[index] = <span style="color: #800080;">0</span>; <span style="color: #008000;">//</span><span style="color: #008000;"> 释放这个地址，即标记这个地址可用；</span>
+<span style="color: #008080;">48</span>                 
+<span style="color: #008080;">49</span>                 cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">succeed to free memory: </span><span style="color: #800000;">"</span> &lt;&lt; p &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">50</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">51</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">52</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">54</span> 
+<span style="color: #008080;">55</span> <span style="color: #0000ff;">char</span> Test::c_buffer[<span style="color: #0000ff;">sizeof</span>(Test) * Test::COUNT] = {<span style="color: #800080;">0</span>};  <span style="color: #008000;">//</span><span style="color: #008000;"> 定义一块静态的内存空间，内存空间想要存储的是 Test 对象，最多存储 4 个 Test 对象；</span>
+<span style="color: #008080;">56</span> <span style="color: #0000ff;">char</span> Test::c_map[Test::COUNT] = {<span style="color: #800080;">0</span>};  <span style="color: #008000;">//</span><span style="color: #008000;"> 标记数组，用于标记在那些位置已经创建了对象，作用是标记；</span>
+<span style="color: #008080;">57</span> 
+<span style="color: #008080;">58</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;">59</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">60</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">===== Test Single Object =====</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">61</span>      
+<span style="color: #008080;">62</span>     Test* pt = <span style="color: #0000ff;">new</span> Test;  <span style="color: #008000;">//</span><span style="color: #008000;"> 这里是在 c_buffer 里面的静态存储区当中的空间生成的；</span>
+<span style="color: #008080;">63</span>     
+<span style="color: #008080;">64</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> pt;
+</span><span style="color: #008080;">65</span>     
+<span style="color: #008080;">66</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">===== Test Object Array =====</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">67</span>     
+<span style="color: #008080;">68</span>     Test* pa[<span style="color: #800080;">5</span>] = {<span style="color: #800080;">0</span><span style="color: #000000;">};
+</span><span style="color: #008080;">69</span>     
+<span style="color: #008080;">70</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;<span style="color: #800080;">5</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">71</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">72</span>         pa[i] = <span style="color: #0000ff;">new</span><span style="color: #000000;"> Test;
+</span><span style="color: #008080;">73</span>         
+<span style="color: #008080;">74</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">pa[</span><span style="color: #800000;">"</span> &lt;&lt; i &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">] = </span><span style="color: #800000;">"</span> &lt;&lt; pa[i] &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">75</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">76</span>     
+<span style="color: #008080;">77</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;<span style="color: #800080;">5</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">78</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">79</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">delete </span><span style="color: #800000;">"</span> &lt;&lt; pa[i] &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">80</span>         
+<span style="color: #008080;">81</span>         <span style="color: #0000ff;">delete</span><span style="color: #000000;"> pa[i];
+</span><span style="color: #008080;">82</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">83</span>     
+<span style="color: #008080;">84</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">85</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，结论：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，new/delete 关键字是可以重载的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，重载的意义是改变内存的分配方式，使得动态创建的对象不再位于堆空间里面；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，这个实验位于自定义的静态存储区里面的 c_buffer 数组当中；&nbsp;</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，拓展：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，工程中可以结合不同方法来应用 new/delete 特性；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，将本实验的方法和二阶构造法结合在一起，我们就可以创建一个类，并且规定这个类最多产生多少个对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，单例模式仅仅使得一个类只有一个对象存在，而这里的方法加上二阶构造就可以诞生 N 例模式；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">4，问题：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，如何在指定的地址上创建 C++ 对象？</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，我们已经掌握了在静态存储区里面创建对象，是否可以扩展下这个方法，在任意的地址上创建对象呢？</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，通过重载 new/delete 也许就可以在指定的地址上创建对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">5，设计思路：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，在类中重载 new/delete 操作符；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，在 new 的操作符重载函数中返回指定的地址；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，在 delete 操作符重载中标记对应的地址可用；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">6，自定义动态对象的存储空间编程实验：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> #include &lt;iostream&gt;
+<span style="color: #008080;">  2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;">  3</span> #include &lt;cstdlib&gt;
+<span style="color: #008080;">  4</span> 
+<span style="color: #008080;">  5</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;">  6</span> 
+<span style="color: #008080;">  7</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;">  8</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">  9</span>     <span style="color: #0000ff;">static</span> unsigned <span style="color: #0000ff;">int</span> c_count;  <span style="color: #008000;">//</span><span style="color: #008000;"> 动态实时做决定，所以这个地方就不能有常量；</span>
+<span style="color: #008080;"> 10</span>     <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> c_buffer;
+</span><span style="color: #008080;"> 11</span>     <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> c_map;
+</span><span style="color: #008080;"> 12</span>     
+<span style="color: #008080;"> 13</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> m_value;
+</span><span style="color: #008080;"> 14</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 15</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> 动态指定想在什么类型上指定申请对象 </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 16</span>     <span style="color: #0000ff;">static</span> <span style="color: #0000ff;">bool</span> SetMemorySource(<span style="color: #0000ff;">char</span>* memory, unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> size)   
+</span><span style="color: #008080;"> 17</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 18</span>         <span style="color: #0000ff;">bool</span> ret = <span style="color: #0000ff;">false</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 返回值为 bool 类型，告诉函数调用者，当前动态空间设置是否成功；</span>
+<span style="color: #008080;"> 19</span>         
+<span style="color: #008080;"> 20</span>         c_count = size / <span style="color: #0000ff;">sizeof</span>(Test);  <span style="color: #008000;">//</span><span style="color: #008000;"> 计算传进来的空间可以创建多少对象；</span>
+<span style="color: #008080;"> 21</span>         
+<span style="color: #008080;"> 22</span>         ret = (c_count &amp;&amp; (c_map = reinterpret_cast&lt;<span style="color: #0000ff;">char</span>*&gt;(<span style="color: #0000ff;">calloc</span>(c_count, <span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">char</span><span style="color: #000000;">)))));
+</span><span style="color: #008080;"> 23</span>         
+<span style="color: #008080;"> 24</span>         <span style="color: #0000ff;">if</span>( ret )  <span style="color: #008000;">//</span><span style="color: #008000;"> 空间至少为 1，且标记指针合法；</span>
+<span style="color: #008080;"> 25</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 26</span>             c_buffer = memory;  <span style="color: #008000;">//</span><span style="color: #008000;"> 将指定空间设置到 c_buffer 上；</span>
+<span style="color: #008080;"> 27</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 28</span>         <span style="color: #0000ff;">else</span>  <span style="color: #008000;">//</span><span style="color: #008000;"> 一切清零；</span>
+<span style="color: #008080;"> 29</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 30</span>             <span style="color: #0000ff;">free</span><span style="color: #000000;">(c_map);
+</span><span style="color: #008080;"> 31</span>             
+<span style="color: #008080;"> 32</span>             c_map =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 33</span>             c_buffer =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 34</span>             c_count = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 35</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 36</span>         
+<span style="color: #008080;"> 37</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;"> 38</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 39</span>     
+<span style="color: #008080;"> 40</span>     <span style="color: #0000ff;">void</span>* <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">new</span> (unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> size)
+</span><span style="color: #008080;"> 41</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 42</span>         <span style="color: #0000ff;">void</span>* ret =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 43</span>         
+<span style="color: #008080;"> 44</span>         <span style="color: #008000;">/*</span><span style="color: #008000;"> 有指定的一个具体空间，通过各种计算和验证，看下所指定的空间上面是否可以动态创建对象，标准是 c_count 大于 0，此时意味着通过 setMemorySource() 所指定的空间是可以创建 Test 对象的，则走 if 路径，否则的话，走 else 路径，通过 malloc() 函数得到一片空间； </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 45</span>         <span style="color: #0000ff;">if</span>( c_count &gt; <span style="color: #800080;">0</span> )  <span style="color: #008000;">//</span> 
+<span style="color: #008080;"> 46</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 47</span>             <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;c_count; i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 48</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;"> 49</span>                 <span style="color: #0000ff;">if</span>( !<span style="color: #000000;">c_map[i] )
+</span><span style="color: #008080;"> 50</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;"> 51</span>                     c_map[i] = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 52</span>                     
+<span style="color: #008080;"> 53</span>                     ret = c_buffer + i * <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(Test);
+</span><span style="color: #008080;"> 54</span>                     
+<span style="color: #008080;"> 55</span>                     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">succeed to allocate memory: </span><span style="color: #800000;">"</span> &lt;&lt; ret &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 56</span>                     
+<span style="color: #008080;"> 57</span>                     <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 58</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 59</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 60</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 61</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 62</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 63</span>             ret = <span style="color: #0000ff;">malloc</span>(size);  <span style="color: #008000;">//</span><span style="color: #008000;"> 没有指定具体的在那个空间上生成对象时，通过 malloc 来申请默认的堆空间；</span>
+<span style="color: #008080;"> 64</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 65</span>         
+<span style="color: #008080;"> 66</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;"> 67</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 68</span>     
+<span style="color: #008080;"> 69</span>     <span style="color: #0000ff;">void</span> <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">delete</span> (<span style="color: #0000ff;">void</span>*<span style="color: #000000;"> p)
+</span><span style="color: #008080;"> 70</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 71</span>         <span style="color: #0000ff;">if</span>( p !=<span style="color: #000000;"> NULL )
+</span><span style="color: #008080;"> 72</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 73</span>             <span style="color: #0000ff;">if</span>( c_count &gt; <span style="color: #800080;">0</span><span style="color: #000000;"> )
+</span><span style="color: #008080;"> 74</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;"> 75</span>                 <span style="color: #0000ff;">char</span>* mem = reinterpret_cast&lt;<span style="color: #0000ff;">char</span>*&gt;<span style="color: #000000;">(p);
+</span><span style="color: #008080;"> 76</span>                 <span style="color: #0000ff;">int</span> index = (mem - c_buffer) / <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(Test);
+</span><span style="color: #008080;"> 77</span>                 <span style="color: #0000ff;">int</span> flag = (mem - c_buffer) % <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(Test);
+</span><span style="color: #008080;"> 78</span>                 
+<span style="color: #008080;"> 79</span>                 <span style="color: #0000ff;">if</span>( (flag == <span style="color: #800080;">0</span>) &amp;&amp; (<span style="color: #800080;">0</span> &lt;= index) &amp;&amp; (index &lt;<span style="color: #000000;"> c_count) )
+</span><span style="color: #008080;"> 80</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;"> 81</span>                     c_map[index] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 82</span>                     
+<span style="color: #008080;"> 83</span>                     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">succeed to free memory: </span><span style="color: #800000;">"</span> &lt;&lt; p &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 84</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 85</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 86</span>             <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 87</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;"> 88</span>                 <span style="color: #0000ff;">free</span>(p);  <span style="color: #008000;">//</span><span style="color: #008000;"> 和上面对应</span>
+<span style="color: #008080;"> 89</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 90</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 91</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 92</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 93</span> 
+<span style="color: #008080;"> 94</span> unsigned <span style="color: #0000ff;">int</span> Test::c_count = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 95</span> <span style="color: #0000ff;">char</span>* Test::c_buffer =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 96</span> <span style="color: #0000ff;">char</span>* Test::c_map =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 97</span> 
+<span style="color: #008080;"> 98</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;"> 99</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">100</span>     <span style="color: #0000ff;">char</span> buffer[<span style="color: #800080;">12</span>] = {<span style="color: #800080;">0</span>};  <span style="color: #008000;">//</span><span style="color: #008000;"> 定义一片栈上空间，用于存放对象；</span>
+<span style="color: #008080;">101</span>     
+<span style="color: #008080;">102</span>     Test::SetMemorySource(buffer, <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(buffer));
+</span><span style="color: #008080;">103</span>     
+<span style="color: #008080;">104</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">===== Test Single Object =====</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">105</span>      
+<span style="color: #008080;">106</span>     Test* pt = <span style="color: #0000ff;">new</span><span style="color: #000000;"> Test;
+</span><span style="color: #008080;">107</span>     
+<span style="color: #008080;">108</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> pt;
+</span><span style="color: #008080;">109</span>     
+<span style="color: #008080;">110</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">===== Test Object Array =====</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">111</span>     
+<span style="color: #008080;">112</span>     Test* pa[<span style="color: #800080;">5</span>] = {<span style="color: #800080;">0</span><span style="color: #000000;">};
+</span><span style="color: #008080;">113</span>     
+<span style="color: #008080;">114</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;<span style="color: #800080;">5</span>; i++)  <span style="color: #008000;">//</span><span style="color: #008000;"> 只有 3 个对象的空间，则后两个对象指向为 NULL；</span>
+<span style="color: #008080;">115</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">116</span>         pa[i] = <span style="color: #0000ff;">new</span><span style="color: #000000;"> Test;
+</span><span style="color: #008080;">117</span>         
+<span style="color: #008080;">118</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">pa[</span><span style="color: #800000;">"</span> &lt;&lt; i &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">] = </span><span style="color: #800000;">"</span> &lt;&lt; pa[i] &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">119</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">120</span>     
+<span style="color: #008080;">121</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;<span style="color: #800080;">5</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">122</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">123</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">delete </span><span style="color: #800000;">"</span> &lt;&lt; pa[i] &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">124</span>         
+<span style="color: #008080;">125</span>         <span style="color: #0000ff;">delete</span><span style="color: #000000;"> pa[i];
+</span><span style="color: #008080;">126</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">127</span>     
+<span style="color: #008080;">128</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">129</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，通过重载 new/delete，我们可以在任意指定的位置动态创建 C++ 对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">7，new[]/delete[] 与 new/delete 完全不同：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，动态对象数组创建通过 new[] 完成；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，动态对象数组的销毁通过 delete[] 完成；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，new[]/delete[] 能够被重载，进而改变内存管理方式；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，这是两个新的操作符；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">8，new[]/delete[] 的重载方式：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，代码示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;"> static member function</span>
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">void</span>* <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">new</span>[] (unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> size)
+</span><span style="color: #008080;"> 3</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 4</span>     rerurn <span style="color: #0000ff;">malloc</span><span style="color: #000000;">(size);
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 6</span>        
+<span style="color: #008080;"> 7</span> <span style="color: #008000;">//</span><span style="color: #008000;"> static member function</span>
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">void</span> <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">delete</span>[] (<span style="color: #0000ff;">void</span>*<span style="color: #000000;"> p)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">10</span>      <span style="color: #0000ff;">free</span><span style="color: #000000;">(p);
+</span><span style="color: #008080;">11</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，通过类的静态成员函数来重载，不写 static，这两个成员函数在类中也是&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 静态的；</p>
+<p align="left">&nbsp;</p>
+<p align="left">9，注意事项：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，nwe[] 实际需要返回的内存空间可能比期望的要多；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，需要额外的空间来保存数组的信息；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，如数组长度信息，因为编译器要自动的为我们调用构造函数和析构函数，不保存长度信息，编译器不知道要调用多少次构造函数和析构函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，对象数组占用的内存中需要保存数组信息；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，数组信息用于确定构造函数和析构函数的调用次数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">10，动态数组的内存管理编程实验：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 3</span> #include &lt;cstdlib&gt;
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> m_value;
+</span><span style="color: #008080;">10</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    Test()
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">13</span>         m_value = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">15</span>     
+<span style="color: #008080;">16</span>     ~<span style="color: #000000;">Test()
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span>     
+<span style="color: #008080;">20</span>     <span style="color: #0000ff;">void</span>* <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">new</span> (unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> size)
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">22</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">operator new: </span><span style="color: #800000;">"</span> &lt;&lt; size &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">23</span>         
+<span style="color: #008080;">24</span>         <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">malloc</span><span style="color: #000000;">(size);
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">26</span>     
+<span style="color: #008080;">27</span>     <span style="color: #0000ff;">void</span> <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">delete</span> (<span style="color: #0000ff;">void</span>*<span style="color: #000000;"> p)
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">29</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">operator delete: </span><span style="color: #800000;">"</span> &lt;&lt; p &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">30</span>         
+<span style="color: #008080;">31</span>         <span style="color: #0000ff;">free</span><span style="color: #000000;">(p);
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">33</span>     
+<span style="color: #008080;">34</span>     <span style="color: #0000ff;">void</span>* <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">new</span>[] (unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> size)
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">36</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">operator new[]: </span><span style="color: #800000;">"</span> &lt;&lt; size &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">37</span>         
+<span style="color: #008080;">38</span>         <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">malloc</span><span style="color: #000000;">(size);
+</span><span style="color: #008080;">39</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">40</span>     
+<span style="color: #008080;">41</span>     <span style="color: #0000ff;">void</span> <span style="color: #0000ff;">operator</span> <span style="color: #0000ff;">delete</span>[] (<span style="color: #0000ff;">void</span>*<span style="color: #000000;"> p)
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">43</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">operator delete[]: </span><span style="color: #800000;">"</span> &lt;&lt; p &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">44</span>         
+<span style="color: #008080;">45</span>         <span style="color: #0000ff;">free</span><span style="color: #000000;">(p);
+</span><span style="color: #008080;">46</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">47</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">48</span> 
+<span style="color: #008080;">49</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+</span><span style="color: #008080;">50</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">51</span>     Test* pt =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">52</span>     
+<span style="color: #008080;">53</span>     pt = <span style="color: #0000ff;">new</span> Test;  <span style="color: #008000;">//</span><span style="color: #008000;"> operator new: 4；</span>
+<span style="color: #008080;">54</span>      
+<span style="color: #008080;">55</span>     <span style="color: #0000ff;">delete</span> pt;  <span style="color: #008000;">//</span><span style="color: #008000;"> operator delete: 0x8e5d008；</span>
+<span style="color: #008080;">56</span>     
+<span style="color: #008080;">57</span>     pt = <span style="color: #0000ff;">new</span> Test[<span style="color: #800080;">5</span>];  <span style="color: #008000;">//</span><span style="color: #008000;"> operator new[]: 24；这里多了四个字节，用于保存数组的大小信息，因为编译器自动为我们自调用构造函数和析构函数；</span>
+<span style="color: #008080;">58</span>     
+<span style="color: #008080;">59</span>     <span style="color: #0000ff;">delete</span>[] pt;  <span style="color: #008000;">//</span><span style="color: #008000;"> operator delete[]: 0x8e5d018；</span>
+<span style="color: #008080;">60</span>     
+<span style="color: #008080;">61</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">62</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，new/delete 和 new[]/delete[] 是完全不同的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，通过重载的方式说明了它们的不同；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，意味着在实际的工程里面，有可能在 new 中函数的内存分配方式和 delete[] 中函数内存分配方式是不一样的，因此必须成对使用，必须要匹配；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，假设 new[] 动态创建数组是从栈上分配的空间，然后 delete 想要将空间归还到堆空间去，如果交叉使用，则意味着有可能把栈上的空间归还到堆空间上，程序会崩溃，所以要成对出现，不要交叉使用，因为它们 new/delete 和 new[]/delete[] 完全不同；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">11，小结：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，new/delete 的本质为操作符；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，可以通过全局函数重载 new/delete（不推荐）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，可以针对具体的类重载new/delete；</p>
+<p>&nbsp;&nbsp;&nbsp; 4，new[]/delete[] 与 new/delete 完全不同；</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

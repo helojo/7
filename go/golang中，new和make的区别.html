@@ -1,0 +1,119 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang中，new和make的区别' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang中，new和make的区别</center></div><div class='banquan'>原文出处:本文由博客园博主随彦心MO提供。<br/>
+原文连接:https://www.cnblogs.com/smartrui/p/12055399.html</div><br>
+    <p>在golang中,make和new都是分配内存的，但是它们之间还是有些区别的，只有理解了它们之间的不同，才能在合适的场合使用。</p>
+<p>简单来说,new只是分配内存，不初始化内存； 而make即分配又初始化内存。所谓的初始化就是给类型赋初值，比如字符为空，整型为0, 逻辑值为false等。</p>
+<h3 id="new">new</h3>
+<p>先看下new函数的定义</p>
+<pre><code><code>// The new built-in function allocates memory. The first argument is a type,
+// not a value, and the value returned is a pointer to a newly
+// allocated zero value of that type.
+func new(Type) *Type</code></pre>
+<p>可以看出，它的参数是一个类型，返回值为指向该类型内存地址的指针，同时会把分配的内存置为零，也就是类型的零值, 即字符为空，整型为0, 逻辑值为false</p>
+<p>看几个new的示例</p>
+<pre><code><code>   type P struct{
+        Name string
+        Age int
+    }
+    var a *[2]int
+    var s *string
+    var b *bool
+    var i *int
+    var ps *P
+
+    a = new([2]int)
+    s = new(string)
+    b = new(bool)
+    i = new(int)
+    ps = new(P) //结构
+
+    fmt.Println(a, &quot; &quot;, *a)
+    fmt.Println(s,  &quot; &quot;,*s)
+    fmt.Println(b,  &quot; &quot;,*b)
+    fmt.Println(i,  &quot; &quot;,*i)
+    fmt.Println(ps, &quot; &quot;, *ps)</code></pre>
+<p>输出结果如下</p>
+<pre><code><code>&amp;[0 0]   [0 0]
+0xc00000e1e0   
+0xc00001a07a   false
+0xc00001a090   0
+&amp;{ 0}   { 0}</code></pre>
+<p>上面示例是基本的类型，再看下slice, map,chan这些用new咋操作</p>
+<pre><code><code>    map操作
+    var mp *map[string]string
+    mp = new(map[string]string)
+    //*mp = make(map[string]string)  //这行注掉会panic &quot;panic: assignment to entry in nil map&quot;&quot;
+    (*mp)[&quot;name&quot;] = &quot;lc&quot;
+    fmt.Println((*mp)[&quot;name&quot;])
+    
+    slice操作
+    var ms *[]string
+    ms = new([]string)
+    //*ms = make([]string,5) //这行注掉会pance &quot;panic: runtime error: index out of range&quot;
+    (*ms)[0] = &quot;lc&quot;
+    fmt.Println((*ms)[0])
+    </code></pre>
+<p>上面可以看出，silce、map、channel等类型属于引用类型，引用类型初始化为nil，nil是不能直接赋值的，也不能用new分配内存，还需要使用make来分配。</p>
+<h3 id="make">make</h3>
+<p>看下make的函数声明</p>
+<pre><code><code>/ The make built-in function allocates and initializes an object of type
+// slice, map, or chan (only). Like new, the first argument is a type, not a
+// value. Unlike new, make&#39;s return type is the same as the type of its
+// argument, not a pointer to it. The specification of the result depends on
+// the type:
+//  Slice: The size specifies the length. The capacity of the slice is
+//  equal to its length. A second integer argument may be provided to
+//  specify a different capacity; it must be no smaller than the
+//  length. For example, make([]int, 0, 10) allocates an underlying array
+//  of size 10 and returns a slice of length 0 and capacity 10 that is
+//  backed by this underlying array.
+//  Map: An empty map is allocated with enough space to hold the
+//  specified number of elements. The size may be omitted, in which case
+//  a small starting size is allocated.
+//  Channel: The channel&#39;s buffer is initialized with the specified
+//  buffer capacity. If zero, or the size is omitted, the channel is
+//  unbuffered.
+func make(t Type, size ...IntegerType) Type</code></pre>
+<p>可以看出，它返回的就是类型本身，而不是指针类型，因为make只能给slice,map,channel等初始化内存，它们返回的就是引用类型，那么就没必要返回指针了</p>
+<p>看下make的一些示例</p>
+<pre><code><code>    mm :=make(map[string]string)
+    mm[&quot;name&quot;] = &quot;lc&quot;
+    fmt.Println(mm[&quot;name&quot;])
+
+    mss :=make([]int,2)
+    mss[0] = 100
+    fmt.Println(mss[0])
+
+    ch :=make(chan int,1)
+    ch &lt;-100
+
+    fmt.Println(&lt;-ch)</code></pre>
+<h3 id="小结">小结</h3>
+<blockquote>
+<p>make 仅用来分配及初始化类型为 slice、map、chan 的数据。new 可分配任意类型的数据.<br />
+new 分配返回的是指针，即类型 *Type。make 返回引用，即 Type.<br />
+new 分配的空间被清零, make 分配空间后，会进行初始化.</p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

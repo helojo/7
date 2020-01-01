@@ -1,0 +1,741 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修串口调试助手--Qt' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>串口调试助手--Qt</center></div><div class='banquan'>原文出处:本文由博客园博主幻影幽灵提供。<br/>
+原文连接:https://www.cnblogs.com/ghost-98210/p/11370710.html</div><br>
+    <p><span style="font-size: 18px;"><strong>串口调试助手----------该程序使用Qt框架，C ++语言编译而成</strong></span></p>
+<p><span style="font-size: 16px;">项目文件介绍：</span></p>
+<pre><code><span style="font-size: 15px;"><code>main.cpp            该文件为该程序的入口程序
+
+mainwindow.h        该文件为该程序的主要声明部分
+
+mainwindow.cpp      该文件为该程序的主要定义部分
+
+mainwindow.ui       该文件为该程序的ui界面设计
+
+界面.png            界面的显示效果
+</code></span></pre>
+<p>该文件中获取串口是通过读取Windows系统下的注册表中的信息得到的， - 使用Qt中的定时器来每个3s读取一次注册表</p>
+<p>串口通信方面：通过使用Qt的封装的QSerialPort来实现</p>
+<h2 id="blob-path" class="breadcrumb flex-auto min-width-0 text-normal flex-md-self-center ml-md-2 mr-md-3 my-2 my-md-0"><span class="final-path">main.cpp</span></h2>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">mainwindow.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span>&lt;QApplication&gt;
+
+<span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+{
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> a.exec();
+}</span></pre>
+</div>
+<h2 id="blob-path" class="breadcrumb flex-auto min-width-0 text-normal flex-md-self-center ml-md-2 mr-md-3 my-2 my-md-0"><span class="final-path">mainwindow.h</span></h2>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">#ifndef MAINWINDOW_H
+</span><span style="color: #0000ff;">#define</span> MAINWINDOW_H<span style="color: #000000;">
+
+#include </span>&lt;QMainWindow&gt;<span style="color: #000000;">
+#include </span>&lt;QSerialPort&gt;<span style="color: #000000;">
+#include </span>&lt;QTimer&gt;
+
+<span style="color: #0000ff;">namespace</span><span style="color: #000000;"> Ui {
+</span><span style="color: #0000ff;">class</span><span style="color: #000000;"> MainWindow;
+}
+
+</span><span style="color: #0000ff;">class</span> MainWindow : <span style="color: #0000ff;">public</span><span style="color: #000000;"> QMainWindow
+{
+    Q_OBJECT
+
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">explicit</span> MainWindow(QWidget *parent =<span style="color: #000000;"> nullptr);
+    </span>~<span style="color: #000000;">MainWindow();
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;">
+     * 功能：获取电脑中串口的端口
+     * 参数：无
+     * 返回值：无
+     </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">void</span> Get_Serial_Port(<span style="color: #0000ff;">void</span><span style="color: #000000;">);
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;">
+     * 功能：当串口有数据的时候执行
+     * 参数：无
+     * 返回值：无
+     </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">void</span> readData(<span style="color: #0000ff;">void</span><span style="color: #000000;">);
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;">
+     * 功能：每个3s执行的任务
+     * 参数：无
+     * 返回值：无
+     </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">void</span> myThread(<span style="color: #0000ff;">void</span><span style="color: #000000;">);
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;"> slots:
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;">
+     * 功能：点击pushButton按钮功能
+     * 参数：无
+     * 返回值：无
+     </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">void</span><span style="color: #000000;"> on_pushButton_clicked();
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;">
+     * 功能：点击清空按钮功能，清空显示区的显示
+     * 参数：无
+     * 返回值：无
+     </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">void</span><span style="color: #000000;"> on_pushButton_2_clicked();
+
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> on_pushButton_3_clicked();
+
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> on_pushButton_4_clicked();
+
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> on_pushButton_5_clicked();
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    Ui::MainWindow  </span>*<span style="color: #000000;">ui;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">串口类指针</span>
+    QSerialPort     *<span style="color: #000000;">Serial;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">时间类指针</span>
+    QTimer          *<span style="color: #000000;">time;
+};
+
+</span><span style="color: #0000ff;">#endif</span> <span style="color: #008000;">//</span><span style="color: #008000;"> MAINWINDOW_H</span></pre>
+</div>
+<h2 id="blob-path" class="breadcrumb flex-auto min-width-0 text-normal flex-md-self-center ml-md-2 mr-md-3 my-2 my-md-0"><span class="final-path">mainwindow.cpp</span></h2>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">mainwindow.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">ui_mainwindow.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">windows.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">QVector</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">QDebug</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">stdio.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">QMessageBox</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span>&lt;stdlib.h&gt;
+
+<span style="color: #0000ff;">#define</span> MAX_KEY_LENGTH 255
+<span style="color: #0000ff;">#define</span> MAX_VALUE_NAME 16383
+
+<span style="color: #008000;">/*</span><span style="color: #008000;">
+ * 功能：读取注册表下的子项
+ * 参数：hkey:注册表的根
+ *      lpSubkey:注册表根下的路径
+ *      retArray:返回要查找的路径下的值的数组
+ * 返回值：无
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> Get_Regedit(HKEY hkey,LPCSTR lpSubKey,QVector&lt;QString&gt; &amp;<span style="color: #000000;">retArray);
+
+MainWindow::MainWindow(QWidget </span>*<span style="color: #000000;">parent) :
+    QMainWindow(parent),
+    ui(</span><span style="color: #0000ff;">new</span><span style="color: #000000;"> Ui::MainWindow)
+{
+    ui</span>-&gt;setupUi(<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">时间类初始化</span>
+    time = <span style="color: #0000ff;">new</span> QTimer(<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+    connect(time,</span>&amp;QTimer::timeout,<span style="color: #0000ff;">this</span>,&amp;<span style="color: #000000;">MainWindow::myThread);
+    time</span>-&gt;start(<span style="color: #800080;">3000</span><span style="color: #000000;">);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">状态栏显示</span>
+    ui-&gt;statusBar-&gt;showMessage(<span style="color: #800000;">"</span><span style="color: #800000;">程序运行中...</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">初始化串口的显示</span>
+    <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">Get_Serial_Port();
+    QStringList temp;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">波特率的显示</span>
+    temp &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">9600</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">4800</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">19200</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">38400</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">57600</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">115200</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    ui</span>-&gt;comboBox_2-&gt;<span style="color: #000000;">addItems(temp);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">数据位的显示</span>
+<span style="color: #000000;">    temp.clear();
+    temp </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">8</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">5</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">6</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">7</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    ui</span>-&gt;comboBox_3-&gt;<span style="color: #000000;">addItems(temp);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">奇偶检验位的显示</span>
+<span style="color: #000000;">    temp.clear();
+    temp </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">0</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">1</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">2</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    ui</span>-&gt;comboBox_4-&gt;<span style="color: #000000;">addItems(temp);
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">停止位的显示</span>
+<span style="color: #000000;">    temp.clear();
+    temp </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">1</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">1.5</span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">2</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    ui</span>-&gt;comboBox_5-&gt;<span style="color: #000000;">addItems(temp);
+
+    </span><span style="color: #0000ff;">this</span>-&gt;Serial = <span style="color: #0000ff;">new</span><span style="color: #000000;"> QSerialPort(nullptr);
+}
+
+MainWindow::</span>~<span style="color: #000000;">MainWindow()
+{
+    </span><span style="color: #0000ff;">delete</span><span style="color: #000000;"> ui;
+}
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">
+ * 功能：获取电脑中串口的端口
+ * 参数：无
+ * 返回值：无
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> MainWindow::Get_Serial_Port()
+{
+    QVector</span>&lt;QString&gt;<span style="color: #000000;"> retArray;
+    ui</span>-&gt;comboBox-&gt;<span style="color: #000000;">clear();
+    Get_Regedit(HKEY_LOCAL_MACHINE,\
+                </span><span style="color: #800000;">"</span><span style="color: #800000;">HARDWARE\\DEVICEMAP\\SERIALCOMM</span><span style="color: #800000;">"</span><span style="color: #000000;">,\
+                retArray);
+
+    qDebug() </span>&lt;&lt;<span style="color: #000000;"> retArray.size();
+
+    QVector</span>&lt;QString&gt;<span style="color: #000000;">::iterator iter;
+    </span><span style="color: #0000ff;">for</span> (iter=retArray.begin();iter!=retArray.end();iter++<span style="color: #000000;">)
+    {
+        qDebug() </span>&lt;&lt;  *iter &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">\0</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+        ui</span>-&gt;comboBox-&gt;addItem(*<span style="color: #000000;">iter);
+    }
+}
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">
+ * 功能：点击pushButton按钮功能,打开串口
+ * 参数：无
+ * 返回值：无
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> MainWindow::on_pushButton_clicked()
+{
+    </span><span style="color: #0000ff;">if</span>(!Serial-&gt;<span style="color: #000000;">isOpen())
+    {
+        qDebug() </span>&lt;&lt; ui-&gt;comboBox-&gt;<span style="color: #000000;">currentText();
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">设置串口的端口名称</span>
+        Serial-&gt;setPortName(ui-&gt;comboBox-&gt;<span style="color: #000000;">currentText());
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">toInt：将字符串转换为数字
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">设置串口的波特率</span>
+        Serial-&gt;setBaudRate((ui-&gt;comboBox_2-&gt;currentText()).toInt(nullptr,<span style="color: #800080;">10</span><span style="color: #000000;">));
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">设置串口的数据位</span>
+        Serial-&gt;setDataBits((QSerialPort::DataBits((ui-&gt;comboBox_3-&gt;currentText()).toInt(nullptr,<span style="color: #800080;">10</span><span style="color: #000000;">))));
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">设置串口的奇偶校验位</span>
+        Serial-&gt;setParity(QSerialPort::Parity((ui-&gt;comboBox_4-&gt;currentText()).toInt(nullptr,<span style="color: #800080;">10</span><span style="color: #000000;">)));
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">设置串口的停止位</span>
+        Serial-&gt;setStopBits(QSerialPort::StopBits((ui-&gt;comboBox_5-&gt;currentText()).toInt(nullptr,<span style="color: #800080;">10</span><span style="color: #000000;">)));
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">设置串口的流</span>
+        Serial-&gt;<span style="color: #000000;">setFlowControl(QSerialPort::NoFlowControl);
+        BOOL isSerial </span>= Serial-&gt;<span style="color: #000000;">open(QIODevice::ReadWrite);
+        </span><span style="color: #0000ff;">if</span>(!<span style="color: #000000;">isSerial)
+        {
+            qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">串口打开错误！</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">return</span><span style="color: #000000;">;
+        }
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">创建一个信号与槽，使得串口有数据可以读取的时候可以执行readData()函数</span>
+        connect(Serial,&amp;QSerialPort::readyRead,<span style="color: #0000ff;">this</span>,&amp;<span style="color: #000000;">MainWindow::readData);
+        ui</span>-&gt;pushButton-&gt;setText(<span style="color: #800000;">"</span><span style="color: #800000;">已启动</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+    {
+        ui</span>-&gt;pushButton-&gt;setText(<span style="color: #800000;">"</span><span style="color: #800000;">启动</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        Serial</span>-&gt;<span style="color: #000000;">close();
+    }
+
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">
+ * 功能：读取注册表下的子项
+ * 参数：hkey:注册表的根
+ *      lpSubkey:注册表根下的路径
+ *      retArray:返回要查找的路径下的值的数组
+ * 返回值：无
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">static</span> <span style="color: #0000ff;">void</span> Get_Regedit(HKEY hkey,LPCSTR lpSubKey,QVector&lt;QString&gt; &amp;<span style="color: #000000;">retArray)
+{
+    HKEY  phkey </span>=<span style="color: #000000;"> nullptr;
+    BOOL isSuccess </span>= <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;">
+     * 功能：打开注册表，返回值为是否打开成功
+     </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    isSuccess </span>= RegOpenKeyA(hkey,lpSubKey,&amp;<span style="color: #000000;">phkey);
+    </span><span style="color: #0000ff;">if</span>(isSuccess !=<span style="color: #000000;"> ERROR_SUCCESS)
+    {
+        qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">注册表打开失败！</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;">;
+    }
+    qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">注册表打开成功！</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;">
+     * 功能：读取注册表下的子项
+     </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    DWORD i </span>=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    LSTATUS retCode </span>=<span style="color: #000000;"> ERROR_SUCCESS;
+
+    CHAR achValue[MAX_VALUE_NAME];
+    DWORD cchValue </span>=<span style="color: #000000;"> MAX_VALUE_NAME;
+    BYTE Data[MAX_VALUE_NAME];
+    DWORD cbData </span>=<span style="color: #000000;"> MAX_VALUE_NAME;
+    </span><span style="color: #0000ff;">do</span><span style="color: #000000;">
+    {
+        cchValue </span>=<span style="color: #000000;"> MAX_VALUE_NAME;
+        cbData </span>=<span style="color: #000000;"> MAX_VALUE_NAME;
+        achValue[</span><span style="color: #800080;">0</span>] = <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+        Data[</span><span style="color: #800080;">0</span>] = <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+        QString temp </span>= <span style="color: #800000;">""</span><span style="color: #000000;">;
+        retCode </span>= RegEnumValueA(phkey, i,achValue,&amp;cchValue,nullptr,nullptr,Data,&amp;<span style="color: #000000;">cbData);
+
+        </span><span style="color: #0000ff;">if</span> (retCode == ERROR_SUCCESS &amp;&amp; achValue[<span style="color: #800080;">0</span>] != <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+        {
+            qDebug() </span>&lt;&lt; i++ &lt;&lt; achValue &lt;&lt; <span style="color: #800000;">"</span> <span style="color: #800000;">"</span><span style="color: #000000;">;
+            BYTE j </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">while</span>(Data[j] != <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+                temp </span>+= (CHAR)(Data[j++<span style="color: #000000;">]);
+            qDebug() </span>&lt;&lt;<span style="color: #000000;"> temp;
+            retArray.append(temp);
+        }
+    }</span><span style="color: #0000ff;">while</span>(achValue[<span style="color: #800080;">0</span>] != <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;">
+     * 功能：关闭注册表，返回值为是否打开成功
+     </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    isSuccess </span>=<span style="color: #000000;"> RegCloseKey(phkey);
+    </span><span style="color: #0000ff;">if</span>(isSuccess !=<span style="color: #000000;"> ERROR_SUCCESS)
+    {
+        qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">注册表关闭失败！</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;">;
+    }
+    qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">注册表关闭成功！</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;">;
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">
+ * 功能：点击清空按钮功能，清空显示区的显示
+ * 参数：无
+ * 返回值：无
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> MainWindow::on_pushButton_2_clicked()
+{
+    ui</span>-&gt;textBrowser-&gt;setText(<span style="color: #800000;">""</span><span style="color: #000000;">);
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">
+ * 功能：当串口有数据的时候执行,在显示区域显示
+ *      串口接受到的值
+ * 参数：无
+ * 返回值：无
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">void</span> MainWindow::readData(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+{
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">是否选择了该按钮,选择以16进制进行输出</span>
+    <span style="color: #0000ff;">if</span>(ui-&gt;radioButton-&gt;<span style="color: #000000;">isChecked())
+    {
+        QByteArray temp </span>= Serial-&gt;<span style="color: #000000;">readAll().toHex();
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>;i &lt; temp.length();++<span style="color: #000000;">i)
+        {
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">在16进制开始加入"0x"</span>
+            <span style="color: #0000ff;">if</span>(i % <span style="color: #800080;">2</span> == <span style="color: #800080;">0</span><span style="color: #000000;">)
+                ui</span>-&gt;textBrowser-&gt;insertPlainText(<span style="color: #800000;">"</span><span style="color: #800000;">0x</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+            ui</span>-&gt;textBrowser-&gt;<span style="color: #000000;">insertPlainText((QString)temp.at(i));
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">在16进制结束加上空格" "</span>
+            <span style="color: #0000ff;">if</span>(i % <span style="color: #800080;">2</span> == <span style="color: #800080;">1</span><span style="color: #000000;">)
+                ui</span>-&gt;textBrowser-&gt;insertPlainText(<span style="color: #800000;">"</span> <span style="color: #800000;">"</span><span style="color: #000000;">);
+        }
+    }
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">没有选择则按照ASCII码输出</span>
+    <span style="color: #0000ff;">else</span><span style="color: #000000;">
+        ui</span>-&gt;textBrowser-&gt;insertPlainText(Serial-&gt;<span style="color: #000000;">readAll());
+    ui</span>-&gt;textBrowser-&gt;<span style="color: #000000;">moveCursor(QTextCursor::End);
+}
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">
+ * 功能：向串口中发送数据
+ * 参数：无
+ * 返回值：无
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> MainWindow::on_pushButton_3_clicked()
+{
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">判断串口是否处于打开状态</span>
+    <span style="color: #0000ff;">if</span>(Serial-&gt;<span style="color: #000000;">isOpen())
+    {
+        QByteArray temp </span>= ui-&gt;textEdit-&gt;<span style="color: #000000;">toPlainText().toUtf8();
+        qDebug() </span>&lt;&lt;<span style="color: #000000;"> temp;
+        Serial</span>-&gt;<span style="color: #000000;">write(temp);
+    }
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+    {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">串口没有连接的时候发送数据就会出错</span>
+        QMessageBox messageBox(QMessageBox::Icon(<span style="color: #800080;">2</span>),<span style="color: #800000;">"</span><span style="color: #800000;">警告</span><span style="color: #800000;">"</span>,<span style="color: #800000;">"</span><span style="color: #800000;">串口未连接</span><span style="color: #800000;">"</span><span style="color: #000000;">,QMessageBox::Yes,nullptr);
+        messageBox.exec();
+    }
+}
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">
+ * 功能：清空发送区
+ * 参数：无
+ * 返回值：无
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> MainWindow::on_pushButton_4_clicked()
+{
+    ui</span>-&gt;textEdit-&gt;<span style="color: #000000;">clear();
+}
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">
+ * 功能：退出程序
+ * 参数：无
+ * 返回值：无
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> MainWindow::on_pushButton_5_clicked()
+{
+    </span><span style="color: #0000ff;">if</span>(Serial-&gt;<span style="color: #000000;">isOpen())
+        Serial</span>-&gt;<span style="color: #000000;">close();
+    </span><span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">close();
+}
+</span><span style="color: #008000;">/*</span><span style="color: #008000;">
+ * 功能：每个3s执行的任务,判断端口和串口是否打开
+ * 参数：无
+ * 返回值：无
+ </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> MainWindow::myThread()
+{
+    qDebug() </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">线程OK </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">if</span>(Serial-&gt;<span style="color: #000000;">isReadable())
+        ui</span>-&gt;pushButton-&gt;setText(<span style="color: #800000;">"</span><span style="color: #800000;">已启动</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+        ui</span>-&gt;pushButton-&gt;setText(<span style="color: #800000;">"</span><span style="color: #800000;">启动</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">Get_Serial_Port();
+}</span></pre>
+</div>
+<h2 id="blob-path" class="breadcrumb flex-auto min-width-0 text-normal flex-md-self-center ml-md-2 mr-md-3 my-2 my-md-0"><span class="final-path">mainwindow.ui</span></h2>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">&lt;?</span><span style="color: #ff00ff;">xml version="1.0" encoding="UTF-8"</span><span style="color: #0000ff;">?&gt;</span>
+<span style="color: #0000ff;">&lt;</span><span style="color: #800000;">ui </span><span style="color: #ff0000;">version</span><span style="color: #0000ff;">="4.0"</span><span style="color: #0000ff;">&gt;</span>
+ <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">class</span><span style="color: #0000ff;">&gt;</span>MainWindow<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">class</span><span style="color: #0000ff;">&gt;</span>
+ <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QMainWindow"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="MainWindow"</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>0<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>0<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>768<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>500<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="minimumSize"</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">size</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>768<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>500<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">size</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="maximumSize"</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">size</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>768<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>500<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">size</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="windowTitle"</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>串口助手<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QWidget"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="centralWidget"</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QPushButton"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="pushButton"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>20<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>230<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>93<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>28<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>启动<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QPushButton"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="pushButton_2"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>120<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>290<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>93<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>28<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>清空显示<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QComboBox"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="comboBox"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>120<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>50<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>87<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>22<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QComboBox"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="comboBox_2"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>120<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>80<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>87<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>22<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QComboBox"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="comboBox_3"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>120<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>110<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>87<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>22<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QComboBox"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="comboBox_4"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>120<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>140<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>87<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>22<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QComboBox"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="comboBox_5"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>120<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>170<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>87<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>22<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QRadioButton"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="radioButton"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>0<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>295<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>115<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>19<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>以16进制输出<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QPushButton"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="pushButton_3"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>120<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>360<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>93<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>28<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>发送<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QGroupBox"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="groupBox"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>230<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>4<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>551<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>331<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="title"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>接受显示区<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QTextBrowser"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="textBrowser"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+       <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>10<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+       <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>20<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+       <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>521<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+       <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>301<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QGroupBox"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="groupBox_2"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>230<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>340<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>541<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>121<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="title"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>发送显示区<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QTextEdit"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="textEdit"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+       <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>10<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+       <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>20<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+       <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>521<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+       <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>91<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QPushButton"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="pushButton_4"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>120<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>400<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>93<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>28<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>清空发送<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QLabel"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="label"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>20<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>50<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>71<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>21<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>串口端口<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QLabel"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="label_2"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>20<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>83<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>80<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>15<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>串口波特率<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QLabel"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="label_3"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>20<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>113<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>80<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>15<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>串口数据位<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QLabel"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="label_4"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>20<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>143<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>80<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>15<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>串口校验位<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QLabel"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="label_5"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>20<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>173<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>80<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>15<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>串口停止位<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QLabel"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="label_6"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>25<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>5<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>191<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>41<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="font"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">font</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">family</span><span style="color: #0000ff;">&gt;</span>楷体<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">family</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">pointsize</span><span style="color: #0000ff;">&gt;</span>12<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">pointsize</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">font</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>欢迎使用调试助手<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QPushButton"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="pushButton_5"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>120<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>230<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>93<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+      <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>28<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>退出<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QStatusBar"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="statusBar"</span><span style="color: #0000ff;">/&gt;</span>
+  <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QMenuBar"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="menuBar"</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="geometry"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>0<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">x</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>0<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">y</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>768<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">width</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>26<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">height</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">rect</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QMenu"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="menu"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="title"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>菜单<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">addaction </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="separator"</span><span style="color: #0000ff;">/&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">addaction </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="actiondsa"</span><span style="color: #0000ff;">/&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QMenu"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="menu_2"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="title"</span><span style="color: #0000ff;">&gt;</span>
+     <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>帮助<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">addaction </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="menu"</span><span style="color: #0000ff;">/&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">addaction </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="menu_2"</span><span style="color: #0000ff;">/&gt;</span>
+  <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">widget </span><span style="color: #ff0000;">class</span><span style="color: #0000ff;">="QToolBar"</span><span style="color: #ff0000;"> name</span><span style="color: #0000ff;">="toolBar"</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="windowTitle"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>toolBar<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">attribute </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="toolBarArea"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">enum</span><span style="color: #0000ff;">&gt;</span>TopToolBarArea<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">enum</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">attribute</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">attribute </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="toolBarBreak"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">bool</span><span style="color: #0000ff;">&gt;</span>false<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">bool</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">attribute</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">action </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="actiondsa"</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="text"</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>退出<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+   <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">property</span><span style="color: #0000ff;">&gt;</span>
+  <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">action</span><span style="color: #0000ff;">&gt;</span>
+ <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">widget</span><span style="color: #0000ff;">&gt;</span>
+ <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">layoutdefault </span><span style="color: #ff0000;">spacing</span><span style="color: #0000ff;">="6"</span><span style="color: #ff0000;"> margin</span><span style="color: #0000ff;">="11"</span><span style="color: #0000ff;">/&gt;</span>
+ <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">resources</span><span style="color: #0000ff;">/&gt;</span>
+ <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">connections</span><span style="color: #0000ff;">/&gt;</span>
+<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">ui</span><span style="color: #0000ff;">&gt;</span></pre>
+</div>
+<p><span style="font-size: 18px; font-family: 'Microsoft YaHei';"><strong>界面的实际效果为：</strong></span></p>
+<p><img src="./images/串口调试助手--Qt0.png" alt="" /></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

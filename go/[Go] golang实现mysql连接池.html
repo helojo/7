@@ -1,0 +1,67 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] golang实现mysql连接池' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] golang实现mysql连接池</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/11922953.html</div><br>
+    <p>golang中连接mysql数据库，需要使用一个第三方类库github.com/go-sql-driver/mysql，在这个类库中就实现了mysql的连接池，并且只需要设置两个参数就可以实现</p>
+<p>一般连接mysql首先需要调用sql.Open函数，但是此时并没有真正的去连接mysql,而是只创建了一个Db的对象而已。当执行Query或者是Exec方法时，才会去真正的连接数据库。</p>
+<p>默认情况下。每次执行sql语句，都会创建一条tcp连接，执行结束就会断掉连接，但是会保留两条连接闲置。当下次再执行 sql时，先用闲置的连接，不够的时候再去创建连接。</p>
+<p>当设置了Db类下的这两个参数，就可以真正的实现连接池了。<br />db.SetMaxOpenConns(10)<br />db.SetMaxIdleConns(5)</p>
+<p>SetMaxOpenConns(10)是设置的最大连接数，也就是甭管你多少并发，只能最多创建10条tcp连接，还有要注意的一点是，当执行完sql，连接转移到rows对象上，如果rows不关闭，这条连接不会被放回池里，其他并发获取不到连接会被阻塞住。<br />SetMaxIdleConns(5)是设置的执行完闲置的连接，这些就算是执行结束了sql语句还是会保留着的</p>
+<p>测试的流程是这样的，首先在代码中并发100次执行sql，开一个窗口不停的netstat查看3306端口看tcp连接的情况，可以看到最大就10条tcp连接，执行完后会有5条连接保持住，开一个窗口看tcpdump中3306端口的数据请求情况，在闲置连接的时候，会每10秒传递数据给mysql，使得闲置连接保持住。</p>
+<p>mysqlClient.go<br />先要拉取一下github包，go get github.com/go-sql-driver/mysql</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">database/sql</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+    _ </span><span style="color: #800000;">"</span><span style="color: #800000;">github.com/go-sql-driver/mysql</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func main() {
+    db, _ :</span>= sql.Open(<span style="color: #800000;">"</span><span style="color: #800000;">mysql</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">root:123456@tcp(127.0.0.1:3306)/gocron</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    db.SetMaxOpenConns(</span><span style="color: #800080;">10</span><span style="color: #000000;">)
+    db.SetMaxIdleConns(</span><span style="color: #800080;">5</span><span style="color: #000000;">)
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">连接数据库查询</span>
+    <span style="color: #0000ff;">for</span> i := <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">100</span>; i++<span style="color: #000000;"> {
+        go func(i </span><span style="color: #0000ff;">int</span><span style="color: #000000;">) {
+            mSql :</span>= <span style="color: #800000;">"</span><span style="color: #800000;">select * from user</span><span style="color: #800000;">"</span><span style="color: #000000;">
+            rows, _ :</span>=<span style="color: #000000;"> db.Query(mSql)
+            rows.Close() </span><span style="color: #008000;">//</span><span style="color: #008000;">这里如果不释放连接到池里，执行5次后其他并发就会阻塞</span>
+            <span style="color: #0000ff;">fmt</span>.Println(<span style="color: #800000;">"</span><span style="color: #800000;">第 </span><span style="color: #800000;">"</span><span style="color: #000000;">, i)
+        }(i)
+
+    }
+
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">time</span>.Sleep(<span style="color: #0000ff;">time</span><span style="color: #000000;">.Second)
+    }
+}</span></pre>
+</div>
+<p>开一个窗口不停的netstat<br />while true;do clear;date;netstat -altupn|grep 3306|grep Client;sleep 1;done</p>
+<p><img src="./images/[Go] golang实现mysql连接池0.png" alt="" /></p>
+<p>开一个窗口tcpdump看闲置连接的请求情况，每隔15秒请求一次数据<br />tcpdump -i lo port 3306 -vv</p>
+<p><img src="./images/[Go] golang实现mysql连接池1.png" alt="" /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

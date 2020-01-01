@@ -1,0 +1,285 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修goweb- 对请求的处理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>goweb- 对请求的处理</center></div><div class='banquan'>原文出处:本文由博客园博主跌倒的小黄瓜提供。<br/>
+原文连接:https://www.cnblogs.com/ygjzs/p/12052005.html</div><br>
+    <h1 id="对请求的处理">对请求的处理</h1>
+<p>Go 语言的 net/http 包提供了一系列用于表示 HTTP 报文的结构，我们可以使用它<br />
+处理请求和发送相应，其中 Request 结构代表了客户端发送的请求报文，下面让我们看<br />
+一下 Request 结构体</p>
+<h2 id="获取请求-url">获取请求 URL</h2>
+<p>Request 结构中的 URL 字段用于表示请求行中包含的 URL，改字段是一个指向<br />
+url.URL 结构的指针</p>
+<h3 id="path-字段">　Path 字段</h3>
+<ul>
+<li><p>获取请求的 URL</p></li>
+<li><p>例如：<a href="http://localhost:8080/hello?username=admin&amp;password=123456" class="uri">http://localhost:8080/hello?username=admin&amp;password=123456</a></p></li>
+</ul>
+<p>注： 通过 r.URL.Path 只能得到 /hello</p>
+<h3 id="rawquery-字段">RawQuery 字段</h3>
+<ul>
+<li><p>获取请求的 URL 后面?后面的查询字符串</p></li>
+<li><p>例如：<a href="http://localhost:8080/hello?username=admin&amp;password=123456" class="uri">http://localhost:8080/hello?username=admin&amp;password=123456</a></p></li>
+</ul>
+<p>注： 通过 r.URL.RawQuery 得到的是 username=admin&amp;password=123456</p>
+<h2 id="获取请求头中的信息">获取请求头中的信息</h2>
+<p>通过 Request 结果中的 Header 字段用来获取请求头中的所有信息，Header 字段<br />
+的类型是 Header 类型，而 Header 类型是一个 map[string][]string，string 类型的 key，<br />
+string 切片类型的值。</p>
+<h3 id="获取请求头中的所有信息">获取请求头中的所有信息</h3>
+<ul>
+<li><p>r.Header</p></li>
+<li>得到的结果如下：</li>
+<li></li>
+</ul>
+<pre><code><code>map[User-Agent:[Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.62 Safari/537.36]
+Accept:[text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,ima
+ge/apng,*/*;q=0.8] Accept-Encoding:[gzip, deflate, br] Accept-Language:[zh-
+CN,zh;q=0.9,en-US;q=0.8,en;q=0.7] Connection:[keep-alive] Upgrade-Insecure-
+Requests:[1]]</code></pre>
+<h3 id="获取请求头中的某个具体属性的值如获取-accept-encoding-的值">获取请求头中的某个具体属性的值，如获取 Accept-Encoding 的值</h3>
+<ul>
+<li><p>方式一：<code>r.Header[“Accept-Encoding”]</code></p>
+<ul>
+<li>得到的是一个字符串切片</li>
+<li>结果[gzip, deflate, br]</li>
+</ul></li>
+<li><p>方式二：<code>r.Header.Get(“Accept-Encoding”)</code></p>
+<ul>
+<li>得到的是字符串形式的值，多个值使用逗号分隔</li>
+<li>结果gzip, deflate, br</li>
+</ul></li>
+</ul>
+<h2 id="获取请求体中的信息">获取请求体中的信息</h2>
+<p>请求和响应的主体都是有 Request 结构中的 Body 字段表示，这个字段的类型是<br />
+io.ReadCloser 接口，该接口包含了 Reader 接口和 Closer 接口，Reader 接口拥有 Read<br />
+方法，Closer 接口拥有 Close 方法</p>
+<h3 id="通过指定-methodpost来发送一个-post-请求">通过指定 method=”post”来发送一个 POST 请求</h3>
+<p>由于 GET 请求没有请求体，所以我们需要在 HTML 页面中创建一个 form 表单，通<br />
+过指定 method=”post”来发送一个 POST 请求</p>
+<ul>
+<li>表单</li>
+</ul>
+<pre class="html"><code>&lt;html&gt;
+    &lt;head&gt;
+        &lt;meta charset=&quot;UTF-8&quot;/&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+        &lt;form action=&quot;http://localhost:8080/getBody&quot; method=&quot;POST&quot; enctype=&quot;multipart/form-data&quot;&gt;
+            用户名：&lt;input type=&quot;text&quot; name=&quot;username&quot; /&gt;&lt;br/&gt;
+            密码：&lt;input type=&quot;password&quot; name=&quot;password&quot; /&gt;&lt;br/&gt;
+            &lt;input type=&quot;submit&quot; /&gt;
+        &lt;/form&gt;
+    &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<ul>
+<li>服务器处理请求的代码</li>
+</ul>
+<pre class="go"><code>package main
+import (
+&quot;fmt&quot;
+&quot;net/http&quot;
+)
+func handler(w http.ResponseWriter, r *http.Request) {
+//获取内容的长度
+length := r.ContentLength
+//创建一个字节切片
+body := make([]byte, length)
+//读取请求体
+r.Body.Read(body)
+fmt.Fprintln(w, &quot;请求体中的内容是：&quot;, string(body))
+}
+func main() {
+http.HandleFunc(&quot;/getBody&quot;, handler)
+http.ListenAndServe(&quot;:8080&quot;, nil)
+}</code></pre>
+<ul>
+<li><p>在浏览器上显示的结果</p>
+<ul>
+<li>请求体中的内容是： username=hanzong&amp;password=666666</li>
+</ul></li>
+</ul>
+<h2 id="获取请求参数">获取请求参数</h2>
+<p>下面我们就通过 net/http 库中的 Request 结构的字段以及方法获取请求 URL 后面<br />
+的请求参数以及 form 表单中提交的请求参数</p>
+<h3 id="form-字段">Form 字段</h3>
+<p>1) 类型是 url.Values 类型，Form 是解析好的表单数据，包括 URL 字段的 query<br />
+参数和 POST 或 PUT 的表单数据。<br />
+2) Form 字段只有在调用 Request 的 ParseForm 方法后才有效。在客户端，会忽<br />
+略请求中的本字段而使用 Body 替代<br />
+1) 获取表单中提交的请求参数（username 和 password）</p>
+<ul>
+<li>代码</li>
+</ul>
+<pre class="go"><code>func handler(w http.ResponseWriter, r *http.Request) {
+//解析表单
+r.ParseForm()
+//获取请求参数
+fmt.Fprintln(w, &quot;请求参数为：&quot;, r.Form)
+}
+//注意：在执行 r.Form 之前一定要调用 ParseForm 方法
+//结果
+//请求参数为： map[password:[666666] username:[hanzong]]</code></pre>
+<ul>
+<li>d) 如果对 form 表单做一些修改，在 action 属性的 URL 后面也添加相同的请求参<br />
+数，如下：</li>
+</ul>
+<pre class="html"><code>&lt;form
+action=&quot;http://localhost:8080/getBody?username=admin&amp;pwd=123456&quot;
+method=&quot;POST&quot;&gt;
+用 户 名 ： &lt;input type=&quot;text&quot; name=&quot;username&quot;
+value=&quot;hanzong&quot;&gt;&lt;br/&gt;
+密 码 ： &lt;input type=&quot;password&quot; name=&quot;password&quot;
+value=&quot;666666&quot;&gt;&lt;br/&gt;
+&lt;input type=&quot;submit&quot;&gt;
+&lt;/form&gt;</code></pre>
+<p>则执行结果如下：</p>
+<p>请求参数为：<code>map[username:[hanzong admin] password:[666666] pwd:[123456]]</code></p>
+<ul>
+<li>我们发现：表单中的请求参数 username 和 URL 中的请求参数<br />
+username 都获取到了，而且表单中的请求参数的值排在 URL 请求参<br />
+数值的前面</li>
+<li>如果此时我们只想获取表单中的请求参数该怎么办呢？那就需要使<br />
+用 Request 结构中的 PostForm 字段</li>
+</ul>
+<h3 id="postform-字段">PostForm 字段</h3>
+<p>1) 类型也是 url.Values 类型，用来获取表单中的请求参数</p>
+<ul>
+<li>将 r.Form 改为 r.PostForm 之后的代码</li>
+</ul>
+<pre class="go"><code>func handler(w http.ResponseWriter, r *http.Request) {
+//解析表单
+r.ParseForm()
+//获取请求参数
+fmt.Fprintln(w, &quot;请求参数为：&quot;, r.PostForm)
+}</code></pre>
+<ul>
+<li>结果</li>
+</ul>
+<p>请求参数为：<code>map[username:[hanzong] password:[666666]]</code></p>
+<p>2) 但是 PostForm 字段只支持 application/x-www-form-urlencoded 编码，如果<br />
+form 表单的 enctype 属性值为 multipart/form-data，那么使用 PostForm 字段<br />
+无法获取表单中的数据，此时需要使用 MultipartForm 字段</p>
+<ul>
+<li>说明：form 表单的 enctype 属性的默认值是 application/x-www-form-<br />
+urlencoded 编 码 ， 实 现 上 传 文 件 时 需 要 讲 该 属 性 的 值 设 置 为<br />
+multipart/form-data 编码格式</li>
+</ul>
+<h3 id="formvalue-方法和-e-postformvalue-方法">FormValue 方法和 e PostFormValue 方法</h3>
+<h4 id="formvalue-方法">FormValue 方法</h4>
+<p>a) 可以通过 FormValue 方法快速地获取某一个请求参数，该方法调用之前<br />
+会自动调用 ParseMultipartForm 和 ParseForm 方法对表单进行解析</p>
+<ul>
+<li>代码</li>
+</ul>
+<pre class="go"><code>func handler(w http.ResponseWriter, r *http.Request) {
+//获取请求参数
+fmt.Fprintln(w, &quot;请求参数username的值为：&quot;, r.FormValue(&quot;username&quot;))
+}
+</code></pre>
+<ul>
+<li>结果</li>
+</ul>
+<p>请求参数 username 的值为： hanzong</p>
+<h4 id="postformvalue-方法">PostFormValue 方法</h4>
+<p>a) 可以通过 PostFormValue 方法快速地获取表单中的某一个请求参数，该<br />
+方法调用之前会自动调用 ParseMultipartForm 和 ParseForm 方法对表单<br />
+进行解析</p>
+<ul>
+<li>代码</li>
+</ul>
+<pre class="go"><code>func handler(w http.ResponseWriter, r *http.Request) {
+//获取请求参数
+fmt.Fprintln(w, &quot;请求参数 username 的值为：&quot;, r.PostFormValue(&quot;username&quot;))
+}</code></pre>
+<ul>
+<li>结果</li>
+<li>请求参数 username 的值为： hanzong</li>
+</ul>
+<h3 id="multipartform-字段">MultipartForm 字段</h3>
+<p>为了取得 multipart/form-data 编码的表单数据，我们需要用到 Request 结构的<br />
+ParseMultipartForm 方法和 MultipartForm 字段，我们通常上传文件时会将 form 表单的<br />
+enctype 属性值设置为 multipart/form-data</p>
+<p>1) 表单</p>
+<pre class="html"><code>&lt;form action=&quot;http://localhost:8080/upload&quot; method=&quot;POST&quot;
+enctype=&quot;multipart/form-data&quot;&gt;
+用 户 名 ： &lt;input type=&quot;text&quot; name=&quot;username&quot;
+value=&quot;hanzong&quot;&gt;&lt;br/&gt;
+文件：&lt;input type=&quot;file&quot; name=&quot;photo&quot; /&gt;&lt;br/&gt;
+&lt;input type=&quot;submit&quot;&gt;
+&lt;/form&gt;
+</code></pre>
+<p>1) 后台处理请求代码</p>
+<pre class="go"><code>package main
+import (
+&quot;fmt&quot;
+&quot;net/http&quot;
+)
+func handler(w http.ResponseWriter, r *http.Request) {
+//解析表单
+r.ParseMultipartForm(1024)
+
+fmt.Fprintln(w, r.MultipartForm)
+}
+func main() {
+http.HandleFunc(&quot;/upload&quot;, handler)
+http.ListenAndServe(&quot;:8080&quot;, nil)
+}</code></pre>
+<p>3) 浏览器显示结果</p>
+<p><code>&amp;{map[username:[hanzong]] map[photo:[0xc042126000]]}</code></p>
+<ul>
+<li>结果中有两个映射，第一个映射映射的是用户名；第二个映射的值是一个地址</li>
+<li><p>MuiltipartForm 字段的类型为 *multipart.Form，multipart 包下 Form 结构的指<br />
+针类型</p></li>
+<li><p>打开上传的文件</p></li>
+</ul>
+<pre class="go"><code>func handler(w http.ResponseWriter, r *http.Request) {
+//解析表单
+r.ParseMultipartForm(1024)
+fileHeader := r.MultipartForm.File[&quot;photo&quot;][0]
+file, err := fileHeader.Open()
+if err == nil {
+data, err := ioutil.ReadAll(file)
+if err == nil {
+fmt.Fprintln(w, string(data))
+}
+}
+}</code></pre>
+<h4 id="formfile-方法">FormFile 方法</h4>
+<ul>
+<li><p>net/http 提供的 FormFile 方法可以快速的获取被上传的文件，但是只能处理上<br />
+传一个文件的情况。</p></li>
+<li>代码</li>
+</ul>
+<pre class="go"><code>func handler(w http.ResponseWriter, r *http.Request) {
+file, _, err := r.FormFile(&quot;photo&quot;)
+if err == nil {
+data, err := ioutil.ReadAll(file)
+
+if err == nil {
+fmt.Fprintln(w, string(data))
+}
+}
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

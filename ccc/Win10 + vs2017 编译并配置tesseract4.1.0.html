@@ -1,0 +1,177 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Win10 + vs2017 编译并配置tesseract4.1.0' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Win10 + vs2017 编译并配置tesseract4.1.0</center></div><div class='banquan'>原文出处:本文由博客园博主tongye提供。<br/>
+原文连接:https://www.cnblogs.com/tongye/p/10734342.html</div><br>
+    <p style="text-align: left;">　　tesseract 是一个开源的OCR (Optical Character Recognition , 光学字符识别) 引擎，本文就介绍一下自己在编译 tesseract4.1.0时遇到的一些坑，希望能给大家带来一些帮助。</p>
+<p><span style="font-size: 14pt;"><strong>一、下载 tesseract</strong></span></p>
+<p>　　tesseract 是一个开源项目，可以在 GitHub 上下载源码：<a href="https://github.com/tesseract-ocr/tesseract/releases/" target="_blank">https://github.com/tesseract-ocr/tesseract/releases/</a>&nbsp;</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/Win10 + vs2017 编译并配置tesseract4.1.00.png" alt="" width="488" height="131" /></p>
+<p>　　当然，也可以下载安装版的：<a href="https://github.com/UB-Mannheim/tesseract/wiki" target="_blank">https://github.com/UB-Mannheim/tesseract/wiki</a>&nbsp;</p>
+<p style="text-align: center;"><img src="./images/Win10 + vs2017 编译并配置tesseract4.1.01.png" alt="" width="610" height="121" /></p>
+<p style="text-align: left;">&nbsp;　　安装版的下载完后直接安装，然后配置环境变量（这个后面会讲到）即可使用。这个方法笔者也尝试过，但是很遗憾，没能在 vs 上找到相关的库文件，也就是不能在 vs 中调用 tesseract 相关的函数方法，只能在控制台上使用，这就比较蛋疼了，暂时在网上也没找到相关的方法，所以只能下个源码包自己编译配置了，折腾了一天才搞定，不得不吐槽一下在 Windows 上想自己编译一个东西真是麻烦。</p>
+<p style="text-align: left;">&nbsp;</p>
+<p style="text-align: left;"><span style="font-size: 14pt;"><strong>二、所需要用到的工具</strong></span></p>
+<p style="text-align: left;">　　在 Windows 上编译 tesseract 主要需要用到两个工具：cmake和 cppan。</p>
+<p style="text-align: left;"><span style="font-size: 18px;"><strong>2.1 cmake</strong></span></p>
+<p style="text-align: left;">　　cmake 是一个跨平台的编译工具&nbsp;，可以使用 cmake 在 Windows 上将源码编译成你想要的文件（比如说电脑上装了 visual studio，那么就可以生成 .sln 文件），在 Linux 上使用 cmake 的话，则可以生成 makefile 文件，可以说功能非常强大了。</p>
+<p style="text-align: left;">　　Windows 上安装 cmake 很简单，直接下载可安装文件后一键安装就行：<a href="https://cmake.org/download/" target="_blank">https://cmake.org/download/</a></p>
+<p style="text-align: center;">&nbsp;<img src="./images/Win10 + vs2017 编译并配置tesseract4.1.02.png" alt="" width="789" height="238" /></p>
+<p style="text-align: left;">&nbsp;　　需要下载哪个是自己系统而定，笔者下载的是cmake-3.14.2-win64-x64.msi ，这个是可以直接安装的。安装完后，记得将 cmake 安装目录下的 /bin 目录添加到 path 环境变量中去（本人的相应目录是 D:\Program Files\CMake\bin ）。配置完环境变量后，就可以在命令行使用 cmake 命令了。</p>
+<p style="text-align: left;">&nbsp;</p>
+<p style="text-align: left;"><span style="font-size: 18px;"><strong>2.2 cppan</strong></span></p>
+<p style="text-align: left;">　　cppan 是一个跨平台的 C/C++ 依赖管理器。它建立在CMake之上，还具有构建系统功能。CPPAN支持快速脚本式编码和原型设计以及处理大型项目。查找，共享和重用库，发布项目。 使用 CPPAN 可以让你把时间花费在处理代码而不是管理依赖项上。CPPAN 可以为您将获取包的时间减少到秒！它支持轻松交叉编译，继承和推送您自己的设置，标记每个依赖项。（注：以上介绍来自 CPPAN 英文介绍机翻，英文不好望见谅）。</p>
+<p style="text-align: left;">　　可以在&nbsp;<a href="https://cppan.org/client/" target="_blank">https://cppan.org/client/</a> 这里下载 cppan 的安装包，本人下载的是&nbsp;cppan-master-Windows-client.zip 文件。</p>
+<p style="text-align: left;">　　下载好安装包后直接解压，可以发现一个 cppan.exe 文件，也不需要双击这个文件安装什么的，只需要将这个文件所在目录添加到 path 环境变量中去就行了。（笔者的目录是 D:\cppan，则直接把这个目录添加到环境变量 path 中去就行）。配置好环境变量后就可以在命令行使用 cppan 命令了。</p>
+<p style="text-align: left;">　　</p>
+<p style="text-align: left;"><span style="font-size: 14pt;"><strong>三、从源代码编译安装 tesseract</strong></span></p>
+<p style="text-align: left;">　　从源代码编译安装 tesseract 的基本步骤 GitHub 上有讲，按照 GitHub 上提供的方法来就行：<a href="https://github.com/tesseract-ocr/tesseract/wiki/Compiling" target="_blank">https://github.com/tesseract-ocr/tesseract/wiki/Compiling</a></p>
+<p style="text-align: left;">1）下载安装 cppan</p>
+<p style="text-align: left;">2）下载安装 cmake</p>
+<p style="text-align: left;">3）打开 Windows 命令行并进入 tesseract 源码目录（目录最好为全英文）；</p>
+<p style="text-align: left;">4）在 tesseract 目录下依次运行下述命令：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">cppan
+
+</span><span style="color: #0000ff;">mkdir</span> build &amp;&amp;<span style="color: #000000;"> cd build
+
+cmake ..</span></pre>
+</div>
+<p>&nbsp;　　完成后，可以在 /tesseract/build 目录下看到一个 tesseract.sln 文件，说明 tesseract 源码编译成功了。（注：在运行 cppan 命令后，会下载一系列东西，耐心等待即可）。</p>
+<p>5）上述命令编译完成后是 x86 平台上的解决方案，若需要 x64 平台上的解决方案可以这样：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">mkdir</span> bulid_win64 &amp;&amp;<span style="color: #000000;"> cd bulid_win64<br />
+cppan ..<br />
+cmake .. </span>-G <span style="color: #800000;">"</span><span style="color: #800000;">Visual Studio 15 2017 Win64</span><span style="color: #800000;">"</span></pre>
+</div>
+<p>　　如果需要在 vs2015 上使用 tesseract，只需要将 15 2017 改成 14 2015 即可。</p>
+<p style="text-align: left;">&nbsp;</p>
+<p style="text-align: left;"><span style="font-size: 14pt;"><strong>四、在 vs2017 上编译 tesseract</strong></span></p>
+<p style="text-align: left;">　　用 cmake 编译完源码后，虽然生成了解决方案，但是还需要在 vs2017 上对该解决方案进行编译才能生成 tesseract 的可执行文件及相关库文件，步骤如下：</p>
+<p style="text-align: left;">1）进入目录 /tesseract/bulid ，找到 tesseract.sln 文件，<strong>使用 vs2017&nbsp;以管理员方式打开它</strong>！（这很重要，我第一次就是没用管理员方式打开才会报错的）。&nbsp;以管理员方式启动 vs 程序的方法可以参考：<a href="https://blog.csdn.net/lien0906/article/details/47300881" target="_blank">https://blog.csdn.net/lien0906/article/details/47300881</a>&nbsp;；</p>
+<p style="text-align: left;">2）选择解决方案平台，x86 平台则选择 x86，x64 平台则选择 x64；</p>
+<p style="text-align: left;">3）在解决方案资源管理器中，右键解决方案 tesseract，选择生成解决方案。</p>
+<p style="text-align: left;">　　理论上说，已经完成了，但是现实总是残酷的，错误警报。。。</p>
+<p style="text-align: left;">1）cppan-d-b-d 乱码问题：大部分错误都是乱码引起的，这是文件编码的问题。cppan 下载的文件是 UTF-8(不带签名)，而 vs2017 中文版默认保存的文本文件是 GB2312 编码。</p>
+<p style="text-align: left;">解决方法如下：双击错误行，打开相应的文件，然后点击菜单栏中的&ldquo;文件&rdquo;下拉栏，选择&ldquo;高级保存选项&rdquo;，将编码方式保存为 &ldquo;简体中文（GB2312）- 代码页 936&rdquo; 即可。vs2017 的文件下拉菜单中默认是没有 &ldquo;高级保存选项&rdquo; 这一项的，可以自己手工添加。</p>
+<p style="text-align: left;">2）error msb3073 命令 setlocal ：这个就是没有用管理员身份打开 .sln 文件所遇到的问题了，用管理员身份打开即可。</p>
+<p style="text-align: left;">　　解决了这两个问题后，再次生成解决方案，应该没问题了。</p>
+<p style="text-align: left;">　　最后，在 release 环境下再编译一次。</p>
+<p style="text-align: left;">&nbsp;</p>
+<p style="text-align: left;"><span style="font-size: 14pt;"><strong>五、环境变量配置</strong></span></p>
+<p style="text-align: left;">　　在 vs2017 上编译完成后，可以在 C 盘下发现一个 tesseract 安装文件夹，我的是在&nbsp;C:\Program Files\tesseract：</p>
+<p style="text-align: center;"><img src="./images/Win10 + vs2017 编译并配置tesseract4.1.03.png" alt="" /></p>
+<p style="text-align: left;">　　可以在 /bin 目录下找到 tesseract.exe 文件，将&nbsp;C:\Program Files\tesseract\bin 添加到环境变量 path 中去（如何在 win10 上添加环境变量就不详细说明了，网上有许多教程）。此外，在 /bin 目录下新建两个文件夹 Debug 和 Release，分别将&nbsp;D:\tesseract_4.1.0\build\bin\Debug 和&nbsp;D:\tesseract_4.1.0\build\bin\Release 目录下的 .dll 文件复制到所新建的两个文件夹下去；然后将&nbsp;C:\Program Files\tesseract\bin\Debug 和&nbsp;C:\Program Files\tesseract\bin\Release 也添加到环境变量 path 中去，如下：</p>
+<p style="text-align: center;"><img src="./images/Win10 + vs2017 编译并配置tesseract4.1.04.png" alt="" /></p>
+<p style="text-align: left;">　　此外，新建一个系统变量TESSDATA_PREFIX，变量值为 D:\tesseract_4.1.0\tessdata，这个目录下存放的是 tesseract-ocr 语言包文件，可以在 GitHub 上下载，下载后放到该目录下去即可，下载地址为：<a href="https://github.com/tesseract-ocr/tessdata/" target="_blank">https://github.com/tesseract-ocr/tessdata/</a></p>
+<p style="text-align: center;">　　<img src="./images/Win10 + vs2017 编译并配置tesseract4.1.05.png" alt="" /></p>
+<p style="text-align: left;">　　配置好这两步后，应该就可以在命令行使用 tesseract 命令了，可以简单测试一下 tesseract 是否安装成功，如下：</p>
+<p style="text-align: center;"><img src="./images/Win10 + vs2017 编译并配置tesseract4.1.06.png" alt="" /></p>
+<p style="text-align: left;">&nbsp;</p>
+<p style="text-align: left;"><span style="font-size: 14pt;"><strong>六、配置 vs2017 以使用 tesseract</strong></span></p>
+<p style="text-align: left;">　　新建一个项目，在属性管理器，Debug | x64 下面，右键 Microsoft.Cpp.x64.user 选择属性：</p>
+<p style="text-align: center;"><img src="./images/Win10 + vs2017 编译并配置tesseract4.1.07.png" alt="" /></p>
+<p style="text-align: left;">&nbsp;</p>
+<p style="text-align: left;">1）在 VC++ 目录中：</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/Win10 + vs2017 编译并配置tesseract4.1.08.png" alt="" width="580" height="392" /></p>
+<p style="text-align: left;">　　选择包含目录，编辑，分别添加这三个目录：</p>
+<p style="text-align: left;">C:\Program Files\tesseract\include</p>
+<p style="text-align: left;">C:\Program Files\tesseract\include\tesseract</p>
+<p>C:\Program Files\tesseract\include\leptonica</p>
+<p>　　这里有个问题是，你在&nbsp;C:\Program Files\tesseract\include 下可能并找不到 leptonica 这个目录，没办法，自己动手丰衣足食吧：在&nbsp;C:\Program Files\tesseract\include 下新建文件夹 leptonica，然后将&nbsp;C:\Users\lenovo\.cppan\storage\src\8f\a3\90d7\src 目录下的文件全部复制到&nbsp;C:\Program Files\tesseract\include\leptonica 下即可（不同电脑具体的目录可能会不同，不过都在 C:\Users\lenovo\.cppan\storage\src\ 下）</p>
+<p style="text-align: center;"><img src="./images/Win10 + vs2017 编译并配置tesseract4.1.09.png" alt="" width="651" height="557" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>2）在 VC++ 目录中，选择库目录，编辑，分别添加这三个目录：</p>
+<p>C:\Program Files\tesseract\lib</p>
+<p>C:\Program Files\tesseract\lib\Release</p>
+<p>C:\Program Files\tesseract\lib\Debug<em id="__mceDel"><br />　　</em>同样的，先在&nbsp;C:\Program Files\tesseract\lib 目录下新建两个文件夹 Debug 和 Release，然后将&nbsp;C:\Users\lenovo\.cppan\storage\lib\ab45fb78\Debug&nbsp;目录下的 .lib 文件全部复制到&nbsp;C:\Program Files\tesseract\lib\Debug 目录下；将&nbsp;C:\Users\lenovo\.cppan\storage\lib\ab45fb78\Release&nbsp;目录下的 .lib 文件全部复制到 C:\Program Files\tesseract\lib\Release 目录下。<em id="__mceDel"><br /></em></p>
+<p><em>&nbsp;</em></p>
+<p>3）在 链接器 -&gt; 输入 -&gt; 附加依赖项 中，编辑，添加以下两项：</p>
+<p>pvt.cppan.demo.danbloomberg.leptonica-1.76.0.lib<br />tesseract41d.lib</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/Win10 + vs2017 编译并配置tesseract4.1.010.png" alt="" width="356" height="331" /></p>
+<p style="text-align: left;">　　完成后，重启一下电脑，应该就可以在 vs2017 上使用 tesseract 了。　　</p>
+<p style="text-align: left;">&nbsp;</p>
+<p style="text-align: left;"><span style="font-size: 14pt;"><strong>七、一个使用 tesseract 识别数字的例程</strong></span></p>
+<p style="text-align: left;">　　经过一天的折腾，终于可以使用 tesseract 了，写了一个小程序来试验一下 tesseract 的效果：</p>
+<div class="cnblogs_code">
+<pre>#include &lt;opencv2/opencv.hpp&gt;<span style="color: #000000;">
+#include </span>&lt;tesseract/baseapi.h&gt;<span style="color: #000000;">
+#include </span>&lt;leptonica/allheaders.h&gt;<span style="color: #000000;">
+#include </span>&lt;<span style="color: #0000ff;">string</span>&gt;
+
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> cv;
+
+PIX</span>*<span style="color: #000000;"> cvtMat2PIX(Mat imgGray);
+
+</span><span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+{</span>
+    Mat sourceImage = imread(<span style="color: #800000;">"</span><span style="color: #800000;">E:\\visual studio\\Opencv_Test\\Opencv_Test\\1.png</span><span style="color: #800000;">"</span><span style="color: #000000;">,cv::IMREAD_GRAYSCALE);
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (sourceImage.empty()) {
+        perror(</span><span style="color: #800000;">"</span><span style="color: #800000;">Failed to load image!\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        exit(EXIT_FAILURE);
+    }</span>
+<span style="color: #000000;">
+    Mat binImage;
+    threshold(sourceImage,binImage,</span><span style="color: #800080;">90</span>,<span style="color: #800080;">255</span><span style="color: #000000;">,cv::THRESH_BINARY_INV);</span>
+<span style="color: #000000;">
+    PIX </span>*pixImage = cvtMat2PIX(binImage);                <span style="color: #008000;">//</span><span style="color: #008000;"> 将图片由 Mat 转换成 Pix 格式
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 使用 tesseract 进行数字识别</span>
+    <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>* lang = <span style="color: #800000;">"</span><span style="color: #800000;">eng</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">string</span><span style="color: #000000;"> numText;
+    tesseract::TessBaseAPI </span>*tess = <span style="color: #0000ff;">new</span> tesseract::TessBaseAPI;        <span style="color: #008000;">//</span><span style="color: #008000;"> 新建 tesseract 基类</span>
+    tess-&gt;Init(NULL,lang, tesseract::OEM_LSTM_ONLY);        <span style="color: #008000;">//</span><span style="color: #008000;"> 初始化</span>
+    tess-&gt;SetPageSegMode(tesseract::PSM_AUTO);    <span style="color: #008000;">//</span><span style="color: #008000;"> 设置识别模式</span>
+    tess-&gt;<span style="color: #000000;">SetImage(pixImage);
+    numText </span>= <span style="color: #0000ff;">string</span>(tess-&gt;<span style="color: #000000;">GetUTF8Text());
+    cout </span>&lt;&lt; numText &lt;&lt;<span style="color: #000000;"> endl;
+
+    waitKey(</span><span style="color: #800080;">0</span><span style="color: #000000;">);
+}
+
+
+PIX</span>*<span style="color: #000000;"> cvtMat2PIX(Mat imgGray)
+{
+    </span><span style="color: #0000ff;">int</span> cols =<span style="color: #000000;"> imgGray.cols;
+    </span><span style="color: #0000ff;">int</span> rows =<span style="color: #000000;"> imgGray.rows;
+
+    PIX </span>*pixS = pixCreate(cols, rows, <span style="color: #800080;">8</span><span style="color: #000000;">);
+
+    </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; rows; i++<span style="color: #000000;">)
+        </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; cols; j++<span style="color: #000000;">)
+            pixSetPixel(pixS, j, i, (l_uint32)imgGray.at</span>&lt;uchar&gt;<span style="color: #000000;">(i, j));
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> pixS;
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p style="text-align: left;">&nbsp;　　所使用的图片如下：</p>
+<p style="text-align: center;"><img src="./images/Win10 + vs2017 编译并配置tesseract4.1.011.png" alt="" /></p>
+<p style="text-align: left;">&nbsp;　　识别结果如下：</p>
+<p style="text-align: center;"><img src="./images/Win10 + vs2017 编译并配置tesseract4.1.012.png" alt="" /></p>
+<p style="text-align: left;">&nbsp;　　效果还算不错。</p>
+<p style="text-align: left;">&nbsp;</p>
+<p style="text-align: left;">　　因为 tesseract 的安装过程是在一周前完成了，故而有些地方记不太清楚，图也不是很多，可能会有一些错误，但是还是希望能对有需要的人有一些帮助。</p>
+<p style="text-align: left;">&nbsp;</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

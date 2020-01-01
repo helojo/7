@@ -1,0 +1,577 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C基础 带你手写 redis sds' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C基础 带你手写 redis sds</center></div><div class='banquan'>原文出处:本文由博客园博主喜欢兰花山丘提供。<br/>
+原文连接:https://www.cnblogs.com/life2refuel/p/11966521.html</div><br>
+    <p><strong><span style="font-family: 'courier new', courier;">前言 -&nbsp;Simple Dynamic Strings</span></strong></p>
+<p><span style="font-family: 'courier new', courier;">　　&nbsp;antirez 想统一&nbsp;Redis，Disque，Hiredis 项目中 SDS 代码, 因此构建了这个项目</span></p>
+<p><span style="font-family: 'courier new', courier;"><a href="https://github.com/antirez/sds">https://github.com/antirez/sds</a>&nbsp;. 更多介绍的背景知识, 可以阅读 README.md.&nbsp;&nbsp;</span></p>
+<p><span style="font-family: 'courier new', courier;">　　sds 项目是 C 字符串数据结构在实际环境中一种取舍实现, 库本身是非线程安全的. 下</span><span style="font-family: 'courier new', courier;">面</span></p>
+<p><span style="font-family: 'courier new', courier;">来带大家手写相关代码, 透彻了解这个库的意图(antirez 注释的很棒).&nbsp;</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-family: 'courier new', courier;"><span style="color: #0000ff;">#define</span> SDS_MAX_PREALLOC  (1024*1024)
+
+<span style="color: #008000;">/*</span><span style="color: #008000;"> Note: sdshdr5 is never used, we just access the flags byte directly.
+ * However is here to document the layout of type 5 SDS strings. </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">struct</span><span style="color: #000000;"> __attribute__ ((__packed__)) sdshdr5 {
+    unsigned </span><span style="color: #0000ff;">char</span> flags;    <span style="color: #008000;">/*</span><span style="color: #008000;"> 3 lsb of type, and 5 msb of string length </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">char</span><span style="color: #000000;"> buf[];
+};
+
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> __attribute__ ((__packed__)) sdshdr8 {
+    uint8_t len;            </span><span style="color: #008000;">/*</span><span style="color: #008000;"> used </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    uint8_t alloc;          </span><span style="color: #008000;">/*</span><span style="color: #008000;"> excluding the header and null terminator </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    unsigned </span><span style="color: #0000ff;">char</span> flags;    <span style="color: #008000;">/*</span><span style="color: #008000;"> 3 lsb of type, 5 unused bits </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">char</span><span style="color: #000000;"> buf[];
+};
+
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> __attribute__ ((__packed__)) sdshdr16 {
+    uint16_t len;           </span><span style="color: #008000;">/*</span><span style="color: #008000;"> used </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    uint16_t alloc;         </span><span style="color: #008000;">/*</span><span style="color: #008000;"> excluding the header and null terminator </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    unsigned </span><span style="color: #0000ff;">char</span> flags;    <span style="color: #008000;">/*</span><span style="color: #008000;"> 3 lsb of type, 5 unused bits </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">char</span><span style="color: #000000;"> buf[];
+};
+
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> __attribute__ ((__packed__)) sdshdr32 {
+    uint32_t len;           </span><span style="color: #008000;">/*</span><span style="color: #008000;"> used </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    uint32_t alloc;         </span><span style="color: #008000;">/*</span><span style="color: #008000;"> excluding the header and null terminator </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    unsigned </span><span style="color: #0000ff;">char</span> flags;    <span style="color: #008000;">/*</span><span style="color: #008000;"> 3 lsb of type, 5 unused bits </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">char</span><span style="color: #000000;"> buf[];
+};
+
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> __attribute__ ((__packed__)) sdshdr64 {
+    uint64_t len;           </span><span style="color: #008000;">/*</span><span style="color: #008000;"> used </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    uint64_t alloc;         </span><span style="color: #008000;">/*</span><span style="color: #008000;"> excluding the header and null terminator </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    unsigned </span><span style="color: #0000ff;">char</span> flags;    <span style="color: #008000;">/*</span><span style="color: #008000;"> 3 lsb of type, 5 unused bits </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">char</span><span style="color: #000000;"> buf[]; 
+};
+
+</span><span style="color: #0000ff;">#define</span> SDS_TYPE_5    0
+<span style="color: #0000ff;">#define</span> SDS_TYPE_8    1
+<span style="color: #0000ff;">#define</span> SDS_TYPE_16   2
+<span style="color: #0000ff;">#define</span> SDS_TYPE_32   3
+<span style="color: #0000ff;">#define</span> SDS_TYPE_64   4
+<span style="color: #0000ff;">#define</span> SDS_TYPE_MASK 7
+<span style="color: #0000ff;">#define</span> SDS_TYPE_BITS 3
+<span style="color: #0000ff;">#define</span> SDS_TYPE_5_LEN(f) ((f)&gt;&gt;SDS_TYPE_BITS)
+<span style="color: #0000ff;">#define</span> SDS_HDR(T, s)     ((struct sdshdr##T *)((s) - (sizeof(struct sdshdr##T))))
+<span style="color: #0000ff;">#define</span> SDS_HDR_VAR(T, s) struct sdshdr##T * sh = SDS_HDR(T, s)</span></code></pre>
+
+<p><span style="font-family: 'courier new', courier;">可以先分析 sdshdr5&nbsp;sdshdr8&nbsp;sdshdr16&nbsp;sdshdr32&nbsp;sdshdr64, 感受作者的意图.&nbsp;&nbsp;</span></p>
+<p><span style="font-family: 'courier new', courier;">首先这几个基本结构,&nbsp;都有 len, alloc, flags, buf 4 个字段, 是不是. 有的同学会问, sdshdr5 </span></p>
+<p><span style="font-family: 'courier new', courier;">中没有&nbsp;</span><span style="font-family: 'courier new', courier;">alloc&nbsp;和 len 字段呀,&nbsp; 这个啊 sdshdr5 结构比较特殊, 其 alloc 和 len 都隐含在 flags</span></p>
+<p><span style="font-family: 'courier new', courier;"> 中, 三者复用</span><span style="font-family: 'courier new', courier;">一个字段. 可以从函数宏&nbsp;SDS_TYPE_5_LEN(f), 可以看出来.&nbsp; 因而&nbsp;sdshdr5 表达的字符</span></p>
+<p><span style="font-family: 'courier new', courier;">串长度和字</span><span style="font-family: 'courier new', courier;">符串容量默认相同.&nbsp;&nbsp;再考究一下&nbsp;__attribute__ ((__packed__)) 意图(告诉编译器取消结</span></p>
+<p><span style="font-family: 'courier new', courier;">构在编译</span><span style="font-family: 'courier new', courier;">过程中的优化对齐,&nbsp;按照实际占用字节数进行对齐).&nbsp;对于取消结构内存编译对齐优化, 我的考究有</span></p>
+<p><span style="font-family: 'courier new', courier;">两点, 1 节约内存, 2 内存可移植变强.&nbsp;&nbsp;</span></p>
+<p><span style="font-family: 'courier new', courier;">随后多数是流水线代码, 非常好理解. 例如有段这样关系的代码&nbsp;sdsalloc() = sdsavail() + sdslen()&nbsp;</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-family: 'courier new', courier;">inline size_t sdslen(<span style="color: #0000ff;">const</span><span style="color: #000000;"> sds s) {
+    unsigned </span><span style="color: #0000ff;">char</span> flags = s[-<span style="color: #800080;">1</span><span style="color: #000000;">];
+    </span><span style="color: #0000ff;">switch</span> (flags &amp;<span style="color: #000000;"> SDS_TYPE_MASK) {
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_5 :
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> SDS_TYPE_5_LEN(flags);
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_8 :
+        </span><span style="color: #0000ff;">return</span> SDS_HDR(<span style="color: #800080;">8</span> , s)-&gt;<span style="color: #000000;">len;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_16:
+        </span><span style="color: #0000ff;">return</span> SDS_HDR(<span style="color: #800080;">16</span>, s)-&gt;<span style="color: #000000;">len;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_32:
+        </span><span style="color: #0000ff;">return</span> SDS_HDR(<span style="color: #800080;">32</span>, s)-&gt;<span style="color: #000000;">len;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_64:
+        </span><span style="color: #0000ff;">return</span> SDS_HDR(<span style="color: #800080;">64</span>, s)-&gt;<span style="color: #000000;">len;
+    }
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}
+
+inline size_t sdsavail(</span><span style="color: #0000ff;">const</span><span style="color: #000000;"> sds s) {
+    unsigned </span><span style="color: #0000ff;">char</span> flags = s[-<span style="color: #800080;">1</span><span style="color: #000000;">];
+    </span><span style="color: #0000ff;">switch</span> (flags &amp;<span style="color: #000000;"> SDS_TYPE_MASK) {
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_8 : {
+        SDS_HDR_VAR(</span><span style="color: #800080;">8</span><span style="color: #000000;"> , s);
+        </span><span style="color: #0000ff;">return</span> sh-&gt;alloc - sh-&gt;<span style="color: #000000;">len;       
+    }
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_16: {
+        SDS_HDR_VAR(</span><span style="color: #800080;">16</span><span style="color: #000000;">, s);
+        </span><span style="color: #0000ff;">return</span> sh-&gt;alloc - sh-&gt;<span style="color: #000000;">len;       
+    }
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_32: {
+        SDS_HDR_VAR(</span><span style="color: #800080;">32</span><span style="color: #000000;">, s);
+        </span><span style="color: #0000ff;">return</span> sh-&gt;alloc - sh-&gt;<span style="color: #000000;">len;       
+    }
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_64: {
+        SDS_HDR_VAR(</span><span style="color: #800080;">64</span><span style="color: #000000;">, s);
+        </span><span style="color: #0000ff;">return</span> sh-&gt;alloc - sh-&gt;<span style="color: #000000;">len;       
+    }
+    </span><span style="color: #0000ff;">default</span><span style="color: #000000;">:
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+    }  
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;"> sdsalloc() = sdsavail() + sdslen() </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+inline size_t sdsalloc(</span><span style="color: #0000ff;">const</span><span style="color: #000000;"> sds s) {
+    unsigned </span><span style="color: #0000ff;">char</span> flags = s[-<span style="color: #800080;">1</span><span style="color: #000000;">];
+    </span><span style="color: #0000ff;">switch</span> (flags &amp;<span style="color: #000000;"> SDS_TYPE_MASK) {
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_5 :
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> SDS_TYPE_5_LEN(flags);
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_8 :
+        </span><span style="color: #0000ff;">return</span> SDS_HDR(<span style="color: #800080;">8</span> , s)-&gt;<span style="color: #000000;">alloc;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_16:
+        </span><span style="color: #0000ff;">return</span> SDS_HDR(<span style="color: #800080;">16</span>, s)-&gt;<span style="color: #000000;">alloc;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_32:
+        </span><span style="color: #0000ff;">return</span> SDS_HDR(<span style="color: #800080;">32</span>, s)-&gt;<span style="color: #000000;">alloc;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> SDS_TYPE_64:
+        </span><span style="color: #0000ff;">return</span> SDS_HDR(<span style="color: #800080;">64</span>, s)-&gt;<span style="color: #000000;">alloc;
+    }
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></span></code></pre>
+
+<p><span style="font-family: 'courier new', courier;">是不是一下就理解了&nbsp;sdsalloc(), sdsavail(), sdslen() 是干什么的呢 ❤</span></p>
+<p><span style="font-family: 'courier new', courier;">&nbsp;</span></p>
+<p><strong><span style="font-family: 'courier new', courier;">正文 - 代码抽样讲解</span></strong></p>
+<p><strong><span style="font-family: 'courier new', courier;">1. 重复代码可以修的更好</span></strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-family: 'courier new', courier;"><span style="color: #008000;">/*</span><span style="color: #008000;"> Helper for sdscatlonglong() doing the actual number -&gt; string
+ * conversion. 's' must point to a string with room for at least
+ * SDS_LLSTR_SIZE bytes.
+ *
+ * The function returns the length of the null-terminated string
+ * representation stored at 's'. </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">#define</span> SDS_LLSTR_SIZE 21
+<span style="color: #0000ff;">int</span> sdsll2str(<span style="color: #0000ff;">char</span> *s, <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> value) {
+    </span><span style="color: #0000ff;">char</span> *<span style="color: #000000;">p, aux;
+    unsigned </span><span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> v;
+    size_t l;
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Generate the string representation, this method produces
+     * an reversed string. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    v </span>= (value &lt; <span style="color: #800080;">0</span>) ? -<span style="color: #000000;">value : value;
+    p </span>=<span style="color: #000000;"> s;
+    </span><span style="color: #0000ff;">do</span><span style="color: #000000;"> {
+        </span>*p++ = <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>+(v%<span style="color: #800080;">10</span><span style="color: #000000;">);
+        v </span>/= <span style="color: #800080;">10</span><span style="color: #000000;">;
+    } </span><span style="color: #0000ff;">while</span><span style="color: #000000;">(v);
+    </span><span style="color: #0000ff;">if</span> (value &lt; <span style="color: #800080;">0</span>) *p++ = <span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Compute length and add null term. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    l </span>= p-<span style="color: #000000;">s;
+    </span>*p = <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Reverse the string. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    p</span>--<span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span>(s &lt;<span style="color: #000000;"> p) {
+        aux </span>= *<span style="color: #000000;">s;
+        </span>*s = *<span style="color: #000000;">p;
+        </span>*p =<span style="color: #000000;"> aux;
+        s</span>++<span style="color: #000000;">;
+        p</span>--<span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> l;
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;"> Identical sdsll2str(), but for unsigned long long type. </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">int</span> sdsull2str(<span style="color: #0000ff;">char</span> *s, unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> v) {
+    </span><span style="color: #0000ff;">char</span> *<span style="color: #000000;">p, aux;
+    size_t l;
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Generate the string representation, this method produces
+     * an reversed string. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    p </span>=<span style="color: #000000;"> s;
+    </span><span style="color: #0000ff;">do</span><span style="color: #000000;"> {
+        </span>*p++ = <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>+(v%<span style="color: #800080;">10</span><span style="color: #000000;">);
+        v </span>/= <span style="color: #800080;">10</span><span style="color: #000000;">;
+    } </span><span style="color: #0000ff;">while</span><span style="color: #000000;">(v);
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Compute length and add null term. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    l </span>= p-<span style="color: #000000;">s;
+    </span>*p = <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Reverse the string. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    p</span>--<span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span>(s &lt;<span style="color: #000000;"> p) {
+        aux </span>= *<span style="color: #000000;">s;
+        </span>*s = *<span style="color: #000000;">p;
+        </span>*p =<span style="color: #000000;"> aux;
+        s</span>++<span style="color: #000000;">;
+        p</span>--<span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> l;
+}</span></span></code></pre>
+
+<p><span style="font-family: 'courier new', courier;">long long or unsigned long long convert to char * 中, 功能很简单. 函数结尾处代码</span></p>
+<p><span style="font-family: 'courier new', courier;">重复不少,&nbsp;</span><span style="font-family: 'courier new', courier;">是可以重构复用的.&nbsp;</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-family: 'courier new', courier;">inline <span style="color: #0000ff;">int</span> sdsreverse(<span style="color: #0000ff;">char</span> * s, <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> p) {
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Compute length and add null term. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    size_t l </span>= p -<span style="color: #000000;"> s;
+    </span>*p = <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+
+    p</span>--<span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span> (s &lt;<span style="color: #000000;"> p) {
+        </span><span style="color: #0000ff;">char</span> aux = *<span style="color: #000000;">s;
+        </span>*s = *<span style="color: #000000;">p;
+        </span>*p =<span style="color: #000000;"> aux;
+
+        s</span>++<span style="color: #000000;">;
+        p</span>--<span style="color: #000000;">;
+    }
+
+    </span><span style="color: #0000ff;">return</span> (<span style="color: #0000ff;">int</span><span style="color: #000000;">)l;
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;"> Helper for sdscatlonglong() doing the actual number -&gt; string
+ * conversion. 's' must point to a string with room for at least
+ * SDS_LLSTR_SIZE bytes.
+ *
+ * The function returns the length of the null-terminated string
+ * representation stored at 's'. </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">#define</span> SDS_LLSTR_SIZE 21
+<span style="color: #0000ff;">int</span> sdsll2str(<span style="color: #0000ff;">char</span> * s, <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> value) {
+    </span><span style="color: #0000ff;">char</span> *<span style="color: #000000;"> p;
+    unsigned </span><span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> v;
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Generate the string representation, this method produces
+     * an reversed string. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    v </span>= (value &lt; <span style="color: #800080;">0</span>) ? -<span style="color: #000000;">value : value;
+    p </span>=<span style="color: #000000;"> s;
+    </span><span style="color: #0000ff;">do</span><span style="color: #000000;"> {
+        </span>*p++ = <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span> + (v % <span style="color: #800080;">10</span><span style="color: #000000;">);
+    } </span><span style="color: #0000ff;">while</span> ((v /= <span style="color: #800080;">10</span><span style="color: #000000;">));
+    </span><span style="color: #0000ff;">if</span> (value &lt; <span style="color: #800080;">0</span>) *p++ = <span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> sdsreverse(s, p);
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;"> Identical sdsll2str(), but for unsigned long long type. </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">int</span> sdsull2str(<span style="color: #0000ff;">char</span> * s, unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> v) {
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Generate the string representation, this method produces
+     * an reversed string. </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">char</span> * p =<span style="color: #000000;"> s;
+    </span><span style="color: #0000ff;">do</span><span style="color: #000000;"> {
+        </span>*p++ = <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span> + (v % <span style="color: #800080;">10</span><span style="color: #000000;">);
+    } </span><span style="color: #0000ff;">while</span> ((v /= <span style="color: #800080;">10</span><span style="color: #000000;">));
+
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> sdsreverse(s, p);
+}</span></span></code></pre>
+
+<p><span style="font-family: 'courier new', courier;">是不是显得老学究气质凸显了不少.&nbsp;</span></p>
+<p><strong><span style="font-family: 'courier new', courier;">2.&nbsp; vsnprintf 用的太硬邦邦</span></strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-family: 'courier new', courier;"><span style="color: #008000;">/*</span><span style="color: #008000;"> Like sdscatprintf() but gets va_list instead of being variadic. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+sds sdscatvprintf(sds s, </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;">fmt, va_list ap) {
+    va_list cpy;
+    </span><span style="color: #0000ff;">char</span> staticbuf[<span style="color: #800080;">1024</span>], *buf = staticbuf, *<span style="color: #000000;">t;
+    size_t buflen </span>= strlen(fmt)*<span style="color: #800080;">2</span><span style="color: #000000;">;
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> We try to start using a static buffer for speed.
+     * If not possible we revert to heap allocation. </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">if</span> (buflen &gt; <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(staticbuf)) {
+        buf </span>=<span style="color: #000000;"> s_malloc(buflen);
+        </span><span style="color: #0000ff;">if</span> (buf == NULL) <span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        buflen </span>= <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(staticbuf);
+    }
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Try with buffers two times bigger every time we fail to
+     * fit the string in the current buffer size. </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">while</span>(<span style="color: #800080;">1</span><span style="color: #000000;">) {
+        buf[buflen</span>-<span style="color: #800080;">2</span>] = <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+        va_copy(cpy,ap);
+        vsnprintf(buf, buflen, fmt, cpy);
+        va_end(cpy);
+        </span><span style="color: #0000ff;">if</span> (buf[buflen-<span style="color: #800080;">2</span>] != <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">) {
+            </span><span style="color: #0000ff;">if</span> (buf !=<span style="color: #000000;"> staticbuf) s_free(buf);
+            buflen </span>*= <span style="color: #800080;">2</span><span style="color: #000000;">;
+            buf </span>=<span style="color: #000000;"> s_malloc(buflen);
+            </span><span style="color: #0000ff;">if</span> (buf == NULL) <span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+            </span><span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+        }
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    }
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Finally concat the obtained string to the SDS string and return it. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    t </span>=<span style="color: #000000;"> sdscat(s, buf);
+    </span><span style="color: #0000ff;">if</span> (buf !=<span style="color: #000000;"> staticbuf) s_free(buf);
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> t;
+}</span></span></code></pre>
+
+<p><span style="font-family: 'courier new', courier;">由 while vsnprintf 来扩容, 这实在太暴力. 更好操作可以观看 man vsnprintf/ 这里可以看我的提交</span></p>
+<p><span style="font-family: 'courier new', courier;"><a href="https://github.com/antirez/sds/pull/115/commits/51e2cd78b1a102055979ec9eb83766b8d2cd6927">https://github.com/antirez/sds/pull/115/commits/51e2cd78b1a102055979ec9eb83766b8d2cd6927</a></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-family: 'courier new', courier;"><span style="color: #008000;">/*</span><span style="color: #008000;"> Like sdscatprintf() but gets va_list instead of being variadic. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+sds sdscatvprintf(sds s, </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> fmt, va_list ap) {
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> size;
+    va_list cpy;
+    </span><span style="color: #0000ff;">char</span> staticbuf[<span style="color: #800080;">1024</span>], * buf, *<span style="color: #000000;"> t;
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Determine required size </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    va_copy(cpy, ap);
+    size </span>= vsnprintf(NULL, <span style="color: #800080;">0</span><span style="color: #000000;">, fmt, cpy);
+    va_end(cpy);
+
+    </span><span style="color: #0000ff;">if</span> (size &lt; <span style="color: #800080;">0</span>) <span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> For '\0' </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    size</span>++<span style="color: #000000;">;
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> We try to start using a static buffer for speed.
+     * If not possible we revert to heap allocation. </span><span style="color: #008000;">*/</span>
+    <span style="color: #0000ff;">if</span> (size &gt; <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(staticbuf)) {
+        buf </span>=<span style="color: #000000;"> s_malloc(size);
+        </span><span style="color: #0000ff;">if</span> (buf == NULL) <span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;        
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        buf </span>=<span style="color: #000000;"> staticbuf;
+    }
+
+    va_copy(cpy, ap);
+    size </span>=<span style="color: #000000;"> vsnprintf(buf, size, fmt, cpy);
+    va_end(ap);
+
+    </span><span style="color: #0000ff;">if</span> (size &lt; <span style="color: #800080;">0</span><span style="color: #000000;">) {
+        </span><span style="color: #0000ff;">if</span> (buf !=<span style="color: #000000;"> staticbuf) s_free(buf);
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+    }
+
+    </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Finally concat the obtained string to the SDS string and return it. </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+    t </span>=<span style="color: #000000;"> sdscat(s, buf);
+    </span><span style="color: #0000ff;">if</span> (buf !=<span style="color: #000000;"> staticbuf) s_free(buf);
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> t;
+}</span></span></code></pre>
+
+<p><span style="font-family: 'courier new', courier;">别问, 问就是上天.</span></p>
+<p><strong><span style="font-family: 'courier new', courier;">3.&nbsp;sdssplitargs 难以让人见色起意</span></strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-family: 'courier new', courier;"><span style="color: #008000;">/*</span><span style="color: #008000;"> Helper function for sdssplitargs() that returns non zero if 'c'
+ * is a valid hex digit. </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">int</span> is_hex_digit(<span style="color: #0000ff;">char</span><span style="color: #000000;"> c) {
+    </span><span style="color: #0000ff;">return</span> (c &gt;= <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span> &amp;&amp; c &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span>) || (c &gt;= <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span> &amp;&amp; c &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">f</span><span style="color: #800000;">'</span>) ||<span style="color: #000000;">
+           (c </span>&gt;= <span style="color: #800000;">'</span><span style="color: #800000;">A</span><span style="color: #800000;">'</span> &amp;&amp; c &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">F</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;"> Helper function for sdssplitargs() that converts a hex digit into an
+ * integer from 0 to 15 </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">int</span> hex_digit_to_int(<span style="color: #0000ff;">char</span><span style="color: #000000;"> c) {
+    </span><span style="color: #0000ff;">switch</span><span style="color: #000000;">(c) {
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">1</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">2</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">2</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">3</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">3</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">4</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">4</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">5</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">5</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">6</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">6</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">7</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">7</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">8</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">8</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">9</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">A</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">10</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">b</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">B</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">11</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">c</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">C</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">12</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">d</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">D</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">13</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">e</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">E</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">14</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">f</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">F</span><span style="color: #800000;">'</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">15</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">default</span>: <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+    }
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;"> Split a line into arguments, where every argument can be in the
+ * following programming-language REPL-alike form:
+ *
+ * foo bar "newline are supported\n" and "\xff\x00otherstuff"
+ *
+ * The number of arguments is stored into *argc, and an array
+ * of sds is returned.
+ *
+ * The caller should free the resulting array of sds strings with
+ * sdsfreesplitres().
+ *
+ * Note that sdscatrepr() is able to convert back a string into
+ * a quoted string in the same format sdssplitargs() is able to parse.
+ *
+ * The function returns the allocated tokens on success, even when the
+ * input string is empty, or NULL if the input contains unbalanced
+ * quotes or closed quotes followed by non space characters
+ * as in: "foo"bar or "foo'
+ </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+sds </span>*sdssplitargs(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *line, <span style="color: #0000ff;">int</span> *<span style="color: #000000;">argc) {
+    </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *p =<span style="color: #000000;"> line;
+    </span><span style="color: #0000ff;">char</span> *current =<span style="color: #000000;"> NULL;
+    </span><span style="color: #0000ff;">char</span> **vector =<span style="color: #000000;"> NULL;
+
+    </span>*argc = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span>(<span style="color: #800080;">1</span><span style="color: #000000;">) {
+        </span><span style="color: #008000;">/*</span><span style="color: #008000;"> skip blanks </span><span style="color: #008000;">*/</span>
+        <span style="color: #0000ff;">while</span>(*p &amp;&amp; isspace(*p)) p++<span style="color: #000000;">;
+        </span><span style="color: #0000ff;">if</span> (*<span style="color: #000000;">p) {
+            </span><span style="color: #008000;">/*</span><span style="color: #008000;"> get a token </span><span style="color: #008000;">*/</span>
+            <span style="color: #0000ff;">int</span> inq=<span style="color: #800080;">0</span>;  <span style="color: #008000;">/*</span><span style="color: #008000;"> set to 1 if we are in "quotes" </span><span style="color: #008000;">*/</span>
+            <span style="color: #0000ff;">int</span> insq=<span style="color: #800080;">0</span>; <span style="color: #008000;">/*</span><span style="color: #008000;"> set to 1 if we are in 'single quotes' </span><span style="color: #008000;">*/</span>
+            <span style="color: #0000ff;">int</span> done=<span style="color: #800080;">0</span><span style="color: #000000;">;
+
+            </span><span style="color: #0000ff;">if</span> (current == NULL) current =<span style="color: #000000;"> sdsempty();
+            </span><span style="color: #0000ff;">while</span>(!<span style="color: #000000;">done) {
+                </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (inq) {
+                    </span><span style="color: #0000ff;">if</span> (*p == <span style="color: #800000;">'</span><span style="color: #800000;">\\</span><span style="color: #800000;">'</span> &amp;&amp; *(p+<span style="color: #800080;">1</span>) == <span style="color: #800000;">'</span><span style="color: #800000;">x</span><span style="color: #800000;">'</span> &amp;&amp;<span style="color: #000000;">
+                                             is_hex_digit(</span>*(p+<span style="color: #800080;">2</span>)) &amp;&amp;<span style="color: #000000;">
+                                             is_hex_digit(</span>*(p+<span style="color: #800080;">3</span><span style="color: #000000;">)))
+                    {
+                        unsigned </span><span style="color: #0000ff;">char</span> <span style="color: #0000ff;">byte</span><span style="color: #000000;">;
+
+                        </span><span style="color: #0000ff;">byte</span> = (hex_digit_to_int(*(p+<span style="color: #800080;">2</span>))*<span style="color: #800080;">16</span>)+<span style="color: #000000;">
+                                hex_digit_to_int(</span>*(p+<span style="color: #800080;">3</span><span style="color: #000000;">));
+                        current </span>= sdscatlen(current,(<span style="color: #0000ff;">char</span>*)&amp;<span style="color: #0000ff;">byte</span>,<span style="color: #800080;">1</span><span style="color: #000000;">);
+                        p </span>+= <span style="color: #800080;">3</span><span style="color: #000000;">;
+                    } </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (*p == <span style="color: #800000;">'</span><span style="color: #800000;">\\</span><span style="color: #800000;">'</span> &amp;&amp; *(p+<span style="color: #800080;">1</span><span style="color: #000000;">)) {
+                        </span><span style="color: #0000ff;">char</span><span style="color: #000000;"> c;
+
+                        p</span>++<span style="color: #000000;">;
+                        </span><span style="color: #0000ff;">switch</span>(*<span style="color: #000000;">p) {
+                        </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">n</span><span style="color: #800000;">'</span>: c = <span style="color: #800000;">'</span><span style="color: #800000;">\n</span><span style="color: #800000;">'</span>; <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                        </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">r</span><span style="color: #800000;">'</span>: c = <span style="color: #800000;">'</span><span style="color: #800000;">\r</span><span style="color: #800000;">'</span>; <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                        </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">t</span><span style="color: #800000;">'</span>: c = <span style="color: #800000;">'</span><span style="color: #800000;">\t</span><span style="color: #800000;">'</span>; <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                        </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">b</span><span style="color: #800000;">'</span>: c = <span style="color: #800000;">'</span><span style="color: #800000;">\b</span><span style="color: #800000;">'</span>; <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                        </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span>: c = <span style="color: #800000;">'</span><span style="color: #800000;">\a</span><span style="color: #800000;">'</span>; <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                        </span><span style="color: #0000ff;">default</span>: c = *p; <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                        }
+                        current </span>= sdscatlen(current,&amp;c,<span style="color: #800080;">1</span><span style="color: #000000;">);
+                    } </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (*p == <span style="color: #800000;">'</span><span style="color: #800000;">"</span><span style="color: #800000;">'</span><span style="color: #000000;">) {
+                        </span><span style="color: #008000;">/*</span><span style="color: #008000;"> closing quote must be followed by a space or
+                         * nothing at all. </span><span style="color: #008000;">*/</span>
+                        <span style="color: #0000ff;">if</span> (*(p+<span style="color: #800080;">1</span>) &amp;&amp; !isspace(*(p+<span style="color: #800080;">1</span>))) <span style="color: #0000ff;">goto</span><span style="color: #000000;"> err;
+                        done</span>=<span style="color: #800080;">1</span><span style="color: #000000;">;
+                    } </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (!*<span style="color: #000000;">p) {
+                        </span><span style="color: #008000;">/*</span><span style="color: #008000;"> unterminated quotes </span><span style="color: #008000;">*/</span>
+                        <span style="color: #0000ff;">goto</span><span style="color: #000000;"> err;
+                    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+                        current </span>= sdscatlen(current,p,<span style="color: #800080;">1</span><span style="color: #000000;">);
+                    }
+                } </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span><span style="color: #000000;"> (insq) {
+                    </span><span style="color: #0000ff;">if</span> (*p == <span style="color: #800000;">'</span><span style="color: #800000;">\\</span><span style="color: #800000;">'</span> &amp;&amp; *(p+<span style="color: #800080;">1</span>) == <span style="color: #800000;">'</span><span style="color: #800000;">\'</span><span style="color: #800000;">'</span><span style="color: #000000;">) {
+                        p</span>++<span style="color: #000000;">;
+                        current </span>= sdscatlen(current,<span style="color: #800000;">"</span><span style="color: #800000;">'</span><span style="color: #800000;">"</span>,<span style="color: #800080;">1</span><span style="color: #000000;">);
+                    } </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (*p == <span style="color: #800000;">'</span><span style="color: #800000;">\'</span><span style="color: #800000;">'</span><span style="color: #000000;">) {
+                        </span><span style="color: #008000;">/*</span><span style="color: #008000;"> closing quote must be followed by a space or
+                         * nothing at all. </span><span style="color: #008000;">*/</span>
+                        <span style="color: #0000ff;">if</span> (*(p+<span style="color: #800080;">1</span>) &amp;&amp; !isspace(*(p+<span style="color: #800080;">1</span>))) <span style="color: #0000ff;">goto</span><span style="color: #000000;"> err;
+                        done</span>=<span style="color: #800080;">1</span><span style="color: #000000;">;
+                    } </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (!*<span style="color: #000000;">p) {
+                        </span><span style="color: #008000;">/*</span><span style="color: #008000;"> unterminated quotes </span><span style="color: #008000;">*/</span>
+                        <span style="color: #0000ff;">goto</span><span style="color: #000000;"> err;
+                    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+                        current </span>= sdscatlen(current,p,<span style="color: #800080;">1</span><span style="color: #000000;">);
+                    }
+                } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+                    </span><span style="color: #0000ff;">switch</span>(*<span style="color: #000000;">p) {
+                    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span> <span style="color: #800000;">'</span><span style="color: #000000;">:
+                    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">\n</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+                    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">\r</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+                    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">\t</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+                    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+                        done</span>=<span style="color: #800080;">1</span><span style="color: #000000;">;
+                        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">"</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+                        inq</span>=<span style="color: #800080;">1</span><span style="color: #000000;">;
+                        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                    </span><span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">\'</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+                        insq</span>=<span style="color: #800080;">1</span><span style="color: #000000;">;
+                        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                    </span><span style="color: #0000ff;">default</span><span style="color: #000000;">:
+                        current </span>= sdscatlen(current,p,<span style="color: #800080;">1</span><span style="color: #000000;">);
+                        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                    }
+                }
+                </span><span style="color: #0000ff;">if</span> (*p) p++<span style="color: #000000;">;
+            }
+            </span><span style="color: #008000;">/*</span><span style="color: #008000;"> add the token to the vector </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+            vector </span>= s_realloc(vector,((*argc)+<span style="color: #800080;">1</span>)*<span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">char</span>*<span style="color: #000000;">));
+            vector[</span>*argc] =<span style="color: #000000;"> current;
+            (</span>*argc)++<span style="color: #000000;">;
+            current </span>=<span style="color: #000000;"> NULL;
+        } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+            </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Even on empty input string return something not NULL. </span><span style="color: #008000;">*/</span>
+            <span style="color: #0000ff;">if</span> (vector == NULL) vector = s_malloc(<span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">void</span>*<span style="color: #000000;">));
+            </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> vector;
+        }
+    }
+
+err:
+    </span><span style="color: #0000ff;">while</span>((*argc)--<span style="color: #000000;">)
+        sdsfree(vector[</span>*<span style="color: #000000;">argc]);
+    s_free(vector);
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (current) sdsfree(current);
+    </span>*argc = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+}
+
+</span><span style="color: #008000;">/*</span><span style="color: #008000;"> Free the result returned by sdssplitlen(), or do nothing if 'tokens' is NULL. </span><span style="color: #008000;">*/</span>
+<span style="color: #0000ff;">void</span> sdsfreesplitres(sds *tokens, <span style="color: #0000ff;">int</span><span style="color: #000000;"> count) {
+    </span><span style="color: #0000ff;">if</span> (!tokens) <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span>(count--<span style="color: #000000;">)
+        sdsfree(tokens[count]);
+    s_free(tokens);
+}</span></span></code></pre>
+
+<p><span style="font-family: 'courier new', courier;">sdssplitargs 函数开始不好理解, 不过我这写了个 demo 分享给大家</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-family: 'courier new', courier;">#include &lt;stdio.h&gt;<span style="color: #000000;">
+
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">sds.h</span><span style="color: #800000;">"</span>
+
+<span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> argv[]) {
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> count;
+    </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> * line = <span style="color: #800000;">"</span><span style="color: #800000;"> hset name \"name:filed\" \"value:field\" </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+    sds </span>* tokens = sdssplitargs(line, &amp;<span style="color: #000000;">count);
+
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">line = [%s], count = [%d]\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, line, count);
+    </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; count; i++<span style="color: #000000;">) {
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">tokens[%d] = [%s]\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, i, tokens[i]);
+    }
+
+    sdsfreesplitres(tokens, count);
+
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></span></code></pre>
+
+<p><span style="font-family: 'courier new', courier;">输出&nbsp;</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-family: 'courier new', courier;">line = [ hset name <span style="color: #800000;">"</span><span style="color: #800000;">name:filed</span><span style="color: #800000;">"</span> <span style="color: #800000;">"</span><span style="color: #800000;">value:field</span><span style="color: #800000;">"</span> ], count = [<span style="color: #800080;">4</span><span style="color: #000000;">]
+tokens[</span><span style="color: #800080;">0</span>] =<span style="color: #000000;"> [hset]
+tokens[</span><span style="color: #800080;">1</span>] =<span style="color: #000000;"> [name]
+tokens[</span><span style="color: #800080;">2</span>] =<span style="color: #000000;"> [name:filed]
+tokens[</span><span style="color: #800080;">3</span>] = [value:field]</span></code></pre>
+
+<p><span style="font-family: 'courier new', courier;">是不是瞬间开悟 -&gt; sdssplitargs 到底要闹那样!&nbsp;</span></p>
+<p><span style="font-family: 'courier new', courier;">整体写下来, 感受是 antirez sds 实现的很四平八稳, 没有什么花哨的地方.</span></p>
+<p><span style="font-family: 'courier new', courier;"> 感兴趣的朋友写写, 收获少不了 ~</span></p>
+<p><span style="font-family: 'courier new', courier;">&nbsp;</span></p>
+<p><strong><span style="font-family: 'courier new', courier;">后记 - 再接再厉</span></strong></p>
+<p><span style="font-family: 'courier new', courier;">错误是难免, 欢迎交流吹水 ~</span></p>
+<p><span style="font-family: 'courier new', courier;"><a title="https://music.163.com/#/song?id=1363553512" href="https://music.163.com/#/song?id=1363553512" target="_blank"><span class="f-ff2">责无旁贷</span></a>&nbsp; -&nbsp;<a href="https://music.163.com/#/song?id=1363553512">https://music.163.com/#/song?id=1363553512</a></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000; font-family: 'courier new', courier;">古朗月行（唐&middot;李白）
+小时不识月，呼作白玉盘。
+又疑瑶台镜，飞在青云端。
+仙人垂两足，桂树作团团。
+白兔捣药成，问言与谁餐。
+蟾蜍蚀圆影，大明夜已残。
+羿昔落九乌，天人清且安。
+阴精此沦惑，去去不足观。
+忧来其如何，凄怆摧心肝。</span></code></pre>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

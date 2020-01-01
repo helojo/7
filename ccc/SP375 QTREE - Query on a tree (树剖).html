@@ -1,0 +1,189 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修SP375 QTREE - Query on a tree (树剖)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>SP375 QTREE - Query on a tree (树剖)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/10808416.html</div><br>
+    <h2 id="题目">题目</h2>
+<p><a href="https://www.luogu.org/problemnew/show/SP375">SP375 QTREE - Query on a tree</a></p>
+<h2 id="解析">解析</h2>
+<p><del>也就是个蓝题，因为比较长</del><br />
+树剖裸题（<del>基本上</del>），单点修改，链上查询。</p>
+<p>顺便来说一下链上操作时如何将边上的操作转化为点上的操作：<br />
+可以看到这个题然我们对边进行操作，我们的树剖是对节点进行操作的，所以我们考虑把边权变为点权。<br />
+<img src="./images/SP375 QTREE - Query on a tree (树剖)0.png" /><br />
+发现我们节点的点权是连向它的边的边权，所以我们要操作边权的话，我们操作的实际上是其连向点的点权，<br />
+假设我们要修改1-4之间的这两条边<br />
+<img src="./images/SP375 QTREE - Query on a tree (树剖)1.png" /><br />
+我们修改的实际上就是这2,4两个点<br />
+<img src="./images/SP375 QTREE - Query on a tree (树剖)2.png" /><br />
+我们节点的点权为其父节点连向它的边的边权，所以我们链上修操作的时候，不要操作深度较低的节点，因为它代表的边是它的父节点连向它的那一条，不是要操作的两点之间的边，就像上图我们不操作1号节点一样。<br />
+不用特意判断；两个位置的深浅，树剖中会判断，详见<a href="https://www.cnblogs.com/lykkk/p/10183778.html">这里</a></p>
+<p>再说一下这个题的修改，因为我们是要修改边权，我们的边权给了点，所以我们找一下这条边连的两个点，判断两个点的深度，较深的那个是我们要修改的点。</p>
+<p>然后这是SPOJ上的题，我不知道为啥我写c++会挂，经<a href="https://www.cnblogs.com/grcyh/">king丨帝御威</a>大佬的指点才用c过的,%%%</p>
+<h2 id="代码">代码</h2>
+<pre><code>#include &lt;ctype.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;limits.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#define lson rt &lt;&lt; 1
+#define rson rt &lt;&lt; 1 | 1
+#define N 10007
+int t, n, m, num, cnt;
+int head[N], a[N], w[N], son[N], size[N], f[N], top[N], dep[N], id[N], mx[N &lt;&lt; 2];
+
+class node {
+    public :
+        int nx, v, w;
+} e[N &lt;&lt; 2];
+
+void add(int u, int v, int w) {
+    e[++num].nx = head[u], e[num].v = v, e[num].w = w, head[u] = num;
+}
+
+int max(int a, int b) { return a &gt; b ? a : b; }
+#define swap(A, B)   \
+    {                \
+        int __T = A; \
+        A = B;       \
+        B = __T;     \
+    }
+
+
+void dfs1(int u, int fa) {
+    size[u] = 1;
+    for (int i = head[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (v != fa) {
+            dep[v] = dep[u] + 1;
+            f[v] = u;
+            w[v] = e[i].w;  //边权赋给点
+            dfs1(v, u);
+            size[u] += size[v];
+            if (size[v] &gt; size[son[u]]) son[u] = v;
+        }
+    }
+}
+
+void dfs2(int u, int t) {
+    id[u] = ++cnt;
+    a[cnt] = w[u];
+    top[u] = t;
+    if (son[u]) dfs2(son[u], t);
+    for (int i = head[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (v != f[u] &amp;&amp; v != son[u]) dfs2(v, v);
+    }
+}
+
+void pushup(int rt) {
+    mx[rt] = max(mx[lson], mx[rson]);
+}
+
+void build(int l, int r, int rt) {
+    if (l == r) {
+        mx[rt] = a[l];
+        return ;
+    }
+    int m = (l + r) &gt;&gt; 1;
+    build(l, m, lson);
+    build(m + 1, r, rson);
+    pushup(rt);
+}
+
+void update(int L, int c, int l, int r, int rt) {
+    if (l == r) {
+        mx[rt] = c;
+        return ;
+    }
+    int m = (l + r) &gt;&gt; 1;
+    if (L &lt;= m) update(L, c, l, m, lson);
+    else update(L, c, m + 1, r, rson);
+    pushup(rt);
+}
+
+int query(int L, int R, int l, int r, int rt) {
+    if (L &lt;= l &amp;&amp; r &lt;= R) return mx[rt];
+    int m = (l + r) &gt;&gt; 1, ans = -0x3f3f3f3f;
+    if (L &lt;= m) ans = max(ans, query(L, R, l, m, lson));
+    if (R &gt; m) ans = max(ans, query(L, R, m + 1, r, rson));
+    return ans;
+}
+
+int query_chain(int x, int y) {
+    int fx = top[x], fy = top[y], ans = -0x3f3f3f3f;
+    while (fx != fy) {
+        if (dep[fx] &lt; dep[fy]) {
+            swap(x, y);
+            swap(fx, fy);
+        }
+        ans = max(ans, query(id[fx], id[x], 1, cnt, 1));
+        x = f[fx], fx = top[x];
+    }
+    if (id[x] &gt; id[y]) swap(x, y);
+    ans = max(ans, query(id[x] + 1, id[y], 1, cnt, 1));
+    /*在这里注意是id[x]+1-&gt;id[y]，不要算上深度较浅的点*/
+    return ans;
+}
+
+int main() {
+    scanf(&quot;%d&quot;, &amp;t);
+    while (t -- ) {
+        num = cnt = 0;
+        memset(head, -1, sizeof(head));
+        memset(dep, 0, sizeof(dep));
+        memset(id, 0, sizeof(id));
+        memset(a, 0, sizeof(a));
+        memset(w, 0, sizeof(w));
+        memset(top, 0, sizeof(top));
+        memset(size, 0, sizeof(size));
+        memset(e, 0, sizeof(e));
+        memset(mx, 0, sizeof(mx));
+        memset(son, 0, sizeof(son));
+        memset(f, 0, sizeof(f));
+        scanf(&quot;%d&quot;, &amp;n);
+        for (int i = 1, x, y, z; i &lt; n; ++i) {
+            scanf(&quot;%d%d%d&quot;, &amp;x, &amp;y, &amp;z);
+            add(x, y, z), add(y, x, z);
+        }
+        dfs1(1, 0), dfs2(1, 1);
+        build(1, n, 1);
+        char s[20];
+        int x, y;
+        while (1) {
+            scanf(&quot;%s&quot;, s);
+            if (s[0] == &#39;D&#39;) break;
+            else if (s[0] == &#39;C&#39;) {
+                scanf(&quot;%d%d&quot;, &amp;x, &amp;y);
+                x = dep[e[x &lt;&lt; 1].v] &gt; dep[e[(x &lt;&lt; 1) - 1].v] ? e[x &lt;&lt; 1].v : e[(x &lt;&lt; 1) - 1].v;
+                /*因为是无向边，加了两次，两次的v都不是一个点*/
+                update(id[x], y, 1, n, 1);
+            } else {
+                scanf(&quot;%d%d&quot;, &amp;x, &amp;y);
+                printf(&quot;%d\n&quot;, query_chain(x, y));
+            }
+        }
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

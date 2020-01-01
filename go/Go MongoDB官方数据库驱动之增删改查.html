@@ -1,0 +1,152 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go MongoDB官方数据库驱动之增删改查' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go MongoDB官方数据库驱动之增删改查</center></div><div class='banquan'>原文出处:本文由博客园博主GaiheiluKamei提供。<br/>
+原文连接:https://www.cnblogs.com/GaiHeiluKamei/p/11331762.html</div><br>
+    <pre><code><code>package main
+
+import (
+    &quot;context&quot;
+    &quot;fmt&quot;
+    &quot;log&quot;
+
+    &quot;go.mongodb.org/mongo-driver/bson&quot;
+    &quot;go.mongodb.org/mongo-driver/mongo&quot;
+    &quot;go.mongodb.org/mongo-driver/mongo/options&quot;
+)
+
+// Trainer type is used for later
+type Trainer struct {
+    Name string
+    Age  int
+    City string
+}
+
+func main() {
+    // Set client options
+    clientOptions := options.Client().ApplyURI(&quot;mongodb://localhost:27017&quot;)
+
+    // Connect to MongoDB
+    client, err := mongo.Connect(context.TODO(), clientOptions)
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Check the connection
+    err = client.Ping(context.TODO(), nil)
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println(&quot;Connected to MongoDB!&quot;)
+
+    // Get collection
+    collection := client.Database(&quot;test&quot;).Collection(&quot;trainers&quot;)
+
+    ash := Trainer{&quot;Ash&quot;, 10, &quot;Pallet Town&quot;}
+    misty := Trainer{&quot;misty&quot;, 10, &quot;Cerulean City&quot;}
+    brock := Trainer{&quot;Brock&quot;, 15, &quot;Pewter City&quot;}
+
+    // Insert
+    insertResult, err := collection.InsertOne(context.TODO(), ash)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println(&quot;Inserted a single document: &quot;, insertResult.InsertedID)
+
+    trainers := []interface{}{misty, brock}
+
+    insertManyResult, err := collection.InsertMany(context.TODO(), trainers)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Println(&quot;Inserted multiple documents: &quot;, insertManyResult.InsertedIDs)
+
+    // Update
+    filter := bson.D{{&quot;name&quot;, &quot;Ash&quot;}}
+
+    update := bson.D{
+        {&quot;$inc&quot;, bson.D{
+            {&quot;age&quot;, 1},
+        }},
+    }
+
+    updateResult, err := collection.UpdateOne(context.TODO(), filter, update)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Printf(&quot;Matched %v documents and updated %v documents.\n&quot;, updateResult.MatchedCount, updateResult.ModifiedCount)
+
+    // Search 
+    var result Trainer
+    err = collection.FindOne(context.TODO(), filter).Decode(&amp;result)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    fmt.Printf(&quot;Found a single document: %+v\n&quot;, result)
+
+    findOptions := options.Find()
+    findOptions.SetLimit(5)
+
+    var results []*Trainer
+
+    cur, err := collection.Find(context.TODO(), bson.D{{}}, findOptions)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    for cur.Next(context.TODO()) {
+        var elem Trainer
+        err := cur.Decode(&amp;elem)
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        results = append(results, &amp;elem)
+    }
+
+    if err := cur.Err(); err != nil {
+        log.Fatal(err)
+    }
+
+    cur.Close(context.TODO())
+
+    fmt.Printf(&quot;Found multiple documents (array of pointers): %+v\n&quot;, results)
+
+    // Delete 
+    deleteResult, err := collection.DeleteMany(context.TODO(), bson.D{{}})
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf(&quot;Deleted %v documents in the trainers collection\n&quot;, deleteResult.DeletedCount)
+}
+</code></pre>
+<p><strong><a href="https://godoc.org/go.mongodb.org/mongo-driver/mongo">One</a></strong><br />
+<strong><a href="https://www.mongodb.com/blog/post/mongodb-go-driver-tutorial">Two</a></strong></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

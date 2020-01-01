@@ -1,0 +1,264 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修文件迁移到FileTable中' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>文件迁移到FileTable中</center></div><div class='banquan'>原文出处:本文由博客园博主忠诚卫士提供。<br/>
+原文连接:https://www.cnblogs.com/adsoft/p/12055976.html</div><br>
+    <p>看此文档前，先参考一下文档&nbsp;https://blog.csdn.net/downmoon/article/details/24374609</p>
+<p>环境：阿里云ECS SQL Server 2017 + Delphi7</p>
+<p>测试用xcopy，robocopy等命令迁移文件好像不太会用。</p>
+<p>倒是可以通过T-SQL的方法，但是需要文件在服务器上面，这就有点难受了。如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">--</span><span style="color: #008080;">我们使用该函数插入一个图片文件到该目录下：这里的路径需要是服务器上的路径。</span>
+<span style="color: #0000ff;">declare</span> <span style="color: #008000;">@image1</span> <span style="color: #0000ff;">varbinary</span>(<span style="color: #ff00ff;">max</span>), <span style="color: #008000;">@path_locator</span><span style="color: #000000;"> hierarchyid;
+</span><span style="color: #0000ff;">select</span> <span style="color: #008000;">@image1</span><span style="color: #808080;">=</span><span style="color: #ff00ff;">cast</span>(bulkcolumn <span style="color: #0000ff;">as</span> <span style="color: #0000ff;">varbinary</span>(<span style="color: #ff00ff;">max</span>)) <span style="color: #0000ff;">from</span> <span style="color: #ff00ff;">openrowset</span>(<span style="color: #0000ff;">bulk</span> N<span style="color: #ff0000;">'</span><span style="color: #ff0000;">C:\1.png</span><span style="color: #ff0000;">'</span>, single_blob) <span style="color: #0000ff;">as</span><span style="color: #000000;"> x;
+</span><span style="color: #0000ff;">select</span> <span style="color: #008000;">@path_locator</span><span style="color: #808080;">=</span>path_locator <span style="color: #0000ff;">from</span> DocumentStores <span style="color: #0000ff;">where</span> <span style="color: #ff0000;">[</span><span style="color: #ff0000;">name</span><span style="color: #ff0000;">]</span><span style="color: #808080;">=</span><span style="color: #ff0000;">'</span><span style="color: #ff0000;">MyDir1</span><span style="color: #ff0000;">'</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">insert</span> <span style="color: #0000ff;">into</span><span style="color: #000000;"> DocumentStores(name, file_stream, path_locator) 
+       </span><span style="color: #0000ff;">values</span>(<span style="color: #ff0000;">'</span><span style="color: #ff0000;">1.png</span><span style="color: #ff0000;">'</span>, <span style="color: #008000;">@image1</span>, dbo.fnGetNewPathLocator(<span style="color: #ff00ff;">newid</span>(), <span style="color: #008000;">@path_locator</span><span style="color: #000000;">));
+
+</span><span style="color: #008080;">--</span><span style="color: #008080;">如果你想使用SQL Server本身提供的hierarchyid层次结构，下面这个函数也许可以帮你：</span>
+<span style="color: #0000ff;">create</span> <span style="color: #0000ff;">FUNCTION</span><span style="color: #000000;"> fnGetNewPathLocator
+        (</span><span style="color: #008000;">@child</span> <span style="color: #0000ff;">uniqueidentifier</span><span style="color: #000000;">, 
+         </span><span style="color: #008000;">@parent</span><span style="color: #000000;"> hierarchyid)
+</span><span style="color: #0000ff;">returns</span><span style="color: #000000;"> hierarchyid
+</span><span style="color: #0000ff;">as</span> 
+<span style="color: #0000ff;">begin</span>
+  <span style="color: #0000ff;">declare</span> <span style="color: #008000;">@ret</span> hierarchyid, <span style="color: #008000;">@binid</span> <span style="color: #0000ff;">Binary</span>(<span style="color: #800000; font-weight: bold;">16</span>) <span style="color: #808080;">=</span> <span style="color: #ff00ff;">convert</span>(<span style="color: #0000ff;">binary</span>(<span style="color: #800000; font-weight: bold;">16</span>), <span style="color: #008000;">@child</span><span style="color: #000000;">);
+  </span><span style="color: #0000ff;">select</span> <span style="color: #008000;">@ret</span><span style="color: #808080;">=</span><span style="color: #000000;">hierarchyid::Parse(
+            </span><span style="color: #ff00ff;">COALESCE</span>(<span style="color: #008000;">@parent</span>.ToString(), N<span style="color: #ff0000;">'</span><span style="color: #ff0000;">/</span><span style="color: #ff0000;">'</span>) <span style="color: #808080;">+</span>
+            <span style="color: #ff00ff;">CONVERT</span>(<span style="color: #0000ff;">nvarchar</span>, <span style="color: #ff00ff;">CONVERT</span>(<span style="color: #0000ff;">bigint</span>, <span style="color: #ff00ff;">SUBSTRING</span>(<span style="color: #008000;">@binId</span>, <span style="color: #800000; font-weight: bold;">1</span>, <span style="color: #800000; font-weight: bold;">6</span>))) <span style="color: #808080;">+</span> N<span style="color: #ff0000;">'</span><span style="color: #ff0000;">.</span><span style="color: #ff0000;">'</span> <span style="color: #808080;">+</span>
+            <span style="color: #ff00ff;">CONVERT</span>(<span style="color: #0000ff;">nvarchar</span>, <span style="color: #ff00ff;">CONVERT</span>(<span style="color: #0000ff;">bigint</span>, <span style="color: #ff00ff;">SUBSTRING</span>(<span style="color: #008000;">@binId</span>, <span style="color: #800000; font-weight: bold;">7</span>, <span style="color: #800000; font-weight: bold;">6</span>))) <span style="color: #808080;">+</span> N<span style="color: #ff0000;">'</span><span style="color: #ff0000;">.</span><span style="color: #ff0000;">'</span> <span style="color: #808080;">+</span>
+            <span style="color: #ff00ff;">CONVERT</span>(<span style="color: #0000ff;">nvarchar</span>, <span style="color: #ff00ff;">CONVERT</span>(<span style="color: #0000ff;">bigint</span>, <span style="color: #ff00ff;">SUBSTRING</span>(<span style="color: #008000;">@binId</span>, <span style="color: #800000; font-weight: bold;">13</span>, <span style="color: #800000; font-weight: bold;">4</span>))) <span style="color: #808080;">+</span> N<span style="color: #ff0000;">'</span><span style="color: #ff0000;">/</span><span style="color: #ff0000;">'</span><span style="color: #000000;">);
+  </span><span style="color: #0000ff;">return</span> <span style="color: #008000;">@ret</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>通过程序也能实现，只是如果层级太深，生成的path_locator太长，总感觉不太靠谱。</p>
+<p>下面是用Delphi实现的，Insert操作(本地E:\Doc目录下所有文件迁移到FileTable)。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TForm1.BitBtn9Click(Sender: TObject);
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  lst, lstContent: TStrings;
+  I: Integer;
+  strSQL: </span><span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  lst :</span>= TStringList.<span style="color: #0000ff;">Create</span><span style="color: #000000;">;
+  lstContent :</span>= TStringList.<span style="color: #0000ff;">Create</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+    GetFileStructureList(</span><span style="color: #800000;">'</span><span style="color: #800000;">E:\Doc</span><span style="color: #800000;">'</span><span style="color: #000000;">, lst);
+    strSQL :</span>=<span style="color: #000000;"> EmptyStr;
+    rzprogressbar1.TotalParts :</span>=<span style="color: #000000;"> lst.Count;
+    </span><span style="color: #0000ff;">for</span> I:=<span style="color: #800080;">0</span> <span style="color: #0000ff;">to</span> lst.Count-<span style="color: #800080;">1</span> <span style="color: #0000ff;">do</span>
+    <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+      SplitString(lst.Strings[I], </span><span style="color: #800000;">'</span><span style="color: #800000;">|</span><span style="color: #800000;">'</span><span style="color: #000000;">, lstContent);
+      </span><span style="color: #0000ff;">if</span> SameText(lstContent.Strings[<span style="color: #800080;">0</span>], <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">then</span>      <span style="color: #008000;">//</span><span style="color: #008000;">目录</span>
+        strSQL := strSQL + Format(<span style="color: #800000;">'</span><span style="color: #800000;">Insert into DocumentStores(name, path_locator, is_directory, is_archive) values(%S, %S, %D, %D);</span><span style="color: #800000;">'</span><span style="color: #000000;">,
+                                   [QuotedStr(ExtractFileName(lstContent.Strings[</span><span style="color: #800080;">1</span>])), QuotedStr(lstContent.Strings[<span style="color: #800080;">2</span>]), <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span>]) + #<span style="color: #800080;">13</span>#<span style="color: #800080;">10</span>
+      <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> SameText(lstContent.Strings[<span style="color: #800080;">0</span>], <span style="color: #800000;">'</span><span style="color: #800000;">1</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">then</span> <span style="color: #008000;">//</span><span style="color: #008000;">文件</span>
+        strSQL := strSQL + Format(<span style="color: #800000;">'</span><span style="color: #800000;">Insert into DocumentStores(name, path_locator, file_stream) values(%S, %S, %S);</span><span style="color: #800000;">'</span><span style="color: #000000;">,
+                                   [QuotedStr(ExtractFileName(lstContent.Strings[</span><span style="color: #800080;">1</span>])), QuotedStr(lstContent.Strings[<span style="color: #800080;">2</span><span style="color: #000000;">]),
+                                    StrToHex(BaseEncodeFile(lstContent.Strings[</span><span style="color: #800080;">1</span>]))]) + #<span style="color: #800080;">13</span>#<span style="color: #800080;">10</span><span style="color: #000000;">;
+      rzprogressbar1.PartsComplete :</span>= rzprogressbar1.PartsComplete + <span style="color: #800080;">1</span><span style="color: #000000;">;
+      Application.ProcessMessages;
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+      ADOConnection1.Connected :</span>=<span style="color: #000000;"> True;
+      ADOConnection1.BeginTrans;
+      ADOQuery1.SQL.Text :</span>=<span style="color: #000000;"> strSQL;
+      ADOQuery1.ExecSQL;
+      ADOConnection1.CommitTrans;
+    </span><span style="color: #0000ff;">except</span><span style="color: #000000;">
+      ADOConnection1.RollbackTrans;
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">finally</span><span style="color: #000000;">
+    lst.Free;
+    lstContent.Free;
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+//下面是公用单元
+</span><span style="color: #0000ff;">unit</span><span style="color: #000000;"> U_Commfunc;
+
+</span><span style="color: #0000ff;">interface</span>
+
+<span style="color: #0000ff;">uses</span><span style="color: #000000;">
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, EncdDecd, Contnrs;
+
+  </span><span style="color: #008000;">//</span><span style="color: #008000;">生成filetable用的path_locator</span>
+  <span style="color: #0000ff;">function</span> GetPathLocator(root: Boolean=True): <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">function</span> GetGUID: <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">function</span> StrToHex(AStr: <span style="color: #0000ff;">string</span>): <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+  </span><span style="color: #008000;">//</span><span style="color: #008000;">文件转字符串流</span>
+  <span style="color: #0000ff;">function</span> BaseEncodeFile(fn: TFileName): <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">procedure</span> SplitString(Source,Deli:<span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span><span style="color: #000000;"> lst :TStrings);
+  </span><span style="color: #008000;">//</span><span style="color: #008000;">获取目录+文件的列表 返回值是文件的个数，顶层为选择的目录 为filetalbe插入用</span>
+  <span style="color: #0000ff;">function</span> GetFileStructureList(Path: PChar; <span style="color: #0000ff;">var</span><span style="color: #000000;"> lst: TStrings): LongInt;
+
+</span><span style="color: #0000ff;">implementation</span>
+
+
+<span style="color: #0000ff;">function</span> GetGUID: <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  LTep: TGUID;
+  sGUID: </span><span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  CreateGUID(LTep);
+  sGUID :</span>=<span style="color: #000000;"> GUIDToString(LTep);
+  sGUID :</span>= StringReplace(sGUID, <span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span>, <span style="color: #800000;">''</span><span style="color: #000000;">, [rfReplaceAll]);
+  sGUID :</span>= Copy(sGUID, <span style="color: #800080;">2</span>, Length(sGUID) - <span style="color: #800080;">2</span><span style="color: #000000;">);
+  Result :</span>=<span style="color: #000000;"> sGUID;
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">function</span> GetPathLocator(root: Boolean): <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">var</span>
+  <span style="color: #008000;">//</span><span style="color: #008000;">LocatorPath的三个组成部分 S1,S2,S3;</span>
+  sGuid, S1, S2, S3: <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Result :</span>= <span style="color: #800000;">''</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">if</span> root <span style="color: #0000ff;">then</span><span style="color: #000000;">
+    Result :</span>= <span style="color: #800000;">'</span><span style="color: #800000;">/</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+  sGuid :</span>=<span style="color: #000000;"> GetGUID;
+  S1 :</span>= IntToStr(StrToInt64(StrToHex(Copy(sGuid, <span style="color: #800080;">1</span>, <span style="color: #800080;">6</span><span style="color: #000000;">))));
+  S2 :</span>= IntToStr(StrToInt64(StrToHex(Copy(sGuid, <span style="color: #800080;">7</span>, <span style="color: #800080;">6</span><span style="color: #000000;">))));
+  S3 :</span>= IntToStr(StrToInt64(StrToHex(Copy(sGuid, <span style="color: #800080;">13</span>, <span style="color: #800080;">4</span><span style="color: #000000;">))));
+  Result :</span>= Result + S1 + <span style="color: #800000;">'</span><span style="color: #800000;">.</span><span style="color: #800000;">'</span> + S2 + <span style="color: #800000;">'</span><span style="color: #800000;">.</span><span style="color: #800000;">'</span> + S3 + <span style="color: #800000;">'</span><span style="color: #800000;">/</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">function</span> StrToHex(AStr: <span style="color: #0000ff;">string</span>): <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  i : Integer;
+  ch:char;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Result:</span>=<span style="color: #800000;">'</span><span style="color: #800000;">0x</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">for</span> i:=<span style="color: #800080;">1</span> <span style="color: #0000ff;">to</span> length(AStr)  <span style="color: #0000ff;">do</span>
+  <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+    ch:</span>=<span style="color: #000000;">AStr[i];
+    Result:</span>=Result+IntToHex(Ord(ch),<span style="color: #800080;">2</span><span style="color: #000000;">);
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">function</span> BaseEncodeFile(fn: TFileName): <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  ms: TMemoryStream;
+  ss: TStringStream;
+  str: </span><span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  ms :</span>= TMemoryStream.<span style="color: #0000ff;">Create</span><span style="color: #000000;">;
+  ss :</span>= TStringStream.<span style="color: #0000ff;">Create</span>(<span style="color: #800000;">''</span><span style="color: #000000;">);
+  </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+    ms.LoadFromFile(fn);
+    EncdDecd.EncodeStream(ms, ss);                       </span><span style="color: #008000;">//</span><span style="color: #008000;"> 将ms的内容Base64到ss中</span>
+    str :=<span style="color: #000000;"> ss.DataString;
+    str :</span>= StringReplace(str, #<span style="color: #800080;">13</span>, <span style="color: #800000;">''</span>, [rfReplaceAll]);  <span style="color: #008000;">//</span><span style="color: #008000;"> 这里ss中数据会自动添加回车换行，所以需要将回车换行替换成空字符</span>
+    str := StringReplace(str, #<span style="color: #800080;">10</span>, <span style="color: #800000;">''</span><span style="color: #000000;">, [rfReplaceAll]);
+    result :</span>= str;                                       <span style="color: #008000;">//</span><span style="color: #008000;"> 返回值为Base64的Stream</span>
+  <span style="color: #0000ff;">finally</span>
+    <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(ms);
+    </span><span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(ss);
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">procedure</span> SplitString(Source,Deli:<span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span><span style="color: #000000;"> lst :TStrings);
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  EndOfCurrentString: Integer;
+</span><span style="color: #0000ff;">begin</span>
+  <span style="color: #0000ff;">if</span>  lst = <span style="color: #0000ff;">nil</span> <span style="color: #0000ff;">then</span><span style="color: #000000;"> exit;
+  lst.Clear;
+  </span><span style="color: #0000ff;">while</span> Pos(Deli, Source)&gt;<span style="color: #800080;">0</span> <span style="color: #0000ff;">do</span>
+  <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+    EndOfCurrentString :</span>=<span style="color: #000000;"> Pos(Deli, Source);
+    lst.add(Copy(Source, </span><span style="color: #800080;">1</span>, EndOfCurrentString - <span style="color: #800080;">1</span><span style="color: #000000;">));
+    Source :</span>= Copy(Source, EndOfCurrentString + length(Deli), length(Source) -<span style="color: #000000;"> EndOfCurrentString);
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  lst.Add(source);
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">function</span> GetFileStructureList(Path: PChar; <span style="color: #0000ff;">var</span><span style="color: #000000;"> lst: TStrings): LongInt;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  SearchRec: TSearchRec;
+  Found: Integer;
+  TmpStr, TmpLocator: </span><span style="color: #0000ff;">string</span><span style="color: #000000;">;
+  CurDir, DirLocator: PChar;
+  DirQue: TQueue;
+  C: Cardinal;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Result :</span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">if</span> lst = <span style="color: #0000ff;">nil</span> <span style="color: #0000ff;">then</span><span style="color: #000000;"> exit;
+  dirQue :</span>= TQueue.<span style="color: #0000ff;">Create</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+    CurDir :</span>=<span style="color: #000000;"> Path;
+    DirLocator :</span>=<span style="color: #000000;"> PChar(GetPathLocator());
+    lst.Add(</span><span style="color: #800000;">'</span><span style="color: #800000;">0|</span><span style="color: #800000;">'</span>+CurDir+<span style="color: #800000;">'</span><span style="color: #800000;">|</span><span style="color: #800000;">'</span>+<span style="color: #000000;">DirLocator);
+    </span><span style="color: #0000ff;">while</span> CurDir &lt;&gt; <span style="color: #0000ff;">nil</span> <span style="color: #0000ff;">do</span>
+    <span style="color: #0000ff;">begin</span>
+      <span style="color: #008000;">//</span><span style="color: #008000;">搜索后缀，如：c:\*.*;</span>
+      TmpStr := IncludeTrailingPathDelimiter(curDir)+<span style="color: #800000;">'</span><span style="color: #800000;">*.*</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+      Found :</span>=<span style="color: #000000;"> FindFirst(TmpStr, faAnyFile, SearchRec);
+      </span><span style="color: #0000ff;">while</span> Found = <span style="color: #800080;">0</span> <span style="color: #0000ff;">do</span>
+      <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+        C :</span>= GetFileAttributes(PChar(IncludeTrailingPathDelimiter(curDir) +<span style="color: #000000;"> SearchRec.Name));
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">if (searchRec.Attr and faDirectory)&lt;&gt;0 then  //这个貌似有问题/</span>
+        <span style="color: #0000ff;">if</span> (C <span style="color: #0000ff;">and</span> FILE_ATTRIBUTE_DIRECTORY)&lt;&gt; <span style="color: #800080;">0</span> <span style="color: #0000ff;">then</span>
+        <span style="color: #0000ff;">begin</span>
+          <span style="color: #0000ff;">if</span> (SearchRec.Name &lt;&gt; <span style="color: #800000;">'</span><span style="color: #800000;">.</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">and</span> (SearchRec.Name &lt;&gt; <span style="color: #800000;">'</span><span style="color: #800000;">..</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">then</span>
+          <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+            TmpStr :</span>= IncludeTrailingPathDelimiter(curDir)+<span style="color: #000000;">SearchRec.Name;
+            TmpLocator :</span>=<span style="color: #000000;"> GetPathLocator(False);
+            TmpLocator :</span>= DirLocator +<span style="color: #000000;"> TmpLocator;
+            lst.Add(</span><span style="color: #800000;">'</span><span style="color: #800000;">0|</span><span style="color: #800000;">'</span>+TmpStr+<span style="color: #800000;">'</span><span style="color: #800000;">|</span><span style="color: #800000;">'</span>+<span style="color: #000000;">TmpLocator);</span><span style="color: #000000;">
+            DirQue.Push(StrNew(PChar(TmpStr)));
+            DirQue.Push(StrNew(PChar(TmpLocator)));
+          </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">end</span> <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+          Result:</span>=Result+<span style="color: #800080;">1</span><span style="color: #000000;">;
+          TmpLocator :</span>=<span style="color: #000000;"> GetPathLocator(False);
+          TmpLocator :</span>= DirLocator +<span style="color: #000000;"> TmpLocator;
+          lst.Add(</span><span style="color: #800000;">'</span><span style="color: #800000;">1|</span><span style="color: #800000;">'</span>+IncludeTrailingPathDelimiter(curDir)+SearchRec.Name+<span style="color: #800000;">'</span><span style="color: #800000;">|</span><span style="color: #800000;">'</span>+<span style="color: #000000;">TmpLocator);
+        </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+        found:</span>=<span style="color: #000000;">FindNext(SearchRec);
+      </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+      </span><span style="color: #008000;">{</span><span style="color: #008000;">当前目录找到后，如果队列中没有数据，则表示全部找到了；
+      否则就是还有子目录未查找，取一个出来继续查找。</span><span style="color: #008000;">}</span>
+      <span style="color: #0000ff;">if</span> DirQue.Count &gt; <span style="color: #800080;">0</span> <span style="color: #0000ff;">then</span>
+      <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+        CurDir :</span>=<span style="color: #000000;"> DirQue.Pop;
+        DirLocator :</span>=<span style="color: #000000;"> DirQue.Pop;
+      </span><span style="color: #0000ff;">end</span> <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+        CurDir :</span>= <span style="color: #0000ff;">nil</span><span style="color: #000000;">;
+        DirLocator :</span>= <span style="color: #0000ff;">nil</span><span style="color: #000000;">;
+      </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">finally</span><span style="color: #000000;">
+    dirQue.Free;
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+
+</span><span style="color: #0000ff;">end</span>.</pre>
+</div>
+<p>效果图如下，目录加文件共计20个。</p>
+<p>本地文件夹E:\Doc：</p>
+<p>&nbsp;<img src="./images/文件迁移到FileTable中0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;FileTable虚拟目录文件Doc：</p>
+<p><img src="./images/文件迁移到FileTable中1.png" alt="" /></p>
+<p>数据库表中存放数据：</p>
+<p><img src="./images/文件迁移到FileTable中2.png" alt="" /></p>
+</div>
+</div></div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

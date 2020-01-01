@@ -1,0 +1,281 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修引用的本质分析' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>引用的本质分析</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11518880.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#引用的定义">1. 引用的定义</a></li>
+        <li><a href="#引用的本质">2. 引用的本质</a></li>
+        <li><a href="#引用的意义">3. 引用的意义</a></li>
+        <li><a href="#特殊的引用const引用">4. 特殊的引用—const引用</a></li>
+        <li><a href="#引用和指针的关系">5. 引用和指针的关系</a></li>
+        </ul>
+    </div>
+</div>
+<h1 id="引用的定义">1. 引用的定义</h1>
+<p>C++新增加了引用的概念：</p>
+<ul>
+<li>引用可以看作一个已定义变量的别名</li>
+<li>引用的语法<code>Type &amp;name = var;</code></li>
+</ul>
+<pre><code>int a = 4;
+int &amp;b = a;  //b为a的别名
+b = 5;       //操作b就是操作a</code></pre>
+<h1 id="引用的本质">2. 引用的本质</h1>
+<ul>
+<li><font color=red>引用在C++中的内部实现是一个常量指针<code>Type &amp;name  &lt;==&gt; Type *const name</code></font></li>
+<li>C++编译器在编译过程中使用常量指针作为引用的内部实现，因此引用所占用的内存大小和指针相同</li>
+<li><font color=magenta>从使用的角度，引用只是一个别名，</font>C++为了实用性而隐藏了引用的存储空间这一细节</li>
+</ul>
+<pre><code>#include &lt;cstdio&gt;
+
+struct TRef
+{
+    char &amp;r;
+};
+
+int main(int argc, char *argv[])
+{
+    char c = &#39;c&#39;;
+    char &amp;rc = c;
+    TRef ref = { c };
+
+    printf(&quot;sizeof(rc) = %d\n&quot;, sizeof(rc));
+    printf(&quot;sizeof(TRef) = %d\n&quot;, sizeof(TRef)); 
+    printf(&quot;sizeof(ref) = %d\n&quot;, sizeof(ref)); 
+    printf(&quot;sizeof(ref.r) = %d\n&quot;, sizeof(ref.r));   
+
+    /*sizeof(type &amp;)的大小，就是type类型的大小*/ 
+    printf(&quot;sizeof(char &amp;) = %d\n&quot;, sizeof(char &amp;));  
+    printf(&quot;sizeof(int &amp;) = %d\n&quot;, sizeof(int &amp;));
+    printf(&quot;sizeof(double &amp;) = %d\n&quot;, sizeof(double &amp;));
+
+    return 0;
+}</code></pre>
+<p><img src="./images/引用的本质分析0.png" /></p>
+<pre><code>#include &lt;stdio.h&gt;
+
+struct TRef
+{
+    char *before;
+    char &amp;ref;
+    char *after;
+};
+
+int main(int argc, char *argv[])
+{
+    char a = &#39;a&#39;;
+    char &amp;b = a;
+    char c = &#39;c&#39;;
+
+    TRef r = {&amp;a, b, &amp;c};
+
+    printf(&quot;sizeof(r) = %d\n&quot;, sizeof(r));
+    printf(&quot;sizeof(r.before) = %d\n&quot;, sizeof(r.before));
+    printf(&quot;sizeof(r.after) = %d\n&quot;, sizeof(r.after));
+    printf(&quot;&amp;r.before = %p\n&quot;, &amp;r.before);
+    printf(&quot;&amp;r.after = %p\n&quot;, &amp;r.after);
+
+    return 0;
+}</code></pre>
+<p><img src="./images/引用的本质分析1.png" /></p>
+<h1 id="引用的意义">3. 引用的意义</h1>
+<ul>
+<li>C++中的引用作为变量别名而存在，旨在大多数的情况下代替指针</li>
+<li>引用可以满足绝大多数需要使用指针的场合</li>
+<li>引用可以避开由于指针操作不当而带来的内存错误</li>
+<li>引用相对于指针来说具有更好的可读性和实用性</li>
+</ul>
+<p>注意：由于引用的内部实现为指针，因此<font color=red>函数不能返回非静态局部变量的引用</font></p>
+<pre><code>#include &lt;stdio.h&gt;
+
+int &amp;demo()
+{
+    int d = 0;
+
+    printf(&quot;demo: d = %d\n&quot;, d);
+
+    return d;
+}
+
+int &amp;func()
+{
+    static int s = 0;
+
+    printf(&quot;func: s = %d\n&quot;, s);
+
+    return s;
+}
+
+int main(int argc, char *argv[])
+{
+    int &amp;rd = demo();
+    int &amp;rs = func();
+
+    printf(&quot;\n&quot;);
+    printf(&quot;main: rd = %d\n&quot;, rd);
+    printf(&quot;main: rs = %d\n&quot;, rs);
+    printf(&quot;\n&quot;);
+
+    rd = 10;
+    rs = 11;
+
+    demo();
+    func();
+
+    printf(&quot;\n&quot;);
+    printf(&quot;main: rd = %d\n&quot;, rd);
+    printf(&quot;main: rs = %d\n&quot;, rs);
+    printf(&quot;\n&quot;);
+
+    return 0;
+}</code></pre>
+<p><img src="./images/引用的本质分析2.png" /></p>
+<h1 id="特殊的引用const引用">4. 特殊的引用—const引用</h1>
+<ul>
+<li>在C++中可以声明const引用<code>const Type &amp;name = var</code></li>
+<li><font color=red>可以使用const常量、变量、字面值常量对const引用初始化</font></li>
+<li>不管使用何种方式初始化，<font color=magenta>const引用都将产生一个只读变量</font></li>
+<li>当使用字面值常量对const引用初始化时，C++编译器会为常量值分配内存空间，并将引用作为这段内存空间的别名</li>
+</ul>
+<p>const引用类型 VS 初始化变量类型</p>
+<ul>
+<li><font color=blue>类型相同，</font>const引用的就是<font color=orange>初始化变量</font></li>
+<li><font color=blue>类型不同，</font>const引用的不是初始化变量，而是<font color=orange>初始化变量的临时对象</font></li>
+</ul>
+<p><strong>注意：const只是修饰符，不代表类型，也就是说，const int和int是相同类型。</strong></p>
+<pre><code>#include &lt;stdio.h&gt;
+
+int main()
+{
+    const int a = 3;
+    int b = 4;
+    char c = &#39;c&#39;;
+
+    const int &amp;ra = a;
+    const int &amp;rb = b;
+    const int &amp;rc = c;
+    const int &amp;rd = 1;
+
+    int *p1 = (int *)&amp;ra;
+    int *p2 = (int *)&amp;rb;
+    int *p3 = (int *)&amp;rc;
+    int *p4 = (int *)&amp;rd;
+
+    *p1 = 5;
+    *p2 = 6;
+    *p3 = 7;
+    *p4 = 8;
+
+    printf(&quot;ra = %d\n&quot;, ra);
+    printf(&quot;rb = %d\n&quot;, rb);
+    printf(&quot;rc = %d\n&quot;, rc);
+    printf(&quot;rd = %d\n&quot;, rd);
+
+    printf(&quot;\n&quot;);
+
+    printf(&quot;b = %d\n&quot;, b);  //b的类型和rb相同，rb引用的就是b，所以改变rb的值，b也跟着一起改变
+    printf(&quot;c = %c\n&quot;, c);  //c的类型和rc不同，rb引用的是c的临时对象，所以改变rc的值，c不受影响
+
+    return 0;
+}</code></pre>
+<p><img src="./images/引用的本质分析3.png" /></p>
+<h1 id="引用和指针的关系">5. 引用和指针的关系</h1>
+<table>
+<thead>
+<tr class="header">
+<th>指针</th>
+<th>引用</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>指针是一个变量，其值为一个内存地址</td>
+<td>引用是一个变量的新名字</td>
+</tr>
+<tr class="even">
+<td><font color=red>指针可以不初始化，</font>而是在使用时赋值</td>
+<td><font color=red>引用必须在定义时初始化</font></td>
+</tr>
+<tr class="odd">
+<td>通过指针可以访问对应内存地址中的值</td>
+<td><font color=magenta>对引用的操作（赋值、取地址等）会传递到代表的变量上</font></td>
+</tr>
+<tr class="even">
+<td>指针可以保存不同的地址</td>
+<td><font color=orange>引用在初始化之后无法代表其他变量</font></td>
+</tr>
+<tr class="odd">
+<td>指针可以被<font color=blue>const</font>修饰，成为<font color=magenta>常量</font>或<font color=magenta>只读变量</font></td>
+<td><font color=blue>const引用</font>使其代表的<font color=blue>变量具有只读属性</font></td>
+</tr>
+</tbody>
+</table>
+<p>在工程项目开发中</p>
+<ul>
+<li><font color=red>当进行C++编程时，直接站在使用的角度，引用和指针没有任何关系</font></li>
+<li><font color=magenta>当对C++代码进行调试分析时，一些特殊情况，可以考虑站在C++编译器的角度，引用在内部实现为指针常量</font></li>
+</ul>
+<p><font color=blue>我们给出一个站在C++编译器的角度看待引用的示例，下面这段代码有问题吗？</font></p>
+<pre><code>int a = 1;
+int b = 2;
+int *pc = new int(3);
+int &amp;array[] = {a, b, *pc};</code></pre>
+<ul>
+<li><font color=red><strong>数组是一片连续的内存空间</strong></font></li>
+<li><font color=red><strong>引用数组会破坏该特性，各元素代表的变量可能存储在不同的位置</strong></font></li>
+<li><font color=red><strong>因此，C++不支持引用数组！！！！！！</strong></font></li>
+</ul>
+<pre><code>#include &lt;stdio.h&gt;
+
+int a = 1;
+
+struct SV
+{
+    int &amp;x;
+    int &amp;y;
+    int &amp;z;
+};
+
+int main()
+{
+    int b = 2;
+    int *c = new int(3);
+    SV sv = {a, b, *c};
+    int &amp;array[] = {a, b, *c}; //&amp;array[1] - &amp;array[0] != 4，编译报错
+
+    printf(&quot;&amp;sv.x = %p\n&quot;, &amp;sv.x);
+    printf(&quot;&amp;sv.y = %p\n&quot;, &amp;sv.y);
+    printf(&quot;&amp;sv.z = %p\n&quot;, &amp;sv.z);
+
+    delete c;
+
+    return 0;
+}</code></pre>
+<p>首先，注释掉代码第17行，编译运行结果如下，可以看出打印出的内存地址是各不相同的。</p>
+<p><img src="./images/引用的本质分析4.png" /></p>
+<p>然后，去除代码第17行注释，结果编译报错，原因就是数组的三个元素地址不连续，而是各不相同。</p>
+<p><img src="./images/引用的本质分析5.png" /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

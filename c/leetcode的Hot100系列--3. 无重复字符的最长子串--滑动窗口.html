@@ -1,0 +1,91 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修leetcode的Hot100系列--3. 无重复字符的最长子串--滑动窗口' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>leetcode的Hot100系列--3. 无重复字符的最长子串--滑动窗口</center></div><div class='banquan'>原文出处:本文由博客园博主努力爬呀爬提供。<br/>
+原文连接:https://www.cnblogs.com/payapa/p/11197838.html</div><br>
+    <p>可以先想下这两个问题：<br />
+1、怎样使用滑动窗口？<br />
+2、如何快速的解决字符查重问题？</p>
+<h2 id="滑动窗口">滑动窗口</h2>
+<p>可以想象一下有两个指针，一个叫begin，一个叫now</p>
+<blockquote>
+<p>这两个指针就指定了当前正在比较无重复的字符串，当再往后读取一个字符的时候，就需要比较该字符在begin到now之间是否有重复，如果有重复的话，则记录当前字符串长度，然后把begin往后移动，继续寻找后面的无重复字符子串。</p>
+</blockquote>
+<p>例如，这里的字符串是：“fabcade”。<br />
+1、当开始比较字符串的时候，begin指向了第一个字符f，now也指向了第一个字符f，当前只有一个字符，也就不需要比较是否重复。<br />
+2、然后读取第二个字符，begin依然指向f，now指向了字符a，这个就需要比较一下a是否与之前的相同，没有相同的就继续读取。<br />
+3、当now指向第二个a的时候，begin指向f，此时发现前面已经有了一个a了，（这里可以先记录一下当前字符串长度）所以begin就需要往后移动到a后面的b的位置，则当前的字符串为：bca，之后继续读取d，等等等。</p>
+<p>总而言之，滑动窗口记录了当前无重复的字符串，当遇到重复的时候，就把begin指针往后移动到不重复的位置（也就是前面那个重复字符的后面），然后继续遍历字符串到最后。</p>
+<h2 id="如何快速字符查重">如何快速字符查重</h2>
+<p>因为这里都是字符，可以直接把该字符作为数组下标，当读取到一个字符的时候，直接把该字符下标对应的值置为1，表示当前已经存在一个字符（其实就是相当于把字符作为hash的key），例如：</p>
+<pre><code><code>char array[127] = {0};
+char data = &#39;a&#39;;
+if (0 == array[data])  // 说明之前没有读到过该字符
+{
+    array[data] = 1;  // 置位，表示已经读到过该字符
+}
+else
+{
+    // 说明此字符重复
+}
+</code></code></pre>
+<p>我们可以先想一下思路：<br />
+先初始化begin和now，然后循环读取字符串，每读取一个字符串，就在数组里查找一下，如果数组里不为0，就说明有重复的字符，需要把当前的字符串长度记录下来，然后begin往后移动到不重复的字符上，然后把该数组全部位置为0，再把begin后面的字符对应的数组置位1，最后再继续比较。<br />
+这么写当然也是可以，但不停的把数组置1再清0再置1，会很浪费时间，可以有其他方法吗？<br />
+当然是有的，我们可以这么写：</p>
+<blockquote>
+<p>置位的时候，不填1，而填写当前字符所在的位置。</p>
+</blockquote>
+<p>这样有什么好处呢？因为前面的begin，已经记录了当前字符串比较的起始位置，当读取到一个字符串：<br />
+如果他出现的位置在begin之前，就说明，虽然以前已经有了该字符，但那个是之前的事情了，不在现在的这个字符串范围之内，所以它还是不算重复的；<br />
+如果他上次出现的位置在begin之后，就说明在当前比较的字符串中已经有一个和他相同的字符了。<br />
+这样的话，通过位置信息就能够知道该字符在当前比较位置是否重复，就不需要反复的对数字进行清零和置位了。<br />
+<strong>在leetcode上，提高了9倍！</strong>（使用置位和清零花费44ms，使用位置标记花费4ms）</p>
+<pre><code><code>
+int lengthOfLongestSubstring(char * s){
+    
+    int local[127] = {0}, data;  // local数组就是用来记录每个字符出现的位置
+    int lenNow = 0, lenMax = 0;
+    int len = strlen(s);
+    int begin = 1;
+    for (int i=0; i&lt;len; i++)
+    {
+        data = s[i];
+        if ((0 == local[data]) || (begin &gt; local[data]))
+        {
+            lenNow ++;
+        }
+        else
+        {
+            if (lenNow &gt; lenMax)    lenMax = lenNow;
+            lenNow = i + 1 - local[data];
+            begin = local[data] + 1;  // 更新begin的位置
+        }
+        local[data] = i + 1;
+        // 这里记录的位置是下标加1，也就是从1开始记录，为什么不从0开始记录呢？
+        // 如果从0开始，那么0就有两种意思：该字符从没出现过，该字符出现的位置是0。当0正好又是begin的时候，比如字符串：&quot;abca&quot;
+    }
+    if (lenNow &gt; lenMax)    lenMax = lenNow;
+    return lenMax;
+}</code></code></pre>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

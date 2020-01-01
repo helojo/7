@@ -1,0 +1,103 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[NOI2006] 网络收费' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[NOI2006] 网络收费</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/10915057.html</div><br>
+    <p>贼有意思的一道题。考虑把费用给转化一下，观察</p>
+<p><img src="./images/[NOI2006] 网络收费0.png" alt="pic" /></p>
+<p>如果定义叶节点的状态 {{A,0},{B,1}}，非叶节点的状态 {{nA&gt;=nB,0},{nA&lt;nB,1}}，结合上图可以得出</p>
+<ul>
+<li>叶节点x,y(x&lt;y)的状态相同
+<ul>
+<li>叶节点状态与lca(x,y)状态相同，费用0</li>
+<li>叶节点状态与lca(x,y)状态不同，费用2f[x,y]</li>
+</ul></li>
+<li>叶节点x,y(x&lt;y)的状态不同，费用f[x,y]</li>
+</ul>
+<p>技巧化的，直接定义叶节点x关于祖先d的权值为h(x,d)=[x的状态≠d的状态]Σf[x,y]，其中y是d子树管辖的不等于x的叶节点。</p>
+<p>这样一来，如果实现清楚了祖先的状态，x的贡献就等于Σh(x,d)了。</p>
+<p>于是考虑枚举祖先的状态并进行dp，设f[x,i]表示在x子树中出现了i个0状态叶节点的最小代价，转移部分比较简单，参考代码就行。</p>
+<p>没讲太清楚明天补补吧。千万记得初始化dp数组！！！</p>
+<p><del>update：已经很详尽了还有什么要不补的啊喂，滚去睡觉了233</del></p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+#define ls (x&lt;&lt;1)
+#define rs (x&lt;&lt;1|1)
+using namespace std;
+const int inf=0x3f3f3f3f;
+
+int n;
+int cv[2050],ori[2050],tmp[2050];
+int dp[2050][2050],v[2050][2050];
+int lq[12],rq[12];
+
+void dfs(int x,int l,int r,int set,int dep) {
+    memset(dp[x],inf,sizeof dp[x]);
+    if(l==r) {
+        dep--;
+        dp[x][0]=ori[l]?0:cv[l];
+        dp[x][1]=ori[l]?cv[l]:0;
+        for(int i=1; i&lt;=dep; ++i) {
+            int mid=(lq[i]+rq[i])&gt;&gt;1;
+            int key=!(1&amp;(set&gt;&gt;(dep-i))); //相异有贡献
+            if(l&lt;=mid) dp[x][key]+=v[l][rq[i]]-v[l][mid];
+            else dp[x][key]+=v[l][mid]-v[l][lq[i]-1];
+        }
+        return;
+    }
+    int mid=(l+r)&gt;&gt;1,len=r-l+1;
+    lq[dep]=l,rq[dep]=r;
+
+    dfs(ls,l,mid,set&lt;&lt;1,dep+1);
+    dfs(rs,mid+1,r,set&lt;&lt;1,dep+1);
+
+    for(int i=0; i&lt;len/2; ++i)
+    for(int j=0; j&lt;=i; ++j) 
+        dp[x][i]=min(dp[x][i],dp[ls][j]+dp[rs][i-j]);
+
+    dfs(ls,l,mid,set&lt;&lt;1|1,dep+1);
+    dfs(rs,mid+1,r,set&lt;&lt;1|1,dep+1);
+    for(int i=len/2; i&lt;=len; ++i)
+    for(int j=0; j&lt;=i; ++j) 
+        dp[x][i]=min(dp[x][i],dp[ls][j]+dp[rs][i-j]);
+}
+
+int main() {
+    scanf(&quot;%d&quot;,&amp;n); n=1&lt;&lt;n;
+    for(int i=1; i&lt;=n; ++i) scanf(&quot;%d&quot;,ori+i);
+    for(int i=1; i&lt;=n; ++i) scanf(&quot;%d&quot;,cv+i);
+    for(int i=1; i&lt;=n; ++i) 
+    for(int j=i+1; j&lt;=n; ++j) {
+        scanf(&quot;%d&quot;,&amp;v[i][j]);
+        v[j][i]=v[i][j];
+    }
+    for(int i=1; i&lt;=n; ++i) 
+    for(int j=1; j&lt;=n; ++j) 
+        v[i][j]+=v[i][j-1];
+    dfs(1,1,n,0,1);
+    int ans=inf;
+    for(int i=0; i&lt;=n; ++i) 
+        ans=min(ans,dp[1][i]);
+    printf(&quot;%d\n&quot;,ans);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

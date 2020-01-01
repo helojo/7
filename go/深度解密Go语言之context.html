@@ -1,0 +1,782 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修深度解密Go语言之context' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>深度解密Go语言之context</center></div><div class='banquan'>原文出处:本文由博客园博主Stefno提供。<br/>
+原文连接:https://www.cnblogs.com/qcrao-2018/p/11007503.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#什么是-context">什么是 context</a></li>
+        <li><a href="#为什么有-context">为什么有 context</a></li>
+        <li><a href="#context-底层实现原理">context 底层实现原理</a><ul>
+        <li><a href="#整体概览">整体概览</a></li>
+        <li><a href="#接口">接口</a><ul>
+        <li><a href="#context">Context</a></li>
+        <li><a href="#canceler">canceler</a></li>
+        </ul></li>
+        <li><a href="#结构体">结构体</a><ul>
+        <li><a href="#emptyctx">emptyCtx</a></li>
+        <li><a href="#cancelctx">cancelCtx</a></li>
+        <li><a href="#timerctx">timerCtx</a></li>
+        <li><a href="#valuectx">valueCtx</a></li>
+        </ul></li>
+        </ul></li>
+        <li><a href="#如何使用-context">如何使用 context</a><ul>
+        <li><a href="#传递共享的数据">传递共享的数据</a></li>
+        <li><a href="#取消-goroutine">取消 goroutine</a></li>
+        <li><a href="#防止-goroutine-泄漏">防止 goroutine 泄漏</a></li>
+        </ul></li>
+        <li><a href="#context-真的这么好吗">context 真的这么好吗</a></li>
+        <li><a href="#总结">总结</a></li>
+        <li><a href="#参考资料">参考资料</a></li>
+        </ul>
+    </div>
+</div>
+<p>Go 语言的 context 包短小精悍，非常适合新手学习。不论是它的源码还是实际使用，都值得投入时间去学习。</p>
+<p>这篇文章依然想尝试全面、深入地去研究。文章相比往期而言，整体不长，希望你看完可以有所收获！</p>
+<h1 id="什么是-context">什么是 context</h1>
+<p>Go 1.7 标准库引入 context，中文译作“上下文”，准确说它是 goroutine 的上下文，包含 goroutine 的运行状态、环境、现场等信息。</p>
+<p>context 主要用来在 goroutine 之间传递上下文信息，包括：取消信号、超时时间、截止时间、k-v 等。</p>
+<p>随着 context 包的引入，标准库中很多接口因此加上了 context 参数，例如 database/sql 包。context 几乎成为了并发控制和超时控制的标准做法。</p>
+<blockquote>
+<p>context.Context 类型的值可以协调多个 groutine 中的代码执行“取消”操作，并且可以存储键值对。最重要的是它是并发安全的。</p>
+</blockquote>
+<blockquote>
+<p>与它协作的 API 都可以由外部控制执行“取消”操作，例如：取消一个 HTTP 请求的执行。</p>
+</blockquote>
+<p>没看懂？没关系，先往后看。</p>
+<h1 id="为什么有-context">为什么有 context</h1>
+<p>Go 常用来写后台服务，通常只需要几行代码，就可以搭建一个 http server。</p>
+<p>在 Go 的 server 里，通常每来一个请求都会启动若干个 goroutine 同时工作：有些去数据库拿数据，有些调用下游接口获取相关数据……</p>
+<p><img src="./images/深度解密Go语言之context0.png" alt="request" /></p>
+<p>这些 goroutine 需要共享这个请求的基本数据，例如登陆的 token，处理请求的最大超时时间（如果超过此值再返回数据，请求方因为超时接收不到）等等。当请求被取消或是处理时间太长，这有可能是使用者关闭了浏览器或是已经超过了请求方规定的超时时间，请求方直接放弃了这次请求结果。这时，所有正在为这个请求工作的 goroutine 需要快速退出，因为它们的“工作成果”不再被需要了。在相关联的 goroutine 都退出后，系统就可以回收相关的资源。</p>
+<p>再多说一点，Go 语言中的 server 实际上是一个“协程模型”，也就是说一个协程处理一个请求。例如在业务的高峰期，某个下游服务的响应变慢，而当前系统的请求又没有超时控制，或者超时时间设置地过大，那么等待下游服务返回数据的协程就会越来越多。而我们知道，协程是要消耗系统资源的，后果就是协程数激增，内存占用飙涨，甚至导致服务不可用。更严重的会导致雪崩效应，整个服务对外表现为不可用，这肯定是 P0 级别的事故。这时，肯定有人要背锅了。</p>
+<p>其实前面描述的 P0 级别事故，通过设置“允许下游最长处理时间”就可以避免。例如，给下游设置的 timeout 是 50 ms，如果超过这个值还没有接收到返回数据，就直接向客户端返回一个默认值或者错误。例如，返回商品的一个默认库存数量。注意，这里设置的超时时间和创建一个 http client 设置的读写超时时间不一样，这里不详细展开。可以去看看参考资料<code>【Go 在今日头条的实践】</code>一文，有很精彩的论述。</p>
+<p>context 包就是为了解决上面所说的这些问题而开发的：在 一组 goroutine 之间传递共享的值、取消信号、deadline……</p>
+<p><img src="./images/深度解密Go语言之context1.png" alt="request with context" /></p>
+<p>用简练一些的话来说，在Go 里，我们不能直接杀死协程，协程的关闭一般会用 <code>channel+select</code> 方式来控制。但是在某些场景下，例如处理一个请求衍生了很多协程，这些协程之间是相互关联的：需要共享一些全局变量、有共同的 deadline 等，而且可以同时被关闭。再用 <code>channel+select</code> 就会比较麻烦，这时就可以通过 context 来实现。</p>
+<p>一句话：context 用来解决 goroutine 之间<code>退出通知</code>、<code>元数据传递</code>的功能。</p>
+<h1 id="context-底层实现原理">context 底层实现原理</h1>
+<p>我们分析的 Go 版本依然是 <code>1.9.2</code>。</p>
+<h2 id="整体概览">整体概览</h2>
+<p>context 包的代码并不长，<code>context.go</code> 文件总共不到 500 行，其中还有很多大段的注释，代码可能也就 200 行左右的样子，是一个非常值得研究的代码库。</p>
+<p>先给大家看一张整体的图：</p>
+<p><img src="./images/深度解密Go语言之context2.png" alt="structure" /></p>
+<table>
+<thead>
+<tr class="header">
+<th>类型</th>
+<th>名称</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Context</td>
+<td>接口</td>
+<td>定义了 Context 接口的四个方法</td>
+</tr>
+<tr class="even">
+<td>emptyCtx</td>
+<td>结构体</td>
+<td>实现了 Context 接口，它其实是个空的 context</td>
+</tr>
+<tr class="odd">
+<td>CancelFunc</td>
+<td>函数</td>
+<td>取消函数</td>
+</tr>
+<tr class="even">
+<td>canceler</td>
+<td>接口</td>
+<td>context 取消接口，定义了两个方法</td>
+</tr>
+<tr class="odd">
+<td>cancelCtx</td>
+<td>结构体</td>
+<td>可以被取消</td>
+</tr>
+<tr class="even">
+<td>timerCtx</td>
+<td>结构体</td>
+<td>超时会被取消</td>
+</tr>
+<tr class="odd">
+<td>valueCtx</td>
+<td>结构体</td>
+<td>可以存储 k-v 对</td>
+</tr>
+<tr class="even">
+<td>Background</td>
+<td>函数</td>
+<td>返回一个空的 context，常作为根 context</td>
+</tr>
+<tr class="odd">
+<td>TODO</td>
+<td>函数</td>
+<td>返回一个空的 context，常用于重构时期，没有合适的 context 可用</td>
+</tr>
+<tr class="even">
+<td>WithCancel</td>
+<td>函数</td>
+<td>基于父 context，生成一个可以取消的 context</td>
+</tr>
+<tr class="odd">
+<td>newCancelCtx</td>
+<td>函数</td>
+<td>创建一个可取消的 context</td>
+</tr>
+<tr class="even">
+<td>propagateCancel</td>
+<td>函数</td>
+<td>向下传递 context 节点间的取消关系</td>
+</tr>
+<tr class="odd">
+<td>parentCancelCtx</td>
+<td>函数</td>
+<td>找到第一个可取消的父节点</td>
+</tr>
+<tr class="even">
+<td>removeChild</td>
+<td>函数</td>
+<td>去掉父节点的孩子节点</td>
+</tr>
+<tr class="odd">
+<td>init</td>
+<td>函数</td>
+<td>包初始化</td>
+</tr>
+<tr class="even">
+<td>WithDeadline</td>
+<td>函数</td>
+<td>创建一个有 deadline 的 context</td>
+</tr>
+<tr class="odd">
+<td>WithTimeout</td>
+<td>函数</td>
+<td>创建一个有 timeout 的 context</td>
+</tr>
+<tr class="even">
+<td>WithValue</td>
+<td>函数</td>
+<td>创建一个存储 k-v 对的 context</td>
+</tr>
+</tbody>
+</table>
+<p>上面这张表展示了 context 的所有函数、接口、结构体，可以纵览全局，可以在读完文章后，再回头细看。</p>
+<p>整体类图如下：</p>
+<p><img src="./images/深度解密Go语言之context3.png" alt="classes" /></p>
+<h2 id="接口">接口</h2>
+<h3 id="context">Context</h3>
+<p>现在可以直接看源码：</p>
+<pre><code><code>type Context interface {
+    // 当 context 被取消或者到了 deadline，返回一个被关闭的 channel
+    Done() &lt;-chan struct{}
+
+    // 在 channel Done 关闭后，返回 context 取消原因
+    Err() error
+
+    // 返回 context 是否会被取消以及自动取消时间（即 deadline）
+    Deadline() (deadline time.Time, ok bool)
+
+    // 获取 key 对应的 value
+    Value(key interface{}) interface{}
+}</code></pre>
+<p><code>Context</code> 是一个接口，定义了 4 个方法，它们都是<code>幂等</code>的。也就是说连续多次调用同一个方法，得到的结果都是相同的。</p>
+<p><code>Done()</code> 返回一个 channel，可以表示 context 被取消的信号：当这个 channel 被关闭时，说明 context 被取消了。注意，这是一个只读的channel。 我们又知道，读一个关闭的 channel 会读出相应类型的零值。并且源码里没有地方会向这个 channel 里面塞入值。换句话说，这是一个 <code>receive-only</code> 的 channel。因此在子协程里读这个 channel，除非被关闭，否则读不出来任何东西。也正是利用了这一点，子协程从 channel 里读出了值（零值）后，就可以做一些收尾工作，尽快退出。</p>
+<p><code>Err()</code> 返回一个错误，表示 channel 被关闭的原因。例如是被取消，还是超时。</p>
+<p><code>Deadline()</code> 返回 context 的截止时间，通过此时间，函数就可以决定是否进行接下来的操作，如果时间太短，就可以不往下做了，否则浪费系统资源。当然，也可以用这个 deadline 来设置一个 I/O 操作的超时时间。</p>
+<p><code>Value()</code> 获取之前设置的 key 对应的 value。</p>
+<h3 id="canceler">canceler</h3>
+<p>再来看另外一个接口：</p>
+<pre><code><code>type canceler interface {
+    cancel(removeFromParent bool, err error)
+    Done() &lt;-chan struct{}
+}</code></pre>
+<p>实现了上面定义的两个方法的 Context，就表明该 Context 是可取消的。源码中有两个类型实现了 canceler 接口：<code>*cancelCtx</code> 和 <code>*timerCtx</code>。注意是加了 <code>*</code> 号的，是这两个结构体的指针实现了 canceler 接口。</p>
+<p>Context 接口设计成这个样子的原因：</p>
+<ul>
+<li>“取消”操作应该是建议性，而非强制性</li>
+</ul>
+<p>caller 不应该去关心、干涉 callee 的情况，决定如何以及何时 return 是 callee 的责任。caller 只需发送“取消”信息，callee 根据收到的信息来做进一步的决策，因此接口并没有定义 cancel 方法。</p>
+<ul>
+<li>“取消”操作应该可传递</li>
+</ul>
+<p>“取消”某个函数时，和它相关联的其他函数也应该“取消”。因此，<code>Done()</code> 方法返回一个只读的 channel，所有相关函数监听此 channel。一旦 channel 关闭，通过 channel 的“广播机制”，所有监听者都能收到。</p>
+<h2 id="结构体">结构体</h2>
+<h3 id="emptyctx">emptyCtx</h3>
+<p>源码中定义了 <code>Context</code> 接口后，并且给出了一个实现：</p>
+<pre><code><code>type emptyCtx int
+
+func (*emptyCtx) Deadline() (deadline time.Time, ok bool) {
+    return
+}
+
+func (*emptyCtx) Done() &lt;-chan struct{} {
+    return nil
+}
+
+func (*emptyCtx) Err() error {
+    return nil
+}
+
+func (*emptyCtx) Value(key interface{}) interface{} {
+    return nil
+}</code></pre>
+<p>看这段源码，非常 happy。因为每个函数都实现的异常简单，要么是直接返回，要么是返回 nil。</p>
+<p>所以，这实际上是一个空的 context，永远不会被 cancel，没有存储值，也没有 deadline。</p>
+<p>它被包装成：</p>
+<pre><code><code>var (
+    background = new(emptyCtx)
+    todo       = new(emptyCtx)
+)</code></pre>
+<p>通过下面两个导出的函数（首字母大写）对外公开：</p>
+<pre><code><code>func Background() Context {
+    return background
+}
+
+func TODO() Context {
+    return todo
+}</code></pre>
+<p>background 通常用在 main 函数中，作为所有 context 的根节点。</p>
+<p>todo 通常用在并不知道传递什么 context的情形。例如，调用一个需要传递 context 参数的函数，你手头并没有其他 context 可以传递，这时就可以传递 todo。这常常发生在重构进行中，给一些函数添加了一个 Context 参数，但不知道要传什么，就用 todo “占个位子”，最终要换成其他 context。</p>
+<h3 id="cancelctx">cancelCtx</h3>
+<p>再来看一个重要的 context：</p>
+<pre><code><code>type cancelCtx struct {
+    Context
+
+    // 保护之后的字段
+    mu       sync.Mutex
+    done     chan struct{}
+    children map[canceler]struct{}
+    err      error
+}</code></pre>
+<p>这是一个可以取消的 Context，实现了 canceler 接口。它直接将接口 Context 作为它的一个匿名字段，这样，它就可以被看成一个 Context。</p>
+<p>先来看 <code>Done()</code> 方法的实现：</p>
+<pre><code><code>func (c *cancelCtx) Done() &lt;-chan struct{} {
+    c.mu.Lock()
+    if c.done == nil {
+        c.done = make(chan struct{})
+    }
+    d := c.done
+    c.mu.Unlock()
+    return d
+}</code></pre>
+<p>c.done 是“懒汉式”创建，只有调用了 Done() 方法的时候才会被创建。再次说明，函数返回的是一个只读的 channel，而且没有地方向这个 channel 里面写数据。所以，直接调用读这个 channel，协程会被 block 住。一般通过搭配 select 来使用。一旦关闭，就会立即读出零值。</p>
+<p><code>Err()</code> 和 <code>String()</code> 方法比较简单，不多说。推荐看源码，非常简单。</p>
+<p>接下来，我们重点关注 <code>cancel()</code> 方法的实现：</p>
+<pre><code><code>func (c *cancelCtx) cancel(removeFromParent bool, err error) {
+    // 必须要传 err
+    if err == nil {
+        panic(&quot;context: internal error: missing cancel error&quot;)
+    }
+    c.mu.Lock()
+    if c.err != nil {
+        c.mu.Unlock()
+        return // 已经被其他协程取消
+    }
+    // 给 err 字段赋值
+    c.err = err
+    // 关闭 channel，通知其他协程
+    if c.done == nil {
+        c.done = closedchan
+    } else {
+        close(c.done)
+    }
+    
+    // 遍历它的所有子节点
+    for child := range c.children {
+        // 递归地取消所有子节点
+        child.cancel(false, err)
+    }
+    // 将子节点置空
+    c.children = nil
+    c.mu.Unlock()
+
+    if removeFromParent {
+        // 从父节点中移除自己 
+        removeChild(c.Context, c)
+    }
+}</code></pre>
+<p>总体来看，<code>cancel()</code> 方法的功能就是关闭 channel：c.done；递归地取消它的所有子节点；从父节点从删除自己。达到的效果是通过关闭 channel，将取消信号传递给了它的所有子节点。goroutine 接收到取消信号的方式就是 select 语句中的<code>读 c.done</code> 被选中。</p>
+<p>我们再来看创建一个可取消的 Context 的方法：</p>
+<pre><code><code>func WithCancel(parent Context) (ctx Context, cancel CancelFunc) {
+    c := newCancelCtx(parent)
+    propagateCancel(parent, &amp;c)
+    return &amp;c, func() { c.cancel(true, Canceled) }
+}
+
+func newCancelCtx(parent Context) cancelCtx {
+    return cancelCtx{Context: parent}
+}</code></pre>
+<p>这是一个暴露给用户的方法，传入一个父 Context（这通常是一个 <code>background</code>，作为根节点），返回新建的 context，新 context 的 done channel 是新建的（前文讲过）。</p>
+<p>当 WithCancel 函数返回的 CancelFunc 被调用或者是父节点的 done channel 被关闭（父节点的 CancelFunc 被调用），此 context（子节点） 的 done channel 也会被关闭。</p>
+<p>注意传给 WithCancel 方法的参数，前者是 true，也就是说取消的时候，需要将自己从父节点里删除。第二个参数则是一个固定的取消错误类型：</p>
+<pre><code><code>var Canceled = errors.New(&quot;context canceled&quot;)</code></pre>
+<p>还注意到一点，调用子节点 cancel 方法的时候，传入的第一个参数 <code>removeFromParent</code> 是 false。</p>
+<p>两个问题需要回答：1. 什么时候会传 true？2. 为什么有时传 true，有时传 false？</p>
+<p>当 <code>removeFromParent</code> 为 true 时，会将当前节点的 context 从父节点 context 中删除：</p>
+<pre><code><code>func removeChild(parent Context, child canceler) {
+    p, ok := parentCancelCtx(parent)
+    if !ok {
+        return
+    }
+    p.mu.Lock()
+    if p.children != nil {
+        delete(p.children, child)
+    }
+    p.mu.Unlock()
+}</code></pre>
+<p>最关键的一行：</p>
+<pre><code><code>delete(p.children, child)</code></pre>
+<p>什么时候会传 true 呢？答案是调用 <code>WithCancel()</code> 方法的时候，也就是新创建一个可取消的 context 节点时，返回的 cancelFunc 函数会传入 true。这样做的结果是：当调用返回的 cancelFunc 时，会将这个 context 从它的父节点里“除名”，因为父节点可能有很多子节点，你自己取消了，所以我要和你断绝关系，对其他人没影响。</p>
+<p>在取消函数内部，我知道，我所有的子节点都会因为我的一：<code>c.children = nil</code> 而化为灰烬。我自然就没有必要再多做这一步，最后我所有的子节点都会和我断绝关系，没必要一个个做。另外，如果遍历子节点的时候，调用 child.cancel 函数传了 true，还会造成同时遍历和删除一个 map 的境地，会有问题的。</p>
+<p><img src="./images/深度解密Go语言之context4.png" alt="context cancel" /></p>
+<p>如上左图，代表一棵 context 树。当调用左图中标红 context 的 cancel 方法后，该 context 从它的父 context 中去除掉了：实线箭头变成了虚线。且虚线圈框出来的 context 都被取消了，圈内的 context 间的父子关系都荡然无存了。</p>
+<p>重点看 <code>propagateCancel()</code>：</p>
+<pre><code><code>func propagateCancel(parent Context, child canceler) {
+    // 父节点是个空节点
+    if parent.Done() == nil {
+        return // parent is never canceled
+    }
+    // 找到可以取消的父 context
+    if p, ok := parentCancelCtx(parent); ok {
+        p.mu.Lock()
+        if p.err != nil {
+            // 父节点已经被取消了，本节点（子节点）也要取消
+            child.cancel(false, p.err)
+        } else {
+            // 父节点未取消
+            if p.children == nil {
+                p.children = make(map[canceler]struct{})
+            }
+            // &quot;挂到&quot;父节点上
+            p.children[child] = struct{}{}
+        }
+        p.mu.Unlock()
+    } else {
+        // 如果没有找到可取消的父 context。新启动一个协程监控父节点或子节点取消信号
+        go func() {
+            select {
+            case &lt;-parent.Done():
+                child.cancel(false, parent.Err())
+            case &lt;-child.Done():
+            }
+        }()
+    }
+}</code></pre>
+<p>这个方法的作用就是向上寻找可以“挂靠”的“可取消”的 context，并且“挂靠”上去。这样，调用上层 cancel 方法的时候，就可以层层传递，将那些挂靠的子 context 同时“取消”。</p>
+<p>这里着重解释下为什么会有 else 描述的情况发生。<code>else</code> 是指当前节点 context 没有向上找到可以取消的父节点，那么就要再启动一个协程监控父节点或者子节点的取消动作。</p>
+<p>这里就有疑问了，既然没找到可以取消的父节点，那 <code>case &lt;-parent.Done()</code> 这个 case 就永远不会发生，所以可以忽略这个 case；而 <code>case &lt;-child.Done()</code> 这个 case 又啥事不干。那这个 <code>else</code> 不就多余了吗？</p>
+<p>其实不然。我们来看 <code>parentCancelCtx</code> 的代码：</p>
+<pre><code><code>func parentCancelCtx(parent Context) (*cancelCtx, bool) {
+    for {
+        switch c := parent.(type) {
+        case *cancelCtx:
+            return c, true
+        case *timerCtx:
+            return &amp;c.cancelCtx, true
+        case *valueCtx:
+            parent = c.Context
+        default:
+            return nil, false
+        }
+    }
+}</code></pre>
+<p>这里只会识别三种 Context 类型：<em>cancelCtx，</em>timerCtx，*valueCtx。若是把 Context 内嵌到一个类型里，就识别不出来了。</p>
+<p>由于 context 包的代码并不多，所以我直接把它 copy 出来了，然后在 else 语句里加上了几条打印语句，来验证上面的说法：</p>
+<pre><code><code>type MyContext struct {
+    // 这里的 Context 是我 copy 出来的，所以前面不用加 context.
+    Context
+}
+
+func main() {
+    childCancel := true
+
+    parentCtx, parentFunc := WithCancel(Background())
+    mctx := MyContext{parentCtx}
+
+    childCtx, childFun := WithCancel(mctx)
+
+    if childCancel {
+        childFun()
+    } else {
+        parentFunc()
+    }
+
+    fmt.Println(parentCtx)
+    fmt.Println(mctx)
+    fmt.Println(childCtx)
+
+    // 防止主协程退出太快，子协程来不及打印 
+    time.Sleep(10 * time.Second)
+}</code></pre>
+<p>我自已在 else 里添加的打印语句我就不贴出来了，感兴趣的可以自己动手实验下。我们看下三个 context 的打印结果：</p>
+<pre class="shell"><code>context.Background.WithCancel
+{context.Background.WithCancel}
+{context.Background.WithCancel}.WithCancel</code></pre>
+<p>果然，mctx，childCtx 和正常的 parentCtx 不一样，因为它是一个自定义的结构体类型。</p>
+<p><code>else</code> 这段代码说明，如果把 ctx 强行塞进一个结构体，并用它作为父节点，调用 WithCancel 函数构建子节点 context 的时候，Go 会新启动一个协程来监控取消信号，明显有点浪费嘛。</p>
+<p>再来说一下，select 语句里的两个 case 其实都不能删。</p>
+<pre><code><code>select {
+    case &lt;-parent.Done():
+        child.cancel(false, parent.Err())
+    case &lt;-child.Done():
+}</code></pre>
+<p>第一个 case 说明当父节点取消，则取消子节点。如果去掉这个 case，那么父节点取消的信号就不能传递到子节点。</p>
+<p>第二个 case 是说如果子节点自己取消了，那就退出这个 select，父节点的取消信号就不用管了。如果去掉这个 case，那么很可能父节点一直不取消，这个 goroutine 就泄漏了。当然，如果父节点取消了，就会重复让子节点取消，不过，这也没什么影响嘛。</p>
+<h3 id="timerctx">timerCtx</h3>
+<p>timerCtx 基于 cancelCtx，只是多了一个 time.Timer 和一个 deadline。Timer 会在 deadline 到来时，自动取消 context。</p>
+<pre><code><code>type timerCtx struct {
+    cancelCtx
+    timer *time.Timer // Under cancelCtx.mu.
+
+    deadline time.Time
+}</code></pre>
+<p>timerCtx 首先是一个 cancelCtx，所以它能取消。看下 cancel() 方法：</p>
+<pre><code><code>func (c *timerCtx) cancel(removeFromParent bool, err error) {
+    // 直接调用 cancelCtx 的取消方法
+    c.cancelCtx.cancel(false, err)
+    if removeFromParent {
+        // 从父节点中删除子节点
+        removeChild(c.cancelCtx.Context, c)
+    }
+    c.mu.Lock()
+    if c.timer != nil {
+        // 关掉定时器，这样，在deadline 到来时，不会再次取消
+        c.timer.Stop()
+        c.timer = nil
+    }
+    c.mu.Unlock()
+}</code></pre>
+<p>创建 timerCtx 的方法：</p>
+<pre><code><code>func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc) {
+    return WithDeadline(parent, time.Now().Add(timeout))
+}</code></pre>
+<p><code>WithTimeout</code> 函数直接调用了 <code>WithDeadline</code>，传入的 deadline 是当前时间加上 timeout 的时间，也就是从现在开始再经过 timeout 时间就算超时。也就是说，<code>WithDeadline</code> 需要用的是绝对时间。重点来看它：</p>
+<pre><code><code>func WithDeadline(parent Context, deadline time.Time) (Context, CancelFunc) {
+    if cur, ok := parent.Deadline(); ok &amp;&amp; cur.Before(deadline) {
+        // 如果父节点 context 的 deadline 早于指定时间。直接构建一个可取消的 context。
+        // 原因是一旦父节点超时，自动调用 cancel 函数，子节点也会随之取消。
+        // 所以不用单独处理子节点的计时器时间到了之后，自动调用 cancel 函数
+        return WithCancel(parent)
+    }
+    
+    // 构建 timerCtx
+    c := &amp;timerCtx{
+        cancelCtx: newCancelCtx(parent),
+        deadline:  deadline,
+    }
+    // 挂靠到父节点上
+    propagateCancel(parent, c)
+    
+    // 计算当前距离 deadline 的时间
+    d := time.Until(deadline)
+    if d &lt;= 0 {
+        // 直接取消
+        c.cancel(true, DeadlineExceeded) // deadline has already passed
+        return c, func() { c.cancel(true, Canceled) }
+    }
+    c.mu.Lock()
+    defer c.mu.Unlock()
+    if c.err == nil {
+        // d 时间后，timer 会自动调用 cancel 函数。自动取消
+        c.timer = time.AfterFunc(d, func() {
+            c.cancel(true, DeadlineExceeded)
+        })
+    }
+    return c, func() { c.cancel(true, Canceled) }
+}</code></pre>
+<p>也就是说仍然要把子节点挂靠到父节点，一旦父节点取消了，会把取消信号向下传递到子节点，子节点随之取消。</p>
+<p>有一个特殊情况是，如果要创建的这个子节点的 deadline 比父节点要晚，也就是说如果父节点是时间到自动取消，那么一定会取消这个子节点，导致子节点的 deadline 根本不起作用，因为子节点在 deadline 到来之前就已经被父节点取消了。</p>
+<p>这个函数的最核心的一句是：</p>
+<pre><code><code>c.timer = time.AfterFunc(d, func() {
+    c.cancel(true, DeadlineExceeded)
+})</code></pre>
+<p>c.timer 会在 d 时间间隔后，自动调用 cancel 函数，并且传入的错误就是 <code>DeadlineExceeded</code>：</p>
+<pre><code><code>var DeadlineExceeded error = deadlineExceededError{}
+
+type deadlineExceededError struct{}
+
+func (deadlineExceededError) Error() string   { return &quot;context deadline exceeded&quot; }</code></pre>
+<p>也就是超时错误。</p>
+<h3 id="valuectx">valueCtx</h3>
+<pre><code><code>type valueCtx struct {
+    Context
+    key, val interface{}
+}</code></pre>
+<p>它实现了两个方法：</p>
+<pre><code><code>func (c *valueCtx) String() string {
+    return fmt.Sprintf(&quot;%v.WithValue(%#v, %#v)&quot;, c.Context, c.key, c.val)
+}
+
+func (c *valueCtx) Value(key interface{}) interface{} {
+    if c.key == key {
+        return c.val
+    }
+    return c.Context.Value(key)
+}</code></pre>
+<p>由于它直接将 Context 作为匿名字段，因此仅管它只实现了 2 个方法，其他方法继承自父 context。但它仍然是一个 Context，这是 Go 语言的一个特点。</p>
+<p>创建 valueCtx 的函数：</p>
+<pre><code><code>func WithValue(parent Context, key, val interface{}) Context {
+    if key == nil {
+        panic(&quot;nil key&quot;)
+    }
+    if !reflect.TypeOf(key).Comparable() {
+        panic(&quot;key is not comparable&quot;)
+    }
+    return &amp;valueCtx{parent, key, val}
+}</code></pre>
+<p>对 key 的要求是可比较，因为之后需要通过 key 取出 context 中的值，可比较是必须的。</p>
+<p>通过层层传递 context，最终形成这样一棵树：</p>
+<p><img src="./images/深度解密Go语言之context5.png" alt="valueCtx" /></p>
+<p>和链表有点像，只是它的方向相反：Context 指向它的父节点，链表则指向下一个节点。通过 WithValue 函数，可以创建层层的 valueCtx，存储 goroutine 间可以共享的变量。</p>
+<p>取值的过程，实际上是一个递归查找的过程：</p>
+<pre><code><code>func (c *valueCtx) Value(key interface{}) interface{} {
+    if c.key == key {
+        return c.val
+    }
+    return c.Context.Value(key)
+}</code></pre>
+<p>它会顺着链路一直往上找，比较当前节点的 key<br />
+是否是要找的 key，如果是，则直接返回 value。否则，一直顺着 context 往前，最终找到根节点（一般是 emptyCtx），直接返回一个 nil。所以用 Value 方法的时候要判断结果是否为 nil。</p>
+<p>因为查找方向是往上走的，所以，父节点没法获取子节点存储的值，子节点却可以获取父节点的值。</p>
+<p><code>WithValue</code> 创建 context 节点的过程实际上就是创建链表节点的过程。两个节点的 key 值是可以相等的，但它们是两个不同的 context 节点。查找的时候，会向上查找到最后一个挂载的 context 节点，也就是离得比较近的一个父节点 context。所以，整体上而言，用 <code>WithValue</code> 构造的其实是一个低效率的链表。</p>
+<p>如果你接手过项目，肯定经历过这样的窘境：在一个处理过程中，有若干子函数、子协程。各种不同的地方会向 context 里塞入各种不同的 k-v 对，最后在某个地方使用。</p>
+<p>你根本就不知道什么时候什么地方传了什么值？这些值会不会被“覆盖”（底层是两个不同的 context 节点，查找的时候，只会返回一个结果）？你肯定会崩溃的。</p>
+<p>而这也是 <code>context.Value</code> 最受争议的地方。很多人建议尽量不要通过 context 传值。</p>
+<h1 id="如何使用-context">如何使用 context</h1>
+<p>context 使用起来非常方便。源码里对外提供了一个创建根节点 context 的函数：</p>
+<pre><code><code>func Background() Context</code></pre>
+<p>background 是一个空的 context， 它不能被取消，没有值，也没有超时时间。</p>
+<p>有了根节点 context，又提供了四个函数创建子节点 context：</p>
+<pre><code><code>func WithCancel(parent Context) (ctx Context, cancel CancelFunc)
+func WithDeadline(parent Context, deadline time.Time) (Context, CancelFunc)
+func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)
+func WithValue(parent Context, key, val interface{}) Context</code></pre>
+<p>context 会在函数传递间传递。只需要在适当的时间调用 cancel 函数向 goroutines 发出取消信号或者调用 Value 函数取出 context 中的值。</p>
+<p>在官方博客里，对于使用 context 提出了几点建议：</p>
+<ol>
+<li>Do not store Contexts inside a struct type; instead, pass a Context explicitly to each function that needs it. The Context should be the first parameter, typically named ctx.</li>
+<li>Do not pass a nil Context, even if a function permits it. Pass context.TODO if you are unsure about which Context to use.</li>
+<li>Use context Values only for request-scoped data that transits processes and APIs, not for passing optional parameters to functions.</li>
+<li>The same Context may be passed to functions running in different goroutines; Contexts are safe for simultaneous use by multiple goroutines.</li>
+</ol>
+<p>我翻译一下：</p>
+<ol>
+<li>不要将 Context 塞到结构体里。直接将 Context 类型作为函数的第一参数，而且一般都命名为 ctx。</li>
+<li>不要向函数传入一个 nil 的 context，如果你实在不知道传什么，标准库给你准备好了一个 context：todo。</li>
+<li>不要把本应该作为函数参数的类型塞到 context 中，context 存储的应该是一些共同的数据。例如：登陆的 session、cookie 等。</li>
+<li>同一个 context 可能会被传递到多个 goroutine，别担心，context 是并发安全的。</li>
+</ol>
+<h2 id="传递共享的数据">传递共享的数据</h2>
+<p>对于 Web 服务端开发，往往希望将一个请求处理的整个过程串起来，这就非常依赖于 Thread Local（对于 Go 可理解为单个协程所独有） 的变量，而在 Go 语言中并没有这个概念，因此需要在函数调用的时候传递 context。</p>
+<pre><code><code>package main
+
+import (
+    &quot;context&quot;
+    &quot;fmt&quot;
+)
+
+func main() {
+    ctx := context.Background()
+    process(ctx)
+
+    ctx = context.WithValue(ctx, &quot;traceId&quot;, &quot;qcrao-2019&quot;)
+    process(ctx)
+}
+
+func process(ctx context.Context) {
+    traceId, ok := ctx.Value(&quot;traceId&quot;).(string)
+    if ok {
+        fmt.Printf(&quot;process over. trace_id=%s\n&quot;, traceId)
+    } else {
+        fmt.Printf(&quot;process over. no trace_id\n&quot;)
+    }
+}</code></pre>
+<p>运行结果：</p>
+<pre class="shell"><code>process over. no trace_id
+process over. trace_id=qcrao-2019</code></pre>
+<p>第一次调用 process 函数时，ctx 是一个空的 context，自然取不出来 traceId。第二次，通过 <code>WithValue</code> 函数创建了一个 context，并赋上了 <code>traceId</code> 这个 key，自然就能取出来传入的 value 值。</p>
+<p>当然，现实场景中可能是从一个 HTTP 请求中获取到的 Request-ID。所以，下面这个样例可能更适合：</p>
+<pre><code><code>const requestIDKey int = 0
+
+func WithRequestID(next http.Handler) http.Handler {
+    return http.HandlerFunc(
+        func(rw http.ResponseWriter, req *http.Request) {
+            // 从 header 中提取 request-id
+            reqID := req.Header.Get(&quot;X-Request-ID&quot;)
+            // 创建 valueCtx。使用自定义的类型，不容易冲突
+            ctx := context.WithValue(
+                req.Context(), requestIDKey, reqID)
+            
+            // 创建新的请求
+            req = req.WithContext(ctx)
+            
+            // 调用 HTTP 处理函数
+            next.ServeHTTP(rw, req)
+        }
+    )
+}
+
+// 获取 request-id
+func GetRequestID(ctx context.Context) string {
+    ctx.Value(requestIDKey).(string)
+}
+
+func Handle(rw http.ResponseWriter, req *http.Request) {
+    // 拿到 reqId，后面可以记录日志等等
+    reqID := GetRequestID(req.Context())
+    ...
+}
+
+func main() {
+    handler := WithRequestID(http.HandlerFunc(Handle))
+    http.ListenAndServe(&quot;/&quot;, handler)
+}</code></pre>
+<h2 id="取消-goroutine">取消 goroutine</h2>
+<p>我们先来设想一个场景：打开外卖的订单页，地图上显示外卖小哥的位置，而且是每秒更新 1 次。app 端向后台发起 websocket 连接（现实中可能是轮询）请求后，后台启动一个协程，每隔 1 秒计算 1 次小哥的位置，并发送给端。如果用户退出此页面，则后台需要“取消”此过程，退出 goroutine，系统回收资源。</p>
+<p>后端可能的实现如下：</p>
+<pre><code><code>func Perform() {
+    for {
+        calculatePos()
+        sendResult()
+        time.Sleep(time.Second)
+    }
+}</code></pre>
+<p>如果需要实现“取消”功能，并且在不了解 context 功能的前提下，可能会这样做：给函数增加一个指针型的 bool 变量，在 for 语句的开始处判断 bool 变量是发由 true 变为 false，如果改变，则退出循环。</p>
+<p>上面给出的简单做法，可以实现想要的效果，没有问题，但是并不优雅，并且一旦协程数量多了之后，并且各种嵌套，就会很麻烦。优雅的做法，自然就要用到 context。</p>
+<pre><code><code>func Perform(ctx context.Context) {
+    for {
+        calculatePos()
+        sendResult()
+
+        select {
+        case &lt;-ctx.Done():
+            // 被取消，直接返回
+            return
+        case &lt;-time.After(time.Second):
+            // block 1 秒钟 
+        }
+    }
+}</code></pre>
+<p>主流程可能是这样的：</p>
+<pre><code><code>ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+go Perform(ctx)
+
+// ……
+// app 端返回页面，调用cancel 函数
+cancel()</code></pre>
+<p>注意一个细节，WithTimeOut 函数返回的 context 和 cancelFun 是分开的。context 本身并没有取消函数，这样做的原因是取消函数只能由外层函数调用，防止子节点 context 调用取消函数，从而严格控制信息的流向：由父节点 context 流向子节点 context。</p>
+<h2 id="防止-goroutine-泄漏">防止 goroutine 泄漏</h2>
+<p>前面那个例子里，goroutine 还是会自己执行完，最后返回，只不过会多浪费一些系统资源。这里改编一个“如果不用 context 取消，goroutine 就会泄漏的例子”，来自参考资料：<code>【避免协程泄漏】</code>。</p>
+<pre><code><code>func gen() &lt;-chan int {
+    ch := make(chan int)
+    go func() {
+        var n int
+        for {
+            ch &lt;- n
+            n++
+            time.Sleep(time.Second)
+        }
+    }()
+    return ch
+}</code></pre>
+<p>这是一个可以生成无限整数的协程，但如果我只需要它产生的前 5 个数，那么就会发生 goroutine 泄漏：</p>
+<pre><code><code>func main() {
+    for n := range gen() {
+        fmt.Println(n)
+        if n == 5 {
+            break
+        }
+    }
+    // ……
+}</code></pre>
+<p>当 n == 5 的时候，直接 break 掉。那么 gen 函数的协程就会执行无限循环，永远不会停下来。发生了 goroutine 泄漏。</p>
+<p>用 context 改进这个例子：</p>
+<pre><code><code>func gen(ctx context.Context) &lt;-chan int {
+    ch := make(chan int)
+    go func() {
+        var n int
+        for {
+            select {
+            case &lt;-ctx.Done():
+                return
+            case ch &lt;- n:
+                n++
+                time.Sleep(time.Second)
+            }
+        }
+    }()
+    return ch
+}
+
+func main() {
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel() // 避免其他地方忘记 cancel，且重复调用不影响
+
+    for n := range gen(ctx) {
+        fmt.Println(n)
+        if n == 5 {
+            cancel()
+            break
+        }
+    }
+    // ……
+}</code></pre>
+<p>增加一个 context，在 break 前调用 cancel 函数，取消 goroutine。gen 函数在接收到取消信号后，直接退出，系统回收资源。</p>
+<h1 id="context-真的这么好吗">context 真的这么好吗</h1>
+<p>读完全文，你一定有这种感觉：context 就是为 server 而设计的。说什么处理一个请求，需要启动多个 goroutine 并行地去处理，并且在这些 goroutine 之间还要传递一些共享的数据等等，这些都是写一个 server 要做的事。</p>
+<p>没错，Go 很适合写 server，但它终归是一门通用的语言。你在用 Go 做 Leetcode 上面的题目的时候，肯定不会认为它和一般的语言有什么差别。所以，很多特性好不好，应该从 <code>Go 只是一门普通的语言，很擅长写 server</code> 的角度来看。</p>
+<p>从这个角度来看，context 并没有那么美好。Go 官方建议我们把 Context 作为函数的第一个参数，甚至连名字都准备好了。这造成一个后果：因为我们想控制所有的协程的取消动作，所以需要在几乎所有的函数里加上一个 Context 参数。很快，我们的代码里，context 将像病毒一样扩散的到处都是。</p>
+<p>在参考资料<code>【Go2 应该去掉 context】</code>这篇英文博客里，作者甚至调侃说：如果要把 Go 标准库的大部分函数都加上 context 参数的话，例如下面这样：</p>
+<pre><code><code>n, err := r.Read(context.TODO(), p)</code></pre>
+<p>就给我来一枪吧！</p>
+<p>原文是这样说的：<code>put a bullet in my head, please.</code>我当时看到这句话的时候，会心一笑。这可能就是陶渊明说的：每有会意，便欣然忘食。当然，我是在晚饭会看到这句话的。</p>
+<p>为了表达自己对 context 并没有什么好感，作者接着又说了一句：If you use ctx.Value in my (non-existent) company, you’re fired. 简直太幽默了，哈哈。</p>
+<p>另外，像 <code>WithCancel</code>、<code>WithDeadline</code>、<code>WithTimeout</code>、<code>WithValue</code> 这些创建函数，实际上是创建了一个个的链表结点而已。我们知道，对链表的操作，通常都是 <code>O(n)</code> 复杂度的，效率不高。</p>
+<p>那么，context 包到底解决了什么问题呢？答案是：<code>cancelation</code>。仅管它并不完美，但它确实很简洁地解决了问题。</p>
+<h1 id="总结">总结</h1>
+<p>到这里，整个 context 包的内容就全部讲完了。源码非常短，很适合学习，一定要去读一下。</p>
+<p>context 包是 Go 1.7 引入的标准库，主要用于在 goroutine 之间传递取消信号、超时时间、截止时间以及一些共享的值等。它并不是太完美，但几乎成了并发控制和超时控制的标准做法。</p>
+<p>使用上，先创建一个根节点的 context，之后根据库提供的四个函数创建相应功能的子节点 context。由于它是并发安全的，所以可以放心地传递。</p>
+<p>当使用 context 作为函数参数时，直接把它放在第一个参数的位置，并且命名为 ctx。另外，不要把 context 嵌套在自定义的类型里。</p>
+<p>最后，大家下次在看到代码里有用到 context 的，观察下是怎么使用的，肯定逃不出我们讲的几种类型。熟悉之后会发现：context 可能并不完美，但它确实简洁高效地解决了问题。</p>
+<h1 id="参考资料">参考资料</h1>
+<p>【context 官方博客】<a href="https://blog.golang.org/context" class="uri">https://blog.golang.org/context</a></p>
+<p>【今日头条构建Go的实践】<a href="https://zhuanlan.zhihu.com/p/26695984" class="uri">https://zhuanlan.zhihu.com/p/26695984</a></p>
+<p>【飞雪无情的博客】<a href="https://www.flysnow.org/2017/05/12/go-in-action-go-context.html" class="uri">https://www.flysnow.org/2017/05/12/go-in-action-go-context.html</a></p>
+<p>【context 源码】<a href="https://juejin.im/post/5a6873fef265da3e317e55b6" class="uri">https://juejin.im/post/5a6873fef265da3e317e55b6</a></p>
+<p>【腾讯云源码阅读】<a href="https://cloud.tencent.com/developer/section/1140703" class="uri">https://cloud.tencent.com/developer/section/1140703</a></p>
+<p>【更宏观地一些思考，english】<a href="https://siadat.github.io/post/context" class="uri">https://siadat.github.io/post/context</a></p>
+<p>【避免协程泄漏】<a href="https://rakyll.org/leakingctx/" class="uri">https://rakyll.org/leakingctx/</a></p>
+<p>【应用分类】<a href="https://dreamerjonson.com/2019/05/09/golang-73-context/index.html" class="uri">https://dreamerjonson.com/2019/05/09/golang-73-context/index.html</a></p>
+<p>【官方文档示例翻译版】<a href="https://brantou.github.io/2017/05/19/go-concurrency-patterns-context/" class="uri">https://brantou.github.io/2017/05/19/go-concurrency-patterns-context/</a></p>
+<p>【例子，english】<a href="http://p.agnihotry.com/post/understanding_the_context_package_in_golang/" class="uri">http://p.agnihotry.com/post/understanding_the_context_package_in_golang/</a></p>
+<p>【Go2 应该去掉 context】<a href="https://faiface.github.io/post/context-should-go-away-go2/" class="uri">https://faiface.github.io/post/context-should-go-away-go2/</a></p>
+<p>【源码，比较详细】<a href="https://juejin.im/post/5c1514c86fb9a049b82a5acb" class="uri">https://juejin.im/post/5c1514c86fb9a049b82a5acb</a></p>
+<p>【Golang Context 是好的设计吗？】<a href="https://segmentfault.com/a/1190000017394302" class="uri">https://segmentfault.com/a/1190000017394302</a></p>
+<p>【今日头条的 Go 实践】<a href="https://36kr.com/p/5073181" class="uri">https://36kr.com/p/5073181</a></p>
+<p>【实例】<a href="https://zhuanlan.zhihu.com/p/60180409" class="uri">https://zhuanlan.zhihu.com/p/60180409</a></p>
+<p><img src="./images/深度解密Go语言之context6.png" alt="QR" /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

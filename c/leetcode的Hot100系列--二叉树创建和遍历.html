@@ -1,0 +1,185 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修leetcode的Hot100系列--二叉树创建和遍历' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>leetcode的Hot100系列--二叉树创建和遍历</center></div><div class='banquan'>原文出处:本文由博客园博主努力爬呀爬提供。<br/>
+原文连接:https://www.cnblogs.com/payapa/p/11109446.html</div><br>
+    <p>很多题目涉及到二叉树，所以先把二叉树的一些基本的创建和遍历写一下，方便之后的本地代码调试。<br />
+为了方便，这里使用的数据为char类型数值，初始化数据使用一个数组。<br />
+因为这些东西比较简单，这里就不做过多详述。</p>
+<hr />
+<h2 id="创建">创建</h2>
+<p>1、定义一些内容：</p>
+<pre><code><code>// 二叉树节点结构体
+typedef struct tree_node
+{
+    struct tree_node *pL;
+    struct tree_node *pR;
+    char data;
+}TREE_NODE_S
+
+// 输入数据的无效值，若读到无效值，则说明该节点为空
+#define INVALID -1
+
+// 全局变量，记录当前输入的数组位置
+char count = 0
+
+// 在遍历树的时候，需要对data做的操作
+typedef void (*pfprocData)(char *p);</code></code></pre>
+<p>2、使用递归方式创建原始二叉树。<br />
+其基本思想与先序遍历基本一样，只不过一个是对数据做输出，一个是对数据做输入。</p>
+<pre><code><code>TREE_NODE_S* createNode(char *str)
+{
+    TREE_NODE_S *pTemp = NULL;
+    char data = *(str+count);
+    count ++;
+    if (data != INVALID)
+    {
+        pTemp = (TREE_NODE_S *)calloc(1, sizeof(TREE_NODE_S));
+        if (NULL == pTemp)
+        {
+            return pTemp;
+        }
+        pTemp-&gt;data = data;  
+        pTemp-&gt;pL = createNode(str);
+        pTemp-&gt;pR = createNode(str);
+    }
+    return pTemp;
+}</code></code></pre>
+<p>3、这里再提供一种无返回值、传树的二级指针的创建方法：</p>
+<pre><code><code>createNode2(TREE_NODE_S **p, char *str)
+{
+    TREE_NODE_S *pTemp = NULL;
+    char data = *(str+count);
+    count ++;
+    if (data != INVALID)
+    {
+        pTemp = (TREE_NODE_S *)calloc(1, sizeof(TREE_NODE_S));
+        if (NULL == pTemp)
+        {
+            *p = NULL;
+            return;
+        }
+        // 这里直接对指针进行赋值
+        *p = pTemp;
+        pTemp-&gt;data = data;  
+        createNode2(&amp;(pTemp-&gt;pL), str);
+        createNode2(&amp;(pTemp-&gt;pR), str);
+    }
+    else
+    {
+        *p = NULL;
+    }
+    return;
+}</code></code></pre>
+<h2 id="遍历">遍历</h2>
+<p>三种常见的前序、中序、后序遍历：</p>
+<pre><code><code>// 这里pfprocData，是用来处理结构体里面的数据部分的函数
+void frontOrder(TREE_NODE_S *p, pfprocData pfunc)
+{
+    if (NULL == p)
+    {
+        return;
+    }
+    pfunc(&amp;(p-&gt;data));
+    frontOrder(p-&gt;pL, pfunc);
+    frontOrder(p-&gt;pR, pfunc);
+    return;
+}
+
+void middleOrder(TREE_NODE_S *p, pfprocData pfunc)
+{
+    if (NULL == p)
+    {
+        return;
+    }
+    middleOrder(p-&gt;pL, pfunc);
+    pfunc(&amp;(p-&gt;data));
+    middleOrder(p-&gt;pR, pfunc);
+    return;
+}
+
+void lastOrder(TREE_NODE_S *p, pfprocData pfunc)
+{
+    if (NULL == p)
+    {
+        return;
+    }
+    lastOrder(p-&gt;pL, pfunc);
+    lastOrder(p-&gt;pR, pfunc);
+    pfunc(&amp;(p-&gt;data));
+    return;
+}</code></code></pre>
+<h2 id="测试">测试</h2>
+<pre><code><code>// 先创建出如下两种树，然后做遍历输出
+
+//          1
+//        /   \
+//      2      4
+//       \
+//        3
+char ps1[] = {1, 2, INVALID, 3, INVALID, INVALID, 4, INVALID, INVALID};
+
+//        1
+//      /   \
+//    2      6
+//   / \      \
+//  3   5      7
+//   \
+//    4
+char ps2[] = {1, 2, 3, INVALID, 4, INVALID, INVALID, 5, INVALID, INVALID, 6, INVALID, 7, INVALID, INVALID};
+
+// 这里只对节点数据进行打印
+void procData(char *p)
+{
+    printf(&quot;%u &quot;, *p);
+}
+
+int main(void)
+{
+    TREE_NODE_S *pstTreeHead1 = NULL;
+    TREE_NODE_S *pstTreeHead2 = NULL;
+
+    pstTreeHead1 = createTree2(ps1);
+    pstTreeHead2 = createTree2(ps2)
+
+    // 如果使用第二个创建方法，则：
+    // createTree(&amp;pstTreeHead1, ps1);
+    // createTree(&amp;pstTreeHead2, ps2);
+
+    printf(&quot;%-14s&quot;, &quot;frontOrder:&quot;);
+    frontOrder(pstTreeHead1, procData);
+    printf(&quot;\n&quot;);
+
+    printf(&quot;%-14s&quot;, &quot;frontOrder:&quot;);
+    frontOrder(pstTreeHead2, procData);
+    printf(&quot;\n&quot;);
+
+    printf(&quot;%-14s&quot;, &quot;middleOrder:&quot;);
+    middleOrder(pstTreeHead2, procData);
+    printf(&quot;\n&quot;);
+
+    printf(&quot;%-14s&quot;, &quot;lastOrder:&quot;);
+    lastOrder(pstTreeHead2, procData);
+    printf(&quot;\n&quot;);
+}</code></code></pre>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

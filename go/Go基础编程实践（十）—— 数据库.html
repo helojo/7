@@ -1,0 +1,115 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go基础编程实践（十）—— 数据库' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go基础编程实践（十）—— 数据库</center></div><div class='banquan'>原文出处:本文由博客园博主GaiheiluKamei提供。<br/>
+原文连接:https://www.cnblogs.com/GaiHeiluKamei/p/11181765.html</div><br>
+    <h3 id="从数据库中读取数据">从数据库中读取数据</h3>
+<p>在<a href="http://sqlitebrowser.org/" class="uri">http://sqlitebrowser.org/</a>下载sqlite3可视化工具，在本main.go同目录下创建<code>personal.db</code>数据库，创建表如下：<br />
+<img src="./images/Go基础编程实践（十）—— 数据库0.png" /></p>
+<pre><code><code>package main
+
+import (
+    &quot;database/sql&quot;
+    &quot;fmt&quot;
+
+    _ &quot;github.com/mattn/go-sqlite3&quot;
+)
+// 用struct类型将来自SQL数据库的数据映射到内存中的对象
+type Profile struct {
+    ProfileId int
+    FirstName string
+    LastName string
+    Age int
+}
+
+func main() {
+    db, err := sql.Open(&quot;sqlite3&quot;, &quot;./personal.db&quot;)
+    checkError(err)
+    var profile Profile
+    // Query可以使用参数
+    rows, err := db.Query(&quot;select ProfileId, FirstName, LastName, Age from Profile where FirstName = ? and LastName = ?&quot;, &quot;Tarik&quot;, &quot;Guney&quot;)
+    checkError(err)
+    for rows.Next() {
+        err := rows.Scan(&amp;profile.ProfileId, &amp;profile.FirstName, &amp;profile.LastName, &amp;profile.Age)
+        checkError(err)
+        fmt.Println(profile)
+    }
+    rows.Close()
+    db.Close()
+}
+
+func checkError(err error) {
+    if err != nil {
+        panic(err)
+    }
+}</code></pre>
+<h3 id="将数据插入数据库">将数据插入数据库</h3>
+<pre><code><code>package main
+
+import (
+    _ &quot;github.com/mattn/go-sqlite3&quot;
+    &quot;database/sql&quot;
+    &quot;fmt&quot;
+)
+
+type Profile struct{
+    ProfileId int
+    FirstName string
+    LastName string
+    Age int
+}
+
+func main(){
+    db, err := sql.Open(&quot;sqlite3&quot;, &quot;./personal.db&quot;)
+    checkError(err)
+    /* 更新数据库数据
+    statement, err := db.Prepare(&quot;update Profile set FirstName = ? where ProfileId = ?&quot;)
+    checkError(err)
+    statement.Exec(&quot;Martha&quot;, 5)
+    */
+    statement, err := db.Prepare(&quot;insert into Profile (FirstName, LastName, Age) values(?,?,?)&quot;)
+    checkError(err)
+    statement.Exec(&quot;Jessica&quot;, &quot;McArthur&quot;, 30)
+    /* 删除数据库数据
+    statement ,err := db.Prepare(&quot;delete from Profile where  ProfileId = ?&quot;)
+    checkError(err)
+    statement.Exec(3)
+    */
+    var profile Profile
+    rows, err := db.Query(&quot;select ProfileId, FirstName, LastName, Age from Profile&quot;)
+    checkError(err)
+    for rows.Next(){
+        err := rows.Scan(&amp;profile.ProfileId, &amp;profile.FirstName, &amp;profile.LastName, &amp;profile.Age)
+        checkError(err)
+        fmt.Println(profile)
+    }
+    rows.Close()
+    db.Close()
+}
+
+func checkError(err error) {
+    if (err != nil) {
+        panic(err)
+    }
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

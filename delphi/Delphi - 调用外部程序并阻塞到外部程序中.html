@@ -1,0 +1,152 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Delphi - 调用外部程序并阻塞到外部程序中' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Delphi - 调用外部程序并阻塞到外部程序中</center></div><div class='banquan'>原文出处:本文由博客园博主Jeremy.Wu提供。<br/>
+原文连接:https://www.cnblogs.com/jeremywucnblog/p/11547941.html</div><br>
+    <p><strong>Delphi 调用外部程序并阻塞到外部程序中</strong></p>
+<p><span style="text-decoration: underline;"><span style="color: #0000ff;"><strong><em>背景说明：</em></strong></span></span></p>
+<p>前段时间开发一个数据转换的系统，业务逻辑中说明数据需要压缩成.tar.gz格式。</p>
+<p>我在Windows系统下采用，先生成批处理文件，然后调用WinExec执行批处理文件，休眠等待一段时间，完成数据的自动压缩。</p>
+<p>后来发现，待压缩文件的大小不确定，单纯的执行WinExec时Sleep固定时间，可能导致压缩失败、文件不全或损坏。</p>
+<p><span style="color: #0000ff;"><strong><span style="text-decoration: underline;"><em>优化方案：</em></span></strong></span></p>
+<p>取代WinExe用CreateProcess用来启动进程, 执行批处理文件, 同时系统会自动填写TProcessInformation这个结构。</p>
+<p>此时程序会自动阻塞到该批处理中，等待批处理句柄的进程结束或超时。这样就能解决压缩损坏问题。</p>
+<p>&nbsp;</p>
+<p>给个实例Demo:</p>
+<p>D7代码如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">unit</span><span style="color: #000000;"> uMain;
+</span><span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">interface</span>
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">uses</span>
+<span style="color: #008080;"> 6</span> <span style="color: #000000;">  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">  Dialogs, RzButton, StdCtrls;
+</span><span style="color: #008080;"> 8</span> 
+<span style="color: #008080;"> 9</span> <span style="color: #0000ff;">type</span>
+<span style="color: #008080;">10</span>   TFrmMain = <span style="color: #0000ff;">class</span><span style="color: #000000;">(TForm)
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    mmMsg: TMemo;
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    btnExecute: TRzBitBtn;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    btnClear: TRzBitBtn;
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">procedure</span> MsgDsp(v_Str: <span style="color: #0000ff;">string</span><span style="color: #000000;">);
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> btnExecuteClick(Sender: TObject);
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> btnClearClick(Sender: TObject);
+</span><span style="color: #008080;">17</span>   <span style="color: #0000ff;">private</span>
+<span style="color: #008080;">18</span>     <span style="color: #008000;">{</span><span style="color: #008000;"> Private declarations </span><span style="color: #008000;">}</span>
+<span style="color: #008080;">19</span>   <span style="color: #0000ff;">public</span>
+<span style="color: #008080;">20</span>     <span style="color: #008000;">{</span><span style="color: #008000;"> Public declarations </span><span style="color: #008000;">}</span>
+<span style="color: #008080;">21</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;">24</span> <span style="color: #000000;">  FrmMain: TFrmMain;
+</span><span style="color: #008080;">25</span> 
+<span style="color: #008080;">26</span> <span style="color: #0000ff;">implementation</span>
+<span style="color: #008080;">27</span> 
+<span style="color: #008080;">28</span> <span style="color: #008000;">{</span><span style="color: #008000;">$R *.dfm</span><span style="color: #008000;">}</span>
+<span style="color: #008080;">29</span> 
+<span style="color: #008080;">30</span> <span style="color: #0000ff;">procedure</span> TFrmMain.MsgDsp(v_Str: <span style="color: #0000ff;">string</span><span style="color: #000000;">);
+</span><span style="color: #008080;">31</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">32</span>   mmMsg.Lines.Add(<span style="color: #800000;">'</span><span style="color: #800000;">[ admin ] - [</span><span style="color: #800000;">'</span> + v_Str + <span style="color: #800000;">'</span><span style="color: #800000;">] - [</span><span style="color: #800000;">'</span> + FormatDateTime(<span style="color: #800000;">'</span><span style="color: #800000;">YYYY-MM-DD hh:mm:ss zzz</span><span style="color: #800000;">'</span>, Now()) + <span style="color: #800000;">'</span><span style="color: #800000;">]</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">33</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">34</span> 
+<span style="color: #008080;">35</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TFrmMain.btnExecuteClick(Sender: TObject);
+</span><span style="color: #008080;">36</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;">37</span> <span style="color: #000000;">  sInfo: TStartupInfo;
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">  pInfo: TProcessInformation;
+</span><span style="color: #008080;">39</span>   cmdLine: <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">  exitCode: Cardinal;
+</span><span style="color: #008080;">41</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">42</span>   MsgDsp(<span style="color: #800000;">'</span><span style="color: #800000;">初始化参数</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">43</span>   cmdLine := <span style="color: #800000;">'</span><span style="color: #800000;">C:\Program Files\7-Zip\7zFM.exe</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">44</span>   FillChar(sInfo, sizeof(sInfo), #<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">45</span>   sInfo.cb :=<span style="color: #000000;"> SizeOf(sInfo);
+</span><span style="color: #008080;">46</span>   sInfo.dwFlags :=<span style="color: #000000;"> STARTF_USESHOWWINDOW;
+</span><span style="color: #008080;">47</span>   sInfo.wShowWindow :=<span style="color: #000000;"> SW_NORMAL;
+</span><span style="color: #008080;">48</span>   MsgDsp(<span style="color: #800000;">'</span><span style="color: #800000;">参数初始化完成，启动WinExec调试</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">49</span>   <span style="color: #008000;">//</span><span style="color: #008000;">CreateProcess用来启动进程, 进程启动后, 会填写TProcessInformation这个结构，</span>
+<span style="color: #008080;">50</span>   <span style="color: #008000;">//</span><span style="color: #008000;">此时程序阻塞到该句柄中，等待句柄的进程结束或超时</span>
+<span style="color: #008080;">51</span>   <span style="color: #0000ff;">if</span> <span style="color: #0000ff;">not</span> CreateProcess(<span style="color: #0000ff;">nil</span>, pchar(cmdLine), <span style="color: #0000ff;">nil</span>, <span style="color: #0000ff;">nil</span>, false, CREATE_NEW_CONSOLE <span style="color: #0000ff;">or</span> NORMAL_PRIORITY_CLASS, <span style="color: #0000ff;">nil</span>, <span style="color: #0000ff;">nil</span>, sInfo, pInfo) <span style="color: #0000ff;">then</span>
+<span style="color: #008080;">52</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">53</span>     MsgDsp(<span style="color: #800000;">'</span><span style="color: #800000;">WinExec调试失败！</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">54</span>     MessageBox(Application.handle, <span style="color: #800000;">'</span><span style="color: #800000;">指定程序启动失败!</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">错误</span><span style="color: #800000;">'</span>, MB_OK <span style="color: #0000ff;">or</span><span style="color: #000000;"> MB_ICONSTOP);
+</span><span style="color: #008080;">55</span>   <span style="color: #0000ff;">end</span>
+<span style="color: #008080;">56</span>   <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">57</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">58</span>     <span style="color: #008000;">//</span><span style="color: #008000;">等待指定句柄的进程结束或超时</span>
+<span style="color: #008080;">59</span> <span style="color: #000000;">    WaitForSingleObject(pInfo.hProcess, INFINITE);
+</span><span style="color: #008080;">60</span> <span style="color: #000000;">    GetExitCodeProcess(pInfo.hProcess, exitCode);
+</span><span style="color: #008080;">61</span>     MsgDsp(<span style="color: #800000;">'</span><span style="color: #800000;">WinExec调试成功！</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">62</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">63</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">64</span> 
+<span style="color: #008080;">65</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TFrmMain.btnClearClick(Sender: TObject);
+</span><span style="color: #008080;">66</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">67</span> <span style="color: #000000;">   mmMsg.Clear;
+</span><span style="color: #008080;">68</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">69</span> 
+<span style="color: #008080;">70</span> <span style="color: #0000ff;">end</span>.</pre>
+</div>
+<p>运行效果如下：</p>
+<p><img src="./images/Delphi - 调用外部程序并阻塞到外部程序中0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p><strong>封装成函数如下</strong>：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;">Jeremy.Wu</span>
+<span style="color: #008080;"> 2</span> <span style="color: #008000;">//</span><span style="color: #008000;">2019.09.19</span>
+<span style="color: #008080;"> 3</span> <span style="color: #008000;">//</span><span style="color: #008000;">https://www.cnblogs.com/jeremywucnblog/</span>
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">function</span> TFrmMain.GetCreateProcess(vCmdLine: <span style="color: #0000ff;">string</span><span style="color: #000000;">): Boolean;
+</span><span style="color: #008080;"> 5</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;"> 6</span> <span style="color: #000000;">  sInfo: TStartupInfo;
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">  pInfo: TProcessInformation;
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">  exitCode: Cardinal;
+</span><span style="color: #008080;"> 9</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">10</span>   Result :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;">11</span>   FillChar(sInfo, sizeof(sInfo), #<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">12</span>   sInfo.cb :=<span style="color: #000000;"> SizeOf(sInfo);
+</span><span style="color: #008080;">13</span>   sInfo.dwFlags :=<span style="color: #000000;"> STARTF_USESHOWWINDOW;
+</span><span style="color: #008080;">14</span>   sInfo.wShowWindow :=<span style="color: #000000;"> SW_NORMAL;
+</span><span style="color: #008080;">15</span>   <span style="color: #008000;">//</span><span style="color: #008000;">CreateProcess用来启动进程, 进程启动后, 会填写TProcessInformation这个结构，</span>
+<span style="color: #008080;">16</span>   <span style="color: #008000;">//</span><span style="color: #008000;">此时程序阻塞到该句柄中，等待句柄的进程结束或超时</span>
+<span style="color: #008080;">17</span>   <span style="color: #0000ff;">if</span> <span style="color: #0000ff;">not</span> CreateProcess(<span style="color: #0000ff;">nil</span>, pchar(vCmdLine), <span style="color: #0000ff;">nil</span>, <span style="color: #0000ff;">nil</span>, false, CREATE_NEW_CONSOLE <span style="color: #0000ff;">or</span> NORMAL_PRIORITY_CLASS, <span style="color: #0000ff;">nil</span>, <span style="color: #0000ff;">nil</span>, sInfo, pInfo) <span style="color: #0000ff;">then</span>
+<span style="color: #008080;">18</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">19</span>     Result :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;">20</span>   <span style="color: #0000ff;">end</span>
+<span style="color: #008080;">21</span>   <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">22</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">23</span>     <span style="color: #008000;">//</span><span style="color: #008000;">等待指定句柄的进程结束或超时</span>
+<span style="color: #008080;">24</span> <span style="color: #000000;">    WaitForSingleObject(pInfo.hProcess, INFINITE);
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">    GetExitCodeProcess(pInfo.hProcess, exitCode);
+</span><span style="color: #008080;">26</span>     Result :=<span style="color: #000000;"> True;
+</span><span style="color: #008080;">27</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">28</span> <span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>&nbsp;</p>
+<div id="AllanboltSignature">
+<p id="PSignature" style="padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 60px; background: url('https://images.cnblogs.com/cnblogs_com/jeremywucnblog/1607637/o_191206011825obs.png') #e5f1f4 no-repeat 1% 50%; font-family: 微软雅黑; font-size: 11px; border: #e0e0e0 1px dashed;">&nbsp; 作者：<a href="https://www.cnblogs.com/jeremywucnblog/" target="_blank">Jeremy.Wu</a> <br />&nbsp; 出处：<a href="https://www.cnblogs.com/jeremywucnblog/" target="_blank">https://www.cnblogs.com/jeremywucnblog/</a>
+            <br />&nbsp; 本文版权归作者和博客园共有，欢迎转载，但未经作者同意必须保留此段声明，且在文章页面明显位置给出原文连接，否则保留追究法律责任的权利。
+        </p>
+
+
+
+
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

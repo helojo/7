@@ -1,0 +1,83 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修STM32F4 阿波罗寄存器点亮LED灯' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>STM32F4 阿波罗寄存器点亮LED灯</center></div><div class='banquan'>原文出处:本文由博客园博主菜鸟奇遇记提供。<br/>
+原文连接:https://www.cnblogs.com/sherlocksweet/p/11399411.html</div><br>
+    <ul>
+<li>
+<h2><span style="background-color: #ffffff; color: #000000;"><strong><span style="font-family: 黑体; font-size: 15px;">学习步骤：</span></strong></span></h2>
+</li>
+</ul>
+<p>&nbsp;</p>
+<p style="margin-left: 30px;">使用寄存器点亮LED灯，需要进行如下的步骤，<span style="font-family: Calibri;">LED</span>灯属于外设部分，首先需要开启外设的时钟使能，然后<span style="font-family: Calibri;">LED</span>灯是<span style="font-family: Calibri;">PB1</span>口，（芯片是正点原子的阿波罗），接着定义<span style="font-family: Calibri;">GPIOB</span>口的输出模式，为上拉、推挽、<span style="font-family: Calibri;">100M</span>，最后定义<span style="font-family: Calibri;">B</span>口的<span style="font-family: Calibri;">1</span>引脚为低电平就可以实现点亮了。</p>
+<p>&nbsp;</p>
+<p>这一部分内容耗时有点长，最后发现关键原因在于调试的时候未按复位键，这个原因我也是很无语啊，怪不得在之前下载完程序，第二天早上去开电源的时候，一个灯亮了，原来程序写的是对的呀~~~</p>
+<p>&nbsp;</p>
+<ul>
+<li>
+<h2><span style="background-color: #ffffff; color: #000000;"><strong><span style="font-family: 黑体; font-size: 15px;">错误与总结：</span></strong></span></h2>
+</li>
+</ul>
+<p style="margin-left: 30px;"><span style="background-color: #ffffff; color: #000000; font-family: 宋体;"><span style="font-size: 15px;">错误就是按键问题，下载完程序我一看灯没亮，于是就继续修改程序，修改了好几个版本了，可能之前的也是对的吧。此外，过程之中也对代码做了很多修改与检查，由于寄存器的地址需要自己查找，所有有时候会写错，不过我应该是看了好多遍，现在印象很深刻了呢。首先确保时钟使能开启的是AHB1，然后对GPIOB口进行定义，初始地址与偏移地址一定要加对哦。</span></span></p>
+<p style="margin-left: 30px;"><span style="background-color: #ffffff; color: #000000; font-family: 宋体;"><span style="font-size: 15px;">中间有很多C语言代码的位操作，现在补充一下：</span></span></p>
+<p style="margin-left: 30px;"><span style="background-color: #ffffff; color: #000000; font-family: 宋体;"><span style="font-size: 15px;">置位 |=&nbsp; &nbsp; &nbsp;清零 =&amp;= ~</span></span></p>
+<p style="margin-left: 30px;"><span style="background-color: #ffffff; color: #000000; font-family: 宋体;"><span style="font-size: 15px;">a&gt;&gt;b 指的是a这个数向右移b位&nbsp;&nbsp;a&lt;&lt;b 指的是a这个数向左移b位</span></span></p>
+<p style="margin-left: 30px;"><strong><span style="background-color: #ffffff; color: #ff6600; font-family: 宋体;"><span style="font-size: 15px;">需要修改下魔术棒之中target的晶振 mini板为8 ，阿波罗为12</span></span></strong></p>
+<ul>
+<li>
+<h2><span style="background-color: #ffffff; color: #000000;"><strong><span style="font-family: 黑体; font-size: 15px;">代码：</span></strong></span></h2>
+</li>
+</ul>
+<div class="cnblogs_code">
+<pre><code>#include <span style="color: #800000;">"</span><span style="color: #800000;">stm32f429xx.h</span><span style="color: #800000;">"</span>
+
+<span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+{
+</span><span style="color: #008000;">//</span><span style="color: #008000;">使能时钟AHB1</span>
+    *(unsigned <span style="color: #0000ff;">int</span> *)<span style="color: #800080;">0x40023830</span> |= (<span style="color: #800080;">1</span>&lt;&lt;<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008000;">//</span><span style="color: #008000;">控制io口输出</span>
+    *(unsigned <span style="color: #0000ff;">int</span> *)<span style="color: #800080;">0x40020400</span> &amp;= <span style="color: #800080;">0x00000000</span><span style="color: #000000;">;
+    </span>*(unsigned <span style="color: #0000ff;">int</span> *)<span style="color: #800080;">0x40020400</span> |= (<span style="color: #800080;">1</span>&lt;&lt;<span style="color: #800080;">2</span><span style="color: #000000;">);
+    
+    </span>*(unsigned <span style="color: #0000ff;">int</span> *)<span style="color: #800080;">0x40020404</span> &amp;= <span style="color: #800080;">0x00000000</span><span style="color: #000000;">;
+    
+    </span>*(unsigned <span style="color: #0000ff;">int</span> *)<span style="color: #800080;">0x40020408</span> &amp;= <span style="color: #800080;">0x00000000</span><span style="color: #000000;">;
+    </span>*(unsigned <span style="color: #0000ff;">int</span> *)<span style="color: #800080;">0x40020408</span> |= (<span style="color: #800080;">1</span>&lt;&lt;<span style="color: #800080;">3</span><span style="color: #000000;">);
+    
+    </span>*(unsigned <span style="color: #0000ff;">int</span> *)<span style="color: #800080;">0x4002040C</span> &amp;= <span style="color: #800080;">0x00000000</span><span style="color: #000000;">;
+    </span>*(unsigned <span style="color: #0000ff;">int</span> *)<span style="color: #800080;">0x4002040C</span> |= (<span style="color: #800080;">1</span>&lt;&lt;<span style="color: #800080;">2</span><span style="color: #000000;">);
+
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">ODR寄存器</span>
+    *(unsigned <span style="color: #0000ff;">int</span> *)<span style="color: #800080;">0x40020414</span> &amp;=~(<span style="color: #800080;">1</span>&lt;&lt;<span style="color: #800080;">1</span><span style="color: #000000;">);
+    
+}
+
+
+</span><span style="color: #0000ff;">void</span> systeminit(<span style="color: #0000ff;">void</span>) <span style="color: #008000;">//</span><span style="color: #008000;">骗过编译器不会报错</span>
+<span style="color: #000000;">{
+
+
+}</span></code></pre>
+
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

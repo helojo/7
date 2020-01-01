@@ -1,0 +1,129 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] 轻量服务器框架基础TCP服务模块' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] 轻量服务器框架基础TCP服务模块</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/12043825.html</div><br>
+    <p>框架要先把整体的结构定义好，一般都是在$GOPATH目录的src下建立自己的目录</p>
+<p><img src="./images/[Go] 轻量服务器框架基础TCP服务模块0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;zinterface是一些接口的定义</p>
+<p>znet就是接口的具体实现</p>
+<p>IServer.go</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package zinterface
+
+type IServer interface{
+    Start()
+    Stop()
+    Server()
+}</span></pre>
+</div>
+<p>server.go一个tcp服务端的基本业务，简单的原样回显</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package znet
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">log</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">net</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">zinx/zinterface</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+type Server struct {
+    Name      </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+    IP        </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+    IPversion </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+    Port      </span><span style="color: #0000ff;">int</span><span style="color: #000000;">
+}
+
+func (s </span>*<span style="color: #000000;">Server) Start() {
+    log.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%s %s:%d start...\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, s.Name, s.IP, s.Port)
+    addr, err :</span>= net.ResolveTCPAddr(s.IPversion, <span style="color: #0000ff;">fmt</span>.Sprintf(<span style="color: #800000;">"</span><span style="color: #800000;">%s:%d</span><span style="color: #800000;">"</span><span style="color: #000000;">, s.IP, s.Port))
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">resolve tcp addr err </span><span style="color: #800000;">"</span><span style="color: #000000;">, err)
+        return
+    }
+    listener, err :</span>=<span style="color: #000000;"> net.ListenTCP(s.IPversion, addr)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">listen tcp err </span><span style="color: #800000;">"</span><span style="color: #000000;">, err)
+        return
+    }
+    go func() {
+        </span><span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+            conn, err :</span>=<span style="color: #000000;"> listener.AcceptTCP()
+            </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+                log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">accept tcp err </span><span style="color: #800000;">"</span><span style="color: #000000;">, err)
+                continue
+            }
+            go func() {
+
+                </span><span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+                    b :</span>= <span style="color: #0000ff;">make</span>([]<span style="color: #0000ff;">byte</span>, <span style="color: #800080;">512</span><span style="color: #000000;">)
+                    len, err :</span>=<span style="color: #000000;"> conn.Read(b)
+                    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+                        log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">read tcp err </span><span style="color: #800000;">"</span><span style="color: #000000;">, err)
+                        continue
+                    }
+                    </span><span style="color: #0000ff;">if</span> _, err := conn.Write(b[:len]); err !=<span style="color: #000000;"> nil {
+                        log.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">write tcp err </span><span style="color: #800000;">"</span><span style="color: #000000;">, err)
+                        continue
+                    }
+                }
+            }()
+        }
+    }()
+
+}
+func (s </span>*<span style="color: #000000;">Server) Stop() {
+
+}
+func (s </span>*<span style="color: #000000;">Server) Server() {
+    s.Start()
+    </span><span style="color: #0000ff;">select</span><span style="color: #000000;">{}
+}
+func NewServer(name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">) zinterface.IServer {
+    s :</span>= &amp;<span style="color: #000000;">Server{
+        Name:      name,
+        IP:        </span><span style="color: #800000;">"</span><span style="color: #800000;">0.0.0.0</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        IPversion: </span><span style="color: #800000;">"</span><span style="color: #800000;">tcp4</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        Port:      </span><span style="color: #800080;">8999</span><span style="color: #000000;">,
+    }
+    return s
+}</span></pre>
+</div>
+<p>单独在src下创建测试目录</p>
+<p><img src="./images/[Go] 轻量服务器框架基础TCP服务模块1.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;server.go</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">zinx/znet</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+func main()  {
+    server:</span>=znet.NewServer(<span style="color: #800000;">"</span><span style="color: #800000;">[zinx]</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    server.Server()
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

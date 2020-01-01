@@ -1,0 +1,57 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++ string类型成员变量在调用构造函数后未能正确赋值' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++ string类型成员变量在调用构造函数后未能正确赋值</center></div><div class='banquan'>原文出处:本文由博客园博主最爱马鲛鱼提供。<br/>
+原文连接:https://www.cnblogs.com/tareq/p/11393708.html</div><br>
+    <div class="cnblogs_Highlighter">
+<pre>struct RelItem{
+    string segName;
+    Elf32_Rel* rel;
+    string relName;
+    RelItem(string seg, int addr, string lb, int t); 
+};</pre>
+</div>
+<div class="cnblogs_Highlighter">
+<pre>RelItem::RelItem(string seg, int addr, string lb, int t){ 
+    segName = seg;
+    relName = lb; 
+    //rel = new Elf32_Rel(); <span style="color: #ff0000;">//root cause</span>
+    rel-&gt;r_offset = addr;
+    rel-&gt;r_info = t;
+}</pre>
+</div>
+<p>该string类型变量relName是类的最后一个成员变量，在此之前还有有两个成员变量，分别是string类型和指针类型.</p>
+<p>调试过程中发现在rel指针变量未new 新值的情况下，构造函数依然能够正确返回，gdb调试<span style="color: #ff0000;">发现rel变量并非空指针，</span></p>
+<p>最终在打印relName的时候发现有乱码，</p>
+<p><span style="color: #ff0000;">怀疑是因为rel变量没有分配新的内存空间，构造函数赋值的过程因为先赋值了后声明的变量relName</span></p>
+<p><span style="color: #ff0000;">导致rel指针也被赋值了一个随机值，从而修改了其他变量的值导致打印错乱.</span></p>
+<p><span style="color: #000000;">如果我们将rel和relName的声明顺序调换下，构造函数不变，gdb调试的时候发现在</span></p>
+<div class="cnblogs_Highlighter">
+<pre>rel-&gt;r_offset = addr;
+</pre>
+</div>
+<p>　就会报告rel<span style="color: #ff0000;">空指针异常,从而能够提早发现问题</span></p>
+<p><span style="color: #000000;">总结：</span></p>
+<p><span style="color: #000000;">在构造函数对成员变量赋值的过程中，推测应该会按照<span style="color: #ff0000;">成员变量声明的顺序分配空间</span>，</span></p>
+<p><span style="color: #000000;">因此如果指针变量（声明顺序靠前）在未赋值的情况下，会出现后赋值的变量因为需要分配空间，随机分配了一个值给指针变量</span></p>
+<p><span style="color: #000000;">从而导致gdb调试未能第一时间发现问题，影响后续调试以及程序运行结果</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

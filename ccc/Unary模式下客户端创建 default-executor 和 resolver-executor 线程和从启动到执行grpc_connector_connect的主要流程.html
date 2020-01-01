@@ -1,0 +1,137 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Unary模式下客户端创建 default-executor 和 resolver-executor 线程和从启动到执行grpc_connector_connect的主要流程' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Unary模式下客户端创建 default-executor 和 resolver-executor 线程和从启动到执行grpc_connector_connect的主要流程</center></div><div class='banquan'>原文出处:本文由博客园博主yuyuguang提供。<br/>
+原文连接:https://www.cnblogs.com/yuyuguang/p/11756500.html</div><br>
+    <p>(原创)C/C<ins>语言， 平台是debian10, grpc版本：grpc-c</ins>/1.25.0-dev grpc-c/8.0.0, 使用的例子是自带的例子GreeterClient</p>
+<p>创建 default-executor 和 resolver-executor 线程的主要流程，创建channel时会创建这2个线程</p>
+<div class="mermaid">graph TD;
+    000(grpc::InsecureChannelCredentials #credentials.h:91 调用InsecureChannelCredentials)-->001(grpc_impl::InsecureChannelCredentials #insecure_credentials.cc:59 创建一个共享的InsecureChannelCredentialsImpl对象)
+
+    001-->002(grpc_impl::InsecureChannelCredentialsImpl::InsecureChannelCredentialsImpl #insecure_credentials.cc:30 调用父类ChannelCredentials构造函数)
+
+    002-->003(grpc_impl::ChannelCredentials::ChannelCredentials #credentials_cc.cc:25 调用父类GrpcLibraryCodegen构造函数)
+
+    003-->004(grpc::GrpcLibraryCodegen::GrpcLibraryCodegen #grpc_library.h:45 调用GrpcLibraryInterface的init)
+
+    004-->005(grpc::internal::GrpcLibrary::init #grpc_library.h:34 调用grpc_init)
+
+    005-->006(grpc_init #init.cc:146 调用grpc_iomgr_init)
+
+    006-->007(grpc_iomgr_init #iomgr.cc:60 调用grpc_core::Executor::InitAll)
+
+    007-->008(创建 default-executor 和 resolver-executor 线程)
+
+    008-->009(grpc_iomgr_start #iomgr.cc:69 调用grpc_timer_manager_init)
+
+    009-->010(grpc_timer_manager_init #timer_manager.cc:311 调用start_threads)
+
+    010-->011(start_threads #timer_manager.cc:293 调用start_timer_thread_and_unlock)
+
+    011-->012(start_timer_thread_and_unlock #timer_manager.cc:91 启动grpc_global_timer线程)
+</div>
+<p>grpc Unary模式下客户端启动到执行grpc_connector_connect的主要流程</p>
+<div class="mermaid">graph TD;
+    000(grpc::internal::BlockingUnaryCall #client_unary_call.h:43)-->001(grpc::internal::BlockingUnaryCallImpl::BlockingUnaryCallImpl #client_unary_call.h:71 创建CompletionQueue, Call, CallOpSet对象, 设置CallOpSet对象参数, 调用PerformOps)
+
+    001-->002(grpc::internal::Call::PerformOps #call.h:69 调用PerformOpsOnCall)
+
+    002-->003(grpc_impl::Channel::PerformOpsOnCall #channel_cc.cc:164 调用FillOps)
+
+    003-->004(grpc::internal::CallOpSet::FillOps #call_op_set.h:874 调用ContinueFillOpsAfterInterception)
+
+    004-->005(grpc::internal::CallOpSet::ContinueFillOpsAfterInterception #call_op_set.h:943 调用6个op的AddOp并调用grpc_call_start_batch)
+
+    005-->006(grpc::CoreCodegen::grpc_call_start_batch #core_codegen.cc:113 调用grpc_call_start_batch)
+
+    006-->007(grpc_call_start_batch #call.cc:1974 调用call_start_batch)
+
+    007-->008(call_start_batch #call.cc:1929 根据6个ops的op->op, 设置stream_op, ops, call的参数, 最后调用execute_batch)
+
+    008-->009(execute_batch #call.cc:639 调用start_batch_closure的callback函数 execute_batch_in_call_combiner)
+
+    009-->010(execute_batch_in_call_combiner #call.cc:628 调用 elem->filter->start_transport_stream_op_batch)
+
+    010-->011(grpc_call_next_op #channel_stack.cc:227 调用 next_elem->filter->start_transport_stream_op_batch)
+
+    011-->012(grpc_core::CallData::StartTransportStreamOpBatch #client_channel.cc:2140 把batch加入pending:PendingBatchesAdd并调用PickSubchannel)
+
+    012-->013(grpc_core::CallData::PickSubchannel #client_channel.cc:3853 调用PickSubchannelLocked返回false)
+
+    013-->014(grpc_core::CallData::PickSubchannelLocked #client_channel.cc:3870 picker_是nullptr, 调用CheckConnectivityState, 参数设定为尝试连接)
+
+    014-->015(grpc_core::ChannelData::CheckConnectivityState #client_channel.cc:1956 创建closure并调用它的callback函数 TryToConnectLocked)
+
+    015-->016(closure_impl::closure_wrapper #closure.h:156 创建closure是callback函数是closure_impl::closure_wrapper, 真正的callback是 TryToConnectLocked)
+
+    016-->017(grpc_core::ChannelData::TryToConnectLocked #client_channel.cc:1946 调用CreateResolvingLoadBalancingPolicyLocked)
+
+    017-->018(grpc_core::ChannelData::CreateResolvingLoadBalancingPolicyLocked #client_channel.cc:1596 调用ResolvingLoadBalancingPolicy构造函数)
+
+    018-->019(grpc_core::ResolvingLoadBalancingPolicy #resolving_lb_policy.cc:199 创建CreateResolver, UpdateState并调用StartLocked开始解析)
+
+    019-->020(grpc_core::AresDnsResolver::StartLocked #dns_resolver_ares.cc:177 调用MaybeStartResolvingLocked)
+
+    020-->021(grpc_core::AresDnsResolver::MaybeStartResolvingLocked #dns_resolver_ares.cc:409 调用StartResolvingLocked)
+
+    021-->022(grpc_core::AresDnsResolver::StartResolvingLocked #dns_resolver_ares.cc:420 调用grpc_dns_lookup_ares_locked)
+
+    022-->023(grpc_dns_lookup_ares_locked_impl #grpc_ares_wrapper.cc:625 调用grpc_dns_lookup_ares_continue_after_check_localhost_and_ip_literals_locked)
+
+    023-->024(grpc_dns_lookup_ares_continue_after_check_localhost_and_ip_literals_locked #grpc_ares_wrapper.cc:446 使用c-ares通过dns查找ip地址, 最后调用grpc_ares_request_unref_locked)
+
+    024-->025(grpc_ares_request_unref_locked #grpc_ares_wrapper.cc:135 如果延迟的查询为0, 调用grpc_ares_ev_driver_on_queries_complete_locked)
+
+    025-->026(grpc_ares_ev_driver_on_queries_complete_locked #grpc_ares_ev_driver.cc:191 停止查询,调用grpc_timer_cancel, 参数是query_timeout)
+
+    026-->027(grpc_timer_cancel #timer.cc:35 调用grpc_timer_impl->cancel)
+
+    027-->028(timer_cancel #timer_generic.cc:474 调用 timer->closure对应的callback函数)
+
+    028-->029(on_ares_backup_poll_alarm_locked #grpc_ares_ev_driver.cc:288 调用grpc_ares_ev_driver_unref)
+
+    029-->030(grpc_ares_ev_driver_unref #grpc_ares_ev_driver.cc:112 释放资源并调用grpc_ares_complete_request_locked)
+
+    030-->031(grpc_ares_complete_request_locked #grpc_ares_wrapper.cc:151 调用on_done对应的callback函数)
+
+    031-->032(grpc_core::AresDnsResolver::OnResolvedLocked #dns_resolver_ares.cc:347 解析完成, 调用ReturnResult)
+
+    032-->033(grpc_core::ResolvingLoadBalancingPolicy::ResolverResultHandler::ReturnResult #resolving_lb_policy.cc:87 调用OnResolverResultChangedLocked)
+
+    033-->034(OnResolverResultChangedLocked #resolving_lb_policy.cc:479 获得lb_policy_name,默认pick_first, 如果lb_policy_name不为空, 则创建或者更新LB policy, 调用的是CreateOrUpdateLbPolicyLocked)
+
+    034-->035(CreateOrUpdateLbPolicyLocked #resolving_lb_policy.cc:364 创建或者更新lb_policy, 调用UpdateLocked)
+
+    035-->036(PickFirst::UpdateLocked #pick_first.cc:280 调用AttemptToConnectUsingLatestUpdateArgsLocked)
+
+    036-->037(PickFirst::AttemptToConnectUsingLatestUpdateArgsLocked #pick_first.cc:236 用latest_update_args_创建 subchannel列表, 如果列表中的subchannel有状态是GRPC_CHANNEL_READY, 则选中此subchannel, 否则选中第0个subchannel)
+
+    037-->038(AttemptToConnect #client_channel.cc:921 调用subchannel_->AttemptToConnect)
+
+    038-->039(Subchannel::AttemptToConnect #subchannel.cc:823 调用MaybeStartConnectingLocked)
+
+    039-->040(Subchannel::MaybeStartConnectingLocked #subchannel.cc:930 调用ContinueConnectingLocked)
+
+    040-->041(Subchannel::ContinueConnectingLocked #subchannel.cc:983 设置grpc_connect_in_args参数并调用grpc_connector_connect, 通过connector->vtable->connect最后调用chttp2_connector_connect)
+</div>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

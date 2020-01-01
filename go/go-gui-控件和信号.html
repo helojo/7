@@ -1,0 +1,246 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go-gui-控件和信号' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go-gui-控件和信号</center></div><div class='banquan'>原文出处:本文由博客园博主跌倒的小黄瓜提供。<br/>
+原文连接:https://www.cnblogs.com/ygjzs/p/11946164.html</div><br>
+    <h1 id="go-gui-控件和信号">go-gui-控件和信号</h1>
+<h2 id="控件">控件</h2>
+<h3 id="控件简介">控件简介</h3>
+<p>控件是对数据和方法的封装。控件有自己的属性和方法。属性是指控件的特征。方法是指控件的一些简单而可见的功能。如按钮就是一个控件，这个按钮是方形的，里面有张图片，这是我们能看到外观属性，同时，这个按钮具备被人按下的功能。</p>
+<p>GTK中控件主要分为两类：容器控件，非容器控件。</p>
+<p>容器控件：它可以容纳别的控件，我们可以理解为盒子，盒子拿来装东西。容器控件又分为两类，一类只能容纳一个控件，如窗口，按钮；另一类能容纳多个控件，如布局控件。<br />
+非容器控件：它不可以容纳别的控件，如标签、行编辑。</p>
+<pre><code><code>package main
+
+import (
+    &quot;os&quot;
+
+    &quot;github.com/mattn/go-gtk/gtk&quot;
+)
+
+func main() {
+    gtk.Init(&amp;os.Args) //环境初始化
+
+    //--------------------------------------------------------
+    // 主窗口
+    //--------------------------------------------------------
+    window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL) //创建窗口
+    window.SetPosition(gtk.WIN_POS_CENTER)       //设置窗口居中显示
+    window.SetTitle(&quot;GTK Go!&quot;)                   //设置标题
+    window.SetSizeRequest(300, 200)              //设置窗口的宽度和高度
+
+    //--------------------------------------------------------
+    // GtkFixed
+    //--------------------------------------------------------
+    layout := gtk.NewFixed() //创建固定布局
+
+    //--------------------------------------------------------
+    // GtkButton
+    //--------------------------------------------------------
+    b1 := gtk.NewButton() //新建按钮
+    b1.SetLabel(&quot;^_@&quot;)    //设置内容
+    //b1.SetSizeRequest(100, 50) //设置按钮大小
+
+    b2 := gtk.NewButtonWithLabel(&quot;@_~&quot;) //新建按钮，同时设置内容
+    b2.SetSizeRequest(100, 50)          //设置按钮大小
+
+    //--------------------------------------------------------
+    // 添加布局、添加容器
+    //--------------------------------------------------------
+    window.Add(layout) //把布局添加到主窗口中
+
+    layout.Put(b1, 0, 0)    //设置按钮在容器的位置
+    layout.Move(b1, 50, 50) //移动按钮的位置，必须先put，再用move
+
+    layout.Put(b2, 50, 100)
+
+    window.ShowAll() //显示所有的控件
+
+    gtk.Main() //主事件循环，等待用户操作
+}
+
+//func (v *Fixed) Put(w IWidget, x, y int)
+//功能：固定布局容器添加控件
+//参数：
+//    widget：要添加的控件
+//    x, y：控件摆放位置的起点坐标
+</code></pre>
+<h2 id="信号">信号</h2>
+<p>GTK采用了信号与回调函数来处理窗口外部传来的事件、消息或信号。当信号发生时，程序自动调用为信号连接(注册)的回调函数。</p>
+<p>学习图形界面编程，我们会经常接触到“信号”这个名词。GTK中的“信号”实际上是一种软件中断。“中断”在我们生活中经常遇到，譬如，我正在房间里打游戏，突然送快递的来了，把正在玩游戏的我给“中断”了，我去签收快递( 处理中断 )，处理完成后，再继续玩我的游戏。GTK中的“信号”就是属于这么一种“中断”，当用户按下按钮的时候，就产生一个“中断”，相当于产生一个信号，接着就会处理这么一个“中断任务”(程序里体验为调用一个函数)。</p>
+<p>“信号”在GTK中可以认为一种中断的标志，如按下按钮的标志为”pressed”，释放按钮的标志为”released”，这些标志就相当于 go 语言的关键字一样，我们使用的时候必须完全按照它的名字来写。需要注意的是，每个控件的信号标志不一定都一样，如按钮（GtkButton）里有”pressed”信号，窗口(GtkWindow)里就没这个信号，每个控件具体有哪个信号，应该查看帮助文档来确定。<br />
+信号标识 触发条件</p>
+<p>“clicked” 按下按钮时触发<br />
+“pressed” 按下按钮时触发<br />
+“released” 释放按钮时触发</p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    &quot;os&quot;
+
+    &quot;github.com/mattn/go-gtk/glib&quot;
+    &quot;github.com/mattn/go-gtk/gtk&quot;
+)
+
+//按钮b1信号处理的回调函数
+func HandleButton(ctx *glib.CallbackContext) {
+    arg := ctx.Data()   //获取用户传递的参数，是空接口类型
+    p, ok := arg.(*int) //类型断言
+    if ok {             //如果ok为true，说明类型断言正确
+        fmt.Println(&quot;*p = &quot;, *p) //用户传递传递的参数为&amp;tmp，是一个变量的地址
+        *p = 250                 //操作指针所指向的内存
+    }
+
+    fmt.Println(&quot;按钮b1被按下&quot;)
+
+    //gtk.MainQuit() //关闭gtk程序
+}
+
+func main() {
+    gtk.Init(&amp;os.Args) //环境初始化
+
+    //--------------------------------------------------------
+    // 主窗口
+    //--------------------------------------------------------
+    window := gtk.NewWindow(gtk.WINDOW_TOPLEVEL) //创建窗口
+    window.SetPosition(gtk.WIN_POS_CENTER)       //设置窗口居中显示
+    window.SetTitle(&quot;GTK Go!&quot;)                   //设置标题
+    window.SetSizeRequest(300, 200)              //设置窗口的宽度和高度
+
+    //--------------------------------------------------------
+    // GtkFixed
+    //--------------------------------------------------------
+    layout := gtk.NewFixed() //创建固定布局
+
+    //--------------------------------------------------------
+    // GtkButton
+    //--------------------------------------------------------
+    b1 := gtk.NewButton() //新建按钮
+    b1.SetLabel(&quot;^_@&quot;)    //设置内容
+    //b1.SetSizeRequest(100, 50) //设置按钮大小
+
+    b2 := gtk.NewButtonWithLabel(&quot;@_~&quot;) //新建按钮，同时设置内容
+    b2.SetSizeRequest(100, 50)          //设置按钮大小
+
+    //--------------------------------------------------------
+    // 添加布局、添加容器
+    //--------------------------------------------------------
+    window.Add(layout) //把布局添加到主窗口中
+
+    layout.Put(b1, 0, 0)    //设置按钮在容器的位置
+    layout.Move(b1, 50, 50) //移动按钮的位置，必须先put，再用move
+
+    layout.Put(b2, 50, 100)
+
+    //--------------------------------------------------------
+    // 信号处理
+    //--------------------------------------------------------
+    //按钮按下自动触发&quot;pressed&quot;，自动调用HandleButton, 同时将 &amp;tmp 传递给HandleButton
+    tmp := 10
+    b1.Connect(&quot;pressed&quot;, HandleButton, &amp;tmp)
+
+    //回调函数为匿名函数，推荐写法
+    //按钮按下自动触发&quot;pressed&quot;，自动调用匿名函数，
+    b2.Connect(&quot;pressed&quot;, func() {
+
+        fmt.Println(&quot;b2被按下&quot;)
+        fmt.Println(&quot;tmp = &quot;, tmp)
+
+    }) //注意：}和)在同一行
+
+    window.ShowAll() //显示所有的控件
+
+    gtk.Main() //主事件循环，等待用户操作
+}
+
+//func (v *Widget) Connect(s string, f interface{}, datas ...interface{}) int
+//功能：信号注册
+//参数：
+//    v: 信号发出者，可以认为我们操作的控件，如按下按钮，这个就为按钮指针
+//    s：信号标志，如&quot;pressed&quot;
+//    f：回调函数的名称，
+//    datas：给回调函数传的参数，尽管是可变参数，但是只能传递一个参数，可变参数的目的为了让用户多个选择(可以传参，或者不传)
+//返回值：
+//    注册函数的标志
+</code></pre>
+<h2 id="glade的简单使用">glade的简单使用</h2>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    &quot;os&quot;
+
+    &quot;github.com/mattn/go-gtk/gtk&quot;
+)
+
+func main() {
+    gtk.Init(&amp;os.Args)
+
+    builder := gtk.NewBuilder()       //新建builder
+    builder.AddFromFile(&quot;test.glade&quot;) //读取glade文件
+
+    // 获取窗口控件指针，注意&quot;window1&quot;要和glade里的标志名称匹配
+    window := gtk.WindowFromObject(builder.GetObject(&quot;window1&quot;))
+    b1 := gtk.ButtonFromObject(builder.GetObject(&quot;123456&quot;))        //获取按钮1
+    b2 := gtk.ButtonFromObject(builder.GetObject(&quot;togglebutton1&quot;)) //获取按钮2
+
+    //信号处理
+    b1.Connect(&quot;clicked&quot;, func() {
+        //获取按钮内容
+        fmt.Println(&quot;button txt = &quot;, b1.GetLabel())
+    })
+
+    b2.Connect(&quot;clicked&quot;, func() {
+        //获取按钮内容
+        fmt.Println(&quot;button txt = &quot;, b2.GetLabel())
+        gtk.MainQuit() //关闭窗口
+    })
+
+    //按窗口关闭按钮，自动触发&quot;destroy&quot;信号
+    window.Connect(&quot;destroy&quot;, gtk.MainQuit)
+
+    window.ShowAll()
+
+    gtk.Main()
+}
+
+//可以简单分为两步：
+
+//1）读取glade文件
+
+//// 创建GtkBuilder对象,GtkBuilder在&lt;gtk/gtk.h&gt;声明
+
+//GtkBuilder *builder = gtk_builder_new();
+
+//// 读取test.glade文件的信息，保存在builder指针变量里
+
+//gtk_builder_add_from_file(builder, &quot;./test.glade&quot;, NULL);
+
+//2）获取glade文件里的控件
+
+//// 获取窗口控件指针，注意&quot;window1&quot; 要和glade里的标志名称匹配
+
+//GtkWidget *window = GTK_WIDGET(gtk_builder_get_object (builder, &quot;window1&quot;));
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

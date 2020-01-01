@@ -1,0 +1,231 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ 中的new、malloc、namespace' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ 中的new、malloc、namespace</center></div><div class='banquan'>原文出处:本文由博客园博主子宇24提供。<br/>
+原文连接:https://www.cnblogs.com/dishengAndziyu/p/10904079.html</div><br>
+    <p align="left">1，这些新引入的成员想要解决 C 语言中存在的一些问题，</p>
+<p align="left">&nbsp;</p>
+<p align="left">2，动态内存分配：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，C++ 中的动态内存分配：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，C++ 中通过 new 关键字进行基于类型的动态内存申请；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，C 语言中自身不包含动态内存分配的内容，通过 malloc 库函数基于字节进行；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，C++ 中的动态内存申请是基于类型进行的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，delete 关键字用于内存释放；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4，变量申请：</p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">1</span> Type* pointer = <span style="color: #0000ff;">new</span><span style="color: #000000;"> Type; </span></span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">2</span> <span style="color: #008000;">//</span><span style="color: #008000;"> ......，和 C 语言中的使用方式相同；</span> </span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">3</span> <span style="color: #0000ff;">delete</span> pointer;</span>&nbsp;</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; 5，数组申请：&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> Type* pointer = <span style="color: #0000ff;">new</span> Type[N];  <span style="color: #008000;">//</span><span style="color: #008000;"> N 表示数组包含的元素个数；
+</span><span style="color: #008080;">2</span> <span style="color: #008000;">//</span><span style="color: #008000;"> ......,和 C 语言中的使用方式相同；</span>
+<span style="color: #008080;">3</span> <span style="color: #0000ff;">delete</span>[] pointer;  <span style="color: #008000;">//</span><span style="color: #008000;"> 要加上中括号，否则只释放了数组占用的第一个内存空间，剩下的内存空间都没有释放，造成内存泄漏；</span></pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">3，C++ 中的动态内存分配实例分析：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，main.cpp 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">int</span>* p = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">int</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 6</span>     
+<span style="color: #008080;"> 7</span>     *p = <span style="color: #800080;">5</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 8</span>     *p = *p + <span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span>     
+<span style="color: #008080;">10</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">p = %p\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, p);
+</span><span style="color: #008080;">11</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">*p = %d\n</span><span style="color: #800000;">"</span>, *<span style="color: #000000;">p);
+</span><span style="color: #008080;">12</span>     
+<span style="color: #008080;">13</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> p;
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">p = %p\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, p);
+</span><span style="color: #008080;">16</span>     
+<span style="color: #008080;">17</span>     p = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">int</span>[<span style="color: #800080;">10</span>];  <span style="color: #008000;">//</span><span style="color: #008000;"> p 所指向的这片内存空间至少占用了 40 字节；</span>
+<span style="color: #008080;">18</span>     
+<span style="color: #008080;">19</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;<span style="color: #800080;">10</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">21</span>         p[i] = i + <span style="color: #800080;">1</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 像数组一样使用；</span>
+<span style="color: #008080;">22</span>         
+<span style="color: #008080;">23</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">p[%d] = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, i, p[i]);
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span>     
+<span style="color: #008080;">26</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;">[] p;
+</span><span style="color: #008080;">27</span>     
+<span style="color: #008080;">28</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">29</span> }</pre>
+</div>
+<p align="left">&nbsp; &nbsp; 2，输出结果：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> p = <span style="color: #800080;">0x9e4e008</span>
+<span style="color: #008080;"> 2</span> *p = <span style="color: #800080;">15</span>
+<span style="color: #008080;"> 3</span> p = <span style="color: #800080;">0x9e4e008</span> <span style="color: #008000;">//</span><span style="color: #008000;">这个结果说明，释放的是指向的空间，但是这个时候指针的值还是原来的值；</span>
+<span style="color: #008080;"> 4</span> p[<span style="color: #800080;">0</span>] = <span style="color: #800080;">1</span>
+<span style="color: #008080;"> 5</span> p[<span style="color: #800080;">1</span>] = <span style="color: #800080;">2</span>
+<span style="color: #008080;"> 6</span> p[<span style="color: #800080;">2</span>] = <span style="color: #800080;">3</span>
+<span style="color: #008080;"> 7</span> p[<span style="color: #800080;">3</span>] = <span style="color: #800080;">4</span>
+<span style="color: #008080;"> 8</span> p[<span style="color: #800080;">4</span>] = <span style="color: #800080;">5</span>
+<span style="color: #008080;"> 9</span> p[<span style="color: #800080;">5</span>] = <span style="color: #800080;">6</span>
+<span style="color: #008080;">10</span> p[<span style="color: #800080;">6</span>] = <span style="color: #800080;">7</span>
+<span style="color: #008080;">11</span> p[<span style="color: #800080;">7</span>] = <span style="color: #800080;">8</span>
+<span style="color: #008080;">12</span> p[<span style="color: #800080;">8</span>] = <span style="color: #800080;">9</span>
+<span style="color: #008080;">13</span> p[<span style="color: #800080;">9</span>] = <span style="color: #800080;">10</span></pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，本质上和使用 malloc 和 free 没有太大差异，只不过说在使用体验上变得更好；</p>
+<p align="left">&nbsp;</p>
+<p align="left">4，new 关键字与 malloc 函数的区别：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，new 关键字是 C++ 的一部分；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，malloc 是由 C 库提供的函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，如果 C 语言编译器无法提供库函数，那么 C 语言编译器无法进行动态内存分配；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，new 以具体类型为单位进行内存分配；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，malloc 以字节为单位进行内存分配；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 5，new 在申请单个类型变量时可以进行初始化；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，这是要注意的区别；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 6，malloc 不具备内存初始化的特性；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，calloc 先申请，然后全部设置为 0，这不是真正意义上的初始化；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">5，new 关键字的初始化：&nbsp;</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，代码示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">int</span>* pi = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">int</span>(<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">2</span> <span style="color: #0000ff;">float</span>* pf = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">float</span>(<span style="color: #800080;">2.0f</span><span style="color: #000000;">);
+</span><span style="color: #008080;">3</span> <span style="color: #0000ff;">char</span>* pc = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>(<span style="color: #800000;">'</span><span style="color: #800000;">c);</span></pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">6，初始化动态内存编程实验：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，main.cpp 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">int</span>* pi = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">int</span>(<span style="color: #800080;">1</span>);  <span style="color: #008000;">//</span><span style="color: #008000;"> 申请 int 并初始化为 1；
+</span><span style="color: #008080;"> 6</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> int* pa = new int[1];  </span><span style="color: #008000;">//</span><span style="color: #008000;"> 申请一个 int 大小的数组；</span>
+<span style="color: #008080;"> 7</span>     
+<span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">float</span>* pf = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">float</span>(<span style="color: #800080;">2.0f</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">char</span>* pc = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>(<span style="color: #800000;">'</span><span style="color: #800000;">c</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">10</span> 
+<span style="color: #008080;">11</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">*pi = %d\n</span><span style="color: #800000;">"</span>, *<span style="color: #000000;">pi);
+</span><span style="color: #008080;">12</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">*pf = %f\n</span><span style="color: #800000;">"</span>, *<span style="color: #000000;">pf);
+</span><span style="color: #008080;">13</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">*pc = %c\n</span><span style="color: #800000;">"</span>, *<span style="color: #000000;">pc);
+</span><span style="color: #008080;">14</span>     
+<span style="color: #008080;">15</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> pi;
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> pf;
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> pc;
+</span><span style="color: #008080;">18</span>     
+<span style="color: #008080;">19</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">20</span> }</pre>
+</div>
+<p align="left">&nbsp; &nbsp;2，输出结果：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;*pi = 1</p>
+<p align="left">&nbsp; &nbsp; &nbsp;*pf = 2.000000</p>
+<p align="left">&nbsp; &nbsp; &nbsp;*pc = c</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">7，C++ 中的命名空间：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，在 C 语言中只有一个全局作用域；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，C 语言中所有的全局标识符共享同一个作用域；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，每个函数的函数体就是局部作用域；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，标识符之间可能发生冲突；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，工程中能不用全局作用域就不用全局作用域，因为工程上往往很多人同时进行开发，可能造成自己和别人定义的全局变量相冲突，这样会浪费精力解决冲突；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，C++ 中提出了命名空间的概念：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，命名空间将全局作用域分成不同的部分；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，全局作用域还是只有一个；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，不同的部分就是 C++ 概念上的命名空间；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，不同的命名空间中的标识符可以同名而不会发生冲突；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，最大的意义是可以避免全局作用域当中的同名全局变量发生冲突；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，命名空间可以相互嵌套；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，命名空间可以细分，即嵌套；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4，全局作用域也叫默认命名空间；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">8，C++ 命名空间的定义：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，代码示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> Name
+</span><span style="color: #008080;">2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">3</span>     <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> Internal
+</span><span style="color: #008080;">4</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">5</span>          <span style="color: #008000;">/*</span><span style="color: #008000;"> ... </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">6</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">7</span>     
+<span style="color: #008080;">8</span>      <span style="color: #008000;">/*</span><span style="color: #008000;"> ... </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">9</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，无论如何划分，它们的本质还是全局作用域，也就是说不同的命名空间中所定义的变量和函数还是全局变量和全局函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">9，C++ 命名空间的使用：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，使用整个命名空间：using namespace name;；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，使用命名空间中的变量：using name::variable;；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，使用默认命名空间中的变量：::variable；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">10，命名空间的使用实例分析：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，main.cpp 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">namespace</span> First  <span style="color: #008000;">//</span><span style="color: #008000;"> 将全局作用域进行第一次划分；</span>
+<span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>;  <span style="color: #008000;">//</span><span style="color: #008000;"> 全局变量；</span>
+<span style="color: #008080;"> 6</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 7</span> 
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">namespace</span> Second  <span style="color: #008000;">//</span><span style="color: #008000;"> 将全局作用域进行第二次划分；</span>
+<span style="color: #008080;"> 9</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">全局变量，和上面的 i 不同，因为位于不同的命名空间；</span>
+<span style="color: #008080;">11</span>     
+<span style="color: #008080;">12</span>     <span style="color: #0000ff;">namespace</span> Internal  <span style="color: #008000;">//</span><span style="color: #008000;"> 将全局作用域进行第三次划分；</span>
+<span style="color: #008080;">13</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">14</span>         <span style="color: #0000ff;">struct</span><span style="color: #000000;"> P
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">16</span>             <span style="color: #0000ff;">int</span><span style="color: #000000;"> x;
+</span><span style="color: #008080;">17</span>             <span style="color: #0000ff;">int</span><span style="color: #000000;"> y;
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">        };
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">21</span> 
+<span style="color: #008080;">22</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">24</span>     <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> First;
+</span><span style="color: #008080;">25</span>     <span style="color: #0000ff;">using</span><span style="color: #000000;"> Second::Internal::P;
+</span><span style="color: #008080;">26</span>     
+<span style="color: #008080;">27</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">First::i = %d\n</span><span style="color: #800000;">"</span>, i);  <span style="color: #008000;">//</span><span style="color: #008000;"> i 是 First 中的，因为申请了用 First 中的命名空间；</span>
+<span style="color: #008080;">28</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">Second::i = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, Second::i);
+</span><span style="color: #008080;">29</span>     
+<span style="color: #008080;">30</span>     P p = {<span style="color: #800080;">2</span>, <span style="color: #800080;">3</span><span style="color: #000000;">};
+</span><span style="color: #008080;">31</span>     
+<span style="color: #008080;">32</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">p.x = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, p.x);
+</span><span style="color: #008080;">33</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">p.y = %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, p.y);
+</span><span style="color: #008080;">34</span>     
+<span style="color: #008080;">35</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">36</span> }</pre>
+</div>
+<p align="left">&nbsp; &nbsp;2，输出结果：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; &nbsp;　First::i = 0</p>
+<p align="left">　　 Second::i = 1</p>
+<p align="left">　　 p.x = 2</p>
+<p align="left">　　 p.y = 3</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">11，小结：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，C++ 中内置了动态内存分配的专用关键字；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，C++ 中的动态内存分配可以同时进行初始化；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，C++ 中的动态内存分配是基于类型进行的；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，C++ 是强类型的语言；</p>
+<p>&nbsp;&nbsp;&nbsp; 4，C++ 中命名空间概念用于解决名称冲突问题；</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

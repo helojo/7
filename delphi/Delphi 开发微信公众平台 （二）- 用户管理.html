@@ -1,0 +1,201 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Delphi 开发微信公众平台 （二）- 用户管理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Delphi 开发微信公众平台 （二）- 用户管理</center></div><div class='banquan'>原文出处:本文由博客园博主全能中间件提供。<br/>
+原文连接:https://www.cnblogs.com/rtcmw/p/10818416.html</div><br>
+    <p><strong>一、用户标签管理</strong></p>
+<p>开发者可以使用用户标签管理的相关接口，实现对公众号的标签进行创建、查询、修改、删除等操作，也可以对用户进行打标签、取消标签等操作。</p>
+<p>1、创建标签</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">/ &lt;summary&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ 创建标签</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;/summary&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;remarks&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ 一个公众号，最多可以创建100个标签。</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;/remarks&gt;</span>
+<span style="color: #0000ff;">function</span> CreateTag(<span style="color: #0000ff;">const</span> ATagName: <span style="color: #0000ff;">string</span>): TWechatTag;</pre>
+</div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">function</span> TWechatRequest.CreateTag(<span style="color: #0000ff;">const</span> ATagName: <span style="color: #0000ff;">string</span><span style="color: #000000;">): TWechatTag;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  Content, Response: TJSONObject;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Result :</span>= <span style="color: #0000ff;">nil</span><span style="color: #000000;">;
+  Content :</span>= TJSONObject.<span style="color: #0000ff;">Create</span>.AddPair(<span style="color: #800000;">'</span><span style="color: #800000;">tag</span><span style="color: #800000;">'</span>, TJSONObject.<span style="color: #0000ff;">Create</span>.AddPair(<span style="color: #800000;">'</span><span style="color: #800000;">name</span><span style="color: #800000;">'</span><span style="color: #000000;">, ATagName));
+  </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+    Response :</span>= HttpPost(Content, <span style="color: #800000;">'</span><span style="color: #800000;">tags/create</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">try</span>
+      <span style="color: #0000ff;">if</span> ParseResponse(Response) <span style="color: #0000ff;">then</span>
+      <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+        Result :</span>= TJson.Json2Object&lt;TWechatTag&gt;(Response.Values[<span style="color: #800000;">'</span><span style="color: #800000;">tag</span><span style="color: #800000;">'</span><span style="color: #000000;">].ToJSON);
+        Result.Count :</span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+      </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">finally</span>
+      <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(Response);
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">finally</span>
+    <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(Content);
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>2、获取标签</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">/ &lt;summary&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ 获取公众号已创建的标签</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;/summary&gt;</span>
+<span style="color: #0000ff;">function</span> GetTags: TWechatTags;</pre>
+</div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">function</span><span style="color: #000000;"> TWechatRequest.GetTags: TWechatTags;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  JsonString: </span><span style="color: #0000ff;">string</span><span style="color: #000000;">;
+  Response: TJSONObject;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Response :</span>= HttpGet(<span style="color: #800000;">'</span><span style="color: #800000;">tags/get</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+  </span><span style="color: #0000ff;">try</span>
+    <span style="color: #0000ff;">if</span> ParseResponse(Response) <span style="color: #0000ff;">then</span>
+    <span style="color: #0000ff;">begin</span><span style="color: #000000;">
+      JsonString :</span>= Response.GetValue&lt;TJSONArray&gt;(<span style="color: #800000;">'</span><span style="color: #800000;">tags</span><span style="color: #800000;">'</span><span style="color: #000000;">).ToJSON;
+      Result :</span>= TJson.Json2Object&lt;TWechatTags&gt;<span style="color: #000000;">(JsonString);
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">finally</span>
+    <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(Response);
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>3、删除标签</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">/ &lt;summary&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ 删除标签</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;/summary&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;remarks&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ 当某个标签下的粉丝超过10w时，后台不可直接删除标签。</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ 此时，开发者可以对该标签下的openid列表 ,</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ 先进行取消标签的操作，直到粉丝数不超过10w后，才可直接删除该标签。</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;/remarks&gt;</span>
+<span style="color: #0000ff;">function</span> DeleteTag(ATagId: Integer): Boolean;</pre>
+</div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">function</span><span style="color: #000000;"> TWechatRequest.DeleteTag(ATagId: Integer): Boolean;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  Content, Response: TJSONObject;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Content :</span>= TJSONObject.<span style="color: #0000ff;">Create</span>.AddPair(<span style="color: #800000;">'</span><span style="color: #800000;">tag</span><span style="color: #800000;">'</span>, TJSONObject.<span style="color: #0000ff;">Create</span>.AddPair(<span style="color: #800000;">'</span><span style="color: #800000;">id</span><span style="color: #800000;">'</span>, TJSONNumber.<span style="color: #0000ff;">Create</span><span style="color: #000000;">(ATagId)));
+  </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+    Response :</span>= HttpPost(Content, <span style="color: #800000;">'</span><span style="color: #800000;">tags/delete</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+      Result :</span>=<span style="color: #000000;"> ParseResponse(Response);
+    </span><span style="color: #0000ff;">finally</span>
+      <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(Response);
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">finally</span>
+    <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(Content);
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>4、编辑标签</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">/ &lt;summary&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ 编辑标签</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;/summary&gt;</span>
+<span style="color: #0000ff;">function</span> UpdateTag(ATagId: Integer; ANewName: <span style="color: #0000ff;">string</span>): Boolean;</pre>
+</div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">function</span> TWechatRequest.UpdateTag(ATagId: Integer; ANewName: <span style="color: #0000ff;">string</span><span style="color: #000000;">): Boolean;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  Content, Response: TJSONObject;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Content :</span>= TJSONObject.<span style="color: #0000ff;">Create</span>.AddPair(<span style="color: #800000;">'</span><span style="color: #800000;">tag</span><span style="color: #800000;">'</span>, TJSONObject.<span style="color: #0000ff;">Create</span><span style="color: #000000;">
+      .AddPair(</span><span style="color: #800000;">'</span><span style="color: #800000;">id</span><span style="color: #800000;">'</span>, TJSONNumber.<span style="color: #0000ff;">Create</span><span style="color: #000000;">(ATagId))
+      .AddPair(</span><span style="color: #800000;">'</span><span style="color: #800000;">name</span><span style="color: #800000;">'</span><span style="color: #000000;">, ANewName)
+    );
+  </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+    Response :</span>= HttpPost(Content, <span style="color: #800000;">'</span><span style="color: #800000;">tags/update</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+      Result :</span>=<span style="color: #000000;"> ParseResponse(Response);
+    </span><span style="color: #0000ff;">finally</span>
+      <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(Response);
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">finally</span>
+    <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(Content);
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p><strong>二、设置用户备注名</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">/ &lt;summary&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ 设置用户备注名</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;/summary&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;remarks&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ https://mp.weixin.qq.com/wiki?t=resource/res_main&amp;id=mp1421140838</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;/remarks&gt;</span>
+<span style="color: #0000ff;">function</span> UpdateRemark(<span style="color: #0000ff;">const</span> AOpenID, ARemark: <span style="color: #0000ff;">string</span>): Boolean;</pre>
+</div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">function</span> TWechatRequest.UpdateRemark(<span style="color: #0000ff;">const</span> AOpenID, ARemark: <span style="color: #0000ff;">string</span><span style="color: #000000;">): Boolean;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  Content, Response: TJSONObject;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Content :</span>= TJSONObject.<span style="color: #0000ff;">Create</span>.AddPair(<span style="color: #800000;">'</span><span style="color: #800000;">openid</span><span style="color: #800000;">'</span>, AOpenID).AddPair(<span style="color: #800000;">'</span><span style="color: #800000;">remark</span><span style="color: #800000;">'</span><span style="color: #000000;">, ARemark);
+  </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+    Response :</span>= HttpPost(Content, <span style="color: #800000;">'</span><span style="color: #800000;">user/info/updateremark</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">try</span><span style="color: #000000;">
+      Result :</span>=<span style="color: #000000;"> ParseResponse(Response);
+    </span><span style="color: #0000ff;">finally</span>
+      <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(Response);
+    </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">finally</span>
+    <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(Content);
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p><strong>三、获取用户基本信息(UnionID机制)</strong></p>
+<p>在关注者与公众号产生消息交互后，公众号可获得关注者的OpenID（加密后的微信号，每个用户对每个公众号的OpenID是唯一的。对于不同公众号，同一用户的openid不同）。公众号可通过本接口来根据OpenID获取用户基本信息，包括昵称、头像、性别、所在城市、语言和关注时间。</p>
+<p>请注意，如果开发者有在多个公众号，或在公众号、移动应用之间统一用户帐号的需求，需要前往微信开放平台（open.weixin.qq.com）绑定公众号后，才可利用UnionID机制来满足上述需求。</p>
+<p>UnionID机制说明：</p>
+<p>开发者可通过OpenID来获取用户基本信息。特别需要注意的是，如果开发者拥有多个移动应用、网站应用和公众帐号，可通过获取用户基本信息中的unionid来区分用户的唯一性，因为只要是同一个微信开放平台帐号下的移动应用、网站应用和公众帐号，用户的unionid是唯一的。换句话说，同一用户，对同一个微信开放平台下的不同应用，unionid是相同的。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">/ &lt;summary&gt;</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ 获取单个用户基本信息</span><span style="color: #008000;">
+//</span><span style="color: #008000;">/ &lt;/summary&gt;</span>
+<span style="color: #0000ff;">function</span> GetUserInfo(<span style="color: #0000ff;">const</span> AOpenID: <span style="color: #0000ff;">string</span>): TWechatUser;</pre>
+</div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">function</span> TWechatRequest.GetUserInfo(<span style="color: #0000ff;">const</span><span style="color: #000000;"> AOpenID: String): TWechatUser;
+</span><span style="color: #0000ff;">var</span><span style="color: #000000;">
+  Response: TJSONObject;
+</span><span style="color: #0000ff;">begin</span><span style="color: #000000;">
+  Result :</span>= <span style="color: #0000ff;">nil</span><span style="color: #000000;">;
+  Response :</span>= HttpGet(<span style="color: #800000;">'</span><span style="color: #800000;">user/info</span><span style="color: #800000;">'</span>, Format(<span style="color: #800000;">'</span><span style="color: #800000;">openid=%s&amp;lang=zh_CN</span><span style="color: #800000;">'</span><span style="color: #000000;">, [AOpenID]));
+  </span><span style="color: #0000ff;">try</span>
+    <span style="color: #0000ff;">if</span> ParseResponse(Response) <span style="color: #0000ff;">then</span><span style="color: #000000;">
+      Result :</span>=<span style="color: #000000;"> TWechatUser.FromJsonString(Response.ToJSON);
+  </span><span style="color: #0000ff;">finally</span>
+    <span style="color: #0000ff;">FreeAndNil</span><span style="color: #000000;">(Response);
+  </span><span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>上张效果图</p>
+<p><img src="./images/Delphi 开发微信公众平台 （二）- 用户管理0.png" alt="" /></p>
+<p></p>
+<p><audio controls="controls" style="display: none;"></audio></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

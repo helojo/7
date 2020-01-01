@@ -1,0 +1,149 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修使用Spring Ehcache二级缓存优化查询性能' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>使用Spring Ehcache二级缓存优化查询性能</center></div><div class='banquan'>原文出处:本文由博客园博主刘小品(lewisat)提供。<br/>
+原文连接:https://www.cnblogs.com/lewisat/p/11202714.html</div><br>
+    <p><span style="font-size: 14px;">最近在对系统进行优化的时候,发现有些查询查询效率比较慢,耗时比较长,</span></p>
+<p><span style="font-size: 14px;">通过压测发现,主要耗费的性能 消耗在 查询数据库,查询redis</span></p>
+<p><span style="font-size: 14px;">数据库:连接池有限,且单个查询不能消耗大量的连接池,占用大量IO,否则会引起整个应用的IO异常及连接池异常及数据库相关性能压力,导致无法访问</span></p>
+<p><span style="font-size: 14px;">redis:reidis是单线程的,如果大量的查询都会存 取 缓存,这样会导致IO异常及导致redis 慢查询,redis拥堵,redis崩溃等问题.</span></p>
+<p><span style="font-size: 14px;"><span style="color: #ff0000;">注意:&nbsp;</span> 下图的相关改造,适用于不太频繁改动的数据,<span style="color: #ff0000;">但是会大量频繁访问的相关基础数据,</span></span></p>
+<p><span style="font-size: 14px;">如&nbsp; <span style="color: #ff0000;">图片,广告,基础数据,相关配置数据,数据字典等相关数据, 不适合动态要求较高的数据.且对数据一致性延时性较高的数据</span></span></p>
+<p><span style="font-size: 14px;"><strong>&nbsp;下图是优化之前的调用示意图</strong></span></p>
+<p><span style="font-size: 14px;"><img src="./images/使用Spring Ehcache二级缓存优化查询性能0.png" alt="" /></span></p>
+<p><span style="font-size: 14px;"><strong>优化之后的示意图</strong></span></p>
+<p><span style="font-size: 14px;"><strong>redis是分布式缓存,根据单独的key可以查询到具体的内容数据,但是由于其分布式,需要访问网络需要消耗IO性能,在高并发电商环境的情况下,对带宽对IO对服务器都是考验</strong></span></p>
+<p><span style="font-size: 14px;"><strong>使用EHCACHE作为内存缓存,优先访问内存缓存,不存在的情况下,优先将redis缓存数据放到每个应用独自的EHCACHE的缓存中,通过配置EHCACHE的生命周期,定期自动清理缓存,来达到提高性能的</strong></span></p>
+<p><span style="font-size: 14px;"><img src="./images/使用Spring Ehcache二级缓存优化查询性能1.png" alt="" /></span></p>
+<p><span style="font-size: 14px;">对业务进行了整改,整改过程中,使用了Ehcache,Redis进行优化,同时对redis的缓存数据结构进行了更改,&nbsp; 原先redis的数据结构使用了hset的形式,导致在压测的时候,KEY集中在同一个服务器,导致redis获取异常,故本次改成了set形式,使redis的key分散处理,不再集中在相同的key中,这样更能提高性能</span></p>
+<p>&nbsp;</p>
+<p><span>废话这么多,直接说重点,介绍接入EHCACHE</span></p>
+<p><span style="font-size: 14px;">本次改造,主要是对基础数据进行接入</span></p>
+<p><span style="font-size: 15px;"><strong>1:在resource下增加配置文件为myehcache.xml</strong></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">&lt;?</span><span style="color: #ff00ff;">xml version="1.0" encoding="UTF-8"</span><span style="color: #0000ff;">?&gt;</span>
+<span style="color: #0000ff;">&lt;</span><span style="color: #800000;">ehcache</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #008000;">&lt;!--</span><span style="color: #008000;"> 磁盘缓存位置 </span><span style="color: #008000;">--&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">diskStore </span><span style="color: #ff0000;">path</span><span style="color: #0000ff;">="java.io.tmpdir/myehcache"</span><span style="color: #0000ff;">/&gt;</span>
+    <span style="color: #008000;">&lt;!--</span><span style="color: #008000;"> 默认缓存 </span><span style="color: #008000;">--&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">defaultCache
+            </span><span style="color: #ff0000;">maxEntriesLocalHeap</span><span style="color: #0000ff;">="10000"</span><span style="color: #ff0000;">
+            eternal</span><span style="color: #0000ff;">="false"</span><span style="color: #ff0000;">
+            timeToIdleSeconds</span><span style="color: #0000ff;">="120"</span><span style="color: #ff0000;">
+            timeToLiveSeconds</span><span style="color: #0000ff;">="120"</span><span style="color: #ff0000;">
+            maxEntriesLocalDisk</span><span style="color: #0000ff;">="10000000"</span><span style="color: #ff0000;">
+            diskExpiryThreadIntervalSeconds</span><span style="color: #0000ff;">="120"</span><span style="color: #ff0000;">
+            memoryStoreEvictionPolicy</span><span style="color: #0000ff;">="LRU"</span><span style="color: #0000ff;">/&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">cache </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="testcache"</span><span style="color: #ff0000;">
+           maxElementsInMemory</span><span style="color: #0000ff;">="50000"</span><span style="color: #ff0000;">
+           eternal</span><span style="color: #0000ff;">="false"</span><span style="color: #ff0000;">
+           timeToIdleSeconds</span><span style="color: #0000ff;">="30"</span><span style="color: #ff0000;">
+           timeToLiveSeconds</span><span style="color: #0000ff;">="30"</span><span style="color: #ff0000;">
+           overflowToDisk</span><span style="color: #0000ff;">="false"</span><span style="color: #ff0000;">
+           memoryStoreEvictionPolicy</span><span style="color: #0000ff;">="LRU"</span><span style="color: #0000ff;">/&gt;</span>
+<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">ehcache</span><span style="color: #0000ff;">&gt;</span></pre>
+</div>
+<p><span style="color: #000000;"><strong><span style="font-size: 16px;">&nbsp;ehcache的相关配置参数:</span></strong></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #800000;">diskStore    ：指定数据存储位置,可指定磁盘中的文件夹位置
+defaultCache ：默认的管理策略
+<span style="color: #ff0000;"><strong>以下属性是必须的：</strong></span>
+name  ：Cache的名称,必须是唯一的(ehcache会把这个cache放到HashMap里).maxElementsInMemory：在内存中缓存的element的最大数目.
+maxElementsOnDisk：在磁盘上缓存的element的最大数目,默认值为0,表示不限制.
+eternal：设定缓存的elements是否永远不过期.如果为true,则缓存的数据始终有效,如果为false那么还要根据timeToIdleSeconds,timeToLiveSeconds判断.
+overflowToDisk：如果内存中数据超过内存限制,是否要缓存到磁盘上.
+<strong><span style="color: #ff0000;">以下属性是可选的：</span>
+</strong>timeToIdleSeconds：对象空闲时间,指对象在多长时间没有被访问就会失效.只对eternal为false的有效.默认值0,表示一直可以访问.
+timeToLiveSeconds：对象存活时间,指对象从创建到失效所需要的时间.只对eternal为false的有效.默认值0,表示一直可以访问.
+diskPersistent：是否在磁盘上持久化.指重启jvm后,数据是否有效.默认为false.
+diskExpiryThreadIntervalSeconds：对象检测线程运行时间间隔.标识对象状态的线程多长时间运行一次.
+diskSpoolBufferSizeMB: DiskStore使用的磁盘大小,默认值30MB.每个cache使用各自的DiskStore.
+memoryStoreEvictionPolicy：如果内存中数据超过内存限制,向磁盘缓存时的策略.默认值LRU,可选FIFO、LFU.
+<span style="color: #ff0000;"><strong>缓存的3种清空策略：
+</strong></span>FIFO ,first in first out(先进先出).
+LFU  , Less Frequently Used(最少使用),意思是一直以来最少被使用的.缓存的元素有一个HIT属性,HIT值最小的将会被清出缓存.
+LRU  ,Least Recently Used(最近最少使用)(EHCACHE 默认值).缓存的元素有一个时间戳,当缓存容量满了,而又需要腾出地方来缓存新的元素的时候,<br />那么现有缓存元素中时间戳离当前时间最远的元素将被清出缓存.<br /><br /><strong><span style="color: #ff0000;">注意:</span><br /></strong></span>timeToIdleSeconds：</span><br /><span style="font-size: 14px;">指对象在多长时间没有被访问就会失效.只对eternal为false的有效.默认值0,表示一直可以访问,如果配置了timeToIdleSeconds不为0,且timeToLiveSeconds也不为0,则在这个timeToIdleSeconds时间内没有被访问,也同时会过期释放</span></pre>
+<pre><code><span style="font-size: 14px;">timeToLiveSeconds：</span><br /><span style="font-size: 14px;">指对象从创建到失效所需要的时间.只对eternal为false的有效.默认值0,表示一直可以访问.</span><br /><span style="font-size: 14px;">如果仅仅配置timeToLiveSeconds,而timeToIdleSeconds配置为0,则表示缓存一直活跃,但是到了这个周期,则自动失效</span><br /><br /><span style="font-size: 14px;"><strong><span style="color: #ff0000;">举例:</span></strong></span><br /><span style="font-size: 14px;">timeToIdleSeconds 20 ,timeToLiveSeconds 30 说明:在20秒内,如果没有被访问,则自动过期,如果一直有被访问,在30秒内,依然过期.</span><br /><span style="font-size: 14px;">timeToIdleSeconds 0  ,timeToLiveSeconds 30 说明:无论有没有被访问,在30秒内,自动过期.</span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="color: #ff0000;"><strong>&nbsp;2:在建一个spring-ehcache.xml,&nbsp; 并引用到applicationContext.xml</strong></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">&lt;?</span><span style="color: #ff00ff;">xml version="1.0" encoding="UTF-8"</span><span style="color: #0000ff;">?&gt;</span>
+<span style="color: #0000ff;">&lt;</span><span style="color: #800000;">beans </span><span style="color: #ff0000;">xmlns</span><span style="color: #0000ff;">="http://www.springframework.org/schema/beans"</span><span style="color: #ff0000;">
+       xmlns:xsi</span><span style="color: #0000ff;">="http://www.w3.org/2001/XMLSchema-instance"</span><span style="color: #ff0000;">
+       xmlns:cache</span><span style="color: #0000ff;">="http://www.springframework.org/schema/cache"</span><span style="color: #ff0000;">
+       xmlns:context</span><span style="color: #0000ff;">="http://www.springframework.org/schema/context"</span><span style="color: #ff0000;">
+       xsi:schemaLocation</span><span style="color: #0000ff;">=" http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context-3.0.xsd
+       http://www.springframework.org/schema/cache
+       http://www.springframework.org/schema/cache/spring-cache-3.1.xsd"</span><span style="color: #0000ff;">&gt;</span>
+
+    <span style="color: #008000;">&lt;!--</span><span style="color: #008000;"> 自动扫描注解的bean </span><span style="color: #008000;">--&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">context:component-scan </span><span style="color: #ff0000;">base-package</span><span style="color: #0000ff;">="com.beijing.cache"</span> <span style="color: #0000ff;">/&gt;</span>
+    <span style="color: #008000;">&lt;!--</span><span style="color: #008000;"> 注册EhCache注解驱动,使spring能识别EhCache的注解 </span><span style="color: #008000;">--&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">cache:annotation-driven </span><span style="color: #ff0000;">cache-manager</span><span style="color: #0000ff;">="cacheManager"</span> <span style="color: #0000ff;">/&gt;</span>
+    <span style="color: #008000;">&lt;!--</span><span style="color: #008000;"> 注册EhCache缓存管理器 </span><span style="color: #008000;">--&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">bean </span><span style="color: #ff0000;">id</span><span style="color: #0000ff;">="cacheManager"</span><span style="color: #ff0000;"> class</span><span style="color: #0000ff;">="org.springframework.cache.ehcache.EhCacheCacheManager"</span><span style="color: #0000ff;">&gt;</span>
+        <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="cacheManager"</span><span style="color: #ff0000;"> ref</span><span style="color: #0000ff;">="ehcache"</span><span style="color: #0000ff;">/&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">bean</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #008000;">&lt;!--</span><span style="color: #008000;"> 构建EhCache的缓存管理工厂 </span><span style="color: #008000;">--&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">bean </span><span style="color: #ff0000;">id</span><span style="color: #0000ff;">="ehcache"</span><span style="color: #ff0000;"> class</span><span style="color: #0000ff;">="org.springframework.cache.ehcache.EhCacheManagerFactoryBean"</span><span style="color: #0000ff;">&gt;</span>
+        <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">property </span><span style="color: #ff0000;">name</span><span style="color: #0000ff;">="configLocation"</span><span style="color: #ff0000;"> value</span><span style="color: #0000ff;">="classpath:conf/myehcache.xml"</span><span style="color: #0000ff;">/&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">bean</span><span style="color: #0000ff;">&gt;</span>
+<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">beans</span><span style="color: #0000ff;">&gt;</span></pre>
+</div>
+<p><strong><span style="color: #ff0000;">3:配置注解,构建需要对缓存的方法(以下代码只是示例)<em id="__mceDel" style="font-family: 'Courier New'; font-size: 12px;">&nbsp;</em></span></strong></p>
+<div class="cnblogs_Highlighter">
+<pre class="brush:java;gutter:true;">    @Cacheable(value = "testcache") 
+    public String queryUserInfoByParam(String type,String name){ 
+        String name = null;
+        if(StringUtils.isBlank(type) || StringUtils.isBlank(name)){
+            return null;
+        }
+        String key = getCacheKey(type,name);//先查询redis缓存,如果redis缓存存在,则使用redis缓存
+        name = redisClient.get(key);
+        if(StringUtils.isBlank(name)){
+            User user = getInfo(type,name);//查询数据库,查询配置
+            if(null!=user &amp;&amp; StringUtils.isNotBlank(user.getName())){
+                name = user.getName();
+                redisClient.set(key,name,60*30);//存储到redis中
+            }
+        }
+        return name;
+    }</pre>
+</div>
+<p>&nbsp;</p>
+<p><strong><span style="color: #ff0000;">关键字 :</span></strong></p>
+<p><em id="__mceDel" style="font-family: 'Courier New'; font-size: 12px;">@Cacheable(value = "testcache") ,<span style="color: #ff0000;"><strong>testcache必须要与ehcache中的配置要一致,否则会抛出异常等情况</strong></span></em></p>
+<p>Spring 使用@Cacheable添加缓存是基于面向切面的思想做的, 实际上就是使用Java动态代理，创建实例的时候注入的是代理对象，在代理对象里调用实际的对象，这样就可以在实际的方法执行前，处理一下缓存的逻辑：没有找到缓存就往下执行，执行完把结果加入到缓存中；找到缓存则直接返回缓存的结果，不调用执行实际的方法。<em style="font-family: 'Courier New'; font-size: 12px;"><br /></em></p>
+<p>关于Ehcache注解不生效的坑</p>
+<p><span style="color: #ff0000;"><strong>一个方法A调同一个类里的另一个有缓存注解的方法B，这样是不走缓存的。</strong></span></p>
+<p>使用@Cacheable添加缓存实际上就是使用动态代理做的，在代理的方法前后做缓存的相应处理。单独的去调方法B是有缓存的，但是如果调方法A，A里面再去调B方法，哪怕B方法配置了缓存，也是不会生效的。</p>
+<div>解决方法：</div>
+<div>&nbsp;a、不使用注解的方式，直接取 Ehcache 的 CacheManger 对象，把需要缓存的数据放到里面，类似于使用 Map，缓存的逻辑自己控制</div>
+<div>&nbsp;b、把方法A和方法B放到两个不同的类里面，例如：如果两个方法都在service接口里，把方法B放到另一个service里面，这样A方法里调B方法，就可以使用B方法的缓存</div>
+<p>&nbsp;</p>
+<p><strong><span style="color: #ff0000;">&nbsp;4:按照以上方式,那么基本就完成了EHCACHE的基本配置了,EHCACHE就能缓存,可以通过debug的方式进行测试或者加入日志的方式进行测试</span></strong></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

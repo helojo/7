@@ -1,0 +1,99 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修rabbitmq pika（python）订阅发布多客户端消费场景简单使用' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>rabbitmq pika（python）订阅发布多客户端消费场景简单使用</center></div><div class='banquan'>原文出处:本文由博客园博主达芬奇vinic提供。<br/>
+原文连接:https://www.cnblogs.com/vinic-xxm/p/11927071.html</div><br>
+    <p>发布端：</p>
+<pre><code><code>import pika
+import time
+credentials  = pika.credentials.PlainCredentials(&#39;root&#39;, &#39;root&#39;,erase_on_connect =False)
+s_conn = pika.BlockingConnection(pika.ConnectionParameters(&#39;127.0.0.1&#39;,credentials=credentials))  # 创建连接
+# 原则上，消息，只能有交换机传到队列。就像我们家里面的交换机道理一样。
+# 有多个设备连接到交换机，那么，这个交换机把消息发给那个设备呢，就是根据
+# 交换机的类型来定。类型有：direct\topic\headers\fanout
+# fanout：这个就是，所有的设备都能收到消息，就是广播。
+# 此处定义一个名称为&#39;logs&#39;的&#39;fanout&#39;类型的exchange
+chan = s_conn.channel()  # 在连接上创建一个频道
+
+# chan.queue_declare(queue=&#39;hello&#39;)  # 声明一个队列，生产者和消费者都要声明一个相同的队列，用来防止万一某一方挂了，另一方能正常运行
+
+chan.exchange_declare(exchange=&#39;logs&#39;,
+                    exchange_type=&#39;fanout&#39;
+                      )
+
+while 1:
+    time.sleep(1)
+# 将消息发送到名为log的exchange中
+# 因为是fanout类型的exchange，所以无需指定routing_key
+    ack = chan.basic_publish(exchange=&#39;logs&#39;,  # 交换机
+                       routing_key=&#39;&#39;,  # 路由键，写明将消息发往哪个队列
+                       body=&#39;Ye:当前时间%s &#39; % time.strftime(&#39;%m-%d %H:%M:%S&#39;))  # 生产者要发送的消息
+    print(&quot;[生产者] send &#39;hello world&quot;)
+    time.sleep(10)
+    print(ack)
+
+
+s_conn.close()  # 当生产者发送完消息后，可选择关闭</code></pre>
+<p>接收端：</p>
+<pre><code><code>import pika
+credentials = pika.credentials.PlainCredentials(&#39;root&#39;, &#39;root&#39;,erase_on_connect =False)
+s_conn = pika.BlockingConnection(pika.ConnectionParameters(&#39;39.106.205.106&#39;,credentials=credentials))  # 创建连接
+
+chan = s_conn.channel()  # 在连接上创建一个频道
+
+chan.exchange_declare(exchange=&#39;logs&#39;,
+                    exchange_type=&#39;fanout&#39;
+                      )
+# chan.queue_declare(queue=&#39;hello&#39;)  # 声明一个队列，生产者和消费者都要声明一个相同的队列，用来防止万一某一方挂了，另一方能正常运行
+# 类似的，比如log，我们其实最想看的，当连接上的时刻到消费者退出，这段时间的日志
+# 有些消息，过期了的对我们并没有什么用
+# 并且，一个终端，我们要收到队列的所有消息，比如：这个队列收到两个消息，一个终端收到一个。
+# 我们现在要做的是：两个终端都要收到两个
+# 那么，我们就只需做个临时队列。消费端断开后就自动删除
+result = chan.queue_declare(queue=&#39;temp2&#39;, exclusive=True)
+# 取得队列名称
+queue_name = result.method.queue
+
+# 将队列和交换机绑定一起
+chan.queue_bind(exchange=&#39;logs&#39;,
+                queue=queue_name
+                )
+
+def callback(ch, method, properties, body):  # 定义一个回调函数，用来接收生产者发送的消息
+    print(ch, method, properties, )
+    print(body.decode(&#39;utf8&#39;))
+
+
+chan.basic_consume(  # 指定取消息的队列名,
+                    queue_name,
+                   callback,  # 调用回调函数，从队列里取消息
+                    # queue=,
+
+                   auto_ack=True
+                   )  # 取完一条消息后，给生产者发送确认消息，默认是False的，即  默认不给rabbitmq发送一个收到消息的确认
+# 如果auto_ack=True则消失接收之后就会删除也就是只能取一次
+print(&#39;[消费者] waiting for msg .&#39;)
+chan.start_consuming()  # 开始循环取消息</code></pre>
+<h3 id="注意">注意</h3>
+<p>多个接收端需要修改临时队列的名字，以防止冲突，会报错关于锁的错误</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,326 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修20190312_浅谈go&amp;java差异(二)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>20190312_浅谈go&amp;java差异(二)</center></div><div class='banquan'>原文出处:本文由博客园博主funnyZpC提供。<br/>
+原文连接:https://www.cnblogs.com/funnyzpc/p/10801474.html</div><br>
+    <p><img src="./images/20190312_浅谈go&amp;java差异(二)0.png" /></p>
+<p>转载请注明出处：<a href="https://www.cnblogs.com/funnyzpc/p/10801474.html" class="uri">https://www.cnblogs.com/funnyzpc/p/10801474.html</a></p>
+<h4 id="第二节内容概览">第二节内容概览</h4>
+<ul>
+<li>循环(for、switch)</li>
+<li>多值返回</li>
+<li>defer &amp; finally</li>
+<li>init(go) 与默认构造函数(java)</li>
+<li>常量、静态变量(const 与 static final)</li>
+<li>参数或方法访问属性</li>
+</ul>
+<h5 id="循环">循环</h5>
+<ul>
+<li><p>go<br />
+go提供了range关键字可以循环各种切片和数组，同时也提供了多参，这点相比较java会灵活不少，<br />
+另外switch循环也不同与java，默认仅进入匹配的case内不会往下循环，若需要往下循环需要用到<br />
+fallthrough关键字，这个也确实有利于开发，不用像java一样写break结束。</p>
+<pre><code><code>  func main() {
+      arr := []string{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;}
+
+      for val := range arr {
+          fmt.Println(arr[val])
+      }
+
+      for i := 0; i &lt; 10; i++ {
+          fmt.Println(i)
+      }
+
+      caseVal := &quot;C&quot;
+      switch caseVal {
+      case &quot;A&quot;:
+          fmt.Println(&quot;This is A&quot;)
+      case &quot;B&quot;:
+          fmt.Println(&quot;This is B&quot;)
+      case &quot;C&quot;:
+          fmt.Println(&quot;This is C&quot;)
+      default:
+          fmt.Println(&quot;This is other word!&quot;)
+      }
+
+  }</code></pre></li>
+<li><p>java<br />
+java 提供了多种循环，分别是for、foreach、Stream foreach(java8提供)，while、do while<br />
+switch ，我就直接展示代码吧。</p>
+<pre><code><code>  @Test
+  public void forTest(){
+      String[] arr = new String[]{&quot;A&quot;,&quot;B&quot;,&quot;C&quot;};
+      for (String item:arr) {
+          LOG.info(item);
+      }
+
+      for(int i=0;i&lt;arr.length;i++){
+          LOG.info(arr[i]);
+      }
+
+      String word = &quot;B&quot;;
+
+      switch (word){
+          case &quot;A&quot;:
+              LOG.info(&quot;This is A&quot;);
+              break;
+          case &quot;B&quot;:
+              LOG.info(&quot;This is B&quot;);
+              break;
+          case &quot;C&quot;:
+              LOG.info(&quot;This is C&quot;);
+              break;
+          default:
+              LOG.info(&quot;This is Other word!&quot;);
+      }
+  }</code></pre></li>
+</ul>
+<h6 id="多值返回">多值返回</h6>
+<ul>
+<li><p>go<br />
+go提供了多参返回，当参数较少当时候可以一次性返回，不用构造结构体返回</p>
+<pre><code><code>  func main() {
+      a, b, c, err := process(11, &quot;A&quot;, true)
+      fmt.Println(a, b, c, err)
+  }
+
+  func process(aa int32, bb string, cc bool) (int32, string, bool, error) {
+      var ccReturn bool
+      if true == cc {
+          ccReturn = false
+      } else {
+          ccReturn = true
+      }
+      return aa + 1, bb + &quot;_return&quot;, ccReturn, nil
+  }
+</code></pre></li>
+<li><p>java<br />
+java并没有提供多参返回，若要实现多参返回，一般将返回参数封装入Map、List 这类集合类型中，<br />
+或者构造一个新对象放入返回值后返回。</p>
+<pre><code><code>      @Test
+      public void returnObjec(){
+          Map&lt;String,Object&gt; result = this.processObj();
+          LOG.info(new JSONObject(result).toString());
+      }
+
+      public Map&lt;String,Object&gt; processObj(){
+          return new HashMap&lt;String,Object&gt;(){{
+              put(&quot;val1&quot;,true);
+              put(&quot;val2&quot;,&quot;str&quot;);
+              put(&quot;val3&quot;,999777L);
+          }};
+      }</code></pre></li>
+</ul>
+<h5 id="defer-finally">defer &amp; finally</h5>
+<ul>
+<li><p>go<br />
+首先 defer 和 finally 大多用于资源关闭或异常处理<br />
+go中的defer 与 java的finally个人感觉是相似的，但是如果将defer放入到循环内的话可就像<br />
+一个反向队列了，若一个处理逻辑内有多个defer的时候 先defer的晚于后defer,很有意思，大家可以试试哈～</p>
+<pre><code><code>  func main() {
+      doSomething()
+  }
+
+  func doSomething() {
+      fmt.Println(&quot;something start&quot;)
+      defer fmt.Println(&quot;something defer&quot;)
+      fmt.Println(&quot;something end&quot;)
+
+      arr := []string{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;}
+      for val := range arr {
+          defer fmt.Println(val)
+      }
+  }
+</code></pre></li>
+<li><p>java<br />
+java 的finally 大多用于异常处理，尤其是文件流异常处理，同时也不存在类似于defer的倒序处理，<br />
+这里就给个简单的例子～</p>
+<pre><code><code>  @Test
+  public void processFinal(){
+      String[] arr = new String[]{&quot;A&quot;,&quot;B&quot;};
+
+      try{
+          LOG.info(arr[2]);
+      }catch (Exception e){
+          LOG.info(&quot;异常了：{}&quot;,e);
+      }finally {
+          LOG.info(&quot;最后进入～&quot;);
+      }
+  }</code></pre></li>
+</ul>
+<h5 id="init-与默认构造函数">init 与默认构造函数</h5>
+<ul>
+<li><p>go<br />
+go不存在默认构造函数，但是提供了init函数；我一开始也想不起来go的init函数如何与java的初始化<br />
+对比，灵机一动就有了无参的构造函数，虽然这样对比其实并不恰当，但是功能上是有相似的地方。另外需要<br />
+说明的是go的init的函数是在包被引入的时候调用的 若与main函数存在同一代码块 也是init先被调用，<br />
+而java的默认构造函数仅在对象被new的时候调用的。</p>
+<pre><code><code>  func main() {
+      fmt.Println(&quot;func main()&quot;)
+  }
+
+  func init() {
+      fmt.Println(&quot;func init()&quot;)
+  }
+</code></pre></li>
+<li><p>java<br />
+java的默认构造方法其实并不常用，但是在每启一个类的时候都有默认的构造方法，若是定义了就会走默认的构造<br />
+方法，若无则在编译为class文件的时候自动为所在类加入一个。</p>
+<pre><code><code>  public class ConstructTest {
+      private static final Logger LOG = LoggerFactory.getLogger(ConstructTest.class);
+      @Test
+      public void processConst(){
+          LOG.info(&quot;&gt;&gt;&gt; start&quot;);
+          Person person = new Person();
+          LOG.info(&quot;&gt;&gt;&gt; end&quot;);
+      }
+  }
+
+  class Person{
+      private static final Logger logger = LoggerFactory.getLogger(Person.class);
+      private String name;
+      private Integer age;
+
+      public Person() {
+          logger.info(&quot;default Constructor&quot;);
+      }
+
+      public String getName() {
+          return name;
+      }
+
+      public void setName(String name) {
+          this.name = name;
+      }
+
+      public Integer getAge() {
+          return age;
+      }
+
+      public void setAge(Integer age) {
+          this.age = age;
+      }
+  }</code></pre></li>
+</ul>
+<h6 id="const-与-static-final">const 与 static final</h6>
+<ul>
+<li><p>go<br />
+go的静态(也可叫静态常量，主要用于基本数据类型)，使用关键字const指定。<br />
+使用const定义的静态变量是不可用修改或赋值的。</p>
+<pre><code><code>  const name int = 11
+
+  const (
+      a = &quot;hello&quot;
+      b = true
+      c = 99
+  )
+
+  func main() {
+      fmt.Println(name)
+      fmt.Println(a)
+      fmt.Println(b)
+      fmt.Println(c)
+  }
+</code></pre></li>
+<li><p>java<br />
+java的常量需要用两个关键字修饰 <code>static</code> 和 <code>final</code> ,前者表示静态的意思，但这个静态是可以被修改的，<br />
+修改的前提是类型不变，而第二个关键字表示最终的意思，一旦变量被这个关键字修饰则不可重新修改变量。<br />
+但是对于复合对象，比如List、Map、自定义对象等，又是可以被修改的,对于这点个人觉得 java 的常量的定义<br />
+并不够严谨。</p>
+<pre><code><code>public class staticFinalTest {
+    private static final Logger LOG = LoggerFactory.getLogger(staticFinalTest.class);
+    private static final String name = &quot;Tom&quot;;
+
+    private static String item = &quot;first item&quot;;
+
+    private static final List&lt;String&gt; initArr = new ArrayList&lt;String&gt;(){{
+        add(&quot;A&quot;);
+        add(&quot;B&quot;);
+        add(&quot;C&quot;);
+    }};
+
+    @Test
+    public void process(){
+        LOG.info(name);
+
+        item = &quot;youth!&quot;;
+
+        LOG.info(item);
+
+        initArr.add(&quot;hello&quot;);
+
+        LOG.info(initArr.toString());
+    }
+}
+</code></pre></li>
+</ul>
+<h5 id="参数或方法访问属性">参数或方法访问属性</h5>
+<ul>
+<li><p>go<br />
+go 的方法或参数需要被外部访问，需要使用大写开头参数名或函数名(go文件大小写是与与否与是否私有无关)</p>
+<pre><code><code>  // 可被文件外函数访问
+  var Name string = &quot;John&quot;
+
+  func main() {
+      fmt.Println(Name)
+      Process()
+  }
+
+  // 可被文件外函数调用
+  func Process() {
+      fmt.Println(&quot;Process()&quot;)
+  }
+</code></pre></li>
+<li><p>java<br />
+java的参数或方法属性不同于go，大致分为三类：</p>
+<ul>
+<li>private 仅当前类内访问</li>
+<li>public 可公共访问</li>
+<li>protect 仅可同包内访问</li>
+</ul>
+<pre><code><code>  public class ObjectTypeTest {
+      private static final Logger LOG = LoggerFactory.getLogger(ObjectTypeTest.class);
+
+      //私有访问（仅可同一类中）
+      private String name1 = &quot;name01&quot;;
+      // 保护访问（仅可同一包内）
+      protected String name2 = &quot;name01&quot;;
+      // 公共访问 (任何类均可访问)
+      public String name3 = &quot;name01&quot;;
+
+      @Test
+      public void process(){
+          LOG.info(this.doSomeThing());
+          LOG.info(name1);
+          LOG.info(name2);
+          LOG.info(name3);
+
+      }
+
+      public String doSomeThing(){
+          return &quot;hello&quot;;
+      }
+
+  }</code></pre></li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

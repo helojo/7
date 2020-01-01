@@ -1,0 +1,248 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ stdthread概念介绍' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ stdthread概念介绍</center></div><div class='banquan'>原文出处:本文由博客园博主alpha_panda提供。<br/>
+原文连接:https://www.cnblogs.com/yssjun/p/11533346.html</div><br>
+    <p>C++ 11新标准中，正式的为该语言引入了多线程概念。新标准提供了一个线程库thread，通过创建一个thread对象来管理C++程序中的多线程。</p>
+<p>本文简单聊一下C++多线程相关的一些概念及thread的基本用法。</p>
+<h3>0. 并行执行</h3>
+<p>程序并行执行两个必要条件：</p>
+<ul>
+<li>多处理器（multiple processors）or 多核处理器（multicore processors）</li>
+<li>软件并行</li>
+</ul>
+<p>软件并发执行可分为两大类：</p>
+<ol>
+<li>多线程并发&nbsp; (同一个进程的多个线程并行)；</li>
+<li>多进程并发&nbsp; (不同进程并行)；</li>
+</ol>
+<p>对于多线程，主要关注的是线程间的同步措施，用于确保线程安全；</p>
+<p>对于多进程，主要关注的是进程间的通信机制，用于进程间传递消息和数据；</p>
+<p>由于C++ 标准中没有多进程之间通信相关的标准，这些只能依赖于特定平台的API。本文只关注多线程相关。</p>
+<h3>1. C++多线程平台</h3>
+<p>C++11之前，window和linux平台分别有各自的多线程标准。使用C++编写的多线程往往是依赖于特定平台的。</p>
+<ul>
+<li>Window平台提供用于多线程创建和管理的win32 api；</li>
+<li>Linux下则有POSIX多线程标准，Threads或Pthreads库提供的API可以在类Unix上运行；</li>
+</ul>
+<p>在C++11新标准中，可以简单通过使用hread库，来管理多线程。thread库可以看做对不同平台多线程API的一层包装；</p>
+<p>因此使用新标准提供的线程库编写的程序是跨平台的。</p>
+<h3>2. pthread 或 C++ 11 thread</h3>
+<p>pthreads 是linux下的C++线程库，提供了一些线程相关的操作，比较偏向于底层，对线程的操作也是比较直接和方便的；</p>
+<div class="cnblogs_code">
+<pre>#include &lt;pthread.h&gt;<span style="color: #000000;">
+pthread_create (thread, attr, start_routine, arg) </span></pre>
+</div>
+<p>linux上对于pthread的使用需要连接pthread库(有些编辑器可能需要 -std=c++11)：</p>
+<div class="cnblogs_code">
+<pre>g++ source.cpp -lpthread -o source.o </pre>
+</div>
+<p>尽管网上对C++ 11新标准中的thread类有很多吐槽，但是作为C++第一个标准线程库，还是有一些值得肯定的地方的，比如跨平台，使用简单。</p>
+<p>而且新标准中可以方便的使用RAII来实现lock的管理等。</p>
+<p>如果你想深入研究一下多线程，那么pthread是一个不错的选择。如果想要跨平台或者实现一些简单的多线程场景而不过多关注细节，那么权威的标准库thread是不二之选。</p>
+<p>总之没有好与坏之分，适合就好。可以的话可以都了解一下。本文主要介绍后者。</p>
+<h3>3. 先理论后实践</h3>
+<p>对于多线程相关的学习，先弄清楚线程相关的一些概念，是很重要的。</p>
+<p>比如线程安全、线程同步与互斥关系、线程如何通信、与进程的关系如何等。</p>
+<p>不然实际写多线程程序是会碰到太多的问题，例如：</p>
+<ul>
+<li>程序死锁，无响应；</li>
+<li>执行结果不符合预期；</li>
+<li>多线程性能并没有很大提升；</li>
+<li>理不清程序执行流程；</li>
+<li>不知道怎么调试；</li>
+<li>程序运行时好时坏；</li>
+</ul>
+<p>光线程安全就有很多理论要了解，这些光靠调试程序，根据结果来猜测是不可行的。</p>
+<p>关于多线程相关的概念可以参考我之前以Python为例介绍线程的博文：</p>
+<ul>
+<li><a id="cb_post_title_url" class="postTitle2" href="https://www.cnblogs.com/yssjun/p/11302500.html">python多线程与多进程及其区别</a>；</li>
+<li><a id="cb_post_title_url" class="postTitle2" href="https://www.cnblogs.com/yssjun/p/11297900.html">python多线程同步实例分析</a>；</li>
+</ul>
+<h3>4. thread 多线程实例</h3>
+<p>看一下C++11 使用标准库thread创建多线程的例子：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include&lt;thread&gt;
+<span style="color: #008080;"> 3</span> #include&lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">int</span> tstart(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> tname) {
+</span><span style="color: #008080;"> 8</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Thread test! </span><span style="color: #800000;">"</span> &lt;&lt; tname &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main() {
+</span><span style="color: #008080;">13</span>     thread t(tstart, <span style="color: #800000;">"</span><span style="color: #800000;">C++ 11 thread!</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    t.join();
+</span><span style="color: #008080;">15</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Main Function!</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">16</span> }</pre>
+</div>
+<p>多线程标准库使用一个thread的对象来管理产生的线程。该例子中线程对象t表示新建的线程。</p>
+<h4>4.1 标准库创建线程的方式</h4>
+<p>打开thread头文件，可以清楚的看到thread提供的构造函数。</p>
+<ol>
+<li>默认构造函数&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;thread() noexcept;&nbsp;</li>
+<li>接受函数及其传递参数的构造函数&nbsp; &nbsp;　&nbsp; template &lt;class _Fn, class... _Args, ...&gt;&nbsp;explicit thread(_Fn&amp;&amp; _Fx, _Args&amp;&amp;... _Ax)</li>
+<li>move构造函数&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;thread(thread&amp;&amp; _Other) noexcept;</li>
+<li>拷贝构造函数&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;thread(const thread&amp;) = delete;</li>
+<li>拷贝赋值运算符&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;thread&amp; operator=(const thread&amp;) = delete;</li>
+</ol>
+<p>其中拷贝构造函数和拷贝赋值运算符被禁用，意味着std::thread对象不能够被拷贝和赋值到别的thread对象；</p>
+<p>默认构造函数构造一个空的thread对象，但是不表示任何线程；</p>
+<p>接受参数的构造函数创建一个表示线程的对象，线程从传入的函数开始执行，该对象是joinable的；</p>
+<p>move构造函数可以看做将一个thread对象对线程的控制权限转移到另一个thread对象；执行之后，传入的thread对象不表示任何线程；</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    </span><span style="color: #0000ff;">int</span> arg = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    std::thread t1;                        </span><span style="color: #008000;">//</span><span style="color: #008000;"> t1 is not represent a thread</span>
+    std::thread t2(func1, arg + <span style="color: #800080;">1</span>); 　　　　<span style="color: #008000;">//</span><span style="color: #008000;"> pass to thread by value</span>
+    std::thread t3(func2, std::<span style="color: #0000ff;">ref</span>(arg));  <span style="color: #008000;">//</span><span style="color: #008000;"> pass to thread by reference</span>
+    std::thread t4(std::move(t3));         <span style="color: #008000;">//</span><span style="color: #008000;"> t4 is now running func2(). t3 is no longer a thread
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">t1.join()  Error!</span>
+<span style="color: #000000;">    t2.join();
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">t3.join()  Error!</span>
+<span style="color: #000000;">    t4.join();
+}</span></pre>
+</div>
+<p>多数情况下我们使用的是上面第二种创建线程的方式。下面看一下join和detach。</p>
+<h4>4.2&nbsp; join &amp;&amp; detach</h4>
+<p>对于创建的线程，一般会在其销毁前调用join和detach函数；</p>
+<p>弄清楚这两个函数的调用时机和意义，以及调用前后线程状态的变化非常重要。</p>
+<ul>
+<li>join 会使当前线程阻塞，直到目标线程执行完毕；
+<ul>
+<li>只有处于活动状态线程才能调用join，可以通过joinable()函数检查;</li>
+<li>joinable() == true表示当前线程是活动线程，才可以调用join函数；</li>
+<li>默认构造函数创建的对象是joinable() == false;</li>
+<li>join只能被调用一次，之后joinable就会变为false，表示线程执行完毕；</li>
+<li>调用 ternimate()的线程必须是 joinable() == false;</li>
+<li>如果线程不调用join()函数，即使执行完毕也是一个活动线程，即joinable() == true，依然可以调用join()函数；</li>
+</ul>
+</li>
+<li>detach 将thread对象及其表示的线程分离；
+<ul>
+<li>调用detach表示thread对象和其表示的线程完全分离；</li>
+<li>分离之后的线程是不在受约束和管制，会单独执行，直到执行完毕释放资源，可以看做是一个daemon线程；</li>
+<li>分离之后thread对象不再表示任何线程；</li>
+<li>分离之后joinable() == false，即使还在执行；</li>
+</ul>
+</li>
+</ul>
+<p><strong>join实例分析</strong>：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">int</span><span style="color: #000000;"> main() {
+    thread t(tstart, </span><span style="color: #800000;">"</span><span style="color: #800000;">C++ 11 thread!</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    cout </span>&lt;&lt; t.joinable() &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (t.joinable()) t.join();
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">t.detach(); Error</span>
+    cout &lt;&lt; t.joinable() &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> t.join(); Error</span>
+    cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Main Function!</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+    system(</span><span style="color: #800000;">"</span><span style="color: #800000;">pause</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+}</span></pre>
+</div>
+<p>简单来说就是只有处于活动状态的线程才可以调用join，调用返回表示线程执行完毕，joinable() == false.</p>
+<div class="cnblogs_code">
+<pre>inline <span style="color: #0000ff;">void</span><span style="color: #000000;"> thread::join()
+    {    </span><span style="color: #008000;">//</span><span style="color: #008000;"> join thread</span>
+    <span style="color: #0000ff;">if</span> (!<span style="color: #000000;">joinable())
+        _Throw_Cpp_error(_INVALID_ARGUMENT);
+    </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">bool</span> _Is_null = _Thr_is_null(_Thr);    <span style="color: #008000;">//</span><span style="color: #008000;"> Avoid Clang -Wparentheses-equality</span>
+<span style="color: #000000;">    ... ...
+}</span></pre>
+</div>
+<p>将上面的t.join()换成是t.detach()会得到相同的结果.</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span><span style="color: #000000;"> detach()
+    {   </span><span style="color: #008000;">//</span><span style="color: #008000;"> detach thread</span>
+    <span style="color: #0000ff;">if</span> (!<span style="color: #000000;">joinable())
+        _Throw_Cpp_error(_INVALID_ARGUMENT);
+    _Thrd_detachX(_Thr);
+    _Thr_set_null(_Thr);
+    }</span></pre>
+</div>
+<p>上面是thread文件中对detach的定义，可以看出只有joinable() == true的线程，也就是活动状态的线程才可以调用detach。</p>
+<div class="cnblogs_code">
+<pre>~<span style="color: #000000;">thread() _NOEXCEPT
+    {   </span><span style="color: #008000;">//</span><span style="color: #008000;"> clean up</span>
+    <span style="color: #0000ff;">if</span><span style="color: #000000;"> (joinable())
+        _XSTD terminate();
+    }</span></pre>
+</div>
+<p>当线程既没有调用join也没有调用detach的时候，线程执行完毕joinable() == true，那么当thread对象被销毁的时候，会调用terminate()。</p>
+<h4>4.3 获取线程ID</h4>
+<p>线程ID是一个线程的标识符，C++标准中提供两种方式获取线程ID；</p>
+<ol>
+<li>thread_obj.get_id();</li>
+<li>std::this_thread::get_id()</li>
+</ol>
+<p>有一点需要注意，就是空thread对象，也就是不表示任何线程的thread obj调用get_id返回值为0；</p>
+<p>此外当一个线程被detach或者joinable() == false时，调用get_id的返回结果也为0。</p>
+<div class="cnblogs_code">
+<pre>cout &lt;&lt; t.get_id() &lt;&lt; <span style="color: #800000;">'</span> <span style="color: #800000;">'</span> &lt;&lt; this_thread::get_id() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008000;">//</span><span style="color: #008000;">t.detach();</span>
+<span style="color: #000000;">t.join();
+cout </span>&lt;&lt; t.get_id() &lt;&lt; <span style="color: #800000;">'</span> <span style="color: #800000;">'</span> &lt;&lt; std::this_thread::get_id() &lt;&lt; endl;</pre>
+</div>
+<h4>4.4 交换thread表示的线程</h4>
+<p>除了上面介绍的detach可以分离thread对象及其所表示的线程，或者move到别的线程之外，还可以使用swap来交换两个thread对象表示的线程。</p>
+<p>实例来看一下两个线程的交换。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">int</span> tstart(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> tname) {
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Thread test! </span><span style="color: #800000;">"</span> &lt;&lt; tname &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main() {
+    thread t1(tstart, </span><span style="color: #800000;">"</span><span style="color: #800000;">C++ 11 thread_1!</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    thread t2(tstart, </span><span style="color: #800000;">"</span><span style="color: #800000;">C++ 11 thread_2!</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">current thread id: </span><span style="color: #800000;">"</span> &lt;&lt; this_thread::get_id() &lt;&lt;<span style="color: #000000;"> endl;
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">before swap: </span><span style="color: #800000;">"</span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;"> thread_1 id: </span><span style="color: #800000;">"</span> &lt;&lt; t1.get_id() &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;"> thread_2 id: </span><span style="color: #800000;">"</span> &lt;&lt; t2.get_id() &lt;&lt;<span style="color: #000000;"> endl;
+    t1.swap(t2);
+    cout </span>&lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">after swap: </span><span style="color: #800000;">"</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;"> thread_1 id: </span><span style="color: #800000;">"</span> &lt;&lt; t1.get_id() &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;"> thread_2 id: </span><span style="color: #800000;">"</span> &lt;&lt; t2.get_id() &lt;&lt;<span style="color: #000000;"> endl;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">t.detach();</span>
+<span style="color: #000000;">    t1.join();
+    t2.join();</span><span style="color: #000000;">
+}</span></pre>
+</div>
+<p>结果：</p>
+<div class="cnblogs_code">
+<pre>Thread test! C++ <span style="color: #800080;">11</span> thread_1!<span style="color: #000000;">
+Thread test</span>! C++ <span style="color: #800080;">11</span> thread_2!<span style="color: #000000;">
+current thread id: </span><span style="color: #800080;">39308</span><span style="color: #000000;">
+before swap:  thread_1 id: </span><span style="color: #800080;">26240</span> thread_2 id: <span style="color: #800080;">37276</span><span style="color: #000000;">
+after swap:  thread_1 id: </span><span style="color: #800080;">37276</span> thread_2 id: <span style="color: #800080;">26240</span></pre>
+</div>
+<p>下面是thread::swap函数的实现。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span> swap(thread&amp;<span style="color: #000000;"> _Other) _NOEXCEPT
+    {   </span><span style="color: #008000;">//</span><span style="color: #008000;"> swap with _Other</span>
+<span style="color: #000000;">    _STD swap(_Thr, _Other._Thr);
+    }</span></pre>
+</div>
+<p>可以看到交换的过程仅仅是互换了thread对象所持有的底层句柄；</p>
+<p>关于C++ 多线程新标准thread的基本介绍就到这里了，看到这里应该有一个简单的认识了。</p>
+<p>关于线程安全和管理等高级话题，后面有空在写文章介绍。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,263 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修熟悉的味道——从Java单例写到C++单例' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>熟悉的味道——从Java单例写到C++单例</center></div><div class='banquan'>原文出处:本文由博客园博主从此寂静无声提供。<br/>
+原文连接:https://www.cnblogs.com/jason1990/p/11747923.html</div><br>
+    <p>设计模式中，单例模式是常见的一种。单例模式需要满足以下两个条件：</p>
+<ul>
+<li>保证一个类只能创建一个示例；</li>
+<li>提供对该实例的全局访问点。</li>
+</ul>
+<p>关于单例最经典的问题就是DCL(Double-Checked Lock)，今天就此问题展开叙述。</p>
+<h2 id="java单例">1 Java单例</h2>
+<h3 id="通用的写法">1.1 通用的写法</h3>
+<pre><code>public class Singleton {
+
+    private Singleton() {}
+    public static Singleton INSTANCE = new Singleton();
+}</code></pre>
+<p>最简单的做法就是如上写法，在类被加载的时候就初始化其静态变量INSTANCE。因为JLS（Java Language Specification）中规定一个类只会被初始化一次，因此这样就可以实现一个朴实的单例类。</p>
+<h2 id="延迟加载单例">1.2 延迟加载单例</h2>
+<p>需求是多变的，部分人可能因为单例类的资源负担较重，想要其在需要的时候再进行初始化(Lazy initialization)。这样也简单，加把锁就满足你的需求。</p>
+<pre><code>public class Singleton {
+
+    private Singleton() {}
+    private static Singleton INSTANCE = null;
+    public static synchronized Singleton getInstance() {
+        if (null == INSTANCE) {
+            INSTANCE = new Singleton();
+        }
+        return INSTANCE;
+    }
+}</code></pre>
+<p>但是挑剔的人又提出了需求，引入synchronized之后，多线程访问单例，会因为synchronized导致访问串行化，这性能上很不好看。程序员于是只能去进行优化，想到了DCL，于是BUG就被引入了。</p>
+<pre><code>public class Singleton {
+
+    private Singleton() {}
+    private static Singleton INSTANCE = null;
+    public static Singleton getInstance() {
+        if (null == INSTANCE) {
+            synchronized (Singleton.class) {
+                if (null == INSTANCE) {
+                    INSTANCE = new Singleton();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+}</code></pre>
+<p>这是一段看上去很优美的代码，程序员在判断INSTANCE为空，加锁进行赋值时，还贴心的考虑到了可能存在多个线程同时判断INSTANCE是否为空的情况。如果加锁后发现INSTANCE被快一步的线程赋值了，那么我就直接返回此INSTANCE。<br />
+但是计算机的套路太多了，BUG就出现在INSTANCE = new Singleton()这一句代码上。这一句并不是原子操作，细分下去实际上可以被拆分为以下三个步骤：</p>
+<ul>
+<li>分配Singleton对象的内存空间；</li>
+<li>初始化Singleton对象(完成一些field赋值操作，本文为了篇幅，没填充field)；</li>
+<li>INSTANCE指向分配的内存空间。</li>
+</ul>
+<p>假如计算机严格的按照这个方式执行，那么DCL没错。可是CPU为了效率，代码可能会被乱序执行，假如线程A的指令被乱序为：</p>
+<ul>
+<li>分配Singleton对象的内存空间；</li>
+<li>INSTANCE指向分配的内存空间；</li>
+<li>初始化Singleton对象。</li>
+</ul>
+<p>线程B假如在执行到第二步的时候拿到了INSTANCE对象(此时并未初始化)，并且快速的传给应用使用，那么一些美好的事情即将发生（至于是什么，我当然是不晓得的）。</p>
+<h2 id="正确的dcl">1.3 正确的DCL</h2>
+<p>2000年，一群致力于Java高性能开发者聚集在一起，发表了著名的文章 <a href="http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html">The &quot;Double-Checked Locking is Broken&quot; Declaration</a>。<br />
+文章中讨论了关于DCL的各种尝试，比如使用ThreadLocal(虽然在老版本的代码中，可能效率会较低，但是为了正确性这是可以忍受的)。不过文章的最后，大家最欣赏的办法就是使用volatile修饰INSTANCE对象(加入内存屏障)。</p>
+<pre><code>public class Singleton {
+
+    private Singleton() {}
+    private static volatile Singleton INSTANCE = null;
+    public static Singleton getInstance() {
+        if (null == INSTANCE) {
+            synchronized (Singleton.class) {
+                if (null == INSTANCE) {
+                    INSTANCE = new Singleton();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+}</code></pre>
+<p>奏效的原因在于，对volatile对象的写操作不能被重排序到之前对volatile对象的读写操作之前，对volatile对象的读操作不能被重排序到之后对volatile的读写操作之后（如果对这段翻译不甚理解，可以见下面贴着的原文，其实大概的意思就是告诉CPU别重排序了）。当然，享受福利就需要付出一些代价，就是升级jdk至1.5及之后的版本(估计总是会有人守着历史版本，就像锁死在三体的百度，坚持XP优于WIN10的人们，我真的很respect)。</p>
+<blockquote>
+<p>JDK5 and later extends the semantics for volatile so that the system will not allow a write of a volatile to be reordered with respect to any previous read or write, and a read of a volatile cannot be reordered with respect to any following read or write.</p>
+</blockquote>
+<h2 id="c单例">2 C++单例</h2>
+<h3 id="加入内存屏障">2.1 加入内存屏障</h3>
+<p>让我感兴趣的是，在<code>The &quot;Double-Checked Locking is Broken</code>一文中，各位大佬列举了关于C++如何正确实现DCL的做法(加入内存屏障)，并且他们热心的贴出了代码，如下所示：</p>
+<pre class="c++"><code>// C++ implementation with explicit memory barriers
+// Should work on any platform, including DEC Alphas
+// From &quot;Patterns for Concurrent and Distributed Objects&quot;,
+// by Doug Schmidt
+template &lt;class TYPE, class LOCK&gt; TYPE *
+Singleton&lt;TYPE, LOCK&gt;::instance (void) {
+    // First check
+    TYPE* tmp = instance_;
+    // Insert the CPU-specific memory barrier instruction
+    // to synchronize the cache lines on multi-processor.
+    asm (&quot;memoryBarrier&quot;);
+    if (tmp == 0) {
+        // Ensure serialization (guard
+        // constructor acquires lock_).
+        Guard&lt;LOCK&gt; guard (lock_);
+        // Double check.
+        tmp = instance_;
+        if (tmp == 0) {
+                tmp = new TYPE;
+                // Insert the CPU-specific memory barrier instruction
+                // to synchronize the cache lines on multi-processor.
+                asm (&quot;memoryBarrier&quot;);
+                instance_ = tmp;
+        }
+    return tmp;
+}</code></pre>
+<p>如果跟Java的代码进行比较，会发现和Java的DCL基本类似，只不过有两处显式插入了内存屏障(即asm处)。此外，此段代码使用了RCU（read-copy-update），即先获取需要读取或者创建的数值（此处就是tmp）,在检测tmp是合法的数值之后，最后更新到instance_变量中去。通过RCU保证了在创建以及赋值的过程中，不会干扰到别的线程（假使失败，那么也不会污染instance_数值，不过在C++编程中，new失败了不如直接爆炸吧，这样死的明明白白一点）。</p>
+<blockquote>
+<p>关于RCU的用法，可以参见stackoverflow的<a href="http://stackoverflow.com/questions/3279543/what-is-the-copy-and-swap-idiom">RCU大讨论</a>。</p>
+</blockquote>
+<p>不过以上方法看似美好，但是在不同的平台上，内存屏障的添加方式也是存在差异，这就导致了你没法写出可移植的代码，甚至是依赖于特定编译器和特定环境的代码。这里就存在一个疑问，C++ 中也含有volatile，是否可以参考Java的代码，使用volatile添加内存屏障。答案很悲伤，C++ 的volatile和Java的volatile存在区别，无法照搬（关于此区别，可能在后续会写文章进行讲解）。</p>
+<h3 id="找一个类似于volatile的帮手">2.2 找一个类似于volatile的帮手</h3>
+<p>C++ 11中引入了std::atomic以及std::memory_order，有了标准库的定义，我们就能够写出在绝大多数平台下可移植的C++代码。此处，我们要了解一个概念，std::atomic的默认数值是<code>std::memory_order_seq_cst</code>，这是一个永远安全却又代价昂贵的内存屏障。其作用是在所有CPU(或者核心)中，保持严格的代码线性执行顺序。</p>
+<pre class="c++"><code>std::atomic&lt;Singleton*&gt; Singleton::m_instance;
+std::mutex Singleton::m_mutex;
+
+Singleton* Singleton::getInstance() {
+    Singleton* tmp = m_instance.load();
+    if (tmp == nullptr) {
+        std::lock_guard&lt;std::mutex&gt; lock(m_mutex);
+        tmp = m_instance.load();
+        if (tmp == nullptr) {
+            tmp = new Singleton;
+            m_instance.store(tmp);
+        }
+    }
+    return tmp;
+}</code></pre>
+<p>使用std::atomic，利用编译器提供的库，现在DCL就能够保证代码的线性执行顺序，代码在多个平台上也能够保证通用性(假如不能保证，我们还能对编译器要求再多吗)。<br />
+然而C++开发者向来以追求性能为己任，还能快一点，再快一点吗？当然能了，这段代码存在的问题恰恰就是全部代码都是顺序执行，我们只需要对部分执行代码做出顺序保证即可。</p>
+<h3 id="精确控制顺序">2.3 精确控制顺序</h3>
+<pre class="c++"><code>std::atomic&lt;Singleton*&gt; Singleton::m_instance;
+std::mutex Singleton::m_mutex;
+
+Singleton* Singleton::getInstance() {
+    Singleton* tmp = m_instance.load(std::memory_order_relaxed);
+    // 保证在获取单例指针时，其他线程如果在创建单例对象
+    // 这些操作，包括创建Singleton对象以及其成员变量的初始化，对于当前线程都是可见的
+    std::atomic_thread_fence(std::memory_order_acquire);
+    if (tmp == nullptr) {
+        std::lock_guard&lt;std::mutex&gt; lock(m_mutex);
+        tmp = m_instance.load(std::memory_order_relaxed);
+        if (tmp == nullptr) {
+            tmp = new Singleton;
+            // 保证后续语句，存储tmp指针时，new Singleton已经执行结束
+            // 最重要的是，tmp的创建以及Singleton的内部初始化操作，对于其他线程均是可见的
+            std::atomic_thread_fence(std::memory_order_release);
+            m_instance.store(tmp, std::memory_order_relaxed);
+        }
+    }
+    return tmp;
+}</code></pre>
+<p>我们对代码进行了修改，此处使用atomic_thread_fence实现关键位置的内存屏障。每次获取或存储变量m_instance，均使用memory_order_relaxed，保证单例的指针操作时原子操作。那么，存在的疑问就在于指针所指向的内容是不是跟随着原子操作，被同步过来了呢？<br />
+答案不是。指针是原子操作，但是指针的内容并未保证同步，因此我们需要使用std::atomic_thread_fence(std::memory_order_acquire)以及std::atomic_thread_fence(std::memory_order_release)去保证指针存放的内容被正确的同步了（详见代码中的注释内容）。</p>
+<p>关于std::atomic_thread_fence，这个确实很晦涩，知乎上wangyongcong<br />
+给出的例子，我觉得很是恰当，以下摘抄过来。</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Thread A</th>
+<th style="text-align: center;">Thread B</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">release-fence</td>
+<td style="text-align: center;">atomic-load</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">atomic-store</td>
+<td style="text-align: center;">acquire-fence</td>
+</tr>
+</tbody>
+</table>
+<p>存在线程A与B，A上的release-fence之后的atomic-store操作，如果对B的atomic-load操作可见，那么A的release-fence与B的atomic-load同步(sync-with)；另一方面，B的atomic-load操作后跟acquire-fence，如果线程A的atomic-store所做出的的修改对该atomic-load可见，那么A的atomic-store与B的acquire-fence同步。<br />
+A的release-fence与B的acquire-fence构成了一个同步点。在时间轴上，如果A的release-fence在B的acquire-fence钱，那么A在release-fence之间的所有操作，也都在B的acquire-fence之前，同时也将在B的acquire-fence的后继操作之前。简单点，就是release-fence之前的所有store，对acquire-fence之后都是可见的。</p>
+<blockquote>
+<p>补充：<br />
+1.上面所提到的atomic load/store均是指对同一个atmoic变量操作；<br />
+2.fence必须跟atomic变量共同作用才能起到一致性作用，离开atomic变量，那么无效。</p>
+</blockquote>
+<p>通过使用std::atmoic以及std::atomic_thread_fence，大大的缩小了单例的同步范围，这样也就让CPU有了更大的自由去实现优化（指令乱序本身就是为了提升处理效率，为了性能，我们还是得捏着鼻子忍受这件事情）。</p>
+<h3 id="站在巨人的肩膀上">2.4 站在巨人的肩膀上</h3>
+<p>下面介绍一个单例的正确做法，那就是寄托于pthread库已实现安全的单例。下面这段代码摘抄于陈硕的muduo代码中（省略了部分代码），他对此做法的解释是，如果pthread_once都不能保证单例的线程安全，那么我们的代码就让他崩溃吧(总不能让我们再去修改pthread库吧)。</p>
+<pre class="c++"><code>template&lt;typename T&gt;
+class Singleton : noncopyable
+{
+ public:
+  // 对于C++开发者，使用delete以及boost::noncopyable真的是一个好习惯
+  Singleton() = delete;
+  ~Singleton() = delete;
+
+  static T&amp; instance()
+  {
+    pthread_once(&amp;ponce_, &amp;Singleton::init);
+    assert(value_ != NULL);
+    return *value_;
+  }
+
+ private:
+  static pthread_once_t ponce_;
+  static T*             value_;
+};</code></pre>
+<h3 id="让我们时髦一些">2.5 让我们时髦一些</h3>
+<p>虽然嘴上说着时髦，其实概念很老旧，那就是借助于C++ 11中的local static去正确的实现单例（其本质上，是让编译器去帮助我们完成那些复杂的同步操作，保证我们的代码尽可能的less）。以下是C++ 11关于local static的描述（翻译过来就是在多线程调用的情况下，local static只会被初始化一次）。</p>
+<blockquote>
+<p>If control enters the declaration concurrently while the variable is being initialized, the concurrent execution shall wait for completion of the initialization.</p>
+</blockquote>
+<p>于是，我们的代码终于可以精简到一个很完美的地步（比Java的版本还要易于理解，不过需要注意，这要求我们的编译器支持C++ 11，或者说使用GCC 4.0以上版本，虽然GCC 4.0及以上的若干版本不完美支持C++ 11，但是它支持local static特性）：</p>
+<pre class="c++"><code>T&amp; Singleton()
+{
+    static T instance;
+    return instance;
+}</code></pre>
+<p>这个写法太完美了，不过我还是不喜欢延迟加载，更倾向于在main函数执行之前就初始化静态单例变量（Java稍简单，一个声明语句就可以，C++需要在类外执行初始化）。</p>
+<pre class="c++"><code>class Singleton: boost::noncopyable
+{
+private:
+    static Singleton instance;
+public:
+    Singleton() = delete;
+    ~Singleton() = delete;
+public:
+    static Singleton&amp; getInstance() {
+        return instance;
+    }
+}
+
+// 类外进行初始化操作
+Singleton Singleton::instance;</code></pre>
+<blockquote>
+<p>PS:<br />
+如果您觉得我的文章对您有帮助，请关注我的微信公众号，谢谢!<br />
+<img src="./images/熟悉的味道——从Java单例写到C++单例0.png" alt="程序员打怪之路" /></p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,77 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Linux低延迟服务器系统调优' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Linux低延迟服务器系统调优</center></div><div class='banquan'>原文出处:本文由博客园博主it-hao提供。<br/>
+原文连接:https://www.cnblogs.com/it-hao/p/11930554.html</div><br>
+    <div class="Post-RichTextContainer">
+<div class="RichText ztext Post-RichText">
+<p>最近做了一些系统和网络调优相关的测试，达到了期望的效果，有些感悟。同时，我也发现知乎上对Linux服务器低延迟技术的讨论比较欠缺（满嘴高并发现象）；或者对现今cpu + 网卡的低延迟潜力认识不足（动辄FPGA现象），比如一篇知乎高赞的介绍FPGA的文章写到&ldquo;从延迟上讲，网卡把数据包收到 CPU，CPU 再发给网卡，即使使用 DPDK 这样高性能的数据包处理框架，延迟也有 4~5 微秒。更严重的问题是，通用 CPU 的延迟不够稳定。例如当负载较高时，转发延迟可能升到几十微秒甚至更高&rdquo;，刚好我前几天做过类似的性能测试，发现一个tcp或udp的echo server可以把网卡到网卡的延迟稳定在1微秒以内，不会比FPGA方案慢很多吧？</p>
+<p>因此，我觉得有必要分享下自己的见解。总的来说，我打算分两篇文章讨论相关低延迟技术：</p>
+<p>1）系统调优（本文）：一些低延迟相关的Linux系统设置，和一些原则。</p>
+<p>2）网络调优：<a class="internal" href="https://zhuanlan.zhihu.com/p/59242346" data-za-detail-view-id="1043">使用solarflare网卡降低网络IO延迟</a>。</p>
+<p>这里不打算介绍用户空间的延迟优化，因为太广泛了，另外我之前的文章也分享一些解决某类问题的低延迟类库。</p>
+<p class="ztext-empty-paragraph">&nbsp;</p>
+<p>说到低延迟，关键点不在低，而在<strong>稳定</strong>，稳定即可预期，可掌控，其对于诸如高频交易领域来说尤为重要。 而说到Linux的低延迟技术，一个不能不提的词是"kernel bypass"，也就是绕过内核，为什么呢？因为内核处理不仅慢而且延迟不稳定。可以把操作系统想象成一个庞大的框架，它和其他软件框架并没有什么本质的不同，只不过更加底层更加复杂而已。既然是框架，就要考虑到通用性，需要满足各种对类型用户的需求，有时你只需要20%的功能，却只能take all。</p>
+<p>因此我认为一个延迟要求很高（比如个位数微秒级延迟）的实时任务是不能触碰内核的，（当然在程序的启动初始化和停止阶段没有个要求，That's how linux works）。 这里的避免触碰是一个比bypass更高的要求：不能以<strong>任何</strong>方式进入内核，不能直接或间接的执行系统调用(trap)，不能出现page fault(exception)，不能被中断(interrupt)。trap和exception是主动进入内核的方式，可以在用户程序中避免，这里不深入讨论（比如在程序初始化阶段分配好所有需要的内存并keep的物理内存中；让其他非实时线程写日志文件等）。本文的关键点在于避免关键线程被中断，这是个比较难达到的要求，但是gain却不小，因为它是延迟稳定的关键点。即使中断发生时线程是空闲的，但重新回到用户态后cpu缓存被污染了，下一次处理请求的延迟也会变得不稳定。</p>
+<p>不幸的是Linux并没有提供一个简单的选项让用户完全关闭中断，也不可能这么做（That's how linux works），我们只能想法设法避免让关键任务收到中断。我们知道，中断是cpu core收到的，我们可以让关键线程<strong>绑定</strong>在某个core上，然后避免各种中断源（IRQ)向这个core发送中断。绑定可以通过<code>taskset</code>或 <code>sched_setaffinity</code>实现，这里不赘述。 避免IRQ向某个core发中断可以通过改写<code>/proc/irq/*/smp_affinity</code>来实现。例如整个系统有一块cpu共8个核，我们想对core 4~7屏蔽中断，只需把<strong>非</strong>屏蔽中断的core(0 ~ 3)的mask "f"写入smp_affinity文件。这个操作对硬件中断（比如硬盘和网卡）都是有效的，但对软中断无效（比如local timer interrupt和work queue），对于work queue的屏蔽可以通过改写<code>/sys/devices/virtual/workqueue/*/cpumask</code>来实现，本例中还是写入"f"。</p>
+<p>那么剩下的主要就是local timer interrupt(LOC in /proc/interrupts)了。Linux的scheduler time slice是通过LOC实现的，如果我们让线程独占一个core，就不需要scheduler在这个core上切换线程了，这是可以做到的：通过<code>isolcpus</code>系统启动选项隔离一些核，让它们只能被绑定的线程使用，同时，为了减少独占线程收到的LOC频率，我们还需要使用"adaptive-ticks"模式，这可以通过<code>nohz_full</code>和<code>rcu_nocbs</code>启动选项实现。本例中需要在系统启动选项加入<code>isolcpus=4,5,6,7 nohz_full=4,5,6,7 rcu_nocbs=4,5,6,7</code> 来使得4~7核变成adaptive-ticks。adaptive-ticks的效果是：如果core上的running task只有一个时，系统向其发送LOC的频率会降低成每秒一次，内核文档解释了不能完全屏蔽LOC的原因："Some process-handling operations still require the occasional scheduling-clock tick. These operations include calculating CPU load, maintaining sched average, computing CFS entity vruntime, computing avenrun, and carrying out load balancing. They are currently accommodated by scheduling-clock tick every second or so. On-going work will eliminate the need even for these infrequent scheduling-clock ticks."。</p>
+<p>至此，通过修改系统设置，我们能够把中断频率降低成每秒一次，这已经不错了。如果想做的更完美些，让关键线程长时间（比如几个小时）不收到任何中断，只能修改内核延长中断的发送周期。不同kernel版本相关代码有所差异，这里就不深入讨论。不过大家可能会顾虑：这样改变系统运行方式会不会导致什么问题呢？我的经验是，这有可能会影响某些功能的正常运转（如内核文档提到的那些），但我尚未发现程序和系统发生任何异常，说明这项内核修改至少不会影响我需要的功能，我会继续使用。</p>
+<p>两个原则：</p>
+<p>1）如果一件事情可以被delay一段时间，那它往往能够被delay的更久，因为它没那么重要。</p>
+<p>2）不要为不使用的东西付费，对于性能优化来说尤为如此。</p>
+<p class="ztext-empty-paragraph">&nbsp;</p>
+<p>如何检测中断屏蔽的效果呢？可以watch<code>/proc/interrupts</code>文件的变化 。更好的方法是用简单的测试程序来验证延迟的稳定性：</p>
+<div class="highlight">
+<pre><code class="language-cpp"><span class="cp">#include <span class="cpf">&lt;iostream&gt;<span class="cp">
+<span class="cp">
+<span class="n">uint64_t <span class="nf">now<span class="p">() <span class="p">{
+   <span class="k">return <span class="n">__builtin_ia32_rdtsc<span class="p">();
+<span class="p">}
+
+<span class="kt">int <span class="nf">main<span class="p">() <span class="p">{
+  <span class="n">uint64_t <span class="n">last <span class="o">= <span class="n">now<span class="p">();
+  <span class="k">while <span class="p">(<span class="nb">true<span class="p">) <span class="p">{
+    <span class="n">uint64_t <span class="n">cur <span class="o">= <span class="n">now<span class="p">();
+    <span class="n">uint64_t <span class="n">diff <span class="o">= <span class="n">cur <span class="o">- <span class="n">last<span class="p">;
+    <span class="k">if <span class="p">(<span class="n">diff <span class="o">&gt; <span class="mi">300<span class="p">) <span class="p">{
+      <span class="n">std<span class="o">::<span class="n">cout <span class="o">&lt;&lt; <span class="s">"latency: " <span class="o">&lt;&lt; <span class="n">diff <span class="o">&lt;&lt; <span class="s">" cycles" <span class="o">&lt;&lt; <span class="n">std<span class="o">::<span class="n">endl<span class="p">;
+      <span class="n">cur <span class="o">= <span class="n">now<span class="p">();
+    <span class="p">}
+    <span class="n">last <span class="o">= <span class="n">cur<span class="p">;
+  <span class="p">}
+  <span class="k">return <span class="mi">0<span class="p">;
+<span class="p">}
+</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></code></pre>
+</div>
+<p>通过taskset绑定一个核运行程序，每进入一次内核会打印一条信息。</p>
+<p class="ztext-empty-paragraph">&nbsp;</p>
+<p>最后，除了进入内核以外，影响延迟稳定性的因素还有<strong>cache miss</strong>和<strong>tlb miss</strong>。</p>
+<p>对于减少cache miss，一方面需要优化程序，minimize memory footprint，或者说减少一个操作访问cache line的个数，一个缓存友好例子是<a class="internal" href="https://zhuanlan.zhihu.com/p/55829473" data-za-detail-view-id="1043">一种能高速查找的自适应哈希表</a>文章中的哈希表的实现方式。另一方面，可以通过分(lang)配(fei)硬件资源让关键线程占有更多的缓存，比如系统有两块CPU，每块8核，我们可以把第二块CPU的所有核都隔离掉，然后把关键线程绑定到其中的部分核上，可能系统只有一两个关键线程，但它们却能拥有整块CPU的L3 cache。</p>
+<p>对于减少tlb miss，可以使用huge pages。</p>
+<p><img src="./images/Linux低延迟服务器系统调优0.png" alt="" /></p>
+<p>链接：<a href="https://pan.baidu.com/s/1v5gm7n0L7TGyejCmQrMh2g" target="_blank">https://pan.baidu.com/s/1v5gm7n0L7TGyejCmQrMh2g</a>&nbsp;提取码：x2p5<br /><br />免费分享，但是X度限制严重，如若链接失效点击链接或搜索加群 群号<a href="https://jq.qq.com/?_wv=1027&amp;k=5Dg8XlT" target="_blank">744933466</a>。</p>
+</div>
+</div>
+<div class="ContentItem-time">&nbsp;</div>
+<div id="Popover7-toggle" class="ShareMenu-toggler">&nbsp;</div>
+<div class="Post-ActionMenuButton">&nbsp;</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

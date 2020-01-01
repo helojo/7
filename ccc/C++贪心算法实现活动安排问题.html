@@ -1,0 +1,134 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++贪心算法实现活动安排问题' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++贪心算法实现活动安排问题</center></div><div class='banquan'>原文出处:本文由博客园博主Weisswire提供。<br/>
+原文连接:https://www.cnblogs.com/Jesse-Cavendish/p/11791036.html</div><br>
+    <p><span style="background-color: #ffff00; font-size: 18px;">问题描述：</span></p>
+<p>设有n个活动的集合E={1,2，&hellip;，n}，其中，每个活动都要求使用同一资源，而在同一时间内只有一个活动能使用这一资源。每个活动i都有一个要求使用该资源的起始时间s<sub>i</sub>和一个结束时间f<sub>i</sub>，且s<sub>i</sub>&lt;f<sub>i</sub>。如果选择了活动i，则它在半开时间区间[s<sub>i</sub>,f<sub>i</sub>)内占用资源。若区间[s<sub>i</sub>,f<sub>i</sub>)与区间[s<sub>j</sub>,f<sub>j</sub>)不相交，则称活动i与活动j是相容的。也就是说，当s<sub>i</sub>&ge;f<sub>&shy;j</sub>或s<sub>j</sub>&ge;f<sub>i</sub>时，活动i与活动j相容。活动安排问题就是要在所给的活动集合中选出最大的相容活动子集合。</p>
+<p><span style="background-color: #ffff00; font-size: 18px;">细节须知：</span></p>
+<p>暂无。</p>
+<p><span style="font-size: 18px; background-color: #ffff00;">算法原理：</span></p>
+<p>a.对活动进行排序</p>
+<p>将各活动的起始时间和结束时间存储于数组中并按结束时间进行非减序排列，如果所给出的活动未按此序排列，可以进行重排。</p>
+<p>b.依次向后寻找相容的且结束时间最早活动</p>
+<p>算法开始选择活动1，并将j初始化为1。然后依次检查活动i是否与当前已选择的所有活动相容，若相容则将活动i加入已选择活动的集合A中；否则，不选择活动i，而继续检查下一活动与集合A中活动的相容性。由于f<sub>j</sub>总是当前集合A中所有活动的最大结束时间，故活动i与当前集合A中所有活动相容的充分且必要的条件是其开始时间s<sub>i</sub>不早于最近加入集合A的活动j的结束时间f<sub>i</sub>。若活动i与之相容，则i成为最近加入集合A中的活动，并取代活动j的位置。由于输入的活动以其完成时间的非减序排列，所以算法每次总是选择具有最早完成时间的相容活动加入集合A中。直观上，按这种方法选择相容活动为未安排活动留下尽可能多的时间。也就是说，该算法的贪心选择的意义是使剩余的可安排时间段极大化，以便安排尽可能多的相容活动。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;cstdio&gt;
+<span style="color: #008080;"> 2</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 3</span> #include &lt;ctime&gt;
+<span style="color: #008080;"> 4</span> #include &lt;windows.h&gt;
+<span style="color: #008080;"> 5</span> #include &lt;algorithm&gt;
+<span style="color: #008080;"> 6</span> #include &lt;fstream&gt;
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> activity
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> no;
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> start;
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> finish;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">14</span> <span style="color: #0000ff;">bool</span> cmp(<span style="color: #0000ff;">const</span> activity &amp;x, <span style="color: #0000ff;">const</span> activity &amp;<span style="color: #000000;">y)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">return</span> x.finish&lt;y.finish;<span style="color: #008000;">//</span><span style="color: #008000;">从小到大排&lt;，若要从大到小排则&gt;</span>
+<span style="color: #008080;">17</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">18</span> <span style="color: #0000ff;">int</span> greedySelector(<span style="color: #0000ff;">int</span> m,<span style="color: #0000ff;">int</span> solution[],<span style="color: #0000ff;">struct</span><span style="color: #000000;"> activity activity[]){
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">int</span> number = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">20</span>     solution[<span style="color: #800080;">0</span>] = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">21</span>     <span style="color: #0000ff;">int</span> i,j = <span style="color: #800080;">0</span>,counter = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">for</span>(i = <span style="color: #800080;">1</span>;i &lt; m ;i++<span style="color: #000000;">)
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">24</span>         <span style="color: #0000ff;">if</span>(activity[i].start &gt;=<span style="color: #000000;">activity[j].finish)
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">26</span>             solution[i] = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">27</span>             j =<span style="color: #000000;"> i;
+</span><span style="color: #008080;">28</span>             counter++<span style="color: #000000;">;
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">30</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">31</span>             solution[i] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">33</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">The amount of activities is:</span><span style="color: #800000;">"</span>&lt;&lt;counter&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;">34</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">The solution is:</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">35</span>     <span style="color: #0000ff;">for</span>(i = <span style="color: #800080;">0</span> ;i &lt; m ;i++<span style="color: #000000;">)
+</span><span style="color: #008080;">36</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">37</span>        <span style="color: #0000ff;">if</span> (solution[i] == <span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">       {
+</span><span style="color: #008080;">39</span>             cout &lt;&lt; activity[i].no &lt;&lt;<span style="color: #800000;">"</span> <span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">       }
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">42</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> counter;
+</span><span style="color: #008080;">43</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">44</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;">45</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">46</span> <span style="color: #000000;">    LARGE_INTEGER nFreq;
+</span><span style="color: #008080;">47</span> <span style="color: #000000;">    LARGE_INTEGER nBeginTime;
+</span><span style="color: #008080;">48</span> <span style="color: #000000;">    LARGE_INTEGER nEndTime;
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">    ofstream fout;
+</span><span style="color: #008080;">50</span>     srand((unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;">)time(NULL));
+</span><span style="color: #008080;">51</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> m,i,j,t;
+</span><span style="color: #008080;">52</span>     <span style="color: #0000ff;">double</span><span style="color: #000000;"> cost;
+</span><span style="color: #008080;">53</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Please enter the number of times you want to run the program:</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">54</span>     cin &gt;&gt;<span style="color: #000000;"> t;
+</span><span style="color: #008080;">55</span>     fout.open(<span style="color: #800000;">"</span><span style="color: #800000;">activity.txt</span><span style="color: #800000;">"</span><span style="color: #000000;">,ios::app);
+</span><span style="color: #008080;">56</span>     <span style="color: #0000ff;">if</span>(!<span style="color: #000000;">fout){
+</span><span style="color: #008080;">57</span>         cerr&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">Can not open file 'activity.txt' </span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;">58</span>         <span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">59</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">60</span>     fout.setf(ios_base::<span style="color: #0000ff;">fixed</span>,ios_base::floatfield);       <span style="color: #008000;">//</span><span style="color: #008000;">防止输出的数字使用科学计数法</span>
+<span style="color: #008080;">61</span>     <span style="color: #0000ff;">for</span> (j = <span style="color: #800080;">0</span>;j &lt; t;j++<span style="color: #000000;">)
+</span><span style="color: #008080;">62</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">63</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;The </span><span style="color: #800000;">"</span>&lt;&lt; j + <span style="color: #800080;">1</span> &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">th test &mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;">64</span>         m = <span style="color: #800080;">1</span> + rand()%<span style="color: #800080;">100000</span><span style="color: #000000;">;
+</span><span style="color: #008080;">65</span>         fout&lt;&lt;m&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">,</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">66</span>         <span style="color: #0000ff;">int</span><span style="color: #000000;"> solution[m];
+</span><span style="color: #008080;">67</span> <span style="color: #000000;">        activity activity[m];
+</span><span style="color: #008080;">68</span>         <span style="color: #0000ff;">for</span>( i = <span style="color: #800080;">0</span>;i &lt; m;i++<span style="color: #000000;">)
+</span><span style="color: #008080;">69</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">70</span>             activity[i].no = i+<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">71</span>             activity[i].start = <span style="color: #800080;">1</span> + rand()%<span style="color: #800080;">1000</span><span style="color: #000000;">;
+</span><span style="color: #008080;">72</span>             <span style="color: #0000ff;">while</span>(<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">73</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">74</span>                 activity[i].finish = <span style="color: #800080;">1</span> + rand()%<span style="color: #800080;">10000</span><span style="color: #000000;">;
+</span><span style="color: #008080;">75</span>                 <span style="color: #0000ff;">if</span>(activity[i].finish &gt; activity[i].start) <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">76</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">77</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">78</span>         QueryPerformanceFrequency(&amp;<span style="color: #000000;">nFreq);
+</span><span style="color: #008080;">79</span>         QueryPerformanceCounter(&amp;<span style="color: #000000;">nBeginTime);
+</span><span style="color: #008080;">80</span>         sort(activity,activity+<span style="color: #000000;">m,cmp);
+</span><span style="color: #008080;">81</span> <span style="color: #000000;">        greedySelector(m,solution,activity);
+</span><span style="color: #008080;">82</span>         QueryPerformanceCounter(&amp;<span style="color: #000000;">nEndTime);
+</span><span style="color: #008080;">83</span>         cost=(<span style="color: #0000ff;">double</span>)(nEndTime.QuadPart - nBeginTime.QuadPart) / (<span style="color: #0000ff;">double</span><span style="color: #000000;">)nFreq.QuadPart;
+</span><span style="color: #008080;">84</span>         fout &lt;&lt; cost &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">85</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">\nThe running time is:</span><span style="color: #800000;">"</span> &lt;&lt; cost &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;"> s</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">86</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">87</span> <span style="color: #000000;">    fout.close();
+</span><span style="color: #008080;">88</span>     cout &lt;&lt; endl &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">89</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Success!</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">90</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">91</span> }</pre>
+</div>
+<p><span style="font-size: 18px; background-color: #ffff00;">程序设计思路：</span></p>
+<p>① 数据结构：结构体中存储活动序号、活动开始时间、活动结束时间；</p>
+<p>② 利用C++自带的sort函数对结构体按照活动结束时间进行升序排列；</p>
+<p>③ 算法开始选择活动1，并将j初始化为1。然后依次检查活动i是否与当前已选择的所有活动相容，若相容则将活动i加入已选择活动的集合A中；否则，不选择活动i，而继续检查下一活动与集合A中活动的相容性。由于f<sub>j</sub>总是当前集合A中所有活动的最大结束时间，故活动i与当前集合A中所有活动相容的充分且必要的条件是其开始时间s<sub>i</sub>不早于最近加入集合A的活动j的结束时间f<sub>i</sub>。若活动i与之相容，则i成为最近加入集合A中的活动，并取代活动j的位置。由于输入的活动以其完成时间的非减序排列，所以算法每次总是选择具有最早完成时间的相容活动加入集合A中。</p>
+<p><span style="font-size: 18px; background-color: #ffff00;">时间复杂性分析：</span></p>
+<p>首先，需要对输入的事件按照结束时间进行非减序排列，需要用<em>O</em>（nlogn）的时间。其次，算法greedySelector的效率极高，当输入的活动已按结束时间的非减序排列，算法只需&theta;（n）的时间安排n个活动，使最多的活动能相容地使用公共资源。</p>
+<p><span style="background-color: #ffff00;">生成的数据可导入EXCEL中进行数据分析生成分析图表。</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

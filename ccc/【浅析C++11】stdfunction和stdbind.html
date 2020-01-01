@@ -1,0 +1,168 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修【浅析C++11】stdfunction和stdbind' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>【浅析C++11】stdfunction和stdbind</center></div><div class='banquan'>原文出处:本文由博客园博主bigosprite提供。<br/>
+原文连接:https://www.cnblogs.com/bigosprite/p/11294264.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#stdfunction可调用对象包装器">std::function可调用对象包装器</a></li>
+        <li><a href="#stdfunction基本用法">std::function基本用法</a></li>
+        <li><a href="#stdfunctionstdbind与抽象工厂工厂方法的一点思考">std::function/std::bind与抽象工厂、工厂方法的一点思考</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="stdfunction可调用对象包装器">std::function可调用对象包装器</h2>
+<p>C++可调用对象（Callable Objects）定义如下：</p>
+<ol>
+<li>函数指针：与C语言一致；</li>
+<li>类成员函数指针；</li>
+<li>仿函数(functor)：也成函数对象，重载<code>operator()</code>运算符的类/结构体对象；</li>
+<li>lambda表达式。</li>
+</ol>
+<p>std::function是Callable Objects的包装器(Wrapper)，可接收除了类成员函数指针以外的任意Callable Objects。std::function可用来处理函数回调，与C语言函数指针类似，允许保存以上Callable Objects，并延迟执行它们，但它可保存除函数指针外的其他Callable Objects，因此它比C语言更强大。</p>
+<p>当我们为std::function具现化一个函数签名（函数类型，包括返回值和参数列表），它就成为一个可容纳所有这类调用的函数包装器。</p>
+<h2 id="stdfunction基本用法">std::function基本用法</h2>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;functional&gt; // std::function
+
+// global function
+void func(void) {
+  std::cout &lt;&lt; __FUNCTION__ &lt;&lt; std::endl;
+}
+
+class Foo {
+public:
+  // class static function
+  static int foo_func(int a) {
+    std::cout &lt;&lt; __FUNCTION__ &lt;&lt; &quot;(&quot; &lt;&lt; a &lt;&lt; &quot;):&quot;;
+    return a;
+  }
+
+  // class non-static member function
+  int foo_func_nonstatic(int a) {
+    std::cout &lt;&lt; __FUNCTION__ &lt;&lt; &quot;(&quot; &lt;&lt; a  &lt;&lt; &quot;):&quot;;
+    return a;
+  }
+};
+
+class Bar {
+public:
+  // functor
+  int operator()(int a) {
+    std::cout &lt;&lt; __FUNCTION__ &lt;&lt; &quot;(&quot; &lt;&lt; a &lt;&lt; &quot;):&quot;;
+    return a;
+  }
+};
+
+int main() {
+  // 传入合适函数签名给std::function模板参数即可绑定对应签名的
+  // 普通函数或
+  // 类静态成员函数或
+  // 借助std::bind绑定类非静态成员函数
+  std::function&lt;void(void)&gt; func1 = func;
+  std::function&lt;int(int)&gt; func2   = Foo::foo_func;
+  Foo foo;
+  std::function&lt;int(int)&gt; func3   = std::bind(&amp;Foo::foo_func_nonstatic, &amp;foo,
+                                              std::placeholders::_1);
+
+  // 然后，直接像函数一样调用
+  func1(); // func
+  std::cout &lt;&lt; func2(1)  &lt;&lt; std::endl; // foo_func(1):1
+  std::cout &lt;&lt; func3(11) &lt;&lt; std::endl; // foo_func_nonstatic(11):11
+
+  // 当函数签名一致时，func2可像一个变量一样复用
+  // Bar重载了operator()即成为functor，可直接包装到std::function
+  Bar bar;
+  func2 = bar;
+  std::cout &lt;&lt; func2(2) &lt;&lt; std::endl; // operator()(2):2
+
+  // 也可绑定lambda表达式
+  auto func_lambda = [](int a){
+    std::cout &lt;&lt; &quot;bind lambda sample(&quot; &lt;&lt; a &lt;&lt; &quot;)&quot; &lt;&lt; std::endl;
+  };
+  func_lambda(3); // bind lambda sample(3)
+
+  return 0;
+}</code></pre>
+<p>既然std::function可作为左值接收函数对象，那么它可作为函数的形参；且std::function可绑定函数指针，实现函数的延迟执行，所以std::function可取代std::function作为回调函数。</p>
+<p>std::function实现回调机制的例子如下：</p>
+<pre class="cpp"><code>#include &lt;iostream&gt;
+#include &lt;functional&gt; // std::function
+
+// 任意可调用对象，如普通全局函数
+void func_callback(int a) {
+  std::cout &lt;&lt; __FUNCTION__ &lt;&lt; &quot;:Output, a=&quot; &lt;&lt; a &lt;&lt; std::endl;
+}
+
+class Foo {
+public:
+  explicit Foo(std::function&lt;void(int)&gt; cb)
+    :cb_(cb), a_(0) {
+  }
+  ~Foo() = default;
+
+  // setter
+  void set_a(int a) {
+    a_ = a;
+  }
+
+  void OutputCallback() {
+    cb_(a_);
+  }
+
+private:
+  std::function&lt;void(int)&gt; cb_;
+  int a_;
+};
+
+int main() {
+  // 实例化Foo，并参数注入回调函数
+  // 处理
+  // 回调输出处理结果
+  Foo foo(func_callback);
+  foo.set_a(1);
+  foo.OutputCallback(); // func_callback:Output, a=1
+
+  return 0;
+}</code></pre>
+<p>以上，介绍了std::function绑定Callable Objects的用法，并以一个实例演示了std::function作为函数回调的例子；其中，func_callback回调函数参数为int型，在实际应用如人脸智能分析中，人脸分析信息结构体指针可作为回调函数参数，该函数可输出人脸识别结果；Foo类可为人脸分析相关类，OutputCallback可能在该类某个人脸分析线程中被调用，分析得到的结果可调用OutputCallback回调输出给提供func_callback的用户。</p>
+<blockquote>
+<p>注：C++11提供的std::function可替代C语言中函数指针作为回调函数，前者是C++编程风格，后者是C编程风格。</p>
+</blockquote>
+<p>C/C++回调机制在服务器端并发编程和游戏领域应用广泛，著名2d游戏框架Cocos2dx大量使用回调机制，提供了常用的回调宏如下所示，更多回调机制可参考Cocos2dx开源源码。</p>
+<pre><code>// Cocos2dx new callbacks based on C++11
+//
+// __selector__：回调函数指针
+// __target__：回调对象指针
+// ##__VA_ARGS__：可变参数列表 
+// std::placeholders::_1：不定参数1，调用时由调用函数的参数传入
+// std::placeholders::_2：不定参数2，调用时由调用函数的参数传入
+// std::placeholders::_3：不定参数3，调用时由调用函数的参数传入
+#define CC_CALLBACK_0(__selector__,__target__, ...) std::bind(&amp;__selector__,__target__, ##__VA_ARGS__)
+#define CC_CALLBACK_1(__selector__,__target__, ...) std::bind(&amp;__selector__,__target__, std::placeholders::_1, ##__VA_ARGS__)
+#define CC_CALLBACK_2(__selector__,__target__, ...) std::bind(&amp;__selector__,__target__, std::placeholders::_1, std::placeholders::_2, ##__VA_ARGS__)
+#define CC_CALLBACK_3(__selector__,__target__, ...) std::bind(&amp;__selector__,__target__, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, ##__VA_ARGS__)</code></pre>
+<h2 id="stdfunctionstdbind与抽象工厂工厂方法的一点思考">std::function/std::bind与抽象工厂、工厂方法的一点思考</h2>
+<p><code>TODO...</code></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

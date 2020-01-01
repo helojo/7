@@ -1,0 +1,98 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修AVR单片机教程——数字IO寄存器' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>AVR单片机教程——数字IO寄存器</center></div><div class='banquan'>原文出处:本文由博客园博主jerry_fuyi提供。<br/>
+原文连接:https://www.cnblogs.com/jerry-fuyi/p/11620890.html</div><br>
+    <p>前两篇教程中我们学习了LED、按键、开关的基本原理，数字输入输出的使用以及两者之间的关系。我们用到了&nbsp;<span class="cnblogs_code">pin_mode</span>&nbsp;、&nbsp;<span class="cnblogs_code">pin_read</span>&nbsp;和&nbsp;<span class="cnblogs_code">pin_write</span>&nbsp;这三个函数，实际上它们离最底层（至少是单片机制造商允许我们接触到的最底层）就只有一步之遥了。而学单片机要是不了解一点底层，那跟Arduino玩家还有什么区别？（为防止有忠实的Arduino粉丝骂我，我得承认还是有一小部分Arduino玩家是知道本篇教程所介绍内容的。）根本不好意思说自己学过单片机好吧。这所谓的最底层，就是数字IO寄存器了。</p>
+<p>在开始之前，你需要下载两份文档：</p>
+<p>单片机的<a href="http://ww1.microchip.com/downloads/en/DeviceDoc/ATmega164A_PA-324A_PA-644A_PA-1284_P_Data-Sheet-40002070A.pdf" target="_blank">数据手册</a>。官网链接极慢，我在国内平台上传了<a href="https://pan.baidu.com/s/1TApuohZKUvGp2Na-2E1avA" target="_blank">一份</a>，在本篇教程写成之时是最新的。</p>
+<p>开发板的<a href="https://files.cnblogs.com/files/jerry-fuyi/ee1-sch.7z" target="_blank">原理图</a>。本应在教程之初就放出来，但事实证明没有原理图也不影响使用。现在是肯定需要的。</p>
+<p>&nbsp;</p>
+<p>等等，你可能还不知道寄存器是什么。那我们就从寄存器开始吧。</p>
+<p>寄存器是一类CPU内部的存储器，分为通用寄存器与特殊功能寄存器（8086对特殊功能寄存器还有细分）。通用寄存器，顾名思义是通用的，可以存储操作数、运算结果、内存地址等数据，在使用C语言编程时，一般不直接接触通用寄存器，而由编译器负责安排其使用。特殊功能寄存器有特定的功能，一些作用于CPU内部，如PC存放下一条指令的地址，SP记录内存中栈顶的位置（现在无需了解这些）；另一些与IO模组相连接，单片机程序通过这类寄存器来控制各种外设，我们今天要学习的数字信号IO寄存器就属于这一类，并且应该是其中最简单的了。</p>
+<p>我们使用的单片机的型号是ATmega324PA，它有多种封装，引脚（pin）数不尽相同，但都有32个通用输入输出（GPIO）引脚。由于AVR架构是8位字长的，CPU一次处理1位数据和8位数据所需的时间是一样的，这32个引脚被组织为4个端口（port），分别是PA、PB、PC和PD。</p>
+<p>在AVR架构tiny与mega系列的单片机中，每个端口都有3个寄存器控制数字信号IO，分别是PORTx、DDRx和PINx。这里的x是A、B、C或D，由于这4个端口在数字IO方面完全相同，就把它们合并起来讲。相应地，对于每个引脚Pxn，有PORTxn、DDxn（没有R）和PINxn三个bit控制其数字IO。</p>
+<p>DDxn控制引脚方向：当DDxn为1时，Pxn为输出；当DDxn为0时，Pxn为输入。</p>
+<p>当Pxn为输入时，如果PORTxn为1，则该引脚通过一个上拉电阻连接到VCC；否则引脚悬空。</p>
+<p>当Pxn为输出时，如果PORTxn为1，引脚输出高电平；否则输出低电平。</p>
+<p>PINxn的值为Pxn引脚的电平。如果给PINxn写入1，PORTxn的值会翻转。</p>
+<p>还有很多细节问题，如MCUCR寄存器中PUD位的功能、复位后寄存器的值、输入输出切换的方法、读取引脚电平的延迟、未连接引脚的处理方法等，留作今天的作业，阅读数据手册I/O-Ports一章中除Alternate Port Functions一节以外的内容（一共8页不到，不多吧），找出这些问题的答案，并以此为基础回答上一篇教程最后的问题。</p>
+<p>&nbsp;</p>
+<p>讲了这么多，相信你也没记住多少，而且你也不知道去哪里用这些寄存器。</p>
+<p>要使用寄存器，你需要在C语言程序中写&nbsp;<span class="cnblogs_code">#include &lt;avr/io.h&gt;</span>&nbsp;（在创建项目时自动生成的代码中就有），然后就可以使用&nbsp;<span class="cnblogs_code">PORTA</span>&nbsp;、&nbsp;<span class="cnblogs_code">DDRB</span>&nbsp;、&nbsp;<span class="cnblogs_code">PINC</span>&nbsp;等寄存器了。它们是宏定义，你不必去探究它们展开后是怎样的，只需知道这些宏可以读取，可以赋值，可以位操作，就像&nbsp;<span class="cnblogs_code">uint8_t</span>&nbsp;类型变量一样。</p>
+<p>但是诸如&nbsp;<span class="cnblogs_code">PORTA0</span>&nbsp;和&nbsp;<span class="cnblogs_code">DDB7</span>&nbsp;等宏定义却不代表寄存器上的那一位，它们实际上就是字面值常量，如&nbsp;<span class="cnblogs_code">PORTAx</span>&nbsp;的意义是寄存器&nbsp;<span class="cnblogs_code">PORTA</span>&nbsp;的第x位（第0位为最低位，第7位为最高位），它的值就是x。因此，直接对这些宏复制是不正确的（不仅意义不正确，编译也不会通过）。</p>
+<p>在开发板的库函数中的&nbsp;<span class="cnblogs_code">&lt;ee1/bit.h&gt;</span>&nbsp;提供了包含几个用于位操作的宏函数。我们先按照<a href="https://www.cnblogs.com/jerry-fuyi/p/11524921.html#bit" target="_blank">手册</a>来用，稍后来看它们是如何实现的。</p>
+<p>&nbsp;</p>
+<p>我们先返璞归真一下，回到最初的例子，点亮一个LED，不过这次我们不再使用&nbsp;<span class="cnblogs_code">&lt;ee1/led.h&gt;</span>&nbsp;提供的函数，而是直接操作寄存器。</p>
+<p>先点亮红色LED吧。在原理图的第2页左上角，红色LED通过一个电阻连接到网络LED0，而在第1页中LED0连接的是单片机PC4引脚，因此我们需要让PC4引脚输出高电平。回到上面看一下三个寄存器的功能，输出高电平需要DDxn和PORTxn同时为1。这里把x和n分别用C和4带入，即我们要让DDC4和PORTC4为1。</p>
+<p>将一个寄存器的一位置为1可以由&nbsp;<span class="cnblogs_code">set_bit</span>&nbsp;实现。它需要两个参数，要操作的整型变量与表示第几位的整数。把DDC4置为1应该写&nbsp;<span class="cnblogs_code">set_bit(DDRC, <span style="color: #800080;">4</span>);</span>&nbsp;，<span class="cnblogs_code" style="color: #800080;">4</span> 可以用&nbsp;<span class="cnblogs_code">DDC4</span>&nbsp;替换，这个定义就是这么用的。类似地也可以将PORTC4置为1。点亮红色LED的整个程序如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> #include &lt;avr/io.h&gt;
+<span style="color: #008080;">2</span> #include &lt;ee1/bit.h&gt;
+<span style="color: #008080;">3</span> 
+<span style="color: #008080;">4</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;">5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">6</span>     set_bit(DDRC , <span style="color: #800080;">4</span><span style="color: #000000;">);
+</span><span style="color: #008080;">7</span>     set_bit(PORTC, <span style="color: #800080;">4</span><span style="color: #000000;">);
+</span><span style="color: #008080;">8</span> }</code></pre>
+
+<p>相信聪明的你已经知道闪烁和流水灯怎么写了。翻转输出电平可以使用&nbsp;<span class="cnblogs_code">flip_bit(PORTC, <span style="color: #800080;">4</span>);</span>&nbsp;，也可以使用&nbsp;<span class="cnblogs_code">set_bit(PINC, <span style="color: #800080;">4</span>);</span>&nbsp;。</p>
+<p>&nbsp;</p>
+<p>下面来看数字输入。还是用第一个与按键相关的例子，让LED状态与按键保持一致，即按下亮起。</p>
+<p>读取一个寄存器中的一位可以使用&nbsp;<span class="cnblogs_code">read_bit</span>。如果引脚上电平为高，<span class="cnblogs_code">read_bit</span>&nbsp;的运算结果非0（但不一定是布尔值1）。如果你没有忘记的话，按键按下时引脚电平为低，因此对读取引脚电平的结果取非才是按键是否按下。</p>
+<p>在原理图中，按键一端连接在BTN0网络上，进而连接到单片机的PA4引脚。因此按键是否按下应该写为：<span class="cnblogs_code">!read_bit(PINA, <span style="color: #800080;">4</span>)</span>&nbsp;。</p>
+<p>在读取之前应该先把引脚配置为输入。尽管复位后默认为输入，在这个例子中没有必要向DDA4写0，但明确写出来可以让看这段代码的人（可能别人也可能是你自己）明白PA4是作输入的，这样做是一种良好的习惯。至于PORTA4，由于这一引脚在外部有连接上拉电阻，就没有必要启用内部上拉电阻了。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;avr/io.h&gt;
+<span style="color: #008080;"> 2</span> #include &lt;ee1/bit.h&gt;
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span>     reset_bit(DDRA, <span style="color: #800080;">4</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 7</span>     set_bit(DDRC, <span style="color: #800080;">4</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">while</span> (<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">10</span>         cond_bit(!read_bit(PINA, <span style="color: #800080;">4</span>), PORTC, <span style="color: #800080;">4</span><span style="color: #000000;">);
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">12</span> }</code></pre>
+
+<p>再结合按键动作的知识，你应该知道怎样直接通过寄存器操作来判断按键动作了吧。</p>
+<p>顺便说一句，以上两个程序都不必在项目属性中给linker加上libee1库。虽然代码中使用了&nbsp;<span class="cnblogs_code">&lt;ee1/bit.h&gt;</span>&nbsp;，但其中都是宏定义，与linker无关。</p>
+<p>&nbsp;</p>
+<p>之前留了一个问题，就是位操作是如何实现的。以下为&nbsp;<span class="cnblogs_code">&lt;ee1/bit.h&gt;</span>&nbsp;中部分代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">#define</span> set_bit  (r, b) ((r) |=  (1u &lt;&lt; (b)))
+<span style="color: #008080;">2</span> <span style="color: #0000ff;">#define</span> reset_bit(r ,b) ((r) &amp;= ~(1u &lt;&lt; (b)))
+<span style="color: #008080;">3</span> <span style="color: #0000ff;">#define</span> read_bit (r, b) ((r) &amp;   (1u &lt;&lt; (b)))
+<span style="color: #008080;">4</span> <span style="color: #0000ff;">#define</span> flip_bit (r, b) ((r) ^=  (1u &lt;&lt; (b)))</code></pre>
+
+<p>写那么多括号是为了防止出现运算符优先级的问题。假设r就是一个寄存器，比如PORTC，b就是一个数字，比如4，也可以是一个变量，那么&nbsp;<span class="cnblogs_code">(r) |= (<span style="color: #800080;">1u</span> &lt;&lt; (b))</span>&nbsp;就相当于&nbsp;<span class="cnblogs_code">r = r | <span style="color: #800080;">1u</span> &lt;&lt; b</span>&nbsp;（后缀u表示无符号数，位操作的运算数一般都是无符号数）。对于二进制表示下的每一位，如果不是第b位，那么位或运算符右边此位为0，运算结果等于左边，即r的这些为保持不变；对于第b位，右边此位为1，无论左边此位的值是多少，结果一定是1，即这一位被置1；这样就实现了将一位置为1的功能。</p>
+<p><span class="cnblogs_code">reset_bit</span>&nbsp;的实现还要绕一个弯。<span class="cnblogs_code"><span style="color: #800080;">1u</span> &lt;&lt; b</span>&nbsp;是一个第b位为1，其余位为0的数，那么&nbsp;<span class="cnblogs_code">~(<span style="color: #800080;">1u</span> &lt;&lt; b)</span>&nbsp;，即位与赋值号右边，是一个第b位为0而其余为都是1的数。仿照上面的分析可得，运算结果的第b位一定是0而其余位与r中原来的值相同。类似的分析也可应用于&nbsp;<span class="cnblogs_code">flip_bit</span>&nbsp;：两个bit进行异或运算的结果，若相同则为1，不同则为0；当一个运算数是1时，结果就是另一个运算数取反；当一个运算数是0时，结果与另一个运算数相同；因此&nbsp;<span class="cnblogs_code">flip_bit</span>&nbsp;就使r的第b为取反而其他为不变。</p>
+<p>以上是向寄存器中的位写入的操作。用于读取位的&nbsp;<span class="cnblogs_code">read_bit</span>&nbsp;的原理也大致相同，用寄存器的值与&nbsp;<span class="cnblogs_code"><span style="color: #800080;">1u</span> &lt;&lt; b</span>&nbsp;相与，仅当第b位为1时结果是&nbsp;<span class="cnblogs_code"><span style="color: #800080;">1u</span> &lt;&lt; b</span>&nbsp;，这是个非零数，否则结果为0。<span class="cnblogs_code">read_bit</span>&nbsp;语句可以直接放在&nbsp;<span class="cnblogs_code"><span style="color: #0000ff;">if</span></span>&nbsp;语句的条件部分，但如果是根据其结果决定一个变量是否加1，不能直接加上其运算结果，可以转换成&nbsp;<span class="cnblogs_code"><span style="color: #0000ff;">bool</span></span>&nbsp;类型或用&nbsp;<span class="cnblogs_code"><span style="color: #0000ff;">if</span></span>&nbsp;语句判断。</p>
+<p>&nbsp;</p>
+<p>这篇教程有点长。好好消化一下，然后把以前写过的程序用寄存器重新写一遍，以此巩固所学的知识。</p>
+<p>&nbsp;</p>
+<p>从本教程开始至今，我们先了解了LED灯、按键、拨动开关、数字输入输出的使用方法，然后学习C语言位操作与数字IO寄存器，终于打通了一条从底层到应用的路。而网络上很多教程都是反过来讲的，即先介绍寄存器，然后直接通过寄存器来驱动LED、检测按键等，甚至有直接写诸如&nbsp;<span class="cnblogs_code">DDRB |= <span style="color: #800080;">0x0C</span>;</span>&nbsp;或&nbsp;<span class="cnblogs_code"><span style="color: #0000ff;">if</span> (PINB &amp; <span style="color: #800080;">0x40</span>)</span>&nbsp;这样的代码的，初学者怎么看得明白？站在我的角度，我觉得以上都是常识，都不用讲，尽管我学习的时候也颇费周折（正是因为那些反过来的教程）。现在我站在初学者的角度，认为本教程的讲解顺序是更容易理解的。</p>
+<p>我学习计算机之前，总对计算机抱有特殊的幻想，觉得它什么都能干，很神奇。现在这些想法都没有了，尤其是在学习单片机的过程中。学习计算机教会我们分析问题、解决问题，而学习单片机让我们更好地理解计算机是如何按照我们的想法来解决问题的。这篇教程带你了解了寄存器，在你学习单片机的全过程中，它都会伴随着你。寄存器是硬件和软件之间的一个重要纽带，计算机的任何功能都离不开寄存器。CPU？有寄存器。总线通信？通过寄存器。内存分页？需要寄存器。万物基于寄存器。又有更多像寄存器一样的纽带，在电子空穴与丰富多彩的计算机世界之间建立起联系。它们看起来如此复杂，却又清晰明了，就算一夜之间所有计算机都突然消失，人类也能从电子管和打孔纸带开始，一层一层地构建起计算机的世界。而我们了解的只不过是这个巨大体系中的沧海一粟。</p>
+<p>初入计算机世界，你想着计算机能干什么，学完计算机我能干什么。而计算机世界是如此高深，在逐渐深入后，你会明白计算机不能干什么，我不能干什么。数码管、蜂鸣器，它们一直在你的开发板上，你却不知道如何使用它们；更不用说那些高级到你没听说过的东西。学得越多，你会发现虽然原本不会的减少了，但脑海中萌生出的&ldquo;不切实际&rdquo;的想法更多&mdash;&mdash;学习的速度永远赶不上认知的速度。本系列教程不能帮你消除所有&ldquo;不会&rdquo;，而是要在带你一步步消除一些&ldquo;不会&rdquo;的过程中让你学会发现更多&ldquo;不会&rdquo;并消除的方法。</p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

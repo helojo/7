@@ -1,0 +1,83 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修琪露诺 双端队列优化转移方程' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>琪露诺 双端队列优化转移方程</center></div><div class='banquan'>原文出处:本文由博客园博主世界光明提供。<br/>
+原文连接:https://www.cnblogs.com/WHFF521/p/10960285.html</div><br>
+    <p>众所周知，琪露诺是以笨蛋闻名的冰之妖精。</p>
+<p>题目：<a title="琪露诺" href="https://www.luogu.org/problemnew/show/P1725" target="_blank">https://www.luogu.org/problemnew/show/P1725</a></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 18pt;">显然，是一道DP题<span style="font-size: 12px;">（很恶心显然二字，现在来恶心你们）</span></span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 16px;">状态转移是dp[i]=max(dp[k])+a[i];</span></p>
+<p><span style="font-size: 16px;">跳到当前位置的最大值是前面能跳到到这里的所有位置的最大值加上当前位置的冰冻值；</span></p>
+<p><span style="font-size: 18px;">为什么要用双端队列呢（因为爽啊）</span></p>
+<p><span style="font-size: 16px;">这个很裸了已经，滑动窗口的思想。就是纯DP是会T的，所以我们寻找最大值时要优化时间；</span></p>
+<p><span style="font-size: 16px;">如果当前的值比队列中的值大，就把队列中的已有元素弹出（因为我们是从前往后遍历的，一个位置在前且值小的元素是不会做出任何贡献的）；</span></p>
+<p><span style="font-size: 16px;">代码</span></p>
+<div class="cnblogs_code">
+<pre>#include&lt;cstdio&gt;<span style="color: #000000;">
+#include</span>&lt;cstring&gt;<span style="color: #000000;">
+#include</span>&lt;deque&gt;<span style="color: #000000;">
+#include</span>&lt;algorithm&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> maxn=<span style="color: #800080;">200100</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> node
+{
+    </span><span style="color: #0000ff;">int</span> val;<span style="color: #008000;">//</span><span style="color: #008000;">DP最大值 </span>
+    <span style="color: #0000ff;">int</span> num;<span style="color: #008000;">//
+</span><span style="color: #000000;">};
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> n,a[maxn],l,r;
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> dp[maxn];
+deque </span>&lt;node&gt;<span style="color: #000000;"> s;
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d%d</span><span style="color: #800000;">"</span>,&amp;n,&amp;l,&amp;<span style="color: #000000;">r);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;=n;i++<span style="color: #000000;">)
+    {
+        scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d</span><span style="color: #800000;">"</span>,a+<span style="color: #000000;">i);
+    }
+    </span><span style="color: #0000ff;">int</span> tail=<span style="color: #800080;">0</span>;dp[tail]=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    node x;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=l;i&lt;=n;i++)<span style="color: #008000;">//</span><span style="color: #008000;">从0开始转移向l处 </span>
+<span style="color: #000000;">    {
+        </span><span style="color: #0000ff;">while</span>(s.size()&amp;&amp;dp[tail]&gt;=<span style="color: #000000;">s.back().val)
+        {
+            s.pop_back();
+        }</span><span style="color: #008000;">//</span><span style="color: #008000;">无用值弹出 </span>
+        x.num=tail;x.val=<span style="color: #000000;">dp[tail];
+        s.push_back(x);</span><span style="color: #008000;">//</span><span style="color: #008000;">加入新值 </span>
+        <span style="color: #0000ff;">if</span>(tail-s.front().num&gt;=(r-l+<span style="color: #800080;">1</span>)) s.pop_front();<span style="color: #008000;">//</span><span style="color: #008000;">队列的长度 </span>
+        dp[i]=s.front().val+a[i];<span style="color: #008000;">//</span><span style="color: #008000;">此时队列最前面的是前面能到达i的最大值 </span>
+        tail++<span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">int</span> ans=-<span style="color: #000000;">maxn;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=n-r+<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">)
+    {
+        ans</span>=<span style="color: #000000;">max(ans,dp[i]);
+    }
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d</span><span style="color: #800000;">"</span><span style="color: #000000;">,ans);
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

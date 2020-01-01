@@ -1,0 +1,188 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Delphi - 创建SuperDll 持续更新' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Delphi - 创建SuperDll 持续更新</center></div><div class='banquan'>原文出处:本文由博客园博主Jeremy.Wu提供。<br/>
+原文连接:https://www.cnblogs.com/jeremywucnblog/p/11462839.html</div><br>
+    <p><strong>Delphi SuperDll</strong></p>
+<p>作为一名5年的Delpher，一直认为Delphi是桌面应用的王者，我相信其他的Delpher也这么认为。</p>
+<p>但是，慢慢的我发现普通方式的Delphi开发会造成代码的严重臃肿，特别是MDI类大型项目、多人同时开发的情况下。</p>
+<p>举个例子，一个Delphi常用的业务逻辑，数据导出到Excel，完全可以写成一个公用的模块放置在业务单元，子窗体用到时直接调用即可，但是一般情况下，事情并不止想象的那么简单，维护人员的思想真的一言难尽。</p>
+<p>后来，我有了将Delphi中常用的业务逻辑功能封装成DLL的想法，所有的业务逻辑只能在DLL中实现，系统中不允许直接写业务逻辑，只能调用DLL。</p>
+<p>这么做的好处是，相同的业务功能不会被重复开发，大大减少了代码的臃肿，同时，业务逻辑开发人员和前台开发人员独立开来，提高了开发效率。</p>
+<p>这里就是SuperDLL的由来，后续将持续更新。</p>
+<p>请看如下代码：</p>
+<p>更新日志：</p>
+<p>//初始化</p>
+<p>//邮件发送</p>
+<p>//FTP上传、下载</p>
+<p>//cxGrid数据导出</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> <span style="color: #0000ff;">library</span><span style="color: #000000;"> SuperDll;
+</span><span style="color: #008080;">  2</span> 
+<span style="color: #008080;">  3</span> <span style="color: #008000;">{</span><span style="color: #008000;"> Important note about DLL memory management: ShareMem must be the
+</span><span style="color: #008080;">  4</span> <span style="color: #008000;">  first unit in your library's USES clause AND your project's (select
+</span><span style="color: #008080;">  5</span> <span style="color: #008000;">  Project-View Source) USES clause if your DLL exports any procedures or
+</span><span style="color: #008080;">  6</span> <span style="color: #008000;">  functions that pass strings as parameters or function results. This
+</span><span style="color: #008080;">  7</span> <span style="color: #008000;">  applies to all strings passed to and from your DLL--even those that
+</span><span style="color: #008080;">  8</span> <span style="color: #008000;">  are nested in records and classes. ShareMem is the interface unit to
+</span><span style="color: #008080;">  9</span> <span style="color: #008000;">  the BORLNDMM.DLL shared memory manager, which must be deployed along
+</span><span style="color: #008080;"> 10</span> <span style="color: #008000;">  with your DLL. To avoid using BORLNDMM.DLL, pass string information
+</span><span style="color: #008080;"> 11</span> <span style="color: #008000;">  using PChar or ShortString parameters. </span><span style="color: #008000;">}</span>
+<span style="color: #008080;"> 12</span> 
+<span style="color: #008080;"> 13</span> <span style="color: #0000ff;">uses</span>
+<span style="color: #008080;"> 14</span> <span style="color: #000000;">  SysUtils, Classes, Variants, Graphics, Controls, IdBaseComponent, IdComponent, IdFTP,
+</span><span style="color: #008080;"> 15</span> <span style="color: #000000;">  IdFTPCommon, IdTCPConnection, IdTCPClient, IdMessage, IdMessageClient, IdSMTP, cxGrid,
+</span><span style="color: #008080;"> 16</span> <span style="color: #000000;">  cxGridExportLink, ComObj,
+</span><span style="color: #008080;"> 17</span> <span style="color: #000000;">  cxCustomData, cxGraphics,
+</span><span style="color: #008080;"> 18</span> <span style="color: #000000;">  cxData, cxDataStorage, cxEdit, cxDBData, cxGridLevel,
+</span><span style="color: #008080;"> 19</span> <span style="color: #000000;">  cxClasses, cxControls, cxGridCustomView, cxGridCustomTableView,
+</span><span style="color: #008080;"> 20</span> <span style="color: #000000;">  cxGridTableView, cxGridDBTableView;
+</span><span style="color: #008080;"> 21</span> 
+<span style="color: #008080;"> 22</span> <span style="color: #008000;">{</span><span style="color: #008000;">$R *.res</span><span style="color: #008000;">}</span>
+<span style="color: #008080;"> 23</span> 
+<span style="color: #008080;"> 24</span> <span style="color: #0000ff;">function</span> SuperDll_Init: Boolean; <span style="color: #0000ff;">stdcall</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 25</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 26</span>   Result :=<span style="color: #000000;"> True;
+</span><span style="color: #008080;"> 27</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 28</span> 
+<span style="color: #008080;"> 29</span> <span style="color: #0000ff;">function</span> SuperDll_Ftp_PutOrGet(vType: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vUserName: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vPassWord: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vHost: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vDir: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vDesFilePath: <span style="color: #0000ff;">string</span>; vSouFilePath: <span style="color: #0000ff;">string</span>): Boolean; <span style="color: #0000ff;">stdcall</span>; <span style="color: #008000;">//</span><span style="color: #008000;">2: FTP文件上传下载</span>
+<span style="color: #008080;"> 30</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;"> 31</span> <span style="color: #000000;">  IdFtp: TIdFTP;
+</span><span style="color: #008080;"> 32</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 33</span>   IdFtp := TIdFTP.<span style="color: #0000ff;">Create</span>(<span style="color: #0000ff;">nil</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 34</span>   Result :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;"> 35</span>   <span style="color: #0000ff;">try</span>
+<span style="color: #008080;"> 36</span>     <span style="color: #0000ff;">with</span> IdFtp <span style="color: #0000ff;">do</span>
+<span style="color: #008080;"> 37</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 38</span>       <span style="color: #0000ff;">if</span> Connected <span style="color: #0000ff;">then</span><span style="color: #000000;"> Disconnect;
+</span><span style="color: #008080;"> 39</span>       Username :=<span style="color: #000000;"> vUserName;
+</span><span style="color: #008080;"> 40</span>       Password :=<span style="color: #000000;"> vPassWord;
+</span><span style="color: #008080;"> 41</span>       Host :=<span style="color: #000000;"> vHost;
+</span><span style="color: #008080;"> 42</span>       Port := <span style="color: #800080;">21</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 43</span> <span style="color: #000000;">      Connect;
+</span><span style="color: #008080;"> 44</span> <span style="color: #000000;">      ChangeDir(vDir);
+</span><span style="color: #008080;"> 45</span>       TransferType :=<span style="color: #000000;"> ftBinary;
+</span><span style="color: #008080;"> 46</span>       <span style="color: #0000ff;">if</span> vType = <span style="color: #800000;">'</span><span style="color: #800000;">Put</span><span style="color: #800000;">'</span> <span style="color: #0000ff;">then</span>
+<span style="color: #008080;"> 47</span>       <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 48</span> <span style="color: #000000;">        Put(vSouFilePath, ExtractFileName(vSouFilePath));
+</span><span style="color: #008080;"> 49</span>       <span style="color: #0000ff;">end</span>
+<span style="color: #008080;"> 50</span>       <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> vType = <span style="color: #800000;">'</span><span style="color: #800000;">Get</span><span style="color: #800000;">'</span> <span style="color: #0000ff;">then</span>
+<span style="color: #008080;"> 51</span>       <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 52</span> <span style="color: #000000;">        Get(ExtractFileName(vDesFilePath), vDesFilePath, True);
+</span><span style="color: #008080;"> 53</span>       <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 54</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 55</span>   <span style="color: #0000ff;">finally</span>
+<span style="color: #008080;"> 56</span> <span style="color: #000000;">    IdFtp.Disconnect;
+</span><span style="color: #008080;"> 57</span> <span style="color: #000000;">    IdFtp.Free;
+</span><span style="color: #008080;"> 58</span>     Result :=<span style="color: #000000;"> True;
+</span><span style="color: #008080;"> 59</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 60</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 61</span> 
+<span style="color: #008080;"> 62</span> <span style="color: #0000ff;">function</span> SuperDll_EMail_Send(vSubject: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vFrom: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vRecipients: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vCCList: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vBccList: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vBody: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vAttachment: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vUsername: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vPassword: <span style="color: #0000ff;">string</span>; <span style="color: #0000ff;">var</span> vHost: <span style="color: #0000ff;">string</span>): Boolean; <span style="color: #0000ff;">stdcall</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 63</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;"> 64</span> <span style="color: #000000;">  IdSMTP: TIdSMTP;
+</span><span style="color: #008080;"> 65</span> <span style="color: #000000;">  IdMessage: TIdMessage;
+</span><span style="color: #008080;"> 66</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 67</span>   Result :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;"> 68</span>   IdSMTP := TIdSMTP.<span style="color: #0000ff;">Create</span>(<span style="color: #0000ff;">nil</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 69</span>   IdMessage := TIdMessage.<span style="color: #0000ff;">Create</span>(<span style="color: #0000ff;">nil</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 70</span>   <span style="color: #0000ff;">try</span>
+<span style="color: #008080;"> 71</span>     <span style="color: #0000ff;">with</span> IdMessage <span style="color: #0000ff;">do</span>
+<span style="color: #008080;"> 72</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 73</span> <span style="color: #000000;">      Clear;
+</span><span style="color: #008080;"> 74</span>       Subject :=<span style="color: #000000;"> vSubject;
+</span><span style="color: #008080;"> 75</span>       From.Text :=<span style="color: #000000;"> vFrom;
+</span><span style="color: #008080;"> 76</span>       Recipients.EMailAddresses :=<span style="color: #000000;"> vRecipients;
+</span><span style="color: #008080;"> 77</span>       CCList.EMailAddresses :=<span style="color: #000000;"> vCCList;
+</span><span style="color: #008080;"> 78</span>       BccList.EMailAddresses :=<span style="color: #000000;"> vBccList;
+</span><span style="color: #008080;"> 79</span>       Priority := TIdMessagePriority(<span style="color: #800080;">4</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 80</span>       <span style="color: #0000ff;">if</span> Trim(vAttachment) &lt;&gt; <span style="color: #800000;">''</span> <span style="color: #0000ff;">then</span>
+<span style="color: #008080;"> 81</span>       <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 82</span>         TIdAttachment.<span style="color: #0000ff;">Create</span><span style="color: #000000;">(MessageParts, Trim(vAttachment));
+</span><span style="color: #008080;"> 83</span>       <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 84</span>       vBody := vBody + #<span style="color: #800080;">13</span>#<span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 85</span>       vBody := vBody + #<span style="color: #800080;">13</span>#<span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 86</span>       vBody := vBody + #<span style="color: #800080;">13</span>#<span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 87</span>       vBody := vBody + #<span style="color: #800080;">13</span>#<span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 88</span>       vBody := vBody + <span style="color: #800000;">'</span><span style="color: #800000;">It is Auto Mail System,please do not reply this mail directly,thank you!</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 89</span> <span style="color: #000000;">      Body.Add(vBody);
+</span><span style="color: #008080;"> 90</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 91</span> 
+<span style="color: #008080;"> 92</span>     <span style="color: #0000ff;">with</span> IdSMTP <span style="color: #0000ff;">do</span>
+<span style="color: #008080;"> 93</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 94</span>       <span style="color: #0000ff;">if</span> Connected <span style="color: #0000ff;">then</span><span style="color: #000000;"> Disconnect;
+</span><span style="color: #008080;"> 95</span>       AuthenticationType :=<span style="color: #000000;"> atLogin;
+</span><span style="color: #008080;"> 96</span>       Port := <span style="color: #800080;">25</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 97</span>       UserName :=<span style="color: #000000;"> vUsername;
+</span><span style="color: #008080;"> 98</span>       Password :=<span style="color: #000000;"> vPassword;
+</span><span style="color: #008080;"> 99</span>       Host :=<span style="color: #000000;"> vHost;
+</span><span style="color: #008080;">100</span> <span style="color: #000000;">      Connect;
+</span><span style="color: #008080;">101</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">102</span> 
+<span style="color: #008080;">103</span> <span style="color: #000000;">    IdSMTP.Send(IdMessage);
+</span><span style="color: #008080;">104</span> <span style="color: #000000;">    IdSMTP.Disconnect;
+</span><span style="color: #008080;">105</span> 
+<span style="color: #008080;">106</span>     Result :=<span style="color: #000000;"> True;
+</span><span style="color: #008080;">107</span>   <span style="color: #0000ff;">finally</span>
+<span style="color: #008080;">108</span> <span style="color: #000000;">    IdSMTP.Free;
+</span><span style="color: #008080;">109</span> <span style="color: #000000;">    IdMessage.Free;
+</span><span style="color: #008080;">110</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">111</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">112</span> 
+<span style="color: #008080;">113</span> <span style="color: #0000ff;">function</span> SaveCxGridToExcel(vCxGrid: TcxGrid; <span style="color: #0000ff;">var</span> vFullPathName: <span style="color: #0000ff;">string</span>): Boolean; <span style="color: #0000ff;">stdcall</span><span style="color: #000000;">;
+</span><span style="color: #008080;">114</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">115</span>   Result :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;">116</span>   vCxGrid := TcxGrid.<span style="color: #0000ff;">Create</span>(<span style="color: #0000ff;">nil</span><span style="color: #000000;">);
+</span><span style="color: #008080;">117</span> <span style="color: #000000;">  ExportGridToExcel(vFullPathName, vCxGrid);
+</span><span style="color: #008080;">118</span> <span style="color: #000000;">  vCxGrid.Free;
+</span><span style="color: #008080;">119</span>   Result :=<span style="color: #000000;"> True;
+</span><span style="color: #008080;">120</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">121</span> 
+<span style="color: #008080;">122</span> <span style="color: #0000ff;">function</span> SaveCxGridToCSV(vCxGrid: TcxGrid; <span style="color: #0000ff;">var</span> vFullPathName: <span style="color: #0000ff;">string</span>): Boolean; <span style="color: #0000ff;">stdcall</span><span style="color: #000000;">;
+</span><span style="color: #008080;">123</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">124</span>   Result :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;">125</span> 
+<span style="color: #008080;">126</span>   ExportGridToText(vFullPathName + <span style="color: #800000;">'</span><span style="color: #800000;">.XLS</span><span style="color: #800000;">'</span>, vCxGrid, True, True, <span style="color: #800000;">'</span><span style="color: #800000;">,</span><span style="color: #800000;">'</span>, <span style="color: #800000;">''</span>, <span style="color: #800000;">''</span>, <span style="color: #800000;">'</span><span style="color: #800000;">CSV</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">127</span>   Result :=<span style="color: #000000;"> True; ;
+</span><span style="color: #008080;">128</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">129</span> 
+<span style="color: #008080;">130</span> <span style="color: #0000ff;">exports</span>
+<span style="color: #008080;">131</span> <span style="color: #000000;">  SuperDll_Init,
+</span><span style="color: #008080;">132</span> <span style="color: #000000;">  SuperDll_Ftp_PutOrGet,
+</span><span style="color: #008080;">133</span> <span style="color: #000000;">  SuperDll_EMail_Send,
+</span><span style="color: #008080;">134</span> <span style="color: #000000;">  SaveCxGridToExcel,
+</span><span style="color: #008080;">135</span> <span style="color: #000000;">  SaveCxGridToCSV;
+</span><span style="color: #008080;">136</span> 
+<span style="color: #008080;">137</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">138</span> <span style="color: #0000ff;">end</span>.</pre>
+</div>
+<p>&nbsp;</p>
+<div id="AllanboltSignature">
+<p id="PSignature" style="padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 60px; background: url('https://images.cnblogs.com/cnblogs_com/jeremywucnblog/1607637/o_191206011825obs.png') #e5f1f4 no-repeat 1% 50%; font-family: 微软雅黑; font-size: 11px; border: #e0e0e0 1px dashed;">&nbsp; 作者：<a href="https://www.cnblogs.com/jeremywucnblog/" target="_blank">Jeremy.Wu</a> <br />&nbsp; 出处：<a href="https://www.cnblogs.com/jeremywucnblog/" target="_blank">https://www.cnblogs.com/jeremywucnblog/</a>
+            <br />&nbsp; 本文版权归作者和博客园共有，欢迎转载，但未经作者同意必须保留此段声明，且在文章页面明显位置给出原文连接，否则保留追究法律责任的权利。
+        </p>
+
+
+
+
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

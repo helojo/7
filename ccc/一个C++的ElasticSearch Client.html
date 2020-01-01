@@ -1,0 +1,58 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修一个C++的ElasticSearch Client' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>一个C++的ElasticSearch Client</center></div><div class='banquan'>原文出处:本文由博客园博主CodeRapper提供。<br/>
+原文连接:https://www.cnblogs.com/atinyant/p/11285122.html</div><br>
+    <p>ElasticSearch官方是没有提供C++的client的；因此决定自己写一个，命名为ESClient&nbsp;<a href="https://github.com/ATinyAnt/ESClient" data-cke-saved-href="https://github.com/ATinyAnt/ESClient">https://github.com/ATinyAnt/ESClient</a>（手下留星 star）</p>
+<p>优势是简单易用:</p>
+<p>*&nbsp;封装大幅度减少了直接写DSL的机会，避免了一些非逻辑错误</p>
+<p>*&nbsp;只需要包含头文件 request.h即可以使用</p>
+<p>*&nbsp;复杂的语句，可支持用原生（Raw）Json嵌套</p>
+<p>目前ESClient只支持常用的搜索短语，暂不支持插入、更新、删除和响应处理；原因是我们做ElasticSearch服务时，一般只会用到搜索，而数据一般由其它进程清洗后，插入到ElasticSearch中。并不是由当前的服务来进行增、删、改。当然后续会陆续完善这一部分（也希望你们可以帮忙完善）。</p>
+<p>这个Client，我并不想加入Http模块，因为我认为加入Http，很容易会侵入了使用者原来的架构。因此，这只是做一个DSL的编码器；编码得到json，可由使用者当前架构的Http模块调用。</p>
+<p>以下是两个使用例子</p>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">request.h</span><span style="color: #800000;">"</span>
+
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> ES;
+Request r;
+std::</span><span style="color: #0000ff;">string</span> dsl = r.Size(<span style="color: #800080;">10</span>).Source({ <span style="color: #800000;">"</span><span style="color: #800000;">id</span><span style="color: #800000;">"</span> }).Query(RegExp(<span style="color: #800000;">"</span><span style="color: #800000;">name</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">.*Tiny.*</span><span style="color: #800000;">"</span><span style="color: #000000;">));
+printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,  dsl.c_str());
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> {"size":10,"_source":["id"],"query":{"regexp":{"name":".*Tiny.*"}}}</span></pre>
+</div>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">request.h</span><span style="color: #800000;">"</span>
+
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> ES;
+Request r;
+std::</span><span style="color: #0000ff;">string</span> dsl = r.Size(<span style="color: #800080;">10</span>).Source({<span style="color: #800000;">"</span><span style="color: #800000;">name</span><span style="color: #800000;">"</span><span style="color: #000000;">}).Sort(
+    {MakeObject(</span><span style="color: #800000;">"</span><span style="color: #800000;">timestamp</span><span style="color: #800000;">"</span>,MakeObjectString(<span style="color: #800000;">"</span><span style="color: #800000;">order</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">desc</span><span style="color: #800000;">"</span><span style="color: #000000;">))}
+    ).Query(
+        Range1(
+        </span><span style="color: #800000;">"</span><span style="color: #800000;">id</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+        MakePair(</span><span style="color: #800000;">"</span><span style="color: #800000;">lt</span><span style="color: #800000;">"</span>,<span style="color: #800080;">567</span><span style="color: #000000;">)
+    ));
+printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, dsl.c_str());
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> {"size":10,"_source":["name"],"sort":[{"timestamp":{"order":"desc"}}],"query":{"range":{"id":{"lt":567}}}}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

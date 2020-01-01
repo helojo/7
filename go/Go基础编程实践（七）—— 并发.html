@@ -1,0 +1,234 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go基础编程实践（七）—— 并发' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go基础编程实践（七）—— 并发</center></div><div class='banquan'>原文出处:本文由博客园博主GaiheiluKamei提供。<br/>
+原文连接:https://www.cnblogs.com/GaiHeiluKamei/p/11143824.html</div><br>
+    <h3 id="同时运行多个函数">同时运行多个函数</h3>
+<p>观察常规代码和并发代码的输出顺序。</p>
+<pre><code><code>// 常规代码，顺序执行，依次输出
+package main
+
+import (
+    &quot;fmt&quot;
+    &quot;time&quot;
+)
+
+func main() {
+    strN := []string{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;}
+    for _, strV := range strN {
+        time.Sleep(time.Second)
+        fmt.Println(strV)
+    }
+
+    intN := []int{1, 2, 3, 4}
+    for _, intV := range intN {
+        time.Sleep(time.Second)
+        fmt.Println(intV)
+    }
+}</code></pre>
+<pre><code><code>// 并发代码，并发执行，无序输出
+package main
+
+import (
+    &quot;fmt&quot;
+    &quot;time&quot;
+)
+
+func main() {
+    go func() {
+        strN := []string{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;d&quot;}
+        for _, strV := range strN {
+            time.Sleep(time.Second)
+            fmt.Println(strV)
+        }
+    }()
+
+    go func() {
+        intN := []int{1, 2, 3, 4}
+        for _, intV := range intN {
+            time.Sleep(time.Second)
+            fmt.Println(intV)
+        }
+    }()
+
+    // 防止main routine过早退出
+    time.Sleep(10 * time.Second)
+}</code></pre>
+<h3 id="通道的关闭">通道的关闭</h3>
+<pre><code><code>// 生产者关闭通道
+package main
+
+import (
+    &quot;time&quot;
+    &quot;fmt&quot;
+)
+
+func main() {
+    channel := make(chan string)
+    go func() {
+        names := []string{&quot;Jack&quot;, &quot;Mike&quot;, &quot;John&quot;, &quot;Kitty&quot;}
+
+        for _, name := range names {
+            time.Sleep(time.Second)
+            // fmt.Println(name)
+            channel &lt;- name
+        }
+        // 发送完毕关闭通道，否则引起死锁
+        close(channel)
+    }()
+
+    for data := range channel {
+        fmt.Println(data)
+    }
+}</code></pre>
+<h3 id="在通道中传递数据">在通道中传递数据</h3>
+<pre><code><code>// 利用无缓冲通道同步传递数据
+package main
+
+import &quot;fmt&quot;
+
+func main(){
+  nameChannel := make(chan string)
+  done := make(chan string)
+
+  go func(){
+    names := []string {&quot;tarik&quot;, &quot;michael&quot;, &quot;gopi&quot;, &quot;jessica&quot;}
+    for _, name := range names {
+      fmt.Println(&quot;Processing the first stage of: &quot; + name)
+      nameChannel &lt;- name
+    }
+    close(nameChannel)
+  }()
+
+  go func(){
+    for name := range nameChannel{
+      fmt.Println(&quot;Processing the second stage of: &quot; + name)
+    }
+    done &lt;- &quot;&quot;
+  }()
+
+  &lt;-done
+}</code></pre>
+<pre><code><code>// 利用有缓冲通道传递数据，提高性能
+package main
+
+import &quot;fmt&quot;
+
+func main(){
+  nameChannel := make(chan string, 5)
+  done := make(chan string)
+
+  go func(){
+    names := []string {&quot;tarik&quot;, &quot;michael&quot;, &quot;gopi&quot;, &quot;jessica&quot;}
+    for _, name := range names {
+      fmt.Println(&quot;Processing the first stage of: &quot; + name)
+      nameChannel &lt;- name
+    }
+    close(nameChannel)
+  }()
+
+  go func(){
+    for name := range nameChannel{
+      fmt.Println(&quot;Processing the second stage of: &quot; + name)
+    }
+    done &lt;- &quot;&quot;
+  }()
+
+  &lt;-done
+}</code></pre>
+<h3 id="并发等待">并发等待</h3>
+<pre><code><code>package main
+import (
+    &quot;fmt&quot;
+    &quot;sync&quot;
+)
+
+func main() {
+    var wg sync.WaitGroup
+    for i := 0; i &lt; 10; i++ {
+        // 遍历一次，增加一次计数
+        wg.Add(1)
+        go func(){
+            fmt.Println(&quot;Hello World&quot;)
+            // 执行一次，减少一次计数
+            wg.Done()
+        }()
+    }
+    // 等待计数归零，结束程序
+    wg.Wait()
+}</code></pre>
+<pre><code><code>// 利用通道等待
+package main
+
+import (
+    &quot;time&quot;
+    &quot;fmt&quot;
+)
+
+func main() {
+    channel := make(chan string)
+    go func() {
+        names := []string{&quot;Jack&quot;, &quot;Mike&quot;, &quot;John&quot;, &quot;Kitty&quot;}
+
+        for _, name := range names {
+            time.Sleep(time.Second)
+            fmt.Println(name)
+            // channel &lt;- name
+        }
+        // 遍历完毕向通道发送数据，告诉main routine已执行完毕
+        channel &lt;- &quot;&quot;
+    }()
+    // main routine收到数据，退出程序
+    // 因为只是为了同步，不需要通道中的数据，所以将数据抛弃
+    &lt;-channel
+}</code></pre>
+<h3 id="选择并发结果">选择并发结果</h3>
+<pre><code><code>package main
+
+import (
+    &quot;time&quot;
+    &quot;fmt&quot;
+)
+
+func main() {
+    channel1 := make(chan string)
+    channel2 := make(chan string)
+  
+    go func(){
+        time.Sleep(1*time.Second)
+        channel1 &lt;- &quot;Hello from channel1&quot;
+    }()
+    go func(){
+        time.Sleep(1 * time.Second)
+        channel2 &lt;- &quot;Hello from channel2&quot;
+    }()
+    var result string
+    // select随机选择满足条件的case
+    select {
+    case result = &lt;-channel1:
+        fmt.Println(result)
+    case result = &lt;-channel2:
+        fmt.Println(result)
+    }
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

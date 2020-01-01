@@ -1,0 +1,99 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Golang-使用mysql' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Golang-使用mysql</center></div><div class='banquan'>原文出处:本文由博客园博主朱春雨提供。<br/>
+原文连接:https://www.cnblogs.com/zhuchunyu/p/11275781.html</div><br>
+    <p>一、安装mysql-driver驱动</p>
+<pre><code><code>go get github.com/go-sql-driver/mysql</code></pre>
+<p>二、安装完毕之后，就可以通过go语言操作mysql了</p>
+<pre class="go"><code>const (
+    _selectUser = &quot;select name,age from user where id = ?&quot;
+    _updateUser = &quot;update user set name = ? where name = ?&quot;
+    _insertUser = &quot;insert user (name,age) values (?,?)&quot;
+    _deleteUser = &quot;delete user where id = ?&quot;
+)
+
+func main () {
+    var (
+        err error
+    )
+    // 得到一个db对象
+    // Open方法第二个参数:  用户名:密码@协议(ip:端口)/数据库
+    db,err := sql.Open(&quot;mysql&quot;,&quot;root:root@tcp(127.0.0.1:3306)/day0731&quot;)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    defer db.Close()
+    
+    // 这里我们拿到了db这个对象，就可以对day0731这个mysql数据库进行操作了
+    // 查询操作
+    // Query方法，返回值具体类型自己看
+    var (
+        name string
+        age int
+    )
+    resultRows,err := db.Query(_selectUser,1)
+    // 这里的name，age必须和sql语句顺序一致，也不能多传，也不能少传
+    err = resultRows.Scan(&amp;name,&amp;age)  
+    if err != nil {
+        fmt.Println(err)
+        retrun
+    }
+    fmt.Println(name)
+    fmt.Println(age)
+    
+    // QueryRow方法，查询的效果和上面一致
+    err = db.QueryRow(_selectUser,1).Scan(&amp;name,&amp;age)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    fmt.Println(name)
+    fmt.Println(age)
+    
+    
+    // 插入、更新、删除操作
+    // Exec方法，执行一段sql语句
+    result,err := db.Exec(_updateUser,&quot;朱春雨&quot;,&quot;朱宇&quot;)
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    // result这个对象，他有两个方法，RowsAffected(),LastInsertId(),
+    // 分别返回影响的行数，还有就是最后插入的id
+    // 我们这里执行的是更新语句，就看这个方法就好了RowsAffected
+    rowCount,err := result.RowsAffected()
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    if rowCount == 0 {
+        fmt.Println(&quot;更新操作失败&quot;)
+        return
+    }
+    fmt.Println(&quot;更新操作成功！&quot;)
+    
+}</code></pre>
+<p>三、对mysql的增删查改用Query，Exec方法就ok了，具体其他的方法参考go语言的官方文档</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

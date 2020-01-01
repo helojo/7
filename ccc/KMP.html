@@ -1,0 +1,130 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修KMP' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>KMP</center></div><div class='banquan'>原文出处:本文由博客园博主冷蕴提供。<br/>
+原文连接:https://www.cnblogs.com/LengYun/p/11629012.html</div><br>
+    <h1 id="kmp">KMP</h1>
+<p>　　<span class="math inline">\(KMP\)</span> 算法是一种改进的字符串匹配算法，由 <span class="math inline">\(D.E.Knuth\)</span> ， <span class="math inline">\(J.H.Morris\)</span> 和 <span class="math inline">\(V.R.Pratt\)</span> 提出的，简称 <span class="math inline">\(KMP\)</span> 算法。常用来解决可重叠的字符串匹配问题。</p>
+<h2 id="基本原理">基本原理</h2>
+<p>　　<span class="math inline">\(KMP\)</span> 算法的核心是利用匹配失败后的信息，尽量减少模式串与主串的匹配次数以达到快速匹配的目的。具体实现就是通过一个<code>next</code>数组实现，数组本身包含了模式串的局部匹配信息。<br />
+　　首先对模式串进行自身匹配，得到<code>next</code>数组。<code>next[i]</code>为满足<code>s2[i-z,...,i-1]=s2[0,...,z-1]</code> 的最大<code>z</code>值，即<code>s2</code>的子串<code>s2[0,...,i]</code>最长公共前后缀的长度。<br />
+　　这样在进行模式串与文本串的匹配时（假设当前为文本串的<code>s1[i]</code>与模式串的<code>s2[j]</code>进行匹配），一旦发生失配情况，可以只移动模式串而不回溯指针。移动时，只需要将<code>s2[0,...,j-1]</code>前缀移动到后缀的位置，然后，从模式串子串<code>s2[0,...,j-1]</code>前缀的下一位即第<code>next[j]</code>位开始与文本串当前位第<code>i</code>位进行匹配。</p>
+<h2 id="效率分析">效率分析</h2>
+<p>　　一般情况下， <span class="math inline">\(KMP\)</span> 算法的期望时间复杂度为 <span class="math inline">\(O(n＋m)\)</span> ，其中 <span class="math inline">\(n,m\)</span> 分别是文本串和模式串的长度。</p>
+<h2 id="核心代码">核心代码</h2>
+<pre><code>ll len1,len2,next[maxn],pos[maxn],ans;
+string s1,s2;
+void pre()
+{
+    len2=s2.length();
+    ll j=0;
+    next[0]=0;                              /*初始化*/
+    for(ll i=1;i&lt;len2;i++)
+    {
+        while(j&amp;&amp;s2[i]!=s2[j])j=next[j];    /*如果失配，模式串指针移到s2[0,...,j]前缀后一位*/
+        if(s2[i]==s2[j])j++;                /*如果相同，长度+1*/
+        next[i+1]=j;
+    }
+}
+void KMP()
+{
+    len1=s1.length();
+    pre();
+    ll j=0;
+    for(ll i=0;i&lt;len1;i++)
+    {
+        while(j&amp;&amp;s1[i]!=s2[j])j=next[j];    /*如果失配，模式串指针移到s2[0,...,j]前缀后一位*/
+        if(s1[i]==s2[j])j++;                /*如果相同，长度+1*/
+        if(j==len2)                         /*如果匹配到末尾*/
+        {
+            pos[++ans]=i-j+2;               /*记录匹配起始位置*/
+            j=next[j];                      /*模式串指针移到s2[0,...,j]前缀后一位*/
+        }
+    }
+    return;
+}</code></pre>
+<h2 id="例题解析">例题解析</h2>
+<h3 id="洛谷-p3375-模板kmp字符串匹配"><a href="https://www.luogu.org/problem/P3375">洛谷 P3375 【模板】KMP字符串匹配</a></h3>
+<p>　　给出一个文本串 <span class="math inline">\(s_1\)</span> 和一个模式串 <span class="math inline">\(s_2\)</span> ，求 <span class="math inline">\(s_2\)</span> 在 <span class="math inline">\(s_1\)</span> 中出现的所有位置并输出前缀数组。</p>
+<pre><code>#include&lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+#define maxn 1000005
+#define maxm 200005
+#define INF 1234567890
+#define p 1000000007
+template&lt;class T&gt;inline bool reads(T &amp;x)
+{
+    register char c=getchar();
+    while(c==&#39; &#39;||c==&#39;\n&#39;||c==&#39;\r&#39;||c==&#39;\t&#39;)c=getchar();
+    if(c==EOF)return false;
+    while(c!=&#39; &#39;&amp;&amp;c!=&#39;\n&#39;&amp;&amp;c!=&#39;\r&#39;&amp;&amp;c!=&#39;\t&#39;)x+=c,c=getchar();
+    return true;
+}
+template&lt;class T&gt;inline void print(T x)
+{
+    if(x&lt;0)putchar(&#39;-&#39;),x=-x;
+    if(x&gt;9)print(x/10);
+    putchar(x%10^48);
+}
+template&lt;class T&gt;inline void print(T x,char c){print(x),putchar(c);}
+ll len1,len2,next[maxn],pos[maxn],ans;
+string s1,s2;
+void pre()
+{
+    len2=s2.length();
+    ll j=0;
+    next[0]=0;
+    for(ll i=1;i&lt;len2;i++)
+    {
+        while(j&amp;&amp;s2[i]!=s2[j])j=next[j];
+        if(s2[i]==s2[j])j++;
+        next[i+1]=j;
+    }
+}
+void KMP()
+{
+    len1=s1.length();
+    pre();
+    ll j=0;
+    for(ll i=0;i&lt;len1;i++)
+    {
+        while(j&amp;&amp;s1[i]!=s2[j])j=next[j];
+        if(s1[i]==s2[j])j++;
+        if(j==len2)
+        {
+            pos[++ans]=i-j+2;
+            j=next[j];
+        }
+    }
+    return;
+}
+int main()
+{
+    reads(s1),reads(s2);
+    KMP();
+    for(ll i=1;i&lt;=ans;i++)print(pos[i],&#39;\n&#39;);
+    for(ll i=1;i&lt;=len2;i++)print(next[i],&#39; &#39;);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

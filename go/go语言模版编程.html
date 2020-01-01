@@ -1,0 +1,151 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go语言模版编程' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go语言模版编程</center></div><div class='banquan'>原文出处:本文由博客园博主通证派大本营提供。<br/>
+原文连接:https://www.cnblogs.com/tokenpai/p/10643929.html</div><br>
+    <p><img src="//upload-images.jianshu.io/upload_images/14620919-08cd586dfb32d977.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" /><br />
+传送门: <a href="http://pdjedu.com">柏链项目学院</a></p>
+<hr />
+<p><br></p>
+<h2 id="go语言与模版编程">go语言与模版编程</h2>
+<h3 id="什么是模版编程">什么是模版编程</h3>
+<p>模板是将一个事物的结构规律予以固定化、标准化的成果，它体现的是结构形式的标准化。对于我们程序员来说，更直白的理解是；对于要输出的内容，个人位置需要参数化填充，需要填充的参数位置是固定的，输出的内容是有统一标准的。就像是我们小时候做的填空题，题目固定，有固定的位置需要填充，模版就是原理。</p>
+<h2 id="go语言模版编程步骤">go语言模版编程步骤</h2>
+<p>go语言开发了专门的packge用于支持模版编程，我们开发过程中，有时候会碰到模版编程得到情况，比如想要实现自动化的输出一些用于其他工程执行的有效代码，或者形成一些前端页面，都会用到模版编程。</p>
+<p>go语言中模版编程分为两个大方向，一种是真的前端的，是在html/template下，还有一个是针对文本的，在text/template下，两者套路类似，我们来说一下对于文本的处理。</p>
+<p>模版编程可分为4步：</p>
+<ul>
+<li>定义模版</li>
+<li>创建模版</li>
+<li>模版数据准备</li>
+<li>模版执行</li>
+</ul>
+<p>我们可以先看官方示例给的代码，把步骤重新认识一遍。</p>
+<pre><code><code>type Inventory struct {
+    Material string
+    Count    uint
+}
+sweaters := Inventory{&quot;wool&quot;, 17}
+tmpl, err := template.New(&quot;test&quot;).Parse(&quot;{{.Count}} items are made of {{.Material}}&quot;)
+if err != nil { panic(err) }
+err = tmpl.Execute(os.Stdout, sweaters)
+if err != nil { panic(err) }</code></pre>
+<p>所谓的定义模版就是Parse中的内容：</p>
+<pre><code><code>{{.Count}} items are made of {{.Material}}</code></pre>
+<p>template调用New以及后面的Parse就是创建模版：</p>
+<pre><code><code>tmpl, err := template.New(&quot;test&quot;).Parse(&quot;{{.Count}} items are made of {{.Material}}&quot;)
+if err != nil { panic(err) }</code></pre>
+<p>模版数据的准备是指结构定义和数据准备：</p>
+<pre><code><code>type Inventory struct {
+    Material string
+    Count    uint
+}
+sweaters := Inventory{&quot;wool&quot;, 17}</code></pre>
+<p>模版执行是Execute，注意模版执行时需要指定输出描述符（可以是某个文件或者标准输出，对应的go语言中的io.writer）</p>
+<pre><code><code>err = tmpl.Execute(os.Stdout, sweaters)</code></pre>
+<p>上述例子就是一个最为简单的模版编程，更详尽的可以看这里：<a href="http://docscn.studygolang.com/pkg/text/template/">官方详细资料</a></p>
+<p>上述例子除了阐述模版编程的四步之外，还有一个<strong>重要信息</strong>，模版编程在执行的时候，对数据结构体有要求，模版使用{{}}包含的变量名字必须在结构体有其对应，否则执行的时候将不能成功。</p>
+<p>下面是模版编程里的一些actions介绍。</p>
+<pre><code><code>{{/* a comment */}} 注释
+{{pipeline}}   模版的变量
+{{if pipeline}} T1 {{end}}   如果pipeline为空，则T1不会执行，
+{{if pipeline}} T1 {{else}} T0 {{end}} 这是在上面的基础上增加了else分支
+{{if pipeline}} T1 {{else if pipeline}} T0 {{end}} 当然还可以else if，这些对熟悉编程的人来说不算什么
+{{range pipeline}} T1 {{end}}  这个要求pipeline是一个数组，可以循环输出T1
+{{range pipeline}} T1 {{else}} T0 {{end}} 这个就是pipeline为空则执行T0
+{{with pipeline}} T1 {{end}} with和if类似，如果pipeline存在，则执行T1
+{{with pipeline}} T1 {{else}} T0 {{end}} 同样的else分支处理
+</code></pre>
+<p>我们来看一些复杂点的例子：</p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    &quot;os&quot;
+    &quot;text/template&quot;
+)
+
+// Define a template.
+const letter = `
+Dear {{.Name}},
+{{if .Attended}}
+It was a pleasure to see you at the wedding.{{else}}
+It is a shame you couldn&#39;t make it to the wedding.{{end}}
+{{with .Gift}}Thank you for the lovely {{.}}.
+{{end}}
+Best wishes,
+Josie
+`
+
+func main() {
+
+    // Prepare some data to insert into the template.
+    type Recipient struct {
+        Name, Gift string
+        Attended   bool
+    }
+    var recipients = []Recipient{
+        {&quot;Aunt Mildred&quot;, &quot;bone china tea set&quot;, true},
+        {&quot;Uncle John&quot;, &quot;moleskin pants&quot;, false},
+        {&quot;Cousin Rodney&quot;, &quot;&quot;, false},
+    }
+
+    // Create a new template and parse the letter into it.
+    t := template.Must(template.New(&quot;letter&quot;).Parse(letter))
+
+    // Execute the template for each recipient.
+    for _, r := range recipients {
+        err := t.Execute(os.Stdout, r)
+        if err != nil {
+            fmt.Println(&quot;executing template:&quot;, err)
+        }
+    }
+}</code></pre>
+<p>上述代码是一个写信的模版，收信方是一个固定填充位置，Attended是一个附加信息，如果为真，则为受邀参加婚礼，为假则不被邀请。Gift则是对礼物的描述，如果礼物不为空，则该收信人会有礼物，否则没有。</p>
+<p>根据数据情况recipients来看，只有第一个人受邀参加婚礼，前两个人会有礼物，所以最终的执行结果如下：</p>
+<pre><code><code>Dear Aunt Mildred,
+
+It was a pleasure to see you at the wedding.
+Thank you for the lovely bone china tea set.
+
+Best wishes,
+Josie
+
+Dear Uncle John,
+
+It is a shame you couldn&#39;t make it to the wedding.
+Thank you for the lovely moleskin pants.
+
+Best wishes,
+Josie
+
+Dear Cousin Rodney,
+
+It is a shame you couldn&#39;t make it to the wedding.
+
+Best wishes,
+Josie</code></pre>
+<p><br></p>
+<hr />
+<p><img src="./images/go语言模版编程1.png" /></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

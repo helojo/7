@@ -1,0 +1,113 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修nowcoder941B 弹钢琴' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>nowcoder941B 弹钢琴</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/nowcoder941B.html</div><br>
+    <p><a href="https://ac.nowcoder.com/acm/contest/941/B"><font size=5>题目链接</font></a></p>
+<h1 id="思路">思路</h1>
+<p>首先按照音色排个序，顺便离散化一下音高。<br />
+用<span class="math inline">\(h[i]\)</span>表示第<span class="math inline">\(i\)</span>个键的音高,用<span class="math inline">\(w[i]\)</span>表示第<span class="math inline">\(i\)</span>个键的春希度。<br />
+<strong>朴素<span class="math inline">\(dp\)</span></strong><br />
+<span class="math inline">\(f[i][j]\)</span>表示前i个琴键，最高的音高为j时的最大收益。<br />
+那么当<span class="math inline">\(j\)</span>大于<span class="math inline">\(h[i]\)</span>时，就有<span class="math inline">\(f[i][j] = max(f[i-1][j],f[i-1][a[i]] + w[i])\)</span><br />
+否则就<span class="math inline">\(f[i][j] = f[i - 1][j]\)</span></p>
+<p><strong>优化</strong></p>
+<p>显然可以用树状数组优化(维护一个区间赋值和区间求最大值的操作)。</p>
+<p><strong>教训</strong></p>
+<p>发现了自己离散化的姿势是存在问题的！！<br />
+之前一直用<span class="math inline">\(map\)</span>离散化，数据比较小了还体现不出来，数据比较大的时候就要比<span class="math inline">\(lower_bound\)</span>慢很多。<br />
+对比</p>
+<p><img src="./images/nowcoder941B 弹钢琴0.png" /></p>
+<p><img src="./images/nowcoder941B 弹钢琴1.png" /></p>
+<h1 id="代码">代码</h1>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-06-28 19:59:57
+* @Last Modified time: 2019-06-29 15:45:15
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+#include&lt;map&gt;
+using namespace std;
+typedef long long ll;
+const int N = 1000000 + 100;
+map&lt;int,int&gt;ma;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+int ls[N];
+struct node {
+    int x,y;int w;
+}a[N];
+int js;
+ll tree[N];
+
+void update(int pos,ll w) {
+    while(pos &lt;= js) {
+        tree[pos] = max(tree[pos],w);
+        pos += pos &amp; -pos;
+    }
+}
+ll query(int pos) {
+    ll ret = 0;
+    while(pos) {
+        ret = max(ret,tree[pos]);
+        pos -= pos &amp; -pos;
+    }
+    return ret;
+}
+bool cmp(const node &amp;A,const node &amp;B) {
+    return A.x == B.x ? A.y &lt; B.y : A.x &lt; B.x;
+}
+int main() {
+    int n = read();
+    for(int i = 1;i &lt;= n;++i) a[i].x = read() + 1,ls[i] = a[i].y = read() + 1,a[i].w = read();
+    sort(ls + 1,ls + n + 1);
+    sort(a + 1,a + n + 1,cmp);
+    js = n;
+    for(int i = 1;i &lt;= n;++i)
+        a[i].y = lower_bound(ls + 1,ls + n + 1,a[i].y) - ls;
+
+    for(int i = 1;i &lt;= n;++i) {
+        ll x = query(a[i].y) + a[i].w;
+        update(a[i].y,x);
+    }
+    cout&lt;&lt;query(js);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

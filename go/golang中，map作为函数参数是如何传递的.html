@@ -1,0 +1,66 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang中，map作为函数参数是如何传递的' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang中，map作为函数参数是如何传递的</center></div><div class='banquan'>原文出处:本文由博客园博主idea偶买噶提供。<br/>
+原文连接:https://www.cnblogs.com/zhouj-happy/p/10962500.html</div><br>
+    <p>当你声明一个map的时候：</p>
+<pre><code><code>m := make(map[int]int)</code></pre>
+<p>编译器会调用 <code>runtime.makemap</code>：</p>
+<pre><code><code>// makemap implements a Go map creation make(map[k]v, hint)
+// If the compiler has determined that the map or the first bucket
+// can be created on the stack, h and/or bucket may be non-nil.
+// If h != nil, the map can be created directly in h.
+// If bucket != nil, bucket can be used as the first bucket.
+func makemap(t *maptype, hint int64, h *hmap, bucket unsafe.Pointer) *hmap</code></pre>
+<p>所以实际上是返回一个hmap的指针。</p>
+<p>如何验证呢？</p>
+<pre><code><code>func main(){
+    m := make(map[int]int)
+    m[1] = 1
+    fmt.Printf(&quot;原始map的内存地址是：%p\n&quot;, m)
+    modify(m)
+    fmt.Println(&quot;map值被修改了，新值为:&quot;, m)
+}
+
+func modify(m interface{}){
+    fmt.Printf(&quot;函数里接收到map的内存地址是：%p\n&quot;, p)
+    m := p.(map[int]int)
+    m[1] = 2
+}</code></pre>
+<p>输出结果：</p>
+<pre><code><code>原始map的内存地址是：0xc00009e030
+函数里接收到map的内存地址是：0xc00009e030
+map值被修改了，新值为: map[1:2]</code></pre>
+<p>在main函数中，m是个指针变量，它保存的值是：0xc00009e030。</p>
+<p>在modify函数中，m也是个指针变量，保存的值也是：0xc00009e030。</p>
+<p>说明初始化map后，返回的是指针变量，在函数之间，传递的是map的地址。</p>
+<blockquote>
+<p>map和channel是相似的。</p>
+</blockquote>
+<p>那么为什么不是 *map[key]value呢，这样不是更直观？</p>
+<p>Ian Taylor <a href="https://groups.google.com/d/msg/golang-nuts/SjuhSYDITm4/jnrp7rRxDQAJ">answered this recently in a golang-nuts</a> 原话是：</p>
+<blockquote>
+<p><em>In the very early days what we call maps now were written as pointers, so you wrote *map[int]int. We moved away from that when we realized that no one ever wrote <code>map</code> without writing <code>\*map</code>.</em></p>
+</blockquote>
+<p>意思是，一开始也是写作 *map[key]value，后来发现所有的map都是当作指针来用的，于是就省略简写了。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

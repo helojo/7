@@ -1,0 +1,438 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修基于 libevent 开源框架实现的 web 服务器' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>基于 libevent 开源框架实现的 web 服务器</center></div><div class='banquan'>原文出处:本文由博客园博主酒觉提供。<br/>
+原文连接:https://www.cnblogs.com/jiujue/p/10707153.html</div><br>
+    <p><span style="background-color: #000000; color: #00ff00; font-size: 18pt;">/* 原创文章 转载请附上原链接:&nbsp;<a href="https://www.cnblogs.com/jiujue/p/10707153.html">https://www.cnblogs.com/jiujue/p/10707153.html</a>&nbsp; &nbsp;*/</span></p>
+<p><span style="background-color: #000000; color: #00ff00; font-size: 18pt;">自己实现的如有缺漏欢迎提出</span></p>
+<p><span style="background-color: #000000; color: #00ff00; font-size: 18pt;">直接代码 一切皆在代码中&nbsp;</span></p>
+<p><span style="background-color: #000000; color: #00ff00; font-size: 18pt;">首先是 主函数文件 和 头文件</span></p>
+<p>　　头文件：　</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('0aede3ba-c1f4-4c27-b0c1-99a5c4e40b9d')"><img id="code_img_closed_0aede3ba-c1f4-4c27-b0c1-99a5c4e40b9d" class="code_img_closed" src="./images/基于 libevent 开源框架实现的 web 服务器0.png" alt="" /><img id="code_img_opened_0aede3ba-c1f4-4c27-b0c1-99a5c4e40b9d" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('0aede3ba-c1f4-4c27-b0c1-99a5c4e40b9d',event)" src="./images/基于 libevent 开源框架实现的 web 服务器1.png" alt="" />
+<div id="cnblogs_code_open_0aede3ba-c1f4-4c27-b0c1-99a5c4e40b9d" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">#ifndef _HEAD_H_
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">#define</span> _HEAD_H_
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> #include&lt;stdio.h&gt;
+<span style="color: #008080;"> 5</span> #include&lt;<span style="color: #0000ff;">string</span>.h&gt;
+<span style="color: #008080;"> 6</span> #include&lt;stdlib.h&gt;
+<span style="color: #008080;"> 7</span> #include&lt;time.h&gt;
+<span style="color: #008080;"> 8</span> #include&lt;math.h&gt;
+<span style="color: #008080;"> 9</span> #include &lt;fcntl.h&gt;
+<span style="color: #008080;">10</span> #include &lt;ctype.h&gt;
+<span style="color: #008080;">11</span> #include &lt;dirent.h&gt;
+<span style="color: #008080;">12</span> #include &lt;unistd.h&gt;
+<span style="color: #008080;">13</span> #include &lt;event2/<span style="color: #0000ff;">event</span>.h&gt;
+<span style="color: #008080;">14</span> #include &lt;event2/listener.h&gt;
+<span style="color: #008080;">15</span> #include &lt;event2/bufferevent.h&gt;
+<span style="color: #008080;">16</span> #include &lt;sys/socket.h&gt;
+<span style="color: #008080;">17</span> #include &lt;sys/types.h&gt;
+<span style="color: #008080;">18</span> #include &lt;sys/stat.h&gt;
+<span style="color: #008080;">19</span> #include &lt;arpa/inet.h&gt;
+<span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span> <span style="color: #0000ff;">int</span> judge_type_dir_or_nondir(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> name);
+</span><span style="color: #008080;">22</span> <span style="color: #0000ff;">int</span> send_dir_asheml(<span style="color: #0000ff;">struct</span> bufferevent *bufev, <span style="color: #0000ff;">char</span> *dirname, <span style="color: #0000ff;">void</span> *<span style="color: #000000;">arg);
+</span><span style="color: #008080;">23</span> <span style="color: #0000ff;">struct</span> evconnlistener* libev_start(<span style="color: #0000ff;">struct</span> event_base*<span style="color: #0000ff;">base</span>, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>* Ip,<span style="color: #0000ff;">int</span><span style="color: #000000;"> Port);
+</span><span style="color: #008080;">24</span> <span style="color: #0000ff;">int</span> send_html_head(<span style="color: #0000ff;">struct</span> bufferevent* bufev, <span style="color: #0000ff;">int</span> stat_no, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>* stat_desc, <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> type);
+</span><span style="color: #008080;">25</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *get_file_type(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;">name);
+</span><span style="color: #008080;">26</span> <span style="color: #0000ff;">int</span> send_file(<span style="color: #0000ff;">struct</span> bufferevent *bufev,<span style="color: #0000ff;">char</span>*<span style="color: #000000;"> file);
+</span><span style="color: #008080;">27</span> 
+<span style="color: #008080;">28</span> <span style="color: #0000ff;">#endif</span></code></pre>
+
+<span class="cnblogs_code_collapse">View Code</span>
+<p>　　主函数文件：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('2f76b52b-d92e-4ef1-8f0d-ec8f96b4f4bb')"><img id="code_img_closed_2f76b52b-d92e-4ef1-8f0d-ec8f96b4f4bb" class="code_img_closed" src="./images/基于 libevent 开源框架实现的 web 服务器0.png" alt="" /><img id="code_img_opened_2f76b52b-d92e-4ef1-8f0d-ec8f96b4f4bb" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('2f76b52b-d92e-4ef1-8f0d-ec8f96b4f4bb',event)" src="./images/基于 libevent 开源框架实现的 web 服务器1.png" alt="" />
+<div id="cnblogs_code_open_2f76b52b-d92e-4ef1-8f0d-ec8f96b4f4bb" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;"> File Name: main.c
+</span><span style="color: #008080;"> 2</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Author: jiujue
+</span><span style="color: #008080;"> 3</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Created Time: 2019年04月05日 星期五 19时54分48秒</span>
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">head.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> argv[])
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">if</span>(argc &lt; <span style="color: #800080;">4</span><span style="color: #000000;">)
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">11</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">argument not enough\neg:./app Ip Port sourceDir\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">12</span>         exit(<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> 
+<span style="color: #008080;">16</span>     <span style="color: #0000ff;">int</span> ret = chdir(argv[<span style="color: #800080;">3</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">if</span>(-<span style="color: #800080;">1</span> ==<span style="color: #000000;"> ret)
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">19</span>         perror(<span style="color: #800000;">"</span><span style="color: #800000;">chdir error</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">20</span>         exit(<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">23</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">24</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">chdir successful,to -&gt; %s\n</span><span style="color: #800000;">"</span>,argv[<span style="color: #800080;">3</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">26</span> 
+<span style="color: #008080;">27</span>     <span style="color: #0000ff;">struct</span> event_base* <span style="color: #0000ff;">base</span> =<span style="color: #000000;"> event_base_new();
+</span><span style="color: #008080;">28</span> 
+<span style="color: #008080;">29</span>     <span style="color: #0000ff;">struct</span> evconnlistener* listen = libev_start(<span style="color: #0000ff;">base</span>,argv[<span style="color: #800080;">1</span>],atoi(argv[<span style="color: #800080;">2</span><span style="color: #000000;">]));
+</span><span style="color: #008080;">30</span> 
+<span style="color: #008080;">31</span>     event_base_dispatch(<span style="color: #0000ff;">base</span><span style="color: #000000;">);
+</span><span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span> <span style="color: #000000;">    evconnlistener_free(listen);
+</span><span style="color: #008080;">34</span>     event_base_free(<span style="color: #0000ff;">base</span><span style="color: #000000;">);
+</span><span style="color: #008080;">35</span> 
+<span style="color: #008080;">36</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;"> ;
+</span><span style="color: #008080;">37</span> }</code></pre>
+
+<span class="cnblogs_code_collapse">View Code</span>
+<p><span style="background-color: #000000; color: #00ff00; font-size: 18pt;">接下来是 调用libevent框架了 （重头戏来了 注意回调的设置哦）：</span></p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('aa564bd1-be5f-4eb5-8f18-0e97f17e9858')"><img id="code_img_closed_aa564bd1-be5f-4eb5-8f18-0e97f17e9858" class="code_img_closed" src="./images/基于 libevent 开源框架实现的 web 服务器0.png" alt="" /><img id="code_img_opened_aa564bd1-be5f-4eb5-8f18-0e97f17e9858" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('aa564bd1-be5f-4eb5-8f18-0e97f17e9858',event)" src="./images/基于 libevent 开源框架实现的 web 服务器1.png" alt="" />
+<div id="cnblogs_code_open_aa564bd1-be5f-4eb5-8f18-0e97f17e9858" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;">  1</span> <span style="color: #008000;">//</span><span style="color: #008000;"> File Name: _libev.c
+</span><span style="color: #008080;">  2</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Author: jiujue
+</span><span style="color: #008080;">  3</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Created Time: 2019年04月05日 星期五 19时54分08秒</span>
+<span style="color: #008080;">  4</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">head.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">  5</span> <span style="color: #0000ff;">#define</span> PATH_OF_404_ "404.html"
+<span style="color: #008080;">  6</span> 
+<span style="color: #008080;">  7</span> <span style="color: #0000ff;">void</span> read_cb(<span style="color: #0000ff;">struct</span> bufferevent* bufev, <span style="color: #0000ff;">void</span>*<span style="color: #000000;"> arg)
+</span><span style="color: #008080;">  8</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">  9</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;,,Happen read_cb\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 10</span>     <span style="color: #0000ff;">char</span> buf[<span style="color: #800080;">1024</span>] = {<span style="color: #800080;">0</span>}, method[<span style="color: #800080;">12</span>] = {<span style="color: #800080;">0</span>}, path[<span style="color: #800080;">1024</span>] = {<span style="color: #800080;">0</span>}, protocol[<span style="color: #800080;">12</span>] = {<span style="color: #800080;">0</span><span style="color: #000000;">};
+</span><span style="color: #008080;"> 11</span>     bufferevent_read(bufev,buf,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(buf));
+</span><span style="color: #008080;"> 12</span>     <span style="color: #008000;">//</span><span style="color: #008000;">printf("-----------------------recv http request :%s\n",buf);</span>
+<span style="color: #008080;"> 13</span>     sscanf(buf,<span style="color: #800000;">"</span><span style="color: #800000;">%s %s %s</span><span style="color: #800000;">"</span><span style="color: #000000;">,method,path,protocol);
+</span><span style="color: #008080;"> 14</span>     <span style="color: #0000ff;">char</span> *file = path+<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 15</span>     <span style="color: #0000ff;">if</span>(<span style="color: #800080;">0</span> == (strcmp(path,<span style="color: #800000;">"</span><span style="color: #800000;">/</span><span style="color: #800000;">"</span><span style="color: #000000;">) ) )
+</span><span style="color: #008080;"> 16</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 17</span>         file = (<span style="color: #0000ff;">char</span>*)<span style="color: #800000;">"</span><span style="color: #800000;">./</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 19</span>     
+<span style="color: #008080;"> 20</span>     <span style="color: #0000ff;">int</span> isFile =<span style="color: #000000;"> judge_type_dir_or_nondir(file);
+</span><span style="color: #008080;"> 21</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">fffffffff          is %d \n</span><span style="color: #800000;">"</span><span style="color: #000000;">,isFile);
+</span><span style="color: #008080;"> 22</span>     <span style="color: #0000ff;">if</span>(<span style="color: #800080;">0</span> ==<span style="color: #000000;"> isFile)
+</span><span style="color: #008080;"> 23</span>     {<span style="color: #008000;">//</span><span style="color: #008000;">is palin file</span>
+<span style="color: #008080;"> 24</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">send file &lt;name&gt;&gt;%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,file);
+</span><span style="color: #008080;"> 25</span> <span style="color: #000000;">        send_file(bufev,file);
+</span><span style="color: #008080;"> 26</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 27</span>     <span style="color: #0000ff;">if</span>(isFile == <span style="color: #800080;">1</span>){<span style="color: #008000;">//</span><span style="color: #008000;">is dir</span>
+<span style="color: #008080;"> 28</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">send dir &lt;name&gt;&gt;%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,file);
+</span><span style="color: #008080;"> 29</span>         send_html_head(bufev,<span style="color: #800080;">200</span>,<span style="color: #800000;">"</span><span style="color: #800000;">OK</span><span style="color: #800000;">"</span>,(<span style="color: #0000ff;">char</span>*)<span style="color: #800000;">"</span><span style="color: #800000;">text/html</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 30</span> <span style="color: #000000;">        send_dir_asheml(bufev,file,NULL);
+</span><span style="color: #008080;"> 31</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 32</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(-<span style="color: #800080;">1</span> ==<span style="color: #000000;"> isFile)
+</span><span style="color: #008080;"> 33</span>     {<span style="color: #008000;">//</span><span style="color: #008000;">is not found file or directory</span>
+<span style="color: #008080;"> 34</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">send 404 &lt;name&gt;&gt;%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,file);
+</span><span style="color: #008080;"> 35</span> <span style="color: #000000;">        send_file(bufev,PATH_OF_404_);
+</span><span style="color: #008080;"> 36</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 37</span> 
+<span style="color: #008080;"> 38</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 39</span> 
+<span style="color: #008080;"> 40</span> <span style="color: #0000ff;">void</span> write_cb(<span style="color: #0000ff;">struct</span> bufferevent* bufev, <span style="color: #0000ff;">void</span>*<span style="color: #000000;"> arg)
+</span><span style="color: #008080;"> 41</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 42</span>     <span style="color: #0000ff;">struct</span> sockaddr_in *cli = (<span style="color: #0000ff;">struct</span> sockaddr_in*<span style="color: #000000;">)arg;
+</span><span style="color: #008080;"> 43</span>     <span style="color: #0000ff;">char</span> buf[<span style="color: #800080;">1024</span>] = {<span style="color: #800080;">0</span><span style="color: #000000;">};
+</span><span style="color: #008080;"> 44</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">Sent respond to cli,Ip -&gt;%s and Port -&gt;%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 45</span>             inet_ntop(AF_INET,&amp;(cli-&gt;sin_addr.s_addr), buf,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(buf)), 
+</span><span style="color: #008080;"> 46</span>             ntohs(cli-&gt;<span style="color: #000000;">sin_port) );
+</span><span style="color: #008080;"> 47</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 48</span> 
+<span style="color: #008080;"> 49</span> <span style="color: #0000ff;">void</span> event_cb(<span style="color: #0000ff;">struct</span> bufferevent* bufev, <span style="color: #0000ff;">short</span> ev, <span style="color: #0000ff;">void</span>*<span style="color: #000000;"> arg)
+</span><span style="color: #008080;"> 50</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 51</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">event_cb successful\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 52</span>     <span style="color: #0000ff;">if</span>(ev &amp;<span style="color: #000000;"> BEV_EVENT_EOF)
+</span><span style="color: #008080;"> 53</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 54</span>         <span style="color: #0000ff;">struct</span> sockaddr_in *cli = (<span style="color: #0000ff;">struct</span> sockaddr_in*<span style="color: #000000;">)arg;
+</span><span style="color: #008080;"> 55</span>         <span style="color: #0000ff;">char</span> buf[<span style="color: #800080;">1024</span>] = {<span style="color: #800080;">0</span><span style="color: #000000;">};
+</span><span style="color: #008080;"> 56</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Have client disconnect, Ip -&gt;%s and Port -&gt;%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 57</span>                 inet_ntop(AF_INET,&amp;(cli-&gt;sin_addr.s_addr), buf,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(buf)), 
+</span><span style="color: #008080;"> 58</span>                 ntohs(cli-&gt;<span style="color: #000000;">sin_port) );
+</span><span style="color: #008080;"> 59</span> 
+<span style="color: #008080;"> 60</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 61</span>     <span style="color: #0000ff;">if</span>(ev &amp;<span style="color: #000000;"> BEV_EVENT_ERROR )
+</span><span style="color: #008080;"> 62</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 63</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">******************************** Happy Error******************************\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 64</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 65</span> <span style="color: #000000;">    bufferevent_free(bufev);
+</span><span style="color: #008080;"> 66</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 67</span> 
+<span style="color: #008080;"> 68</span> <span style="color: #0000ff;">void</span> listener_cb(<span style="color: #0000ff;">struct</span> evconnlistener *<span style="color: #000000;">listener, 
+</span><span style="color: #008080;"> 69</span>         evutil_socket_t fd, <span style="color: #0000ff;">struct</span> sockaddr*<span style="color: #000000;"> cli, 
+</span><span style="color: #008080;"> 70</span>         <span style="color: #0000ff;">int</span> cli_len, <span style="color: #0000ff;">void</span>*<span style="color: #000000;"> arg)
+</span><span style="color: #008080;"> 71</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 72</span> 
+<span style="color: #008080;"> 73</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;,,,,,,,,, listener_cb successful\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 74</span>     <span style="color: #0000ff;">struct</span> event_base* <span style="color: #0000ff;">base</span> = (<span style="color: #0000ff;">struct</span> event_base*<span style="color: #000000;">)arg;
+</span><span style="color: #008080;"> 75</span> 
+<span style="color: #008080;"> 76</span>     <span style="color: #0000ff;">struct</span> bufferevent* bufev = bufferevent_socket_new(<span style="color: #0000ff;">base</span><span style="color: #000000;">, fd, BEV_OPT_CLOSE_ON_FREE);
+</span><span style="color: #008080;"> 77</span> <span style="color: #000000;">    bufferevent_setcb(bufev, read_cb, write_cb, event_cb,cli);
+</span><span style="color: #008080;"> 78</span> <span style="color: #000000;">    bufferevent_enable(bufev,EV_READ);
+</span><span style="color: #008080;"> 79</span> 
+<span style="color: #008080;"> 80</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 81</span> 
+<span style="color: #008080;"> 82</span> 
+<span style="color: #008080;"> 83</span> <span style="color: #0000ff;">struct</span> evconnlistener* libev_start(<span style="color: #0000ff;">struct</span> event_base*<span style="color: #0000ff;">base</span>, <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>* Ip,<span style="color: #0000ff;">int</span><span style="color: #000000;"> Port)
+</span><span style="color: #008080;"> 84</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 85</span> 
+<span style="color: #008080;"> 86</span>     <span style="color: #0000ff;">struct</span><span style="color: #000000;"> sockaddr_in ser;
+</span><span style="color: #008080;"> 87</span>     ser.sin_family =<span style="color: #000000;"> AF_INET;
+</span><span style="color: #008080;"> 88</span>     ser.sin_port =<span style="color: #000000;"> htons(Port);
+</span><span style="color: #008080;"> 89</span>     inet_pton(AF_INET,Ip,&amp;<span style="color: #000000;">(ser.sin_addr.s_addr));
+</span><span style="color: #008080;"> 90</span> 
+<span style="color: #008080;"> 91</span>     <span style="color: #0000ff;">struct</span> evconnlistener* ret =  evconnlistener_new_bind(<span style="color: #0000ff;">base</span>, listener_cb, <span style="color: #0000ff;">base</span><span style="color: #000000;">, 
+</span><span style="color: #008080;"> 92</span>             LEV_OPT_REUSEABLE | LEV_OPT_CLOSE_ON_FREE, <span style="color: #800080;">128</span><span style="color: #000000;">, 
+</span><span style="color: #008080;"> 93</span>             (<span style="color: #0000ff;">struct</span> sockaddr *)&amp;ser, <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(ser));
+</span><span style="color: #008080;"> 94</span> 
+<span style="color: #008080;"> 95</span>     <span style="color: #0000ff;">if</span>(ret ==<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;"> 96</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 97</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 98</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 99</span> 
+<span style="color: #008080;">100</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;">101</span> }</code></pre>
+
+<span class="cnblogs_code_collapse">View Code</span>
+<p><span style="color: #00ff00; font-size: 18pt; background-color: #000000;">然后是 发送文件和目录的回调&ldquo;</span></p>
+<p>　　文件的：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('a2ccfdf9-6986-4a8f-9e43-0244283214ad')"><img id="code_img_closed_a2ccfdf9-6986-4a8f-9e43-0244283214ad" class="code_img_closed" src="./images/基于 libevent 开源框架实现的 web 服务器0.png" alt="" /><img id="code_img_opened_a2ccfdf9-6986-4a8f-9e43-0244283214ad" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('a2ccfdf9-6986-4a8f-9e43-0244283214ad',event)" src="./images/基于 libevent 开源框架实现的 web 服务器1.png" alt="" />
+<div id="cnblogs_code_open_a2ccfdf9-6986-4a8f-9e43-0244283214ad" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">head.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">int</span> send_file(<span style="color: #0000ff;">struct</span> bufferevent *bufev,<span style="color: #0000ff;">char</span>*<span style="color: #000000;"> file)
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span> ffd =<span style="color: #000000;"> open(file,O_RDONLY);
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">if</span>(-<span style="color: #800080;">1</span> ==<span style="color: #000000;"> ffd)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">10</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">sourceFilePath : %s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,file);
+</span><span style="color: #008080;">11</span>         perror(<span style="color: #800000;">"</span><span style="color: #800000;">open sourceFile error</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span>     <span style="color: #0000ff;">char</span> file_read_buf[<span style="color: #800080;">1024</span><span style="color: #000000;">];
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">int</span> read_len = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">17</span> 
+<span style="color: #008080;">18</span>     <span style="color: #0000ff;">char</span> * type =<span style="color: #000000;"> get_file_type(file);
+</span><span style="color: #008080;">19</span> 
+<span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span>     send_html_head(bufev,<span style="color: #800080;">200</span>, <span style="color: #800000;">"</span><span style="color: #800000;">OK</span><span style="color: #800000;">"</span><span style="color: #000000;">, type);
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span>     <span style="color: #0000ff;">while</span>((read_len=read(ffd, file_read_buf,<span style="color: #0000ff;">sizeof</span>(file_read_buf))) &gt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">25</span>         <span style="color: #0000ff;">if</span>(<span style="color: #800080;">0</span> ==<span style="color: #000000;"> read_len)
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">27</span>             <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">        bufferevent_write(bufev,file_read_buf,read_len);;
+</span><span style="color: #008080;">30</span>         file_read_buf[strlen(file_read_buf)+<span style="color: #800080;">1</span>] = <span style="color: #800000;">'</span><span style="color: #800000;">\n</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">31</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">send message :%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,file_read_buf);
+</span><span style="color: #008080;">32</span>         memset(file_read_buf,<span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(file_read_buf));
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">34</span> 
+<span style="color: #008080;">35</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">close ...\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">36</span> <span style="color: #000000;">    close(ffd);
+</span><span style="color: #008080;">37</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">38</span> }</code></pre>
+
+<span class="cnblogs_code_collapse">View Code</span>
+<p>　　目录的（这里拼接网页的时候要细心 非常细心的那种 ）：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('81a0e46a-dde0-4cbf-b6ef-68562926f0e1')"><img id="code_img_closed_81a0e46a-dde0-4cbf-b6ef-68562926f0e1" class="code_img_closed" src="./images/基于 libevent 开源框架实现的 web 服务器0.png" alt="" /><img id="code_img_opened_81a0e46a-dde0-4cbf-b6ef-68562926f0e1" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('81a0e46a-dde0-4cbf-b6ef-68562926f0e1',event)" src="./images/基于 libevent 开源框架实现的 web 服务器1.png" alt="" />
+<div id="cnblogs_code_open_81a0e46a-dde0-4cbf-b6ef-68562926f0e1" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;"> File Name: _send_dir.c
+</span><span style="color: #008080;"> 2</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Author: jiujue
+</span><span style="color: #008080;"> 3</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Created Time: 2019年04月05日 星期五 19时27分18秒</span>
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">head.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">#define</span> MAXFORGTML_ 4096
+<span style="color: #008080;"> 7</span> 
+<span style="color: #008080;"> 8</span> 
+<span style="color: #008080;"> 9</span> <span style="color: #0000ff;">int</span> send_dir_asheml(<span style="color: #0000ff;">struct</span> bufferevent *bufev, <span style="color: #0000ff;">char</span> *dirname, <span style="color: #0000ff;">void</span>*<span style="color: #000000;"> arg)
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">11</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">******************send_dir name is %s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,dirname);
+</span><span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span>     <span style="color: #0000ff;">char</span>* buf_dir_html = (<span style="color: #0000ff;">char</span> *)<span style="color: #0000ff;">malloc</span><span style="color: #000000;">(MAXFORGTML_); 
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">struct</span> dirent **<span style="color: #000000;">ptr;
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">int</span> dir_total_num = scandir(dirname,&amp;<span style="color: #000000;">ptr,NULL,alphasort);
+</span><span style="color: #008080;">16</span>     
+<span style="color: #008080;">17</span>     <span style="color: #008000;">//</span><span style="color: #008000;">html head</span>
+<span style="color: #008080;">18</span>     sprintf(buf_dir_html,<span style="color: #800000;">"</span><span style="color: #800000;">&lt;!doctype HTML&gt;\</span>
+<span style="color: #008080;">19</span>                                 &lt;html&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">20</span>                                     &lt;head&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">21</span>                                         &lt;title&gt;Curent dir:%s&lt;/title&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">22</span>                                     &lt;/head&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">23</span>                                     &lt;body&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">24</span>                                         &lt;h1&gt;Curretn Dir Content:%s &lt;/h1&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">25</span>                                         &lt;table&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">26</span>                                             &lt;tr&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">27</span>                                                 &lt;td&gt;Name&lt;/td&gt;&lt;td&gt;Size&lt;/td&gt;&lt;td&gt;Type&lt;/td&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">28</span>                                             &lt;/tr&gt;<span style="color: #800000;">"</span><span style="color: #800000;">,dirname,dirname);</span>
+<span style="color: #008080;">29</span> <span style="color: #000000;">    bufferevent_write(bufev,buf_dir_html,strlen(buf_dir_html));
+</span><span style="color: #008080;">30</span> 
+<span style="color: #008080;">31</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>;i&lt;dir_total_num;++<span style="color: #000000;">i)
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">33</span>         <span style="color: #0000ff;">char</span> buf_current_name[<span style="color: #800080;">1024</span>] = {<span style="color: #800080;">0</span><span style="color: #000000;">};
+</span><span style="color: #008080;">34</span>         <span style="color: #0000ff;">if</span>( <span style="color: #800080;">0</span> == strcmp(dirname,<span style="color: #800000;">"</span><span style="color: #800000;">./</span><span style="color: #800000;">"</span><span style="color: #000000;">))
+</span><span style="color: #008080;">35</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">36</span>             sprintf(buf_current_name,<span style="color: #800000;">"</span><span style="color: #800000;">%s%s</span><span style="color: #800000;">"</span>,dirname,ptr[i]-&gt;<span style="color: #000000;">d_name);
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">38</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">39</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">40</span>             sprintf(buf_current_name,<span style="color: #800000;">"</span><span style="color: #800000;">%s/%s</span><span style="color: #800000;">"</span>,dirname,ptr[i]-&gt;<span style="color: #000000;">d_name);
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">42</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">++++++++++++++++++++send cur dir &lt;name&gt;&gt;%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,buf_current_name);
+</span><span style="color: #008080;">43</span>         <span style="color: #0000ff;">struct</span><span style="color: #000000;"> stat st;
+</span><span style="color: #008080;">44</span>         memset(&amp;st,<span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(st));
+</span><span style="color: #008080;">45</span>         stat(buf_current_name,&amp;<span style="color: #000000;">st);
+</span><span style="color: #008080;">46</span>     
+<span style="color: #008080;">47</span> <span style="color: #000000;">        sprintf(buf_dir_html,
+</span><span style="color: #008080;">48</span>                                         <span style="color: #800000;">"</span><span style="color: #800000;">&lt;tr&gt;\</span>
+<span style="color: #008080;">49</span>                                             &lt;td&gt;&lt;a href=\<span style="color: #800000;">"</span><span style="color: #800000;">%s\"&gt;%s&lt;/a&gt;&lt;/td&gt;\</span>
+<span style="color: #008080;">50</span>                                             &lt;td&gt;%ld&lt;/td&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">51</span>                                             &lt;td&gt;%s&lt;/td&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">52</span>                                         &lt;/tr&gt;<span style="color: #800000;">"</span><span style="color: #800000;">,</span>
+<span style="color: #008080;">53</span> <span style="color: #000000;">                buf_current_name,
+</span><span style="color: #008080;">54</span>                 ptr[i]-&gt;<span style="color: #000000;">d_name,st.st_size,
+</span><span style="color: #008080;">55</span>                 judge_type_dir_or_nondir(buf_current_name)!= <span style="color: #800080;">0</span>?<span style="color: #800000;">"</span><span style="color: #800000;">dir</span><span style="color: #800000;">"</span>:<span style="color: #800000;">"</span><span style="color: #800000;">plain file</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">56</span> <span style="color: #000000;">        bufferevent_write(bufev,buf_dir_html,strlen(buf_dir_html));
+</span><span style="color: #008080;">57</span>         memset((<span style="color: #0000ff;">char</span>*)buf_dir_html,<span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(buf_dir_html));
+</span><span style="color: #008080;">58</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">59</span> 
+<span style="color: #008080;">60</span>     <span style="color: #008000;">//</span><span style="color: #008000;">html end</span>
+<span style="color: #008080;">61</span> <span style="color: #000000;">    sprintf(buf_dir_html,
+</span><span style="color: #008080;">62</span>                                         <span style="color: #800000;">"</span><span style="color: #800000;">&lt;/table&gt;\</span>
+<span style="color: #008080;">63</span>                                     &lt;/body&gt;<span style="color: #000000;">\
+</span><span style="color: #008080;">64</span>                                 &lt;/html&gt;<span style="color: #800000;">"</span><span style="color: #800000;">);</span>
+<span style="color: #008080;">65</span> <span style="color: #000000;">    bufferevent_write(bufev,buf_dir_html,strlen(buf_dir_html));
+</span><span style="color: #008080;">66</span>     bufferevent_write(bufev,<span style="color: #800000;">"</span><span style="color: #800000;">\r\n</span><span style="color: #800000;">"</span>,<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">67</span> 
+<span style="color: #008080;">68</span>     <span style="color: #0000ff;">free</span><span style="color: #000000;">(buf_dir_html);
+</span><span style="color: #008080;">69</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">70</span> }</code></pre>
+
+<span class="cnblogs_code_collapse">View Code</span>
+<p>&nbsp;</p>
+<p><span style="background-color: #000000; color: #00ff00; font-size: 18pt;">最后就是一些小函数了： 判断文件类型 和是否为目录：</span></p>
+<p>　　判断文件类型（这里如果出问题 打开图片等时会出现问题）：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('95670aed-11ac-444b-9f4c-1656af53e92d')"><img id="code_img_closed_95670aed-11ac-444b-9f4c-1656af53e92d" class="code_img_closed" src="./images/基于 libevent 开源框架实现的 web 服务器0.png" alt="" /><img id="code_img_opened_95670aed-11ac-444b-9f4c-1656af53e92d" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('95670aed-11ac-444b-9f4c-1656af53e92d',event)" src="./images/基于 libevent 开源框架实现的 web 服务器1.png" alt="" />
+<div id="cnblogs_code_open_95670aed-11ac-444b-9f4c-1656af53e92d" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;"> File Name: _get_file_type.c
+</span><span style="color: #008080;"> 2</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Author: jiujue
+</span><span style="color: #008080;"> 3</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Created Time: 2019年04月06日 星期六 19时14分07秒</span>
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">head.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 7</span> 
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *get_file_type(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;">name)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> dot;
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span>     
+<span style="color: #008080;">13</span>     dot = strrchr(name, <span style="color: #800000;">'</span><span style="color: #800000;">.</span><span style="color: #800000;">'</span><span style="color: #000000;">);   
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">if</span> (dot ==<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;">15</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">text/plain; charset=utf-8</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.html</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span> || strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.htm</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">17</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">text/html; charset=utf-8</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">18</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.jpg</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span> || strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.jpeg</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">19</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">image/jpeg</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">20</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.gif</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">21</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">image/gif</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.png</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">23</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">image/png</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">24</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.css</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">25</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">text/css</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">26</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.au</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">27</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">audio/basic</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">28</span>     <span style="color: #0000ff;">if</span> (strcmp( dot, <span style="color: #800000;">"</span><span style="color: #800000;">.wav</span><span style="color: #800000;">"</span> ) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">29</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">audio/wav</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">30</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.avi</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">31</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">video/x-msvideo</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">32</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.mov</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span> || strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.qt</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">33</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">video/quicktime</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">34</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.mpeg</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span> || strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.mpe</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">35</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">video/mpeg</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">36</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.vrml</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span> || strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.wrl</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">37</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">model/vrml</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">38</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.midi</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span> || strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.mid</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">39</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">audio/midi</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">40</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.mp3</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">41</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">audio/mpeg</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">42</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.ogg</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">43</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">application/ogg</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">44</span>     <span style="color: #0000ff;">if</span> (strcmp(dot, <span style="color: #800000;">"</span><span style="color: #800000;">.pac</span><span style="color: #800000;">"</span>) == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">45</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">application/x-ns-proxy-autoconfig</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">46</span> 
+<span style="color: #008080;">47</span>     <span style="color: #0000ff;">return</span> <span style="color: #800000;">"</span><span style="color: #800000;">text/plain; charset=utf-8</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">48</span> }</code></pre>
+
+<span class="cnblogs_code_collapse">View Code</span>
+<p>　　判断是否为目录：</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('b738b928-fb27-4c67-bbfe-aa9ebd127afb')"><img id="code_img_closed_b738b928-fb27-4c67-bbfe-aa9ebd127afb" class="code_img_closed" src="./images/基于 libevent 开源框架实现的 web 服务器0.png" alt="" /><img id="code_img_opened_b738b928-fb27-4c67-bbfe-aa9ebd127afb" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('b738b928-fb27-4c67-bbfe-aa9ebd127afb',event)" src="./images/基于 libevent 开源框架实现的 web 服务器1.png" alt="" />
+<div id="cnblogs_code_open_b738b928-fb27-4c67-bbfe-aa9ebd127afb" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;"> File Name: _judge_type.c
+</span><span style="color: #008080;"> 2</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Author: jiujue
+</span><span style="color: #008080;"> 3</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Created Time: 2019年04月05日 星期五 20时54分34秒</span>
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">head.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">int</span> judge_type_dir_or_nondir(<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> name)
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">struct</span><span style="color: #000000;"> stat st;
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">int</span> ret = stat(name,&amp;<span style="color: #000000;">st);
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">if</span>(-<span style="color: #800080;">1</span> ==<span style="color: #000000;"> ret)
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">13</span>         <span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;">(S_ISREG(st.st_mode))
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">17</span>         <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;">(S_ISDIR(st.st_mode))
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">21</span>         <span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">23</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">24</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">25</span>         <span style="color: #0000ff;">return</span> <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">27</span> 
+<span style="color: #008080;">28</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">29</span> 
+<span style="color: #008080;">30</span> 
+<span style="color: #008080;">31</span> <span style="color: #0000ff;">#if</span> 0
+<span style="color: #008080;">32</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc,<span style="color: #0000ff;">char</span>*<span style="color: #000000;"> argv[])
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">34</span>     <span style="color: #0000ff;">int</span> ret =  judge_type_dir_or_nondir(argv[<span style="color: #800080;">1</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">35</span>     <span style="color: #0000ff;">if</span>(ret == <span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">36</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">37</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">is dir </span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">39</span>     <span style="color: #0000ff;">if</span>(ret == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">41</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">is  file</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">43</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">44</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">45</span> <span style="color: #0000ff;">#endif</span></code></pre>
+
+<span class="cnblogs_code_collapse">View Code</span>
+<p>注：以上代码已测验，基本没有问题（bug 肯定有 欢迎提出）</p>
+<p>结语：有问题欢迎提在下方 ，本人在校学生，时间较为充裕， 有时间会回复的。</p>
+<p><span style="background-color: #000000; color: #00ff00; font-size: 18pt;">/* 原创文章 转载请附上原链接:&nbsp;<a href="https://www.cnblogs.com/jiujue/p/10707153.html"><span style="background-color: #000000; color: #00ff00;">https://www.cnblogs.com/jiujue/p/10707153.html</span></a>&nbsp; &nbsp;*/</span></p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

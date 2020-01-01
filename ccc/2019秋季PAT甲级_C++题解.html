@@ -1,0 +1,379 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修2019秋季PAT甲级_C++题解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>2019秋季PAT甲级_C++题解</center></div><div class='banquan'>原文出处:本文由博客园博主鲸90830提供。<br/>
+原文连接:https://www.cnblogs.com/whale90830/p/11494161.html</div><br>
+    <h1 id="秋季-pat-advanced-level-c题解">2019 秋季 PAT (Advanced Level) C++题解</h1>
+<blockquote>
+<p>考试拿到了满分但受考场状态和知识水平所限可能方法不够简洁，此处保留记录，仍需多加学习。备考总结（笔记目录）在<a href="https://www.cnblogs.com/whale90830/p/11496763.html">这里</a></p>
+</blockquote>
+<h2 id="forever-20-分">7-1 Forever (20 分)</h2>
+<p>&quot;Forever number&quot; is a positive integer A with K digits, satisfying the following constrains:</p>
+<ul>
+<li>the sum of all the digits of A is m;</li>
+<li>the sum of all the digits of A+1 is n; and</li>
+<li>the greatest common divisor of m and n is a prime number which is greater than 2.</li>
+</ul>
+<p>Now you are supposed to find these forever numbers.</p>
+<h3 id="input-specification">Input Specification</h3>
+<p>Each input file contains one test case. For each test case, the first line contains a positive integer <span class="math inline">\(N (≤5)\)</span>. Then N lines follow, each gives a pair of <span class="math inline">\(K (3&lt;K&lt;10)\)</span> and <span class="math inline">\(m (1&lt;m&lt;90)\)</span>, of which the meanings are given in the problem description.</p>
+<h3 id="output-specification">Output Specification</h3>
+<p>For each pair of K and m, first print in a line <code>Case X</code>, where <code>X</code> is the case index (starts from 1). Then print n and A in the following line. The numbers must be separated by a space. If the solution is not unique, output in the ascending order of n. If still not unique, output in the ascending order of A. If there is no solution, output <code>No Solution</code>.</p>
+<h3 id="sample-input">Sample Input</h3>
+<pre><code>2
+6 45
+7 80</code></pre>
+<h3 id="sample-output">Sample Output</h3>
+<pre><code>Case 1
+10 189999
+10 279999
+10 369999
+10 459999
+10 549999
+10 639999
+10 729999
+10 819999
+10 909999
+Case 2
+No Solution</code></pre>
+<h3 id="题目思路">题目思路</h3>
+<ul>
+<li>要找到符合要求的数，给出的条件是 数的位数 K 和 各位的和 m</li>
+<li>首先要找到满足各位和为 m 的 K 位数，再检查找到的数是否符合要求</li>
+<li>用 DFS 找满足各位和为 m 的 K 位数
+<ul>
+<li>参数：这个函数内要填写第几位，要填写什么数字，填好后目前所有位的和</li>
+<li>由主函数从 1-9 选填第 1 位</li>
+<li>进入 DFS 递归过程后，每次填好自己这一位，从 0-9 选填下一位</li>
+<li>递归终止条件：填完 K 位后各位之和刚好等于 m，调用函数检查是否符合要求</li>
+<li><strong>剪枝</strong>
+<ul>
+<li>一开始只注意到若要填的位数超过所要求的位数，或目前各位之和已经超过要求的 m 应当停止递归，但这样会运行超时</li>
+<li>注意当前几位确定下来时，有很多后面几位比较小的数已经不可能满足各位之和为 m 的条件了，所以每次检查，若 目前各位 + 剩余每位均填 9 都不能达到 m，此枝应当被剪掉</li>
+</ul></li>
+</ul></li>
+<li>检查找到的数是否符合要求
+<ul>
+<li>记忆判断素数和最小公约数函数</li>
+<li>每次取到 A 和 A+1，计算好各位之和并求出 gcd，判断是否为素数且 &gt; 2</li>
+<li>检查函数返回值为 int，若符合要求返回 A+1 的各位和，若不符合返回 -1 便于调用方进行判断</li>
+</ul></li>
+</ul>
+<h3 id="ac代码">AC代码</h3>
+<pre class="cpp"><code>#include&lt;iostream&gt;
+#include&lt;vector&gt;
+#include&lt;algorithm&gt;
+using namespace std;
+int k, m;
+char s[10];
+bool issolved;
+struct Data{
+    int sumN;
+    string data;
+};
+vector&lt;Data&gt; result;
+bool cmp(Data a, Data b){ return a.sumN != b.sumN ? a.sumN &lt; b.sumN : a.data &lt; b.data; }
+bool isPrime(int n){
+    if (n &lt;= 1) return false;
+    for (int i = 2; i * i &lt;= n; i++)
+        if (n % i == 0) return false;
+    return true;
+}
+int gcd(int a, int b){ return !b ? a : gcd(b,a%b); }
+int checkF(){
+    int A = stoi(s), B = A+1, sumA = 0, sumB = 0;
+    string Bs = to_string(B);
+    for (int i = 0; i &lt; k; i++) sumA += s[i]-&#39;0&#39;;
+    for (int i = 0; i &lt; k; i++) sumB += Bs[i]-&#39;0&#39;;
+    int d = gcd(sumA,sumB);
+    if (d &gt; 2 &amp;&amp; isPrime(d)) return sumB;
+    else return -1;
+}
+void DFS(int index, int digit, int sumD){
+    if (index &gt; k - 1 || sumD &gt; m) return;
+    if (sumD + 9 * (k - index - 1) &lt; m) return;
+    s[index] = digit + &#39;0&#39;;
+    if (sumD == m &amp;&amp; index == k - 1){
+        if (checkF() &gt;= 0){
+            issolved = true;
+            string data = s;
+            result.push_back({checkF(),data});
+        }
+        return;
+    }
+    for (int i = 0; i &lt; 10; i++) DFS(index+1, i, sumD+i);
+}
+
+int main()
+{
+    int n;
+    scanf(&quot;%d&quot;, &amp;n);
+    for (int i = 1; i &lt; n + 1; i++){
+        scanf(&quot;%d%d&quot;, &amp;k, &amp;m);
+        printf(&quot;Case %d\n&quot;, i);
+        issolved = false;
+        result.clear();
+        for (int j = 1; j &lt; 10; j++) DFS(0,j,j);
+        if (issolved){
+            sort(result.begin(), result.end(), cmp);
+            for (int j = 0; j &lt; result.size(); j++)
+                cout &lt;&lt; result[j].sumN &lt;&lt; &quot; &quot; &lt;&lt; result[j].data &lt;&lt; endl;
+        }
+        else printf(&quot;No Solution\n&quot;);
+    }
+    return 0;
+}</code></pre>
+<h2 id="merging-linked-lists-25-分">7-2 Merging Linked Lists (25 分)</h2>
+<p>Given two singly linked lists <span class="math inline">\(L_1 = a_1 \to a_2 \to ... \to a_{n-1} \to a_n\)</span> and <span class="math inline">\(L_2 = b_1 \to b_2 \to ... \to b_{m-1} \to b_m\)</span>. If <span class="math inline">\(n≥2m\)</span>, you are supposed to reverse and merge the shorter one into the longer one to obtain a list like <span class="math inline">\(a_1 \to a_2 \to b_m \to a_3 \to a_4 \to b_{m-1} ...\)</span> For example, given one list being 6→7 and the other one 1→2→3→4→5, you must output 1→2→7→3→4→6→5.</p>
+<h3 id="input-specification-1">Input Specification</h3>
+<p>Each input file contains one test case. For each case, the first line contains the two addresses of the first nodes of <span class="math inline">\(L_1\)</span> and <span class="math inline">\(L_2\)</span> , plus a positive <span class="math inline">\(N (\le 10^5)\)</span> which is the total number of nodes given. The address of a node is a 5-digit nonnegative integer, and NULL is represented by <code>-1</code>.</p>
+<p>Then N lines follow, each describes a node in the format:</p>
+<pre><code>Address Data Next</code></pre>
+<p>where <code>Address</code> is the position of the node, <code>Data</code> is a positive integer no more than <span class="math inline">\(10^5\)</span>, and <code>Next</code> is the position of the next node. It is guaranteed that no list is empty, and the longer list is at least twice as long as the shorter one.</p>
+<h3 id="output-specification-1">Output Specification</h3>
+<p>For each case, output in order the resulting linked list. Each node occupies a line, and is printed in the same format as in the input.</p>
+<h3 id="sample-input-1">Sample Input</h3>
+<pre><code>00100 01000 7
+02233 2 34891
+00100 6 00001
+34891 3 10086
+01000 1 02233
+00033 5 -1
+10086 4 00033
+00001 7 -1</code></pre>
+<h3 id="sample-output-1">Sample Output</h3>
+<pre><code>01000 1 02233
+02233 2 00001
+00001 7 34891
+34891 3 10086
+10086 4 00100
+00100 6 00033
+00033 5 -1</code></pre>
+<h3 id="题目思路-1">题目思路</h3>
+<ul>
+<li><a href="https://www.cnblogs.com/whale90830/p/11474333.html">静态链表题</a></li>
+<li>接收输入链表后，分别遍历两条链，将结点按链表中的顺序存储在容器中</li>
+<li>按压入两个长链表的结点就压入一个短链表的结点的顺序将结点压入 result 容器</li>
+<li>按要求输出 result 容器中的结点</li>
+<li>注意：读题时想当然的以为要将短链表的结点均匀的并入长链表，其实就是题目里的两长一短即可Orz</li>
+</ul>
+<h3 id="ac代码-1">AC代码</h3>
+<pre class="cpp"><code>#include&lt;iostream&gt;
+#include&lt;vector&gt;
+using namespace std;
+struct Node{
+    int address, data, next;
+} node[100001];
+int main()
+{
+    int head1, head2, n, address, data, next;
+    scanf(&quot;%d%d%d&quot;, &amp;head1, &amp;head2, &amp;n);
+    for (int i = 0; i &lt; n; i++){
+        scanf(&quot;%d%d%d&quot;, &amp;address, &amp;data, &amp;next);
+        node[address] = {address, data, next};
+    }
+    vector&lt;Node&gt; list1, list2, result;
+    for (int p = head1; p != -1; p = node[p].next)
+        list1.push_back(node[p]);
+    for (int p = head2; p != -1; p = node[p].next)
+        list2.push_back(node[p]);
+    if (list1.size() &gt; list2.size()){
+        int j = list2.size() - 1;
+        for (int i = 0; i &lt; list1.size(); i = i + 2){
+            result.push_back(list1[i]);
+            if (i + 1 &lt; list1.size()) result.push_back(list1[i+1]);
+            if (j &gt;= 0) result.push_back(list2[j--]);
+        }
+    }
+    else{
+        int j = list1.size() - 1;
+        for (int i = 0; i &lt; list2.size(); i = i + 2){
+            result.push_back(list2[i]);
+            if (i + 1 &lt; list2.size()) result.push_back(list2[i+1]);
+            if (j &gt;= 0) result.push_back(list1[j--]);
+        }
+    }
+    for (int i = 0; i + 1 &lt; result.size(); i++)
+        printf(&quot;%05d %d %05d\n&quot;, result[i].address, result[i].data, result[i+1].address);
+    printf(&quot;%05d %d -1\n&quot;, result[result.size()-1].address, result[result.size()-1].data);
+    return 0;
+}</code></pre>
+<h2 id="postfix-expression-25-分">7-3 Postfix Expression (25 分)</h2>
+<p>Given a syntax tree (binary), you are supposed to output the corresponding postfix expression, with parentheses reflecting the precedences of the operators.</p>
+<h3 id="input-specification-2">Input Specification</h3>
+<p>Each input file contains one test case. For each case, the first line gives a positive integer <span class="math inline">\(N (≤ 20)\)</span> which is the total number of nodes in the syntax tree. Then N lines follow, each gives the information of a node (the i-th line corresponds to the i-th node) in the format:</p>
+<pre><code>data left_child right_child</code></pre>
+<p>where <code>data</code> is a string of no more than 10 characters, <code>left_child</code> and <code>right_child</code> are the indices of this node's left and right children, respectively. The nodes are indexed from 1 to N. The NULL link is represented by −1. The figures 1 and 2 correspond to the samples 1 and 2, respectively.</p>
+<p><img src="./images/2019秋季PAT甲级_C++题解0.png" alt="image" /><br />
+<img src="./images/2019秋季PAT甲级_C++题解1.png" alt="image" /></p>
+<h3 id="output-specification-2">Output Specification</h3>
+<p>For each case, print in a line the postfix expression, with parentheses reflecting the precedences of the operators.There must be no space between any symbols.</p>
+<h3 id="sample-input-1-1">Sample Input 1</h3>
+<pre><code>8
+* 8 7
+a -1 -1
+* 4 1
++ 2 5
+b -1 -1
+d -1 -1
+- -1 6
+c -1 -1</code></pre>
+<h3 id="sample-output-1-1">Sample Output 1</h3>
+<pre><code>(((a)(b)+)((c)(-(d))*)*)</code></pre>
+<h3 id="sample-input-2">Sample Input 2</h3>
+<pre><code>8
+2.35 -1 -1
+* 6 1
+- -1 4
+% 7 8
++ 2 3
+a -1 -1
+str -1 -1
+871 -1 -1</code></pre>
+<h3 id="sample-output-2">Sample Output 2</h3>
+<pre><code>(((a)(2.35)*)(-((str)(871)%))+)</code></pre>
+<h3 id="题目思路-2">题目思路</h3>
+<ul>
+<li>题库 <a href="https://pintia.cn/problem-sets/994805342720868352/problems/994805347921805312">1130 Infix Expression (25 分)</a></li>
+<li>输入每个结点的左右孩子来建树，用 bool 数组记录结点是否在其他结点的孩子结点中出现过，都没有出现过的即为根结点</li>
+<li>在后序遍历基础上要添加括号来表示优先级</li>
+<li>一般是每进入一个子树，就用括号将这个子树括起来，然后递归进入左子树和右子树，递归返回后输出根节点内容</li>
+<li><strong>注意</strong>：表达式中会出现 正负号，此时不能在子结点返回后才输出正负号——特判：当结点左子树为空而右子树不为空时，先输出根节点内容，再进入右子树</li>
+</ul>
+<h3 id="ac代码-2">AC代码</h3>
+<pre class="cpp"><code>#include&lt;iostream&gt;
+using namespace std;
+struct Node{
+    string data;
+    int lchild, rchild;
+} node[21];
+bool occured[21] = {false};
+void postorder(int root){
+    cout &lt;&lt; &quot;(&quot;;
+    if (node[root].lchild == -1 &amp;&amp; node[root].rchild != -1){
+        cout &lt;&lt; node[root].data;
+        postorder(node[root].rchild);
+        cout &lt;&lt; &quot;)&quot;;
+    }
+    else{
+        if (node[root].lchild != -1) postorder(node[root].lchild);
+        if (node[root].rchild != -1) postorder(node[root].rchild);
+        cout &lt;&lt; node[root].data &lt;&lt; &quot;)&quot;;
+    }
+}
+int main()
+{
+    int n, root;
+    string data;
+    scanf(&quot;%d&quot;, &amp;n);
+    for (int i = 1; i &lt; n + 1; i++){
+        cin &gt;&gt; node[i].data &gt;&gt; node[i].lchild &gt;&gt; node[i].rchild;
+        if (node[i].lchild != -1) occured[node[i].lchild] = true;
+        if (node[i].rchild != -1) occured[node[i].rchild] = true;
+    }
+    for (root = 1; root &lt; n + 1 &amp;&amp; occured[root]; root++);
+    postorder(root);
+    return 0;
+}</code></pre>
+<h2 id="dijkstra-sequence-30-分">7-4 Dijkstra Sequence (30 分)</h2>
+<p>Dijkstra's algorithm is one of the very famous greedy algorithms. It is used for solving the single source shortest path problem which gives the shortest paths from one particular source vertex to all the other vertices of the given graph. It was conceived by computer scientist Edsger W. Dijkstra in 1956 and published three years later.</p>
+<p>In this algorithm, a set contains vertices included in shortest path tree is maintained. During each step, we find one vertex which is not yet included and has a minimum distance from the source, and collect it into the set. Hence step by step an ordered sequence of vertices, let's call it <strong>Dijkstra sequence</strong>, is generated by Dijkstra's algorithm.</p>
+<p>On the other hand, for a given graph, there could be more than one Dijkstra sequence. For example, both { 5, 1, 3, 4, 2 } and { 5, 3, 1, 2, 4 } are Dijkstra sequences for the graph, where 5 is the source. Your job is to check whether a given sequence is Dijkstra sequence or not.</p>
+<h3 id="input-specification-3">Input Specification</h3>
+<p>Each input file contains one test case. For each case, the first line contains two positive integers <span class="math inline">\(N_v(\le 10^3)\)</span> and <span class="math inline">\(N_e(\le 10^5)\)</span>, which are the total numbers of vertices and edges, respectively. Hence the vertices are numbered from 1 to <span class="math inline">\(N_v\)</span></p>
+<p>Then <span class="math inline">\(N_e\)</span> lines follow, each describes an edge by giving the indices of the vertices at the two ends, followed by a positive integer weight (≤100) of the edge. It is guaranteed that the given graph is connected.</p>
+<p>Finally the number of queries, K, is given as a positive integer no larger than 100, followed by K lines of sequences, each contains a permutationof the <span class="math inline">\(N_v\)</span> vertices. It is assumed that the first vertex is the source for each sequence.</p>
+<p>All the inputs in a line are separated by a space.</p>
+<h3 id="output-specification-3">Output Specification</h3>
+<p>For each of the K sequences, print in a line <code>Yes</code> if it is a Dijkstra sequence, or <code>No</code> if not.</p>
+<h3 id="sample-input-3">Sample Input</h3>
+<pre><code>5 7
+1 2 2
+1 5 1
+2 3 1
+2 4 1
+2 5 2
+3 5 1
+3 4 1
+4
+5 1 3 4 2
+5 3 1 2 4
+2 3 4 5 1
+3 2 1 5 4</code></pre>
+<h3 id="sample-output-3">Sample Output</h3>
+<pre><code>Yes
+Yes
+Yes
+No</code></pre>
+<h3 id="题目思路-3">题目思路</h3>
+<ul>
+<li><strong>注意审题</strong> Orz：检查序列是否为 Dijkstra 过程中 每次找到 距离原点最近 用于更新相邻点 的 中介点 的 序列</li>
+<li>Dijkstra 每次找目前距原点最近的点，若有几个距离相同的会取其中一个，但其实先检查另外几个点也可</li>
+<li><a href="https://www.cnblogs.com/whale90830/p/11493567.html">整体模板还是用 Dijkstra</a>，每次循环检查 query 的一位
+<ul>
+<li>查 当前距离原点最近 的 未访问点 与原点的距离</li>
+<li>看 与当前位的 query 中的点 到原点的距离是否符合</li>
+<li>若符合，则以 query 当前点为中介 更新邻接点距原点的距离</li>
+<li>若不符合，说明此时不应当以 query 当前点为中介继续 Dijkstra，即此 query 非所要求的 Dijkstra sequence，返回 false</li>
+</ul></li>
+</ul>
+<h3 id="ac代码-3">AC代码</h3>
+<pre class="cpp"><code>#include&lt;iostream&gt;
+using namespace std;
+const int INF = 0x3fffffff;
+int n, G[1001][1001], d[1001], query[1001];
+bool Dijkstra(int root){
+    fill(d, d+1001, INF);
+    bool vis[1001] = {false};
+    d[root] = 0;
+    for (int i = 0; i &lt; n; i++){
+        int u, min = INF;
+        for (int j = 1; j &lt; n + 1; j++)
+            if (d[j] &lt; min &amp;&amp; !vis[j])
+                min = d[j];
+        if (d[query[i]] == min) u = query[i];
+        else return false;
+        vis[u] = true;
+        for (int j = 1; j &lt; n + 1; j++)
+            if (G[u][j] &amp;&amp; !vis[j] &amp;&amp; d[j] &gt; d[u] + G[u][j])
+                d[j] = d[u] + G[u][j];
+    }
+    return true;
+}
+int main()
+{
+    int m, u, v, distance, k;
+    scanf(&quot;%d%d&quot;, &amp;n, &amp;m);
+    for (int i = 0; i &lt; m; i++){
+        scanf(&quot;%d%d%d&quot;, &amp;u, &amp;v, &amp;distance);
+        G[u][v] = G[v][u] = distance;
+    }
+    scanf(&quot;%d&quot;,&amp;k);
+    for (int i = 0; i &lt; k; i++){
+        for (int j = 0; j &lt; n; j++) scanf(&quot;%d&quot;, &amp;query[j]);
+        bool isD = Dijkstra(query[0]);
+        printf(&quot;%s\n&quot;, isD ? &quot;Yes&quot; : &quot;No&quot;);
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

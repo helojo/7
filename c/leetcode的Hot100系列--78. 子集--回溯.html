@@ -1,0 +1,139 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修leetcode的Hot100系列--78. 子集--回溯' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>leetcode的Hot100系列--78. 子集--回溯</center></div><div class='banquan'>原文出处:本文由博客园博主努力爬呀爬提供。<br/>
+原文连接:https://www.cnblogs.com/payapa/p/11129876.html</div><br>
+    <p>上一篇说了使用位运算来进行子集输出，这里使用回溯的方法来进行排序。<br />
+回溯的思想，我的理解就是：</p>
+<blockquote>
+<p>把解的所有情况转换为树或者图，然后用深度优先的原则来对所有的情况进行遍历解析。</p>
+</blockquote>
+<p>当然，因为问题中会包涵这各种各样的限制条件，我们可以用这些限制条件去减少遍历的分支。<br />
+其实，比较著名的就是0-1背包问题，这个背包问题之后再说，这里先看排列组合。</p>
+<p>假设我们的数组为[6,7,8]，依然使用0来表示当前数字不存在，用1来表示当前数字存在，我们就可以画出这样一个树：<br />
+<img src="./images/leetcode的Hot100系列--78. 子集--回溯0.png" /></p>
+<p>这里使用递归来生成对应的flag标记，重点是backtrack函数:</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+
+int x[] = {6,7,8};   // 需要排列的数组
+int y[] = {0,0,0};   // 存放flag标记
+int level = 3;       // 有3个数字需要进行排列，对应的就需要排3层
+
+void show()
+{
+    for (int i=0; i&lt;level; i++)
+    {
+        printf(&quot;flag : %d &quot;, y[i]);
+    }
+    printf(&quot;\n&quot;);
+}
+
+void backtrack (int t)
+{
+    if (t == level)   // 当遍历深度等于level的时候，说明遍历完成，得到一组完整的flag标记
+        show();
+    else  
+        for (int i=0;i&lt;=1;i++)   // 这里先生成0标记，再生成1标记
+        {
+            y[t]=i;            //  记录当前层是否存在，0存在，1不存在
+            backtrack(t+1);   // 递归遍历下一层，这里可以根据题目限制来判断是否需要继续下一层的遍历，可以减少遍历次数
+        }
+}
+
+int main(void)
+{
+    backtrack(0);
+    return 0;
+}
+
+输出结果为：
+0 0 0 
+0 0 1 
+0 1 0 
+0 1 1 
+1 0 0 
+1 0 1 
+1 1 0 
+1 1 1 </code></code></pre>
+<p>回溯的基本就那么一个思想，那限制条件怎么用呢？<br />
+比如，我有10元钱，这里有三个物品，价格分别是8元，5元，2元，10元，<br />
+问，这10元钱可以有哪些买法？<br />
+这里存在的一个限制就是：总数不能超过10。</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+
+#define TOTAL 10  // 总数最多为10
+
+int x[] = {8,5,2,10};  // 价格
+int y[] = {0,0,0,0};
+int level = 4;
+
+void show()
+{
+    int n=0;
+    for (int i=0; i&lt;level; i++)   // 计算总价格是否超过10
+    {
+        n += y[i] * x[i];
+    }
+    if (TOTAL &lt; n)
+    {
+        return;
+    }
+    for (int i=0; i&lt;level; i++)   // 这里直接打印符合条件的价格
+    {
+        printf(&quot;%d &quot;, y[i]*x[i]);
+    }
+    printf(&quot;\n&quot;);
+}
+
+void backtrack (int t)
+{
+    if (t == level)
+        show();
+    else  
+        for (int i=0;i&lt;=1;i++) 
+        {
+            y[t]=i;
+            int n = 0;
+            for (int j=0; j&lt;t; j++)  // 这里先计算一下当前价格是多少
+            {
+                n = y[j] * x[j];
+            }
+            if (TOTAL &gt; n)       // 如果当前价格已经超了，就不需要再递归下一层(因为不论下一层是否存在，总价格必然会超)，否则继续递归
+                backtrack(t+1);
+        }
+}
+
+int main()
+{
+    backtrack(0);
+    return 0;
+}
+结果为：
+0 0 0 0 
+0 0 0 10 
+0 0 2 0 
+0 5 0 0 
+0 5 2 0 
+8 0 0 0 
+8 0 2 0 </code></code></pre>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

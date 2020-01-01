@@ -1,0 +1,366 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Delphi - 采用第三方控件TMS、SPComm开发串口调试助手' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Delphi - 采用第三方控件TMS、SPComm开发串口调试助手</center></div><div class='banquan'>原文出处:本文由博客园博主Jeremy.Wu提供。<br/>
+原文连接:https://www.cnblogs.com/jeremywucnblog/p/11452396.html</div><br>
+    <p><strong>第三方控件TMS、SPComm的下载与安装</strong></p>
+<p>盒子上可搜索关键字进行下载，TMS是.dpk文件，SPComm.pas文件；</p>
+<p>安装方法自行百度，不做赘述。</p>
+<p>&nbsp;</p>
+<p><strong>通过TMS控件进行界面布局</strong></p>
+<p>界面预览：</p>
+<p><img src="./images/Delphi - 采用第三方控件TMS、SPComm开发串口调试助手0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p><strong>Delphi通过SPComm连接串口、发送和接收指令</strong></p>
+<p><span style="text-decoration: underline;"><em><strong>连接串口</strong></em></span></p>
+<p>拖一个TComm控件到主窗体上，选中控件，单击F11，完成如下配置。</p>
+<p>这里主要是将一些布尔类型的属性设置成False，其他属性在前台连接按钮事件下动态设置。&nbsp;</p>
+<p><img src="./images/Delphi - 采用第三方控件TMS、SPComm开发串口调试助手1.png" alt="" /></p>
+<p><img src="./images/Delphi - 采用第三方控件TMS、SPComm开发串口调试助手2.png" alt="" /></p>
+<p>连接代码如下，这里需要特别主意一下：</p>
+<p><span style="background-color: #00ff00;"><strong>当串口参数超过COM9（即COM10、COM11、COM12...）的时候，SPComm单元中有此BUG，ComName这里不可以直接赋值，需要做如下处理。</strong></span></p>
+<p>CommName := <span data-mce-="">'<span data-mce-="">//./<span data-mce-="">' +<span data-mce-=""> cbbCOM.Text; </span></span></span></span>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span data-mce-=""> 1 <span data-mce-="">procedure<span data-mce-=""> TMainFrm.advBtnConnectClick(Sender: TObject);
+<span data-mce-=""> 2 <span data-mce-="">var
+<span data-mce-=""> 3   serialPortNO: <span data-mce-="">string<span data-mce-="">;
+<span data-mce-=""> 4 <span data-mce-="">begin
+<span data-mce-=""> 5   <span data-mce-="">try
+<span data-mce-=""> 6     <span data-mce-="">with comMain <span data-mce-="">do
+<span data-mce-=""> 7     <span data-mce-="">begin
+<span data-mce-=""> 8 <span data-mce-="">      StopComm;
+<span data-mce-=""> 9       serialPortNO := Copy(cbbCOM.Text, <span data-mce-="">4, Length(cbbCOM.Text) - <span data-mce-="">3<span data-mce-="">);
+<span data-mce-="">10       BaudRate :=<span data-mce-=""> StrToInt(cbbBaudRate.Text);
+<span data-mce-="">11 <span data-mce-="">//<span data-mce-="">      ByteSize := TByteSize(cbbByteSize.ItemIndex);
+<span data-mce-="">12 <span data-mce-="">//<span data-mce-="">      StopBits := TStopBits(cbbStopBit.ItemIndex);
+<span data-mce-="">13 <span data-mce-="">//<span data-mce-="">      Parity := TParity(cbbCheckBit.ItemIndex);
+<span data-mce-="">14       <span data-mce-="">if StrToInt(serialPortNO) &gt; <span data-mce-="">9 <span data-mce-="">then
+<span data-mce-="">15       <span data-mce-="">begin
+<span data-mce-="">16         CommName := <span data-mce-="">'<span data-mce-="">//./<span data-mce-="">' +<span data-mce-=""> cbbCOM.Text;
+<span data-mce-="">17       <span data-mce-="">end
+<span data-mce-="">18       <span data-mce-="">else
+<span data-mce-="">19       <span data-mce-="">begin
+<span data-mce-="">20         CommName :=<span data-mce-=""> cbbCOM.Text;
+<span data-mce-="">21       <span data-mce-="">end<span data-mce-="">;
+<span data-mce-="">22 <span data-mce-="">      comMain.StartComm;
+<span data-mce-="">23       connectStatus.Caption := <span data-mce-="">'<span data-mce-="">Connected<span data-mce-="">'<span data-mce-="">;
+<span data-mce-="">24       connectStatus.FillColor :=<span data-mce-=""> clLime;
+<span data-mce-="">25       advBtnConnect.Enabled :=<span data-mce-=""> False;
+<span data-mce-="">26       gbSendMsg.Enabled :=<span data-mce-=""> True;
+<span data-mce-="">27     <span data-mce-="">end<span data-mce-="">;
+<span data-mce-="">28   <span data-mce-="">except
+<span data-mce-="">29     connectStatus.Caption := <span data-mce-="">'<span data-mce-="">Not Connected<span data-mce-="">'<span data-mce-="">;
+<span data-mce-="">30     connectStatus.FillColor :=<span data-mce-=""> clRed;
+<span data-mce-="">31     gbSendMsg.Enabled :=<span data-mce-=""> False;
+<span data-mce-="">32   <span data-mce-="">end<span data-mce-="">;
+<span data-mce-="">33 
+<span data-mce-="">34 <span data-mce-="">end;</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="text-decoration: underline;"><em><strong><span data-mce-=""><span data-mce-=""><span data-mce-=""><span data-mce-="">发送指令</span></span></span></span></strong></em></span></p>
+<p>WriteCommData();&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TMainFrm.advBtnConfirmClick(Sender: TObject);
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 3</span>   <span style="color: #0000ff;">if</span> mmSendMsg.Lines.Count &lt;= <span style="color: #800080;">0</span> <span style="color: #0000ff;">then</span>
+<span style="color: #008080;"> 4</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 5</span>     Application.MessageBox(<span style="color: #800000;">'</span><span style="color: #800000;">There is no key word, please check the MsgSendList,thanks.</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">Error Information</span><span style="color: #800000;">'</span>, MB_OK +<span style="color: #000000;"> MB_ICONSTOP);
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    mmSendMsg.SetFocus;
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">    Exit;
+</span><span style="color: #008080;"> 8</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span>   <span style="color: #0000ff;">if</span> cbByte.Checked <span style="color: #0000ff;">then</span>
+<span style="color: #008080;">10</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">11</span> <span style="color: #000000;">    SendHex(mmSendMsg.Text);
+</span><span style="color: #008080;">12</span>   <span style="color: #0000ff;">end</span>
+<span style="color: #008080;">13</span>   <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">14</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">15</span> <span style="color: #000000;">    comMain.WriteCommData(PChar(mmSendMsg.Text), Length(mmSendMsg.Text));
+</span><span style="color: #008080;">16</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">17</span>   <span style="color: #0000ff;">if</span> (cbAutoSend.Checked) <span style="color: #0000ff;">and</span> (edtTime.Text &lt;&gt; <span style="color: #800000;">''</span>) <span style="color: #0000ff;">and</span> (cbByte.Checked) <span style="color: #0000ff;">then</span>
+<span style="color: #008080;">18</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">19</span>     timerMain.Interval :=<span style="color: #000000;"> StrToInt(edtTime.Text);
+</span><span style="color: #008080;">20</span>     timerMain.Enabled :=<span style="color: #000000;"> True;
+</span><span style="color: #008080;">21</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">22</span> <span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p>SendHex函数&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">procedure</span> TMainFrm.SendHex(S: <span style="color: #0000ff;">string</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;"> 3</span>   s2: <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 4</span>   buf1: <span style="color: #0000ff;">array</span>[<span style="color: #800080;">0</span>..<span style="color: #800080;">50000</span>] <span style="color: #0000ff;">of</span><span style="color: #000000;"> char;
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">  i: integer;
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 7</span>   s2 := <span style="color: #800000;">''</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 8</span>   <span style="color: #0000ff;">for</span> i := <span style="color: #800080;">1</span> <span style="color: #0000ff;">to</span> length(s) <span style="color: #0000ff;">do</span>
+<span style="color: #008080;"> 9</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">10</span>     <span style="color: #0000ff;">if</span> ((copy(s, i, <span style="color: #800080;">1</span>) &gt;= <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">and</span> (copy(s, i, <span style="color: #800080;">1</span>) &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span>)) <span style="color: #0000ff;">or</span> ((copy(s, i, <span style="color: #800080;">1</span>) &gt;= <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">and</span> (copy(s, i, <span style="color: #800080;">1</span>) &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">f</span><span style="color: #800000;">'</span><span style="color: #000000;">))
+</span><span style="color: #008080;">11</span>       <span style="color: #0000ff;">or</span> ((copy(s, i, <span style="color: #800080;">1</span>) &gt;= <span style="color: #800000;">'</span><span style="color: #800000;">A</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">and</span> (copy(s, i, <span style="color: #800080;">1</span>) &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">F</span><span style="color: #800000;">'</span>)) <span style="color: #0000ff;">then</span>
+<span style="color: #008080;">12</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">13</span>       s2 := s2 + copy(s, i, <span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">15</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span>   <span style="color: #0000ff;">for</span> i := <span style="color: #800080;">0</span> <span style="color: #0000ff;">to</span> (length(s2) <span style="color: #0000ff;">div</span> <span style="color: #800080;">2</span> - <span style="color: #800080;">1</span>) <span style="color: #0000ff;">do</span>
+<span style="color: #008080;">17</span>     buf1[i] := char(strtoint(<span style="color: #800000;">'</span><span style="color: #800000;">$</span><span style="color: #800000;">'</span> + copy(s2, i * <span style="color: #800080;">2</span> + <span style="color: #800080;">1</span>, <span style="color: #800080;">2</span><span style="color: #000000;">)));
+</span><span style="color: #008080;">18</span>   comMain.WriteCommData(buf1, (length(s2) <span style="color: #0000ff;">div</span> <span style="color: #800080;">2</span><span style="color: #000000;">));
+</span><span style="color: #008080;">19</span>   mmMsg.Lines.Add(<span style="color: #800000;">'</span><span style="color: #800000;">MsgSend[</span><span style="color: #800000;">'</span> + S + <span style="color: #800000;">'</span><span style="color: #800000;">]</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">20</span> <span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p><strong><em><span style="text-decoration: underline;">接收指令</span></em></strong></p>
+<p>选中控件，添加OnReceiveError事件，代码如下。</p>
+<p><strong><em><span style="text-decoration: underline;"><img src="./images/Delphi - 采用第三方控件TMS、SPComm开发串口调试助手3.png" alt="" /></span></em></strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TMainFrm.comMainReceiveData(Sender: TObject; Buffer: Pointer;
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">  BufferLength: Word);
+</span><span style="color: #008080;"> 3</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;"> 4</span>   S: <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">  I, L: INTEGER;
+</span><span style="color: #008080;"> 6</span>   RBUF: <span style="color: #0000ff;">array</span>[<span style="color: #800080;">0</span>..<span style="color: #800080;">2048</span>] <span style="color: #0000ff;">of</span><span style="color: #000000;"> BYTE;
+</span><span style="color: #008080;"> 7</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 8</span> <span style="color: #000000;">  Move(Buffer^, pchar(@rbuf)^, BufferLength);
+</span><span style="color: #008080;"> 9</span>   L :=<span style="color: #000000;"> BufferLength;
+</span><span style="color: #008080;">10</span>   <span style="color: #0000ff;">for</span> I := <span style="color: #800080;">0</span> <span style="color: #0000ff;">to</span> L - <span style="color: #800080;">1</span> <span style="color: #0000ff;">do</span>
+<span style="color: #008080;">11</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">12</span>     S := S + INTTOHEX(RBUF[I], <span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">13</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">14</span>   mmMsg.Lines.Add(<span style="color: #800000;">'</span><span style="color: #800000;">MsgReceived[</span><span style="color: #800000;">'</span> + S + <span style="color: #800000;">'</span><span style="color: #800000;">]</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">15</span> <span style="color: #0000ff;">end</span>;</pre>
+</div>
+<p><strong>断开串口连接</strong></p>
+<p>comMain.StopComm；</p>
+<p><strong>附录</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> <span style="color: #0000ff;">unit</span><span style="color: #000000;"> uMain;
+</span><span style="color: #008080;">  2</span> 
+<span style="color: #008080;">  3</span> <span style="color: #0000ff;">interface</span>
+<span style="color: #008080;">  4</span> 
+<span style="color: #008080;">  5</span> <span style="color: #0000ff;">uses</span>
+<span style="color: #008080;">  6</span> <span style="color: #000000;">  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+</span><span style="color: #008080;">  7</span> <span style="color: #000000;">  Dialogs, StdCtrls, ExtCtrls, SPComm, RzPanel, AdvSmoothButton,
+</span><span style="color: #008080;">  8</span> <span style="color: #000000;">  AdvSmoothStatusIndicator, AdvGlassButton, RzButton, RzRadChk, RzStatus,
+</span><span style="color: #008080;">  9</span> <span style="color: #000000;">  RzPrgres;
+</span><span style="color: #008080;"> 10</span> 
+<span style="color: #008080;"> 11</span> <span style="color: #0000ff;">type</span>
+<span style="color: #008080;"> 12</span>   TMainFrm = <span style="color: #0000ff;">class</span><span style="color: #000000;">(TForm)
+</span><span style="color: #008080;"> 13</span> <span style="color: #000000;">    gbSerialParams: TRzGroupBox;
+</span><span style="color: #008080;"> 14</span> <span style="color: #000000;">    gbMsg: TRzGroupBox;
+</span><span style="color: #008080;"> 15</span> <span style="color: #000000;">    mmMsg: TMemo;
+</span><span style="color: #008080;"> 16</span> <span style="color: #000000;">    gbPortSet: TRzGroupBox;
+</span><span style="color: #008080;"> 17</span> <span style="color: #000000;">    gbSendMsg: TRzGroupBox;
+</span><span style="color: #008080;"> 18</span> <span style="color: #000000;">    lbCom: TLabel;
+</span><span style="color: #008080;"> 19</span> <span style="color: #000000;">    lbStopBit: TLabel;
+</span><span style="color: #008080;"> 20</span> <span style="color: #000000;">    lbByteSize: TLabel;
+</span><span style="color: #008080;"> 21</span> <span style="color: #000000;">    lbCheckBit: TLabel;
+</span><span style="color: #008080;"> 22</span> <span style="color: #000000;">    lbBaudRate: TLabel;
+</span><span style="color: #008080;"> 23</span> <span style="color: #000000;">    comMain: TComm;
+</span><span style="color: #008080;"> 24</span> <span style="color: #000000;">    cbbCOM: TComboBox;
+</span><span style="color: #008080;"> 25</span> <span style="color: #000000;">    cbbStopBit: TComboBox;
+</span><span style="color: #008080;"> 26</span> <span style="color: #000000;">    cbbByteSize: TComboBox;
+</span><span style="color: #008080;"> 27</span> <span style="color: #000000;">    cbbBaudRate: TComboBox;
+</span><span style="color: #008080;"> 28</span> <span style="color: #000000;">    cbbCheckBit: TComboBox;
+</span><span style="color: #008080;"> 29</span> <span style="color: #000000;">    gbMsgSendParams: TRzGroupBox;
+</span><span style="color: #008080;"> 30</span> <span style="color: #000000;">    gbMsgSendList: TRzGroupBox;
+</span><span style="color: #008080;"> 31</span> <span style="color: #000000;">    cbByte: TRzCheckBox;
+</span><span style="color: #008080;"> 32</span> <span style="color: #000000;">    cbAutoSend: TRzCheckBox;
+</span><span style="color: #008080;"> 33</span> <span style="color: #000000;">    lbCT: TLabel;
+</span><span style="color: #008080;"> 34</span> <span style="color: #000000;">    edtTime: TEdit;
+</span><span style="color: #008080;"> 35</span> <span style="color: #000000;">    advBtnConfirm: TAdvGlassButton;
+</span><span style="color: #008080;"> 36</span> <span style="color: #000000;">    advBtnConnect: TAdvGlassButton;
+</span><span style="color: #008080;"> 37</span> <span style="color: #000000;">    AdvGlassButton1: TAdvGlassButton;
+</span><span style="color: #008080;"> 38</span> <span style="color: #000000;">    lbMs: TLabel;
+</span><span style="color: #008080;"> 39</span> <span style="color: #000000;">    mmSendMsg: TMemo;
+</span><span style="color: #008080;"> 40</span> <span style="color: #000000;">    statusBar: TRzStatusBar;
+</span><span style="color: #008080;"> 41</span> <span style="color: #000000;">    clock: TRzClockStatus;
+</span><span style="color: #008080;"> 42</span> <span style="color: #000000;">    versionStatus: TRzVersionInfoStatus;
+</span><span style="color: #008080;"> 43</span> <span style="color: #000000;">    mqStatus: TRzMarqueeStatus;
+</span><span style="color: #008080;"> 44</span> <span style="color: #000000;">    progressBar: TRzProgressBar;
+</span><span style="color: #008080;"> 45</span> <span style="color: #000000;">    connectStatus: TRzStatusPane;
+</span><span style="color: #008080;"> 46</span> <span style="color: #000000;">    timerMain: TTimer;
+</span><span style="color: #008080;"> 47</span>     <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> advBtnConnectClick(Sender: TObject);
+</span><span style="color: #008080;"> 48</span>     <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> comMainReceiveData(Sender: TObject; Buffer: Pointer;
+</span><span style="color: #008080;"> 49</span> <span style="color: #000000;">      BufferLength: Word);
+</span><span style="color: #008080;"> 50</span>     <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> advBtnConfirmClick(Sender: TObject);
+</span><span style="color: #008080;"> 51</span>     <span style="color: #0000ff;">procedure</span> SendHex(S: <span style="color: #0000ff;">string</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 52</span>     <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> AdvGlassButton1Click(Sender: TObject);
+</span><span style="color: #008080;"> 53</span>     <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> timerMainTimer(Sender: TObject);
+</span><span style="color: #008080;"> 54</span>   <span style="color: #0000ff;">private</span>
+<span style="color: #008080;"> 55</span>     <span style="color: #008000;">{</span><span style="color: #008000;"> Private declarations </span><span style="color: #008000;">}</span>
+<span style="color: #008080;"> 56</span>   <span style="color: #0000ff;">public</span>
+<span style="color: #008080;"> 57</span>     <span style="color: #008000;">{</span><span style="color: #008000;"> Public declarations </span><span style="color: #008000;">}</span>
+<span style="color: #008080;"> 58</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 59</span> 
+<span style="color: #008080;"> 60</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;"> 61</span> <span style="color: #000000;">  MainFrm: TMainFrm;
+</span><span style="color: #008080;"> 62</span> 
+<span style="color: #008080;"> 63</span> <span style="color: #0000ff;">implementation</span>
+<span style="color: #008080;"> 64</span> 
+<span style="color: #008080;"> 65</span> <span style="color: #008000;">{</span><span style="color: #008000;">$R *.dfm</span><span style="color: #008000;">}</span>
+<span style="color: #008080;"> 66</span> 
+<span style="color: #008080;"> 67</span> <span style="color: #0000ff;">procedure</span> TMainFrm.SendHex(S: <span style="color: #0000ff;">string</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 68</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;"> 69</span>   s2: <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 70</span>   buf1: <span style="color: #0000ff;">array</span>[<span style="color: #800080;">0</span>..<span style="color: #800080;">50000</span>] <span style="color: #0000ff;">of</span><span style="color: #000000;"> char;
+</span><span style="color: #008080;"> 71</span> <span style="color: #000000;">  i: integer;
+</span><span style="color: #008080;"> 72</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 73</span>   s2 := <span style="color: #800000;">''</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 74</span>   <span style="color: #0000ff;">for</span> i := <span style="color: #800080;">1</span> <span style="color: #0000ff;">to</span> length(s) <span style="color: #0000ff;">do</span>
+<span style="color: #008080;"> 75</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 76</span>     <span style="color: #0000ff;">if</span> ((copy(s, i, <span style="color: #800080;">1</span>) &gt;= <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">and</span> (copy(s, i, <span style="color: #800080;">1</span>) &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span>)) <span style="color: #0000ff;">or</span> ((copy(s, i, <span style="color: #800080;">1</span>) &gt;= <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">and</span> (copy(s, i, <span style="color: #800080;">1</span>) &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">f</span><span style="color: #800000;">'</span><span style="color: #000000;">))
+</span><span style="color: #008080;"> 77</span>       <span style="color: #0000ff;">or</span> ((copy(s, i, <span style="color: #800080;">1</span>) &gt;= <span style="color: #800000;">'</span><span style="color: #800000;">A</span><span style="color: #800000;">'</span>) <span style="color: #0000ff;">and</span> (copy(s, i, <span style="color: #800080;">1</span>) &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">F</span><span style="color: #800000;">'</span>)) <span style="color: #0000ff;">then</span>
+<span style="color: #008080;"> 78</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 79</span>       s2 := s2 + copy(s, i, <span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 80</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 81</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 82</span>   <span style="color: #0000ff;">for</span> i := <span style="color: #800080;">0</span> <span style="color: #0000ff;">to</span> (length(s2) <span style="color: #0000ff;">div</span> <span style="color: #800080;">2</span> - <span style="color: #800080;">1</span>) <span style="color: #0000ff;">do</span>
+<span style="color: #008080;"> 83</span>     buf1[i] := char(strtoint(<span style="color: #800000;">'</span><span style="color: #800000;">$</span><span style="color: #800000;">'</span> + copy(s2, i * <span style="color: #800080;">2</span> + <span style="color: #800080;">1</span>, <span style="color: #800080;">2</span><span style="color: #000000;">)));
+</span><span style="color: #008080;"> 84</span>   comMain.WriteCommData(buf1, (length(s2) <span style="color: #0000ff;">div</span> <span style="color: #800080;">2</span><span style="color: #000000;">));
+</span><span style="color: #008080;"> 85</span>   mmMsg.Lines.Add(<span style="color: #800000;">'</span><span style="color: #800000;">MsgSend[</span><span style="color: #800000;">'</span> + S + <span style="color: #800000;">'</span><span style="color: #800000;">]</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 86</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 87</span> 
+<span style="color: #008080;"> 88</span> 
+<span style="color: #008080;"> 89</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TMainFrm.advBtnConnectClick(Sender: TObject);
+</span><span style="color: #008080;"> 90</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;"> 91</span>   serialPortNO: <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 92</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 93</span>   <span style="color: #0000ff;">try</span>
+<span style="color: #008080;"> 94</span>     <span style="color: #0000ff;">with</span> comMain <span style="color: #0000ff;">do</span>
+<span style="color: #008080;"> 95</span>     <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;"> 96</span> <span style="color: #000000;">      StopComm;
+</span><span style="color: #008080;"> 97</span>       serialPortNO := Copy(cbbCOM.Text, <span style="color: #800080;">4</span>, Length(cbbCOM.Text) - <span style="color: #800080;">3</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 98</span>       BaudRate :=<span style="color: #000000;"> StrToInt(cbbBaudRate.Text);
+</span><span style="color: #008080;"> 99</span> <span style="color: #008000;">//</span><span style="color: #008000;">      ByteSize := TByteSize(cbbByteSize.ItemIndex);</span>
+<span style="color: #008080;">100</span> <span style="color: #008000;">//</span><span style="color: #008000;">      StopBits := TStopBits(cbbStopBit.ItemIndex);</span>
+<span style="color: #008080;">101</span> <span style="color: #008000;">//</span><span style="color: #008000;">      Parity := TParity(cbbCheckBit.ItemIndex);</span>
+<span style="color: #008080;">102</span>       <span style="color: #0000ff;">if</span> StrToInt(serialPortNO) &gt; <span style="color: #800080;">9</span> <span style="color: #0000ff;">then</span>
+<span style="color: #008080;">103</span>       <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">104</span>         CommName := <span style="color: #800000;">'</span><span style="color: #800000;">//./</span><span style="color: #800000;">'</span> +<span style="color: #000000;"> cbbCOM.Text;
+</span><span style="color: #008080;">105</span>       <span style="color: #0000ff;">end</span>
+<span style="color: #008080;">106</span>       <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">107</span>       <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">108</span>         CommName :=<span style="color: #000000;"> cbbCOM.Text;
+</span><span style="color: #008080;">109</span>       <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">110</span> <span style="color: #000000;">      comMain.StartComm;
+</span><span style="color: #008080;">111</span>       connectStatus.Caption := <span style="color: #800000;">'</span><span style="color: #800000;">Connected</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">112</span>       connectStatus.FillColor :=<span style="color: #000000;"> clLime;
+</span><span style="color: #008080;">113</span>       advBtnConnect.Enabled :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;">114</span>       gbSendMsg.Enabled :=<span style="color: #000000;"> True;
+</span><span style="color: #008080;">115</span>     <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">116</span>   <span style="color: #0000ff;">except</span>
+<span style="color: #008080;">117</span>     connectStatus.Caption := <span style="color: #800000;">'</span><span style="color: #800000;">Not Connected</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">118</span>     connectStatus.FillColor :=<span style="color: #000000;"> clRed;
+</span><span style="color: #008080;">119</span>     gbSendMsg.Enabled :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;">120</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">121</span> 
+<span style="color: #008080;">122</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">123</span> 
+<span style="color: #008080;">124</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TMainFrm.comMainReceiveData(Sender: TObject; Buffer: Pointer;
+</span><span style="color: #008080;">125</span> <span style="color: #000000;">  BufferLength: Word);
+</span><span style="color: #008080;">126</span> <span style="color: #0000ff;">var</span>
+<span style="color: #008080;">127</span>   S: <span style="color: #0000ff;">string</span><span style="color: #000000;">;
+</span><span style="color: #008080;">128</span> <span style="color: #000000;">  I, L: INTEGER;
+</span><span style="color: #008080;">129</span>   RBUF: <span style="color: #0000ff;">array</span>[<span style="color: #800080;">0</span>..<span style="color: #800080;">2048</span>] <span style="color: #0000ff;">of</span><span style="color: #000000;"> BYTE;
+</span><span style="color: #008080;">130</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">131</span> <span style="color: #000000;">  Move(Buffer^, pchar(@rbuf)^, BufferLength);
+</span><span style="color: #008080;">132</span>   L :=<span style="color: #000000;"> BufferLength;
+</span><span style="color: #008080;">133</span>   <span style="color: #0000ff;">for</span> I := <span style="color: #800080;">0</span> <span style="color: #0000ff;">to</span> L - <span style="color: #800080;">1</span> <span style="color: #0000ff;">do</span>
+<span style="color: #008080;">134</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">135</span>     S := S + INTTOHEX(RBUF[I], <span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">136</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">137</span>   mmMsg.Lines.Add(<span style="color: #800000;">'</span><span style="color: #800000;">MsgReceived[</span><span style="color: #800000;">'</span> + S + <span style="color: #800000;">'</span><span style="color: #800000;">]</span><span style="color: #800000;">'</span><span style="color: #000000;">);
+</span><span style="color: #008080;">138</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">139</span> <span style="color: #008000;">//</span><span style="color: #008000;">var</span>
+<span style="color: #008080;">140</span> <span style="color: #008000;">//</span><span style="color: #008000;">    tmpArray: array[0..4096] of Byte;</span>
+<span style="color: #008080;">141</span> <span style="color: #008000;">//</span><span style="color: #008000;">    i: DWORD;</span>
+<span style="color: #008080;">142</span> <span style="color: #008000;">//</span><span style="color: #008000;">    tmpStr: string;</span>
+<span style="color: #008080;">143</span> <span style="color: #008000;">//</span><span style="color: #008000;">    pStr: PChar;</span>
+<span style="color: #008080;">144</span> <span style="color: #008000;">//</span><span style="color: #008000;">begin</span>
+<span style="color: #008080;">145</span> <span style="color: #008000;">//</span><span style="color: #008000;">    pStr := Buffer;</span>
+<span style="color: #008080;">146</span> <span style="color: #008000;">//</span><span style="color: #008000;">    tmpStr := string(pStr);</span>
+<span style="color: #008080;">147</span> <span style="color: #008000;">//</span><span style="color: #008000;">    mmMsg.Lines.Add(tmpStr);</span>
+<span style="color: #008080;">148</span> <span style="color: #008000;">//</span><span style="color: #008000;">    Dec(PStr);</span>
+<span style="color: #008080;">149</span> <span style="color: #008000;">//</span><span style="color: #008000;">    for i := 0 to Length(tmpStr) - 1 do</span>
+<span style="color: #008080;">150</span> <span style="color: #008000;">//</span><span style="color: #008000;">    begin</span>
+<span style="color: #008080;">151</span> <span style="color: #008000;">//</span><span style="color: #008000;">        inc(PStr);</span>
+<span style="color: #008080;">152</span> <span style="color: #008000;">//</span><span style="color: #008000;">        tmpArray[i] := Byte(PSTR^);</span>
+<span style="color: #008080;">153</span> <span style="color: #008000;">//</span><span style="color: #008000;">        mmMsg.Lines.Add(IntToHEX(Ord(tmpArray[i]), 2));</span>
+<span style="color: #008080;">154</span> <span style="color: #008000;">//</span><span style="color: #008000;">    end;</span>
+<span style="color: #008080;">155</span> <span style="color: #008000;">//</span><span style="color: #008000;">    exit;</span>
+<span style="color: #008080;">156</span> <span style="color: #008000;">//</span><span style="color: #008000;">    pStr := Buffer;</span>
+<span style="color: #008080;">157</span> <span style="color: #008000;">//</span><span style="color: #008000;">    mmMsg.Lines.Add(pStr);</span>
+<span style="color: #008080;">158</span> <span style="color: #008000;">//</span><span style="color: #008000;">end;</span>
+<span style="color: #008080;">159</span> 
+<span style="color: #008080;">160</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TMainFrm.advBtnConfirmClick(Sender: TObject);
+</span><span style="color: #008080;">161</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">162</span>   <span style="color: #0000ff;">if</span> mmSendMsg.Lines.Count &lt;= <span style="color: #800080;">0</span> <span style="color: #0000ff;">then</span>
+<span style="color: #008080;">163</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">164</span>     Application.MessageBox(<span style="color: #800000;">'</span><span style="color: #800000;">There is no key word, please check the MsgSendList,thanks.</span><span style="color: #800000;">'</span>, <span style="color: #800000;">'</span><span style="color: #800000;">Error Information</span><span style="color: #800000;">'</span>, MB_OK +<span style="color: #000000;"> MB_ICONSTOP);
+</span><span style="color: #008080;">165</span> <span style="color: #000000;">    mmSendMsg.SetFocus;
+</span><span style="color: #008080;">166</span> <span style="color: #000000;">    Exit;
+</span><span style="color: #008080;">167</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">168</span>   <span style="color: #0000ff;">if</span> cbByte.Checked <span style="color: #0000ff;">then</span>
+<span style="color: #008080;">169</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">170</span> <span style="color: #000000;">    SendHex(mmSendMsg.Text);
+</span><span style="color: #008080;">171</span>   <span style="color: #0000ff;">end</span>
+<span style="color: #008080;">172</span>   <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">173</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">174</span> <span style="color: #000000;">    comMain.WriteCommData(PChar(mmSendMsg.Text), Length(mmSendMsg.Text));
+</span><span style="color: #008080;">175</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">176</span>   <span style="color: #0000ff;">if</span> (cbAutoSend.Checked) <span style="color: #0000ff;">and</span> (edtTime.Text &lt;&gt; <span style="color: #800000;">''</span>) <span style="color: #0000ff;">and</span> (cbByte.Checked) <span style="color: #0000ff;">then</span>
+<span style="color: #008080;">177</span>   <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">178</span>     timerMain.Interval :=<span style="color: #000000;"> StrToInt(edtTime.Text);
+</span><span style="color: #008080;">179</span>     timerMain.Enabled :=<span style="color: #000000;"> True;
+</span><span style="color: #008080;">180</span>   <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">181</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">182</span> 
+<span style="color: #008080;">183</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TMainFrm.AdvGlassButton1Click(Sender: TObject);
+</span><span style="color: #008080;">184</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">185</span>   timerMain.Enabled :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;">186</span>   gbSendMsg.Enabled :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;">187</span>   cbByte.Checked :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;">188</span>   cbAutoSend.Checked :=<span style="color: #000000;"> False;
+</span><span style="color: #008080;">189</span>   edtTime.Text := <span style="color: #800000;">''</span><span style="color: #000000;">;
+</span><span style="color: #008080;">190</span>   mmMsg.Text := <span style="color: #800000;">''</span><span style="color: #000000;">;
+</span><span style="color: #008080;">191</span>   mmSendMsg.Text := <span style="color: #800000;">''</span><span style="color: #000000;">;
+</span><span style="color: #008080;">192</span> <span style="color: #000000;">  comMain.StopComm;
+</span><span style="color: #008080;">193</span>   connectStatus.Caption := <span style="color: #800000;">'</span><span style="color: #800000;">Not Connected</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">194</span>   connectStatus.FillColor :=<span style="color: #000000;"> clRed;
+</span><span style="color: #008080;">195</span>   advBtnConnect.Enabled :=<span style="color: #000000;"> True;
+</span><span style="color: #008080;">196</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">197</span> 
+<span style="color: #008080;">198</span> <span style="color: #0000ff;">procedure</span><span style="color: #000000;"> TMainFrm.timerMainTimer(Sender: TObject);
+</span><span style="color: #008080;">199</span> <span style="color: #0000ff;">begin</span>
+<span style="color: #008080;">200</span> <span style="color: #000000;">  SendHex(mmSendMsg.Text);
+</span><span style="color: #008080;">201</span> <span style="color: #0000ff;">end</span><span style="color: #000000;">;
+</span><span style="color: #008080;">202</span> 
+<span style="color: #008080;">203</span> <span style="color: #0000ff;">end</span>.</pre>
+</div>
+<p>&nbsp;</p>
+<div id="AllanboltSignature">
+<p id="PSignature" style="padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 60px; background: url('https://images.cnblogs.com/cnblogs_com/jeremywucnblog/1607637/o_191206011825obs.png') #e5f1f4 no-repeat 1% 50%; font-family: 微软雅黑; font-size: 11px; border: #e0e0e0 1px dashed;">&nbsp; 作者：<a href="https://www.cnblogs.com/jeremywucnblog/" target="_blank">Jeremy.Wu</a> <br />&nbsp; 出处：<a href="https://www.cnblogs.com/jeremywucnblog/" target="_blank">https://www.cnblogs.com/jeremywucnblog/</a>
+            <br />&nbsp; 本文版权归作者和博客园共有，欢迎转载，但未经作者同意必须保留此段声明，且在文章页面明显位置给出原文连接，否则保留追究法律责任的权利。
+        </p>
+
+
+
+
+</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

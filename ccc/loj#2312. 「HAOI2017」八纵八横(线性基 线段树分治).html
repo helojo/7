@@ -1,0 +1,160 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修loj#2312. 「HAOI2017」八纵八横(线性基 线段树分治)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>loj#2312. 「HAOI2017」八纵八横(线性基 线段树分治)</center></div><div class='banquan'>原文出处:本文由博客园博主自为风月马前卒提供。<br/>
+原文连接:https://www.cnblogs.com/zwfymqz/p/10628619.html</div><br>
+    <h2 id="题意">题意</h2>
+<p><a href="https://loj.ac/problem/2312">题目链接</a></p>
+<h2 id="sol">Sol</h2>
+<p>线性基+线段树分治板子题。。</p>
+<p>调起来有点自闭。。</p>
+<pre><code>#include&lt;bits/stdc++.h&gt; 
+#define fi first
+#define se second
+#define pb push_back 
+#define bit bitset&lt;B + 1&gt; 
+using namespace std;
+const int MAXN = 501,  B = 1001, SS = 4001;
+inline int read() {
+    char c = getchar(); int x = 0, f = 1;
+    while(c &lt; &#39;0&#39; || c &gt; &#39;9&#39;) {if(c == &#39;-&#39;) f = -1; c = getchar();}
+    while(c &gt;= &#39;0&#39; &amp;&amp; c &lt;= &#39;9&#39;) x = x * 10 + c - &#39;0&#39;, c = getchar();
+    return x * f;
+}
+int N, M, Q, las[SS];
+struct Graph {
+    struct Edge {
+        int u, v;
+        bit w;
+        int nxt;
+    }E[3021];
+    int head[MAXN], num, vis[MAXN];
+    Graph() {
+        memset(head, -1, sizeof(head));
+        memset(vis, 0, sizeof(vis));
+        num = 0;
+    }
+    bit P[B + 1], dis[MAXN];
+    void insert(bit s) {
+        for(int i = B; ~i; i--) {
+            if(s[i]) {
+                if(!P[i].count()) {P[i] = s; break;}
+                s = s ^ P[i];
+            }
+        }
+    }
+    void dfs(int x, int fa) {
+        vis[x] = 1;
+        for(int i = head[x]; ~i; i = E[i].nxt) {
+            int to = E[i].v; bit w = E[i].w;
+            if((i ^ 1) == fa) continue;
+            if(vis[to]) insert(dis[x] ^ dis[to] ^  w);
+            else {
+                dis[to] = dis[x] ^ w; 
+                dfs(to, i);
+            }
+        }
+    }
+    void Query() {
+        bit ans; ans.reset();
+        for(int i = B; ~i; i--) if(ans[i] ^ (P[i][i])) ans ^= P[i];
+        for(int i = B; ~i; i--) 
+            if(ans[i]) {
+                for(int j = i; ~j; j--) cout &lt;&lt; ans[j];
+                puts(&quot;&quot;);
+                return ;
+            }   
+        puts(&quot;0&quot;);
+    }
+    void AddEdge(int x, int y, bit w) {
+        E[num] = {x, y, w, head[x]};
+        head[x] =num++;
+    }
+    void Insert(int x, int y, bit w) {
+        insert(dis[x] ^ dis[y] ^ w);
+    }
+
+}bg;
+struct Edge {
+    int u, v;
+    bit w;
+}e[SS];
+vector&lt;Edge&gt; tag[SS];
+
+#define ls k &lt;&lt; 1
+#define rs k &lt;&lt; 1 | 1
+void Add(int k, int l, int r, int ql, int qr, Edge v) {
+    if(ql &gt; qr) return ;
+    if(ql &lt;= l &amp;&amp; r &lt;= qr) {tag[k].pb(v); return ;}
+    int mid = l + r &gt;&gt; 1;
+    if(ql &lt;= mid) Add(ls, l, mid, ql, qr, v);
+    if(qr  &gt; mid) Add(rs, mid + 1, r, ql, qr, v);
+}
+void Down(int k, int l, int r, Graph now) {
+    if(l &gt; r) return ;
+    Graph nxt = now;
+    for(auto flag: tag[k]) 
+        nxt.Insert(flag.u, flag.v, flag.w);
+    if(l == r) {
+        nxt.Query(); 
+        return ;
+    }
+    int mid = l + r &gt;&gt; 1;
+    Down(ls, l, mid, nxt);
+    Down(rs, mid + 1, r, nxt);
+}
+signed main() {
+    N = read(); M = read(); Q = read();
+    for(int i = 1; i &lt;= M; i++) {
+        int x = read(), y = read(); bit w; cin &gt;&gt; w;
+        bg.AddEdge(x, y, w);
+        bg.AddEdge(y, x, w);
+    }
+    memset(las, -1, sizeof(las));
+    int youducuotile = 0;
+    for(int i = 1; i &lt;= Q; i++) {
+        char opt[10]; scanf(&quot;%s&quot;, opt + 1);
+        if(opt[1] == &#39;A&#39;) {
+            e[++youducuotile ].u = read(), e[youducuotile ].v = read();
+            cin &gt;&gt; e[youducuotile ].w; las[youducuotile ] = i;
+        } else if(opt[1] == &#39;C&#39; &amp;&amp; opt[2] == &#39;a&#39;) {
+            int k = read(); 
+            Add(1, 1, Q, las[k], i - 1, e[k]); 
+            las[k] = -1;
+        } else {
+            int k = read();
+            Add(1, 1, Q, las[k], i - 1, e[k]);
+            cin &gt;&gt; e[k].w;
+            las[k] = i;
+        }
+    }
+    for(int i = 1; i &lt;= Q; i++)
+        if(~las[i])
+            Add(1, 1, Q, las[i], Q, e[i]);
+    bg.dfs(1, -1);
+    bg.Query();
+    if(Q) 
+        Down(1, 1, Q, bg);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

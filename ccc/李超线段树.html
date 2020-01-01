@@ -1,0 +1,141 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修李超线段树' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>李超线段树</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/lichaotree.html</div><br>
+    <h1 id="功能">功能</h1>
+<p>李超线段树资瓷以下两种操作:</p>
+<blockquote>
+<p>1.在二维平面内插入一条线段<br />
+2.询问与直线<span class="math inline">\(x=K\)</span>相交的线段中，交点纵坐标最大为多少。</p>
+</blockquote>
+<h1 id="原理">原理</h1>
+<h2 id="结点">结点</h2>
+<p>李超线段树的每个节点，都维护这一个优势线段。这个优势线段使得该节点所维护区间的中点在该优势线段上最大。</p>
+<h2 id="修改">修改</h2>
+<p>考虑如何维护上面的结点呢。<br />
+分三种情况讨论：<br />
+1.该区间无优势线段或要插入的线段在该区间内完全在优势线段之上，将该区间的优势线段记为该线段并返回。<br />
+2.要插入的线段完全被之前的优势线段覆盖。直接返回<br />
+3.否则下放到左右两个子区间。</p>
+<h2 id="查询">查询</h2>
+<p>从根节点走到查询位置的叶子结点。对路径上所有结点的优势节点在查询位置的<span class="math inline">\(y\)</span>取最大值即可。</p>
+<h2 id="时间复杂度">时间复杂度</h2>
+<p>查询一次的时间复杂度显然为<span class="math inline">\(log(n)\)</span></p>
+<p>修改时，每个线段最多被分为<span class="math inline">\(log(n)\)</span>段。每段最多被下放<span class="math inline">\(log(n)\)</span>次。所以修改一次的最坏复杂度为<span class="math inline">\(log^2(n)\)</span></p>
+<h1 id="代码">代码</h1>
+<p><a href="https://www.luogu.org/problemnew/show/P4097"><font size=3>luogu4097</font></a></p>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-07-17 08:32:42
+* @Last Modified time: 2019-07-17 10:00:19
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;cmath&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 100000 + 100,mod = 39989,mod2 = 1e9;
+const double aps = 1e-8;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+
+struct node {
+    double k,b;
+    node() {}
+    node(int x1,int x2,int y1,int y2) {
+        if(x1 == x2) {
+            k = 0;b = max(y1,y2);
+            return;
+        }
+        k = 1.0 * (y2 - y1) / (x2 - x1);
+        b = y2 - k * x2;
+    }
+    double calc(int x) {
+        return k * x + b;
+    }
+}a[N];
+int tree[N &lt;&lt; 2];
+void update(int rt,int l,int r,int L,int R,int x) {
+    if(L &lt;= l &amp;&amp; R &gt;= r) {
+        if(!tree[rt]) {
+            tree[rt] = x;
+            return;
+        }
+        if(a[x].calc(r) - a[tree[rt]].calc(r) &gt;= aps &amp;&amp; a[x].calc(l) - a[tree[rt]].calc(l) &gt;= aps) {
+            tree[rt] = x;
+            return;
+        }
+        if(a[tree[rt]].calc(l) - a[x].calc(l) &gt;= aps &amp;&amp; a[tree[rt]].calc(r) - a[x].calc(r) &gt;= aps) return;
+        if(l == r) return;
+    }
+    int mid = (l + r) &gt;&gt; 1;
+    if(L &lt;= mid) update(rt &lt;&lt; 1,l,mid,L,R,x);
+    if(R &gt; mid) update(rt &lt;&lt; 1 | 1,mid + 1,r,L,R,x);
+}
+int ANS;
+void query(int rt,int l,int r,int pos) {
+    if(a[tree[rt]].calc(pos) - a[ANS].calc(pos) &gt;= aps) ANS = tree[rt];
+    if(fabs(a[tree[rt]].calc(pos) - a[ANS].calc(pos)) &lt;= aps &amp;&amp; ANS &gt; tree[rt]) ANS = tree[rt];
+    if(l == r) return;
+    int mid = (l + r) &gt;&gt; 1;
+    if(pos &lt;= mid) query(rt &lt;&lt; 1,l,mid,pos);
+    else query(rt &lt;&lt; 1 | 1,mid + 1,r,pos);
+}
+int tot = 0;
+int main() {
+    int n = read();
+    a[0] = node(1,1,-1,-1);
+    while(n--) {
+        int opt = read();
+        if(!opt) {
+            int K = (read() + ANS - 1) % mod + 1;
+            ANS = 0;query(1,1,N - 10,K);
+            printf(&quot;%d\n&quot;,ANS);
+        }
+        else {
+            int x1 = (read() + ANS - 1) % mod + 1,y1 = (read() + ANS - 1) % mod2 + 1,x2 = (read() + ANS - 1) % mod + 1,y2 = (read() + ANS - 1) % mod2 + 1;
+            if(x1 &gt; x2) swap(x1,x2),swap(y1,y2);
+            a[++tot] = node(x1,x2,y1,y2);
+            update(1,1,N - 10,x1,x2,tot);
+        }
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

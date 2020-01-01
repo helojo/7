@@ -1,0 +1,54 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修MODBUS 数据格式相关记录' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>MODBUS 数据格式相关记录</center></div><div class='banquan'>原文出处:本文由博客园博主怦然心动如往昔提供。<br/>
+原文连接:https://www.cnblogs.com/niu-li/p/11557626.html</div><br>
+    <p>串口通讯格式：</p>
+<p>　　串口通讯可以分为同步通讯(Synchronous)和异步通讯(Asynchronous)。同步通讯时有一根时钟信号，数据格式中没有起始位和停止位；异步通讯中没有时钟信号，数据格式中包含起始位和停止位。此次记录内容为使用STM32的异步通信配置学习。</p>
+<p>　　串口异步传输一帧数据需要多个位，这些位的描述为 起始位+数据位+校验位+停止位。起始位是固定的 1bit ，数据位、校验位和停止位是可配置的，常见的配置类型如：数据位可配置格式为 <span style="color: #ff0000;">5bit、6bit</span>、7bit、8bit和9bit(PC端无法配置9bit)，STM32好像不能配置5bit和6bit；校验位1bit，可配置为无校验、奇校验、偶校验、<span style="color: #ff0000;">1校验(Mark)和0校验(Space)</span>，Mark校验和Space校验在STM32中好像不能直接配置；停止位可配置格式为1bit、<span style="color: #ff0000;">1.5bit和2bit</span>，STM32好像都是1bit停止位。<span style="color: #ff0000;">重要的提示：平常使用中，校验位会单独拿出来配置和介绍，但是如果开启了校验功能，校验位是填充在数据位的MSB位置</span>。意思是如果你开起了校验位，那么数据位需要设置为你所需要传输数据的位数加一，否则可能出问题。以几张时序图作为参考(第一次画，看着别扭)：</p>
+<p>　　1、传输无校验位</p>
+<p>　　<img src="./images/MODBUS 数据格式相关记录0.png" alt="" />　　　　　　　　　　<img src="./images/MODBUS 数据格式相关记录1.png" alt="" /></p>
+<p>　　左图中起始位占据1bit，数据位占据8bit(如果设为数据位7bit，那数据位只有7个方格，同理至5bit、6bit)，停止位占据1bit，不含校验位，两端表示空闲状态，这种数据格式配置是普通使用最常见的。右图中起始位占据1bit，数据位占据9bit，停止位占据1bit，不含校验位，两端表示空闲状态；一般我们都是以字节数据传输，这种配置时有9bit可用，MSB这一位通常用作校验位，而且这个校验位可以由用户随意指定；对于STM32使用者来说，虽然寄存器配置无法直接实现Mark校验和Space校验，但用户可使用该格式手动设置MSB，充当Mark校验或者Space校验结果使用，因为真实的校验结果也是放在数据位的MSB位置。</p>
+<p>　　2、传输有校验位</p>
+<p>　　<img src="./images/MODBUS 数据格式相关记录2.png" alt="" />　　　　　　　　　　<img src="./images/MODBUS 数据格式相关记录3.png" alt="" /></p>
+<p>　　左图配置起始位1bit、数据位8bit、停止位1bit，开启了校验功能，校验结果1bit占据了数据位的MSB位置，如此当设置为8bit数据位而且开启了校验功能时，用户可传输有效数据只有7bit，MSB会被校验结果强行占据。右图配置起始位1bit、数据位9bit、停止位1bit，开启校验功能，校验结果1bit占据MSB，用户可传输有效数据为8bit数据，恰好是常用的一个字节数据，<span style="color: #ff0000;">所以当用户打算开启校验功能而且要保留当前传输数据有效位不变，就要配置数据位加1</span>。对于这个情况，从STM32H7xx参考手册里截图说明如下：</p>
+<p><img src="./images/MODBUS 数据格式相关记录4.png" alt="" /></p>
+<p>　　对于这一点通过程序设置串口为8bit数据位，开启奇校验，使用示波器探测波形进行验证。使用串口发送0xFF数据时，示波器显示传输数据为0x7F，因为0xFF经过校验后会把MSB的1变成0；使用串口发送0x7F数据时，示波器显示传输数据为0x7F。</p>
+<p>&nbsp;</p>
+<p>码元学习：</p>
+<p>　　百度百科里面介绍：码元，承载信息量的基本信号单位。在数字通信中常常用时间间隔相同的符号来表示一个二进制数字，这样的时间间隔内的信号称为(二进制）码元。 而这个间隔被称为码元长度。值得注意的是当码元的离散状态有大于2个时（如M大于2个） 时，此时码元为M进制码元。</p>
+<p>　　码元传输速率，又称为<a href="https://baike.baidu.com/item/%E7%A0%81%E5%85%83%E9%80%9F%E7%8E%87" target="_blank">码元速率</a>或传<a href="https://baike.baidu.com/item/%E7%A0%81%E7%8E%87" target="_blank">码率</a>。其定义为每秒钟传送码元的数目，单位为"波特"，又可以称为<a href="https://baike.baidu.com/item/%E6%B3%A2%E7%89%B9%E7%8E%87" target="_blank">波特率</a>,常用符号"<a href="https://baike.baidu.com/item/Baud" target="_blank">Baud</a>"表示，简写为"B"。一个码元可能由多个位组成，所以波特率不一定等于比特率。如果一个码元只需要表示2个级别状态（0和1），那么一个码元就是一个位，此时波特率等于比特率；如果一个码元需要表示4个级别状态（0、1、2和3），那么一个码元需要两个位表示（即一个码元占据两个位，对数关系），此时波特率等于比特率的1/2。</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>MODBUS 超时时间：</p>
+<p>1、两帧之间超时时间为3.5字符　　2、一帧数据中每个字符超时时间为1.5字符</p>
+<p>MODBUS 中处理一个字符相当于串口处理一帧。</p>
+<p>超时时间根据通信速率计算：</p>
+<p>　　串口传输数据时，一个码元只占据一个位，所以串口的波特率等于比特率。</p>
+<p>　　bps = bit / s = 位 每 秒！　　</p>
+<p>　　比如串口一帧数据常用的通信格式：起始位(1位) + 数据位(8位) + 校验位(0位) + 停止位(1位) = 10（位）</p>
+<p>　　9600bps 的比特率下，串口发送字节数据速度为 9600/10 = 960 字符/秒；</p>
+<p>　　每个字符对应时间为 1s / 960 ，3.5字符时间为 3.5 * 1 / 960 = 0.0036458 s = 3.6458 ms</p>
+<p>网上资料指明，<span class="fontstyle0">在通信速率等于或低于 19200 bps 时，这两个定时必须严格遵守；<br />对于比特率大于 19200 bps 的情形， 应该使用 2 个定时的固定值 ：<br /></span></p>
+<p><span class="fontstyle0">　　<span class="fontstyle0">字符间超时时间(t1.5)为 750&micro;s ，<br /></span></span></p>
+<p><span class="fontstyle0"><span class="fontstyle0">　　<span class="fontstyle0">帧间的超时时间 (t3.5) 为 1.750ms 。<br /></span></span></span></p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

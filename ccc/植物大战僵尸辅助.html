@@ -1,0 +1,102 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修植物大战僵尸辅助' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>植物大战僵尸辅助</center></div><div class='banquan'>原文出处:本文由博客园博主tosser提供。<br/>
+原文连接:https://www.cnblogs.com/tosser/p/11701103.html</div><br>
+    <p>&nbsp; &nbsp; &nbsp; &nbsp; 孩子一直迷恋植物大战僵尸这款游戏，从一开始的水平不行，到后来经常看植物大战僵尸的过关视频来提升自己的游戏水平，到现在游戏是玩的越来越好了，至少感觉植物大战僵尸这个游戏水平比我强很多。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;后来为了能让孩子在游戏里学到些知识，拿出 CE 教孩子改阳光，他不但学会了改阳光，还自己修改了金币（关键是学会用百度了），玩的更 High 了。为了希望他能进一步的在游戏中能够学习到知识，我为他写了一个简单的修改阳光和种植植物后免冷却时间的辅助工具。</p>
+<p>&nbsp;</p>
+<p>修改阳光</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;阳光可以通过 CE 逐步的查找基址，首先通过 ReadProcessMemory 函数将 CE 获取到的阳光地址找到，然后通过 WriteProcessMemory 函数将修改的阳光值写入即可。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">#define</span> SUN_VALUE_ADDRESS   0x007794f8  <span style="color: #008000;">//</span><span style="color: #008000;"> 阳光基址</span>
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 通过窗口名查找句柄</span>
+<span style="color: #008080;"> 4</span> HWND hGameWnd =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 5</span> hGameWnd = FindWindow(NULL, _T(<span style="color: #800000;">"</span><span style="color: #800000;">Plants vs. Zombies GOTY </span><span style="color: #800000;">"</span>))-&gt;<span style="color: #000000;">GetSafeHwnd();
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 根据窗口句柄获得进程ID</span>
+<span style="color: #008080;"> 8</span> DWORD dwPid = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span> DWORD dwTid = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">10</span> dwTid = GetWindowThreadProcessId(hGameWnd, &amp;<span style="color: #000000;">dwPid);
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 打开进程</span>
+<span style="color: #008080;">13</span> HANDLE hProcess =<span style="color: #000000;"> OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPid);
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> DWORD dwSunValue = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span> DWORD dwAddr = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">17</span> DWORD dwReadWriteByte = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">18</span> 
+<span style="color: #008080;">19</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 计算阳光地址
+</span><span style="color: #008080;">20</span> <span style="color: #008000;">//</span><span style="color: #008000;"> [[[0x007794f8]+0x868]+0x5578]</span>
+<span style="color: #008080;">21</span> ReadProcessMemory(hProcess, (LPCVOID)SUN_VALUE_ADDRESS, &amp;dwAddr, <span style="color: #0000ff;">sizeof</span>(DWORD), &amp;<span style="color: #000000;">dwReadWriteByte);
+</span><span style="color: #008080;">22</span> dwAddr = dwAddr + <span style="color: #800080;">0x868</span><span style="color: #000000;">;
+</span><span style="color: #008080;">23</span> ReadProcessMemory(hProcess, (LPCVOID)dwAddr, &amp;dwAddr, <span style="color: #0000ff;">sizeof</span>(DWORD), &amp;<span style="color: #000000;">dwReadWriteByte);
+</span><span style="color: #008080;">24</span> dwAddr = dwAddr + <span style="color: #800080;">0x5578</span><span style="color: #000000;">;
+</span><span style="color: #008080;">25</span> 
+<span style="color: #008080;">26</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 读取当前阳光</span>
+<span style="color: #008080;">27</span> ReadProcessMemory(hProcess, (LPCVOID)dwAddr, &amp;dwSunValue, <span style="color: #0000ff;">sizeof</span>(DWORD), &amp;<span style="color: #000000;">dwReadWriteByte);
+</span><span style="color: #008080;">28</span> 
+<span style="color: #008080;">29</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 获取修改的阳光值</span>
+<span style="color: #008080;">30</span> dwSunValue =<span style="color: #000000;"> GetDlgItemInt(IDC_EDIT1);
+</span><span style="color: #008080;">31</span> WriteProcessMemory(hProcess, (LPVOID)dwAddr, &amp;dwSunValue, <span style="color: #0000ff;">sizeof</span>(DWORD), &amp;<span style="color: #000000;">dwReadWriteByte);
+</span><span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 关闭进程</span>
+<span style="color: #008080;">34</span> CloseHandle(hProcess);</pre>
+</div>
+<p>&nbsp;</p>
+<p>种植植物免冷却时间<br />&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;种植植物免冷却的功能，可以通过 CE 找到格子所在的内存，然后找到修改该格子状态的代码，最后将该段代码用 NOP 指令替换掉即可。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">#define</span> CD_PATCH_ADDRESS    0x004b4ca1  <span style="color: #008000;">//</span><span style="color: #008000;"> 种植植物免冷却</span>
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 通过窗口名查找句柄</span>
+<span style="color: #008080;"> 4</span> HWND hGameWnd =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 5</span> hGameWnd = FindWindow(NULL, _T(<span style="color: #800000;">"</span><span style="color: #800000;">Plants vs. Zombies GOTY </span><span style="color: #800000;">"</span>))-&gt;<span style="color: #000000;">GetSafeHwnd();
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 根据窗口句柄获得进程ID</span>
+<span style="color: #008080;"> 8</span> DWORD dwPid = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span> DWORD dwTid = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">10</span> dwTid = GetWindowThreadProcessId(hGameWnd, &amp;<span style="color: #000000;">dwPid);
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 打开进程</span>
+<span style="color: #008080;">13</span> HANDLE hProcess =<span style="color: #000000;"> OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwPid);
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> DWORD dwOldByte = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span> DWORD dwReadWriteByte = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">17</span> 
+<span style="color: #008080;">18</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 读取免冷却代码</span>
+<span style="color: #008080;">19</span> ReadProcessMemory(hProcess, (LPCVOID)CD_PATCH_ADDRESS, &amp;dwOldByte, <span style="color: #0000ff;">sizeof</span>(DWORD), &amp;<span style="color: #000000;">dwReadWriteByte);
+</span><span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span> <span style="color: #008000;">//</span><span style="color: #008000;"> PATCH免冷却</span>
+<span style="color: #008080;">22</span> DWORD dwPatchByte = <span style="color: #800080;">0x90909090</span><span style="color: #000000;">;
+</span><span style="color: #008080;">23</span> WriteProcessMemory(hProcess, (LPVOID)CD_PATCH_ADDRESS, &amp;dwPatchByte, <span style="color: #0000ff;">sizeof</span>(DWORD), &amp;<span style="color: #000000;">dwReadWriteByte);
+</span><span style="color: #008080;">24</span> 
+<span style="color: #008080;">25</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 关闭进程</span>
+<span style="color: #008080;">26</span> CloseHandle(hProcess);</pre>
+</div>
+<p>&nbsp;</p>
+<p>想法是好的<br />&nbsp; &nbsp; &nbsp; &nbsp;&nbsp;作为孩子的家长，我并没有限制孩子玩游戏，只是和孩子约定了玩游戏的时间，当然了如果他能从游戏中学到知识，那是最好的了。我满怀着兴奋给他演示了我摆弄出来的辅助工具，然而&hellip;&hellip;他并没有如我所愿的去学习简单的编程知识，只是希望我能够在他爷爷的电脑上也装个辅助工具！</p>
+<p>&nbsp;</p>
+<hr />
+<p><strong>我的微信公众号：&ldquo;码农UP2U&rdquo;</strong></p>
+<p><strong><img src="./images/植物大战僵尸辅助0.png" alt="" /></strong></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

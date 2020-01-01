@@ -1,0 +1,83 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修【题解】P1440 求m区间内的最小值' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>【题解】P1440 求m区间内的最小值</center></div><div class='banquan'>原文出处:本文由博客园博主松风之狐提供。<br/>
+原文连接:https://www.cnblogs.com/Von-ZH/p/12085356.html</div><br>
+    <h1 id="求m区间内的最小值"><a href="https://www.luogu.org/problem/P1440">求m区间内的最小值</a></h1>
+<p><strong>题目描述</strong>：</p>
+<p>一个含有n项的数列(n&lt;=2000000)，求出每一项前的m个数到它这个区间内的最小值。若前面的数不足m项则从第1个数开始，若前面没有数则输出0。</p>
+<h2 id="分析">分析：</h2>
+<p>读题之后可以发现，这道题就是在求：</p>
+<blockquote>
+<p>给出一个长度为n的序列A，求A中所有长度为m的连续子序列中的最小值</p>
+</blockquote>
+<p>而针对这种问题，<strong><a href="https://www.luogu.org/blog/Sweetlemon/dan-diao-dui-lie">单调队列</a></strong>似乎是我们最好的选择。</p>
+<p>单调队列，说是队列，却不符合队列“先进先出”的原则，它只是沿用了队列的思想，并具有一定的<strong>单调性</strong>，拥有一个队列头<strong>head</strong>和一个队列尾<strong>tail</strong>，用<strong>head</strong>和<strong>tail</strong>来控制队列的长度，筛选队列中的元素以及保持队列的<strong>单调性</strong>。</p>
+<p>但怎样控制队列的长度，筛选队列中的元素以及保持队列的<strong>单调性</strong>呢？</p>
+<p>这就是单调队列的实现了。</p>
+<p>用样例来分析一下：</p>
+<pre><code><code>6 2
+7 8 1 4 3 2</code></pre>
+<p>这样，我们就拥有了一个初始队列：7 8 1 4 3 2</p>
+<p>拥有上帝视角的我们可以看出答案是：</p>
+<pre><code><code>0
+7
+7
+1
+1
+3 </code></pre>
+<p>这时候，我们发现，不论第一个元素是多少，它之前m个元素的最小值永远为<strong>0</strong><del>（因为它之前并没有元素）​</del>，而最后一个元素是多少也<strong>没有关系</strong><del>（因为它之后并没有元素）</del>。</p>
+<p>所以我们只用找到第2个到第n个元素中每个前m个元素的最小值就可以了，那么单调队列的<strong>单调性</strong>也应该是<strong>递增</strong>的，我们就可以把队列里每个元素的序号放入单调队列操作，就可以得到答案了。</p>
+<p>于是我们可以开始模拟了：</p>
+<p>考虑第一个元素，i=1，head=1，tail=0，q[tail]=0，a[1]=7，a[1]&gt;a[ q[tail] ]，把a[1]放入不会破坏单调性，q[head]=0，这个元素距队首元素的距离为0，则队列为：1</p>
+<p>考虑第二个元素，i=2，head=1，tail=1，q[tail]=1，a[2]=8，a[2]&gt;a[ q[tail] ]，把a[2]放入不会破坏单调性，q[head]=1，这个元素距队首元素的距离为1，则队列为：1 2</p>
+<p>考虑第三个元素，i=3，head=1，tail=2，q[tail]=2，a[3]=1，但a[3]&lt;a[ q[tail] ]，把a[3]放入会破坏单调性，而a[3]&lt;a[ q[tail] ]，由于求最小值，所以只能将a[ q[tail=2] ]弹出队列来保证单调性了，而a[3]&gt;a[ q[tail=1] ]，这时再将a[3]放入就不会破坏单调性了，q[head]=1，这个元素距队首元素的距离为2，达到长度m=2了，这队列头<strong>head</strong>就向后移，则队列为：3。</p>
+<p>以此类推，直到第n-1个，因为第n个后面没有元素，所以第n个不会进入队列，每次都输出队列头对应的元素值，就得到了答案。</p>
+<h2 id="代码实现">代码实现：</h2>
+<pre class="cpp"><code>#include &lt;iostream&gt;
+#include &lt;cstdio&gt;
+#include &lt;cmath&gt;
+#define maxn 2000005
+using namespace std;
+int n,m;
+int a[maxn];
+int q[maxn];
+int head,tail;
+int main()
+{
+    scanf(&quot;%d %d&quot;,&amp;n,&amp;m);
+    for(int i=1;i&lt;=n;i++) scanf(&quot;%d&quot;,&amp;a[i]);
+    head=1;
+    tail=0;
+    printf(&quot;0\n&quot;);//第一个元素它之前并没有元素
+    for(int i=1;i&lt;n;i++)//从1~n-1个，第n个不进队列
+    {
+        while((head&lt;=tail)&amp;&amp;((i-q[head])&gt;=m)) head++;//控制队列的长度
+        while((head&lt;=tail)&amp;&amp;(a[q[tail]]&gt;=a[i])) tail--;//筛选队列中的元素
+        tail++;
+        q[tail]=i;//保持队列的单调性
+        printf(&quot;%d\n&quot;,a[q[head]]);//输出答案
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div></div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

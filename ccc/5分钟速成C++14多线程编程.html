@@ -1,0 +1,183 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修5分钟速成C++14多线程编程' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>5分钟速成C++14多线程编程</center></div><div class='banquan'>原文出处:本文由博客园博主眼中的沙提供。<br/>
+原文连接:https://www.cnblogs.com/winnersun/p/10591646.html</div><br>
+    <p>原文链接：<span style="font-size: 16px;"><a title="Learn C++ Multi-Threading in 5 Minutes" href="https://hackernoon.com/learn-c-multi-threading-in-5-minutes-8b881c92941f" target="_blank">Learn C++ Multi-Threading in 5&nbsp;Minutes</a></span></p>
+<p><span style="font-size: 16px;">　　C++14的新的多线程架构非常简单易学，如果你对C或者C++很熟悉，那么本文非常适合你。作者用C++14作为基准参考，但是所介绍的东西在C++17中也依然适用。本文只介绍基本的架构，在读完本文后你应该也可以自己编写自己的多线程程序。</span></p>
+<h2>创建线程</h2>
+<p><span style="font-size: 16px;">创建线程有以下几种方式：</span></p>
+<p><span style="font-size: 16px;">1.使用函数指针</span></p>
+<p><span style="font-size: 16px;">2.使用仿函数</span></p>
+<p><span style="font-size: 16px;">3.使用lambda表达式</span></p>
+<p><span style="font-size: 16px;">这些方式都比较类似，只有部分差别，我将在下面具体讲述每一种方式和他们的区别。</span></p>
+<h2>使用函数指针</h2>
+<p>　　来看看下面这个函数，其参数包括一个vector的引用 v ，一个输出结果的引用acm，还有两个v的索引。这个函数会将v的beginIndex和endIndex之间的元素累加起来。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">void</span> accumulator_function2(<span style="color: #0000ff;">const</span> std::vector&lt;<span style="color: #0000ff;">int</span>&gt; &amp;v, unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> &amp;<span style="color: #000000;">acm, 
+</span><span style="color: #008080;">2</span>                             unsigned <span style="color: #0000ff;">int</span> beginIndex, unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> endIndex)
+</span><span style="color: #008080;">3</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">4</span>     acm = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">5</span>     <span style="color: #0000ff;">for</span> (unsigned <span style="color: #0000ff;">int</span> i = beginIndex; i &lt; endIndex; ++<span style="color: #000000;">i)
+</span><span style="color: #008080;">6</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">7</span>         acm +=<span style="color: #000000;"> v[i];
+</span><span style="color: #008080;">8</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">9</span> }</pre>
+</div>
+<p>　　现在如果我们想将vector分为两个部分，并在单独的线程t1和t2中分别计算各部分的总和的话，我们可以这么写：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;">Pointer to function</span>
+<span style="color: #008080;"> 2</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 3</span>         unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> acm1 = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 4</span>         unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> acm2 = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 5</span>         std::thread t1(accumulator_function2, std::<span style="color: #0000ff;">ref</span><span style="color: #000000;">(v), 
+</span><span style="color: #008080;"> 6</span>                         std::<span style="color: #0000ff;">ref</span>(acm1), <span style="color: #800080;">0</span>, v.size() / <span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 7</span>         std::thread t2(accumulator_function2, std::<span style="color: #0000ff;">ref</span><span style="color: #000000;">(v), 
+</span><span style="color: #008080;"> 8</span>                         std::<span style="color: #0000ff;">ref</span>(acm2), v.size() / <span style="color: #800080;">2</span><span style="color: #000000;">, v.size());
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">        t1.join();
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">        t2.join();
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm1: </span><span style="color: #800000;">"</span> &lt;&lt; acm1 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">13</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm2: </span><span style="color: #800000;">"</span> &lt;&lt; acm2 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">14</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm1 + acm2: </span><span style="color: #800000;">"</span> &lt;&lt; acm1 + acm2 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">15</span>     }</pre>
+</div>
+<h3>上面这段你需要知道：</h3>
+<p>　　1.std::thread这个调用创建了一个新的线程。其第一个参数是函数指针&nbsp;accumulator_function2 ，因此每个线程都会去执行这个函数。</p>
+<p>　　2.剩下的我们传给std::thread的构造函数的参数，都是我们需要去传给accumulator_function2的参数。</p>
+<p>　　3.<strong>重点：</strong>传递给accumulator_function2的参数默认情况下都是值传递的，除非你用std::ref把他包起来。所以我们这里使用了std::ref来包住v、acm1、acm2。</p>
+<p>　　4.使用std::thread创建的线程是没有返回值的，所以如果你想从线程中返回些什么，请使用引用将你想返回的值作为一个传入参数。这里的例子就是acm1和acm2。</p>
+<p>　　5.每个线程一旦创建就立即执行了。</p>
+<p>　　6.我们使用join()函数来等待线程执行完毕。<span style="background-color: rgba(0, 0, 0, 0.05); color: rgba(0, 0, 0, 0.84); font-family: Menlo, Monaco, 'Courier New', Courier, monospace; font-size: 16px; letter-spacing: -0.063px;"><br /></span></p>
+<h2>使用伪函数</h2>
+<p>　　你也可以使用伪函数来做同样的事情，下面是例子：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> CAccumulatorFunctor3
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span>   <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">void</span> <span style="color: #0000ff;">operator</span>()(<span style="color: #0000ff;">const</span> std::vector&lt;<span style="color: #0000ff;">int</span>&gt; &amp;<span style="color: #000000;">v, 
+</span><span style="color: #008080;"> 5</span>                     unsigned <span style="color: #0000ff;">int</span> beginIndex, unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> endIndex)
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 7</span>         _acm = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 8</span>         <span style="color: #0000ff;">for</span> (unsigned <span style="color: #0000ff;">int</span> i = beginIndex; i &lt; endIndex; ++<span style="color: #000000;">i)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">10</span>             _acm +=<span style="color: #000000;"> v[i];
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">13</span>     unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span><span style="color: #000000;"> _acm;
+</span><span style="color: #008080;">14</span> };</pre>
+</div>
+<p>　　那么创建线程的方式变成下面这样：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;">Creating Thread using Functor</span>
+<span style="color: #008080;"> 2</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span>         CAccumulatorFunctor3 accumulator1 =<span style="color: #000000;"> CAccumulatorFunctor3();
+</span><span style="color: #008080;"> 5</span>         CAccumulatorFunctor3 accumulator2 =<span style="color: #000000;"> CAccumulatorFunctor3();
+</span><span style="color: #008080;"> 6</span>         std::thread t1(std::<span style="color: #0000ff;">ref</span><span style="color: #000000;">(accumulator1), 
+</span><span style="color: #008080;"> 7</span>             std::<span style="color: #0000ff;">ref</span>(v), <span style="color: #800080;">0</span>, v.size() / <span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 8</span>         std::thread t2(std::<span style="color: #0000ff;">ref</span><span style="color: #000000;">(accumulator2), 
+</span><span style="color: #008080;"> 9</span>             std::<span style="color: #0000ff;">ref</span>(v), v.size() / <span style="color: #800080;">2</span><span style="color: #000000;">, v.size());
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">        t1.join();
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">        t2.join();
+</span><span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm1: </span><span style="color: #800000;">"</span> &lt;&lt; accumulator1._acm &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">14</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm2: </span><span style="color: #800000;">"</span> &lt;&lt; accumulator2._acm &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">15</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">accumulator1._acm + accumulator2._acm : </span><span style="color: #800000;">"</span> &lt;&lt; 
+<span style="color: #008080;">16</span>             accumulator1._acm + accumulator2._acm &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">17</span>     }</pre>
+</div>
+<h3>上面这段你需要知道：</h3>
+<p>　　伪函数的使用方式大部分地方都和函数指针很像，除了：</p>
+<p>　　1.第一个参数变成了伪函数对象。</p>
+<p>　　2.我们不再需要使用引用来获取返回值了，我们可以将返回值作为伪函数对象的一个成员变量来储存。这里的例子就是_acm。</p>
+<h2>使用lambda表达式</h2>
+<p>　　作为第三种选择，我们可以在每个线程的构造函数中使用lambda表达式来定义我们想做的事，如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 2</span>         unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> acm1 = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 3</span>         unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> acm2 = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 4</span>         std::thread t1([&amp;acm1, &amp;<span style="color: #000000;">v] {
+</span><span style="color: #008080;"> 5</span>             <span style="color: #0000ff;">for</span> (unsigned <span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; v.size() / <span style="color: #800080;">2</span>; ++<span style="color: #000000;">i)
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;"> 7</span>                 acm1 +=<span style="color: #000000;"> v[i];
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">        });
+</span><span style="color: #008080;">10</span>         std::thread t2([&amp;acm2, &amp;<span style="color: #000000;">v] {
+</span><span style="color: #008080;">11</span>             <span style="color: #0000ff;">for</span> (unsigned <span style="color: #0000ff;">int</span> i = v.size() / <span style="color: #800080;">2</span>; i &lt; v.size(); ++<span style="color: #000000;">i)
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">13</span>                 acm2 +=<span style="color: #000000;"> v[i];
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">        });
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">        t1.join();
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">        t2.join();
+</span><span style="color: #008080;">18</span> 
+<span style="color: #008080;">19</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm1: </span><span style="color: #800000;">"</span> &lt;&lt; acm1 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">20</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm2: </span><span style="color: #800000;">"</span> &lt;&lt; acm2 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">21</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm1 + acm2: </span><span style="color: #800000;">"</span> &lt;&lt; acm1 + acm2 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">22</span>     }</pre>
+</div>
+<p>同样，大多数地方都和函数指针的方式很类似，除了：</p>
+<p>　　1.作为传参的替代方式，我们可以使用lambda表达式的捕获(capture)方式来处理参数传递</p>
+<h2>Tasks, Futures, and&nbsp;Promises</h2>
+<p>除了std::thread，我们还可以使用 tasks.<span style="background-color: rgba(0, 0, 0, 0.05); color: rgba(0, 0, 0, 0.84); font-family: Menlo, Monaco, 'Courier New', Courier, monospace; font-size: 16px; letter-spacing: -0.063px;"><br /></span></p>
+<p>tasks和std::thread工作的方式非常相似，只有一个最主要的不同：tasks可以返回一个值。因此，你可以暂存这个返回值来作为这个线程的更抽象的定义方式，并在你真的需要返回的结果的时候来从这个返回值中拿到数据。</p>
+<p>下面就是使用Tasks的例子：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;future&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #008000;">//</span><span style="color: #008000;">Tasks, Future, and Promises</span>
+<span style="color: #008080;"> 3</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 4</span>         auto f1 = [](std::vector&lt;<span style="color: #0000ff;">int</span>&gt; &amp;<span style="color: #000000;">v, 
+</span><span style="color: #008080;"> 5</span>             unsigned <span style="color: #0000ff;">int</span> left, unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> right) {
+</span><span style="color: #008080;"> 6</span>             unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> acm = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 7</span>             <span style="color: #0000ff;">for</span> (unsigned <span style="color: #0000ff;">int</span> i = left; i &lt; right; ++<span style="color: #000000;">i)
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;"> 9</span>                 acm +=<span style="color: #000000;"> v[i];
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span>             <span style="color: #0000ff;">return</span><span style="color: #000000;"> acm;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">        };
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span>         auto t1 = std::async(f1, std::<span style="color: #0000ff;">ref</span><span style="color: #000000;">(v), 
+</span><span style="color: #008080;">16</span>             <span style="color: #800080;">0</span>, v.size() / <span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">17</span>         auto t2 = std::async(f1, std::<span style="color: #0000ff;">ref</span><span style="color: #000000;">(v), 
+</span><span style="color: #008080;">18</span>             v.size() / <span style="color: #800080;">2</span><span style="color: #000000;">, v.size());
+</span><span style="color: #008080;">19</span> 
+<span style="color: #008080;">20</span>         <span style="color: #008000;">//</span><span style="color: #008000;">You can do other things here!</span>
+<span style="color: #008080;">21</span>         unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> acm1 = t1.<span style="color: #0000ff;">get</span><span style="color: #000000;">();
+</span><span style="color: #008080;">22</span>         unsigned <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> acm2 = t2.<span style="color: #0000ff;">get</span><span style="color: #000000;">();
+</span><span style="color: #008080;">23</span> 
+<span style="color: #008080;">24</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm1: </span><span style="color: #800000;">"</span> &lt;&lt; acm1 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">25</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm2: </span><span style="color: #800000;">"</span> &lt;&lt; acm2 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">26</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">acm1 + acm2: </span><span style="color: #800000;">"</span> &lt;&lt; acm1 + acm2 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">27</span>     }</pre>
+</div>
+<h3>上面这段你需要知道：</h3>
+<p>　　1.tasks使用std::async创建</p>
+<p>　　2.std::async的返回值是一个叫std::future的类型。别被他的名字唬到，他的意思是t1和t2的值会在未来被真正的赋值。我们通过调用t1.get()来获得他的真正的返回值。</p>
+<p>　　3.如果future的返回值还没有准备好（任务还没有计算完成），那么调用get()的主线程会被卡住，直到准备好了返回值（和join()的行为一样）。</p>
+<p>　　4.注意，我们传递给std::async的函数（实际上是lambda表达式）是有返回值的，这个返回值用过一个叫做std::promise的类型来传递。大多数情况下你不需要了解任何promise的细节，C++在幕后可以处理好这些事情。</p>
+<p>　　5.默认的情况下，tasks也会在创建之后立刻运行（有办法来修改这个行为，但是本文没有涉及）。</p>
+<h2>线程创建的总结：</h2>
+<p>　　创建线程很简单，你可以通过函数指针、伪函数、lambda表达式的方式来创建std::thread，也可以使用std::async的方式来获得一个std::future类型的返回值。std::async也同样可以使用函数指针、伪函数、lambda表达式来创建</p>
+<p><span style="color: rgba(0, 0, 0, 0.84); font-family: Menlo, Monaco, 'Courier New', Courier, monospace; font-size: 16px; letter-spacing: -0.063px; background-color: rgba(0, 0, 0, 0.05);">（未完待续）</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

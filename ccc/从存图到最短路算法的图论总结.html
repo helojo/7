@@ -1,0 +1,402 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修从存图到最短路算法的图论总结' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>从存图到最短路算法的图论总结</center></div><div class='banquan'>原文出处:本文由博客园博主会宁狐狸提供。<br/>
+原文连接:https://www.cnblogs.com/HNFOX/p/11272427.html</div><br>
+    <h1><span style="font-family: comic sans ms,sans-serif;">INTRODUCTION:</span></h1>
+<h3><span style="font-family: 幼圆;">图论算法在计算机科学中扮演着很重要的角色，它提供了对很多问题都有效的一种简单而系统的建模方式。很多问题都可以转化为图论问题，然后用图论的基本算法加以解决。--百度百科</span><span style="font-family: 幼圆;"><br /></span></h3>
+<h3>对于OI而言，图是指由若干给定的点及若干条连接两点的线(边)所构成的图形</h3>
+<h3>借助图论知识，我们往往可以将一些复杂的问题转化到基础的图论算法上，进而使用已有算法解决全新问题</h3>
+<h3>那么想如果想要运用图论，首先要从存图开始</h3>
+<h3><em>前排感谢教我图论的周润喵老师，syc学长，就序老师</em></h3>
+<h3><span style="text-decoration: line-through;">可是我还是没学会</span></h3>
+<h1>存图</h1>
+<h2>1，邻接矩阵（Adjacency matrix）</h2>
+<h3>邻接矩阵作为一种简洁实用的存图方式，具有简单可靠的优势，一般不太会打错，但是他的空间复杂度高达O(n^2),使得他的使用相当受局限</h3>
+<h3>不过，在数据范围比较小或者想要打暴力部分分的时候，邻接矩阵还是具有相当大的优势的。</h3>
+<h3><em>（比如说邻接矩阵+Floyd打暴力）</em></h3>
+<h3>在邻接矩阵中，我们用<span style="background-color: #00ffff;">e[i][j]</span>表示<span style="background-color: #00ffff;">点i到点j的距离</span>（也就是边i-&gt;j的边权）</h3>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span>     <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> INF = <span style="color: #800080;">9999999999</span>;<span style="color: #008000;">//</span><span style="color: #008000;">设一个较大的数为无穷大</span>
+<span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">int</span> n, m;<span style="color: #008000;">//</span><span style="color: #008000;">n为点数，m为边数</span>
+<span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">int</span> e[<span style="color: #800080;">5005</span>][<span style="color: #800080;">5005</span>];<span style="color: #008000;">//</span><span style="color: #008000;">貌似开5005*5005就快MLE了...所以要谨慎一点</span>
+<span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 5</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">1</span>; j &lt;= n; j++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 6</span>             <span style="color: #0000ff;">if</span> (i ==<span style="color: #000000;"> j)
+</span><span style="color: #008080;"> 7</span>                 e[i][j] = <span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">我自己到我自己的距离当然是0</span>
+<span style="color: #008080;"> 8</span>             <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 9</span>                 e[i][j] = INF;<span style="color: #008000;">//</span><span style="color: #008000;">一开始还没有边，所以我到其他人的距离先设为无穷大</span>
+<span style="color: #008080;">10</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= m; i++)<span style="color: #008000;">//</span><span style="color: #008000;">读入边</span>
+<span style="color: #008080;">11</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">12</span>         <span style="color: #0000ff;">int</span> <span style="color: #0000ff;">from</span>, to, weight;<span style="color: #008000;">//</span><span style="color: #008000;">从哪来，到哪去，路多长</span>
+<span style="color: #008080;">13</span>         cin &gt;&gt; <span style="color: #0000ff;">from</span> &gt;&gt; to &gt;&gt;<span style="color: #000000;"> weight;
+</span><span style="color: #008080;">14</span>         e[<span style="color: #0000ff;">from</span>][to] = weight;<span style="color: #008000;">//</span><span style="color: #008000;">无向图存两遍</span>
+<span style="color: #008080;">15</span>         e[to][<span style="color: #0000ff;">from</span>] = weight;<span style="color: #008000;">//</span><span style="color: #008000;">from到to的距离和to到from的距离是相等的</span>
+<span style="color: #008080;">16</span>     }</pre>
+</div>
+<h3><span style="font-family: 幼圆;">&nbsp;个人认为邻接矩阵是一种比较可靠的存图方式，在数据较小的时候一般不会出错，</span></h3>
+<h3><span style="font-family: 幼圆;">不过在使用时一定要根据题目含义对有向图，无向图或重边，自环，等特殊情况进行判断，以免出错。</span></h3>
+<h2><span style="font-family: 幼圆;">2，邻接表（Adjacency table）</span></h2>
+<h3><span><span style="font-family: 幼圆;">观察之前的邻接矩阵，我们可以看出，当存在很多个点（假设有n个），但边的数量（m）却远小于n<sup>2</sup></span><span style="font-family: 幼圆;">时，矩阵中很多的空间都没有用到，存在着极大的空间浪费</span></span></h3>
+<h3><span><span style="font-family: 幼圆;">这使得邻接矩阵无法应付n&gt;=10000(甚至更大)的情况，然而这种在OI里是很常见的，所以我们就要引入一种OI里最常见（总之我觉得挺常见的）</span></span></h3>
+<h3><span><span style="font-family: 幼圆;">的存图方式：邻接表</span></span></h3>
+<h3><span><span style="font-family: 幼圆;">首先，邻接表本质上是一种链表，表中的每一个节点使用指针或模拟指针进行连接（其实是不连着的）</span></span></h3>
+<h3><span><span style="font-family: 幼圆;">同时，邻接表不同于邻接矩阵，他是以边为单位进行存储的，所以他所占的空间完全由边的数量决定，和点的数量没什么关系，</span></span></h3>
+<h3><span><span style="font-family: 幼圆;">他无论在空间还是时间上都相当优秀，在OI中一般情况下不会出现连邻接矩阵都存不下的图（至少本蒟蒻没见过）</span></span></h3>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 2</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 3</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> edge
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">int</span> <span style="color: #0000ff;">from</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> to;
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span> next;<span style="color: #008000;">//</span><span style="color: #008000;">模拟指针</span>
+<span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> weight;
+</span><span style="color: #008080;"> 9</span> }e[<span style="color: #800080;">2000080</span>];<span style="color: #008000;">//</span><span style="color: #008000;">他开很大都不会爆，不过要注意无向图开两倍
+</span><span style="color: #008080;">10</span> <span style="color: #008000;">//</span><span style="color: #008000;">毕竟一条无向边其实是当作两条有向边存的</span>
+<span style="color: #008080;">11</span> <span style="color: #0000ff;">int</span> head[<span style="color: #800080;">50005</span>];<span style="color: #008000;">//</span><span style="color: #008000;">head[i]表示点i所发出的第一条边的数组下标</span>
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">int</span> tot;<span style="color: #008000;">//</span><span style="color: #008000;">边的总数</span>
+<span style="color: #008080;">13</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> n, m;
+</span><span style="color: #008080;">14</span> <span style="color: #0000ff;">void</span> add(<span style="color: #0000ff;">int</span> <span style="color: #0000ff;">from</span>,<span style="color: #0000ff;">int</span> to,<span style="color: #0000ff;">int</span><span style="color: #000000;"> weight)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">16</span>     tot++<span style="color: #000000;">;
+</span><span style="color: #008080;">17</span>     e[tot].<span style="color: #0000ff;">from</span> = <span style="color: #0000ff;">from</span><span style="color: #000000;">;
+</span><span style="color: #008080;">18</span>     e[tot].to =<span style="color: #000000;"> to;
+</span><span style="color: #008080;">19</span>     e[tot].weight =<span style="color: #000000;"> weight;
+</span><span style="color: #008080;">20</span>     e[tot].next = head[<span style="color: #0000ff;">from</span><span style="color: #000000;">];
+</span><span style="color: #008080;">21</span>     head[<span style="color: #0000ff;">from</span>] =<span style="color: #000000;"> tot;
+</span><span style="color: #008080;">22</span> }<span style="color: #008000;">//</span><span style="color: #008000;">加边的模板</span>
+<span style="color: #008080;">23</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">25</span>     cin &gt;&gt; n &gt;&gt;<span style="color: #000000;"> m;
+</span><span style="color: #008080;">26</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= m; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">28</span>         <span style="color: #0000ff;">int</span><span style="color: #000000;"> x, y, z;
+</span><span style="color: #008080;">29</span>         cin &gt;&gt; x &gt;&gt; y &gt;&gt;<span style="color: #000000;"> z;
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">        add(x, y, z);
+</span><span style="color: #008080;">31</span>         add(y, x, z);<span style="color: #008000;">//</span><span style="color: #008000;">依然无向边存两次</span>
+<span style="color: #008080;">32</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">33</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = head[<span style="color: #800080;">1</span>]; i; i =<span style="color: #000000;"> e[i].next)
+</span><span style="color: #008080;">34</span>         <span style="color: #008000;">//</span><span style="color: #008000;">遍历该点上所有的边，如果没有下一条了（i=0），我就停
+</span><span style="color: #008080;">35</span>         <span style="color: #008000;">//</span><span style="color: #008000;">如果还有下一条边，我就继续往后遍历（i=e[i].next）</span>
+<span style="color: #008080;">36</span>         cout &lt;&lt;<span style="color: #000000;"> e[i].to;
+</span><span style="color: #008080;">37</span>     <span style="color: #008000;">//</span><span style="color: #008000;">貌似没解释清楚，感性理解一下？</span>
+<span style="color: #008080;">38</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">39</span> }</pre>
+</div>
+<h2>3，vector存图</h2>
+<h3>利用stl库中提供的动态数组vector存图，时空上的效率都和邻接表差不多（据说开了OI优化会稍微快一点）</h3>
+<h3>注意要开&lt;vector&gt;头文件</h3>
+<div class="cnblogs_code">
+<pre>#include&lt;iostream&gt;<span style="color: #000000;">
+#include</span>&lt;vector&gt;<span style="color: #000000;">
+#include</span>&lt;algorithm&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> edge
+{
+    </span><span style="color: #0000ff;">int</span> <span style="color: #0000ff;">from</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> to;
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> weight;
+};
+vector</span>&lt;edge&gt; e[<span style="color: #800080;">100086</span>];<span style="color: #008000;">//</span><span style="color: #008000;">e[i][j]表示点i的第j条边
+</span><span style="color: #008000;">//</span><span style="color: #008000;">貌似比邻接表稍微简单一点</span>
+<span style="color: #0000ff;">int</span><span style="color: #000000;"> n, m;
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    cin </span>&gt;&gt; n &gt;&gt;<span style="color: #000000;"> m;
+    </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= n; i++<span style="color: #000000;">)
+    {
+        edge t;</span><span style="color: #008000;">//</span><span style="color: #008000;">定义一条新的的边出来</span>
+        <span style="color: #0000ff;">int</span><span style="color: #000000;"> x, y, z;
+        cin </span>&gt;&gt; x &gt;&gt; y &gt;&gt;<span style="color: #000000;"> z;
+        t.</span><span style="color: #0000ff;">from</span> =<span style="color: #000000;"> x;
+        t.to </span>=<span style="color: #000000;"> y;
+        t.weight;
+        e[x].push_back(t);</span><span style="color: #008000;">//</span><span style="color: #008000;">把他塞进去</span>
+        t.<span style="color: #0000ff;">from</span> =<span style="color: #000000;"> y;
+        t.to </span>=<span style="color: #000000;"> x;
+        e[y].push_back(t);</span><span style="color: #008000;">//</span><span style="color: #008000;">改一改，反向塞进去</span>
+<span style="color: #000000;">    }
+    </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; e[<span style="color: #800080;">1</span>].size(); i++<span style="color: #000000;">)
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">查询很方便
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">不过注意vector是从0开始的</span>
+        cout &lt;&lt; e[<span style="color: #800080;">1</span><span style="color: #000000;">][i].to;
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<h2>存图时的坑点：</h2>
+<ul>
+<li>
+<h3>重边：比较一下他和原本的那条边那个权值更小，选更小的存</h3>
+</li>
+<li>
+<h3>自环：对于一般的题貌似可以直接不管他</h3>
+</li>
+<li>
+<h3>无向图没开两倍：二话不说直接RE</h3>
+</li>
+</ul>
+<h1>最短路</h1>
+<h3>常见的最短路算法有：</h3>
+<h3>Floyd，Dijkstra以及Bellman Ford</h3>
+<h3>当然还有他们的优化，以及一些其他的算法，不过貌似那些都有很多限制条件，只能在一些特定情况下只用</h3>
+<h2>1，Floyd</h2>
+<h3>核心代码</h3>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> k = <span style="color: #800080;">1</span>; k &lt;= n; k++)<span style="color: #008000;">//</span><span style="color: #008000;">枚举中间点</span>
+<span style="color: #008080;">2</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= n; i++)<span style="color: #008000;">//</span><span style="color: #008000;">枚举起点</span>
+<span style="color: #008080;">3</span>             <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">1</span>; j &lt;= n; j++)<span style="color: #008000;">//</span><span style="color: #008000;">枚举终点</span>
+<span style="color: #008080;">4</span>                 e[i][j] = min(e[i][j], e[i][k] + e[k][j]);<span style="color: #008000;">//</span><span style="color: #008000;">替换</span></pre>
+</div>
+<h3>完整代码</h3>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include&lt;vector&gt;
+<span style="color: #008080;"> 3</span> #include&lt;algorithm&gt;
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 5</span> <span style="color: #0000ff;">int</span> e[<span style="color: #800080;">1000</span>][<span style="color: #800080;">1000</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> n, m;
+</span><span style="color: #008080;"> 9</span>     cin &gt;&gt; n &gt;&gt;<span style="color: #000000;"> m;
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">11</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">1</span>; j &lt;= m; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">12</span>             <span style="color: #0000ff;">if</span> (i ==<span style="color: #000000;"> j)
+</span><span style="color: #008080;">13</span>                 e[i][j] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">14</span>             <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">15</span>                 e[i][j] = <span style="color: #800080;">9999999</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= m; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">18</span>         <span style="color: #0000ff;">int</span><span style="color: #000000;"> x, y, z;
+</span><span style="color: #008080;">19</span>         cin &gt;&gt; x &gt;&gt; y &gt;&gt;<span style="color: #000000;"> z;
+</span><span style="color: #008080;">20</span>         e[x][y] =<span style="color: #000000;"> z;
+</span><span style="color: #008080;">21</span>         e[y][z] =<span style="color: #000000;"> z;
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">23</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> k = <span style="color: #800080;">1</span>; k &lt;= n; k++)<span style="color: #008000;">//</span><span style="color: #008000;">枚举中间点</span>
+<span style="color: #008080;">24</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= n; i++)<span style="color: #008000;">//</span><span style="color: #008000;">枚举起点</span>
+<span style="color: #008080;">25</span>             <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">1</span>; j &lt;= n; j++)<span style="color: #008000;">//</span><span style="color: #008000;">枚举终点</span>
+<span style="color: #008080;">26</span>                 e[i][j] = min(e[i][j], e[i][k] + e[k][j]);<span style="color: #008000;">//</span><span style="color: #008000;">替换</span>
+<span style="color: #008080;">27</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">28</span> }</pre>
+</div>
+<h2>算法优点：</h2>
+<ul>
+<li>
+<h3>他求的是多源最短路，也就是说跑完一次Floyd，那么图中任意两个点之间的最短路就都知道了，不像后两种求的是单源最短路</h3>
+</li>
+<li>
+<h3>好打</h3>
+</li>
+</ul>
+<h2>算法缺点：</h2>
+<ul>
+<li>
+<h3>太慢了.....时间复杂度O(n<sup>3</sup>)</h3>
+</li>
+</ul>
+<h2>2，Dijkstra</h2>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include&lt;algorithm&gt;
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 4</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">long</span> inf = <span style="color: #800080;">20041001</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 5</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> n;
+</span><span style="color: #008080;"> 6</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> m;
+</span><span style="color: #008080;"> 7</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> s;
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> tot;
+</span><span style="color: #008080;"> 9</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> edge
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">long</span><span style="color: #000000;"> weight;
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> to;
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> next;
+</span><span style="color: #008080;">14</span> }e[<span style="color: #800080;">500005</span><span style="color: #000000;">];
+</span><span style="color: #008080;">15</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> node
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">17</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> head;
+</span><span style="color: #008080;">18</span> }no[<span style="color: #800080;">10086</span><span style="color: #000000;">];
+</span><span style="color: #008080;">19</span> <span style="color: #0000ff;">long</span> <span style="color: #0000ff;">long</span> dis[<span style="color: #800080;">10086</span><span style="color: #000000;">];
+</span><span style="color: #008080;">20</span> <span style="color: #0000ff;">bool</span> book[<span style="color: #800080;">10086</span><span style="color: #000000;">];
+</span><span style="color: #008080;">21</span> <span style="color: #0000ff;">void</span> add(<span style="color: #0000ff;">int</span> <span style="color: #0000ff;">from</span>, <span style="color: #0000ff;">int</span> to, <span style="color: #0000ff;">int</span><span style="color: #000000;"> weight)
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">23</span>     tot++<span style="color: #000000;">;
+</span><span style="color: #008080;">24</span>     e[tot].to =<span style="color: #000000;"> to;
+</span><span style="color: #008080;">25</span>     e[tot].weight =<span style="color: #000000;"> weight;
+</span><span style="color: #008080;">26</span>     e[tot].next = no[<span style="color: #0000ff;">from</span><span style="color: #000000;">].head;
+</span><span style="color: #008080;">27</span>     no[<span style="color: #0000ff;">from</span>].head =<span style="color: #000000;"> tot;
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">29</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">31</span>     cin &gt;&gt; n &gt;&gt; m &gt;&gt;<span style="color: #000000;"> s;
+</span><span style="color: #008080;">32</span>     book[s] = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">33</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">34</span>         dis[i] =<span style="color: #000000;"> inf;
+</span><span style="color: #008080;">35</span>     dis[s] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">36</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= m; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">38</span>         <span style="color: #0000ff;">int</span><span style="color: #000000;"> x, y, w;
+</span><span style="color: #008080;">39</span>         cin &gt;&gt; x &gt;&gt; y &gt;&gt;<span style="color: #000000;"> w;
+</span><span style="color: #008080;">40</span>         <span style="color: #0000ff;">if</span> (x !=<span style="color: #000000;"> y)
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">            add(x, y, w);
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">43</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = no[s].head; i; i =<span style="color: #000000;"> e[i].next)
+</span><span style="color: #008080;">44</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">45</span>         <span style="color: #0000ff;">if</span> (e[i].weight &lt;<span style="color: #000000;"> dis[e[i].to])
+</span><span style="color: #008080;">46</span>             dis[e[i].to] =<span style="color: #000000;"> e[i].weight;
+</span><span style="color: #008080;">47</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">48</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt; n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">50</span>         <span style="color: #0000ff;">int</span> u = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">51</span>         <span style="color: #0000ff;">int</span> minn =<span style="color: #000000;"> inf;
+</span><span style="color: #008080;">52</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">1</span>; j &lt;= n; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">54</span>             <span style="color: #0000ff;">if</span> (book[j] == <span style="color: #800080;">0</span> &amp;&amp; dis[j] &lt;<span style="color: #000000;"> minn)
+</span><span style="color: #008080;">55</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">56</span>                 minn =<span style="color: #000000;"> dis[j];
+</span><span style="color: #008080;">57</span>                 u =<span style="color: #000000;"> j;
+</span><span style="color: #008080;">58</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">59</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">60</span>         book[u] = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">61</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = no[u].head; i; i =<span style="color: #000000;"> e[i].next)
+</span><span style="color: #008080;">62</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">63</span>             <span style="color: #0000ff;">if</span> (dis[e[i].to] &gt; dis[u] +<span style="color: #000000;"> e[i].weight)
+</span><span style="color: #008080;">64</span>                 dis[e[i].to] = dis[u] +<span style="color: #000000;"> e[i].weight;
+</span><span style="color: #008080;">65</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">66</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">67</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">68</span>         cout &lt;&lt; dis[i] &lt;&lt; <span style="color: #800000;">"</span> <span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">69</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">70</span> }</pre>
+</div>
+<h2>算法优点</h2>
+<ul>
+<li>
+<h3>快了不少，好歹达到了O(n<sup>2</sup>)的复杂度，用堆儿优化之后甚至可以达到O((n+m)logn),算是比较优秀了</h3>
+</li>
+</ul>
+<h2>算法缺点</h2>
+<ul>
+<li>
+<h3>求的是单源最短路，也就是说我每次求完都只能知道点s到各个点的最短距离，如果我要求每个点的，也就要跑n次，就很慢了</h3>
+</li>
+</ul>
+<ul>
+<li>
+<h3>关键是他处理不了负权边，尤其是负权回路</h3>
+</li>
+</ul>
+<h2>3，Bellman Ford</h2>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include&lt;<span style="color: #0000ff;">string</span>.h&gt;
+<span style="color: #008080;"> 3</span> #include&lt;algorithm&gt;
+<span style="color: #008080;"> 4</span> #include&lt;vector&gt;
+<span style="color: #008080;"> 5</span> #include&lt;map&gt;
+<span style="color: #008080;"> 6</span> #include&lt;bitset&gt;
+<span style="color: #008080;"> 7</span> #include&lt;<span style="color: #0000ff;">set</span>&gt;
+<span style="color: #008080;"> 8</span> #include&lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 9</span> <span style="color: #0000ff;">#if</span> !defined(_WIN32)
+<span style="color: #008080;">10</span> #include&lt;bits/stdc++.h&gt;
+<span style="color: #008080;">11</span> <span style="color: #0000ff;">#endif</span> <span style="color: #008000;">//</span><span style="color: #008000;"> !defined(_WIN32)</span>
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">#define</span> ll long long
+<span style="color: #008080;">13</span> <span style="color: #0000ff;">#define</span> dd double
+<span style="color: #008080;">14</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;">15</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> t;
+</span><span style="color: #008080;">16</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> n, m, w;
+</span><span style="color: #008080;">17</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> tot;
+</span><span style="color: #008080;">18</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> edge
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">20</span>     <span style="color: #0000ff;">int</span> <span style="color: #0000ff;">from</span><span style="color: #000000;">;
+</span><span style="color: #008080;">21</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> to;
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> weight;
+</span><span style="color: #008080;">23</span> }e[<span style="color: #800080;">100086</span><span style="color: #000000;">];
+</span><span style="color: #008080;">24</span> <span style="color: #0000ff;">int</span> dis[<span style="color: #800080;">5005</span><span style="color: #000000;">];
+</span><span style="color: #008080;">25</span> <span style="color: #0000ff;">void</span> add(<span style="color: #0000ff;">int</span> x, <span style="color: #0000ff;">int</span> y, <span style="color: #0000ff;">int</span><span style="color: #000000;"> z)
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">27</span>     tot++<span style="color: #000000;">;
+</span><span style="color: #008080;">28</span>     e[tot].<span style="color: #0000ff;">from</span> =<span style="color: #000000;"> x;
+</span><span style="color: #008080;">29</span>     e[tot].to =<span style="color: #000000;"> y;
+</span><span style="color: #008080;">30</span>     e[tot].weight =<span style="color: #000000;"> z;
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">32</span> <span style="color: #0000ff;">bool</span><span style="color: #000000;"> Bellman_Ford()
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">34</span>     memset(dis, <span style="color: #800080;">0x3f3f3f3f</span>, <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(dis));
+</span><span style="color: #008080;">35</span>     dis[<span style="color: #800080;">1</span>] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">36</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt; n; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">38</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">1</span>; j &lt;= tot; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">39</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">40</span>             <span style="color: #0000ff;">if</span> (dis[e[j].to] &gt; dis[e[j].<span style="color: #0000ff;">from</span>] +<span style="color: #000000;"> e[j].weight)
+</span><span style="color: #008080;">41</span>                 dis[e[j].to] = dis[e[j].<span style="color: #0000ff;">from</span>] +<span style="color: #000000;"> e[j].weight;
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">43</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">44</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= tot; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">45</span>         <span style="color: #0000ff;">if</span> (dis[e[i].to] &gt; dis[e[i].<span style="color: #0000ff;">from</span>] +<span style="color: #000000;"> e[i].weight)
+</span><span style="color: #008080;">46</span>             <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">47</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">48</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">49</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">50</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">51</span>     cin &gt;&gt;<span style="color: #000000;"> t;
+</span><span style="color: #008080;">52</span>     <span style="color: #0000ff;">while</span> (t--<span style="color: #000000;">)
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">54</span>         tot = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">55</span>         memset(e, <span style="color: #800080;">0</span>, <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(e));
+</span><span style="color: #008080;">56</span>         memset(dis, <span style="color: #800080;">0</span>, <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(dis));
+</span><span style="color: #008080;">57</span>         n = <span style="color: #800080;">0</span>, m = <span style="color: #800080;">0</span>, w = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">58</span>         cin &gt;&gt; n &gt;&gt; m &gt;&gt;<span style="color: #000000;"> w;
+</span><span style="color: #008080;">59</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= m; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">60</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">61</span>             <span style="color: #0000ff;">int</span><span style="color: #000000;"> x, y, z;
+</span><span style="color: #008080;">62</span>             cin &gt;&gt; x &gt;&gt; y &gt;&gt;<span style="color: #000000;"> z;
+</span><span style="color: #008080;">63</span> <span style="color: #000000;">            add(x, y, z);
+</span><span style="color: #008080;">64</span> <span style="color: #000000;">            add(y, x, z);
+</span><span style="color: #008080;">65</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">66</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt;= w; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">67</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">68</span>             <span style="color: #0000ff;">int</span><span style="color: #000000;"> x, y, z;
+</span><span style="color: #008080;">69</span>             cin &gt;&gt; x &gt;&gt; y &gt;&gt;<span style="color: #000000;"> z;
+</span><span style="color: #008080;">70</span>             add(x, y, <span style="color: #800080;">0</span> -<span style="color: #000000;"> z);
+</span><span style="color: #008080;">71</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">72</span>         <span style="color: #0000ff;">if</span><span style="color: #000000;"> (Bellman_Ford())
+</span><span style="color: #008080;">73</span>             cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">NO</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">74</span>         <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">75</span>             cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">YES</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">76</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">77</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">78</span> }</pre>
+</div>
+<h2>算法优点</h2>
+<ul>
+<li>
+<h3>可以处理负权，如果有负权回路，则可以把他判断出来</h3>
+</li>
+</ul>
+<h2>算法缺点</h2>
+<ul>
+<li>
+<h3>很慢，时间复杂度O(nm),而且求的是单元最短路，一般只用来判断是否有负权回路，而且实际使用时往往要使用他的队列优化，也就是SPFA</h3>
+</li>
+</ul>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

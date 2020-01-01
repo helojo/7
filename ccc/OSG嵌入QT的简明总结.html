@@ -1,0 +1,192 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修OSG嵌入QT的简明总结' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>OSG嵌入QT的简明总结</center></div><div class='banquan'>原文出处:本文由博客园博主charlee44提供。<br/>
+原文连接:https://www.cnblogs.com/charlee44/p/11031757.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#解决方案">1.解决方案</a></li>
+        <li><a href="#存在问题">2.存在问题</a><ul>
+        <li><a href="#警告提示">1) 警告提示</a></li>
+        <li><a href="#多线程问题">2) 多线程问题</a></li>
+        <li><a href="#其他">3) 其他</a></li>
+        </ul></li>
+        </ul>
+    </div>
+</div>
+<h1 id="解决方案">1.解决方案</h1>
+<p>不得不说关于OSG的资料实在太零散了，搜索了很多关于OSG在QT下的解决方案，都是各有各的说法，有的说的不是很清楚，有的已经过时了。这里提供一下自己的解决方案吧。<br />
+在远古的OSG里面，应该是提供对QT的支持的；不过应该是由于QT版本变动比较大，现在的OSG版本应该已经没有了。但是在GitHub上又有了新的osgQt项目（地址：<a href="https://github.com/openscenegraph/osgQt" class="uri">https://github.com/openscenegraph/osgQt</a>） 用来解决这个问题。<br />
+osgQt是个简单的小项目，其实没有必要额外的编译，最核心的是个名为GraphicsWindowQt的类，只需要复制GraphicsWindowQt.h和GraphicsWindowQt.cpp到QT工程里面就可以使用了。同时osgQt给出了一个名为osgviewerQt的样例，也仅仅只是个cpp文件。结合两者，一个简单的示例就出来了。<br />
+QT工程如下：<br />
+<img src="./images/OSG嵌入QT的简明总结0.png" /><br />
+编译运行后如下：<br />
+<img src="./images/OSG嵌入QT的简明总结1.png" /></p>
+<h1 id="存在问题">2.存在问题</h1>
+<h2 id="警告提示">1) 警告提示</h2>
+<p>上述项目直接运行，会出现诸如“QOpenGLContext::swapBuffers() called with non-exposed window, behavior is undefined”的警告。查阅网上的英文资料，大意说是因为OpenGL环境未初始化产生的。在osgviewerQt中绑定了一个定时器，每隔10ms就调用frame()来绘制一帧，而这个定时器是在构造函数的时候就开始调用了，没有等待QT中OpenGL环境的生成。在这里我把定时器的部分给改进了一下，等待OSG的环境初始化完成在启动定时器，这个警告就没有了。osgviewerQt改进后的代码如下：</p>
+<pre><code>#include &lt;QTimer&gt;
+#include &lt;QApplication&gt;
+#include &lt;QGridLayout&gt;
+
+#include &lt;osgViewer/CompositeViewer&gt;
+#include &lt;osgViewer/ViewerEventHandlers&gt;
+
+#include &lt;osgGA/MultiTouchTrackballManipulator&gt;
+
+#include &lt;osgDB/ReadFile&gt;
+
+#include &quot;GraphicsWindowQt&quot;
+
+#include &lt;iostream&gt;
+
+class ViewerWidget : public QWidget, public osgViewer::CompositeViewer
+{
+public:
+    ViewerWidget(QWidget* parent = 0, Qt::WindowFlags f = 0, osgViewer::ViewerBase::ThreadingModel threadingModel=osgViewer::CompositeViewer::SingleThreaded) : QWidget(parent, f)
+    {
+        setThreadingModel(threadingModel);
+
+        // disable the default setting of viewer.done() by pressing Escape.
+        setKeyEventSetsDone(0);
+
+        QWidget* widget1 = addViewWidget( createGraphicsWindow(0,0,100,100), osgDB::readRefNodeFile(&quot;D:/Work/OSGBuild/OpenSceneGraph-Data/cow.osgt&quot;) );
+        QWidget* widget2 = addViewWidget( createGraphicsWindow(0,0,100,100), osgDB::readRefNodeFile(&quot;D:/Work/OSGBuild/OpenSceneGraph-Data/glider.osgt&quot;) );
+        QWidget* widget3 = addViewWidget( createGraphicsWindow(0,0,100,100), osgDB::readRefNodeFile(&quot;D:/Work/OSGBuild/OpenSceneGraph-Data/axes.osgt&quot;) );
+        QWidget* widget4 = addViewWidget( createGraphicsWindow(0,0,100,100), osgDB::readRefNodeFile(&quot;D:/Work/OSGBuild/OpenSceneGraph-Data/fountain.osgt&quot;) );
+//        QWidget* popupWidget = addViewWidget( createGraphicsWindow(900,100,320,240,&quot;Popup window&quot;,true), osgDB::readRefNodeFile(&quot;D:/Work/OSGBuild/OpenSceneGraph-Data/dumptruck.osgt&quot;) );
+//        popupWidget-&gt;show();
+
+        QGridLayout* grid = new QGridLayout;
+        grid-&gt;addWidget( widget1, 0, 0 );
+        grid-&gt;addWidget( widget2, 0, 1 );
+        grid-&gt;addWidget( widget3, 1, 0 );
+        grid-&gt;addWidget( widget4, 1, 1 );
+        setLayout( grid );
+
+        //connect( &amp;_timer, SIGNAL(timeout()), this, SLOT(update()) );
+        //_timer.start( 10 );
+    }
+
+    QWidget* addViewWidget( osgQt::GraphicsWindowQt* gw, osg::ref_ptr&lt;osg::Node&gt; scene )
+    {
+        osgViewer::View* view = new osgViewer::View;
+        addView( view );
+
+        osg::Camera* camera = view-&gt;getCamera();
+        camera-&gt;setGraphicsContext( gw );
+
+        const osg::GraphicsContext::Traits* traits = gw-&gt;getTraits();
+
+        camera-&gt;setClearColor( osg::Vec4(0.2, 0.2, 0.6, 1.0) );
+        camera-&gt;setViewport( new osg::Viewport(0, 0, traits-&gt;width, traits-&gt;height) );
+
+        // set the draw and read buffers up for a double buffered window with rendering going to back buffer
+        camera-&gt;setDrawBuffer(GL_BACK);
+        camera-&gt;setReadBuffer(GL_BACK);
+
+        camera-&gt;setProjectionMatrixAsPerspective(30.0f, static_cast&lt;double&gt;(traits-&gt;width)/static_cast&lt;double&gt;(traits-&gt;height), 1.0f, 10000.0f );
+
+        view-&gt;setSceneData( scene );
+        view-&gt;addEventHandler( new osgViewer::StatsHandler );
+        view-&gt;setCameraManipulator( new osgGA::MultiTouchTrackballManipulator );
+        gw-&gt;setTouchEventsEnabled( true );
+        return gw-&gt;getGLWidget();
+    }
+
+    osgQt::GraphicsWindowQt* createGraphicsWindow( int x, int y, int w, int h, const std::string&amp; name=&quot;&quot;, bool windowDecoration=false )
+    {
+        osg::DisplaySettings* ds = osg::DisplaySettings::instance().get();
+        osg::ref_ptr&lt;osg::GraphicsContext::Traits&gt; traits = new osg::GraphicsContext::Traits;
+        traits-&gt;windowName = name;
+        traits-&gt;windowDecoration = windowDecoration;
+        traits-&gt;x = x;
+        traits-&gt;y = y;
+        traits-&gt;width = w;
+        traits-&gt;height = h;
+        traits-&gt;doubleBuffer = true;
+        traits-&gt;alpha = ds-&gt;getMinimumNumAlphaBits();
+        traits-&gt;stencil = ds-&gt;getMinimumNumStencilBits();
+        traits-&gt;sampleBuffers = ds-&gt;getMultiSamples();
+        traits-&gt;samples = ds-&gt;getNumMultiSamples();
+
+        return new osgQt::GraphicsWindowQt(traits.get());
+    }
+
+//    virtual void paintEvent( QPaintEvent* /*event*/ )
+//    { frame(); }
+
+    //定时器事件
+    void timerEvent(QTimerEvent* )
+    {
+        frame();
+    }
+
+    //启动定时器绘制
+    void show()
+    {
+        QWidget::show();
+        _timerID = startTimer(10);
+    }
+
+
+protected:
+
+    //QTimer _timer;
+    int _timerID;               //定时器ID
+};
+
+int main( int argc, char** argv )
+{
+    osg::ArgumentParser arguments(&amp;argc, argv);
+
+#if QT_VERSION &gt;= 0x050000
+    // Qt5 is currently crashing and reporting &quot;Cannot make QOpenGLContext current in a different thread&quot; when the viewer is run multi-threaded, this is regression from Qt4
+    osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::ViewerBase::SingleThreaded;
+#else
+    osgViewer::ViewerBase::ThreadingModel threadingModel = osgViewer::ViewerBase::CullDrawThreadPerContext;
+#endif
+
+    while (arguments.read(&quot;--SingleThreaded&quot;)) threadingModel = osgViewer::ViewerBase::SingleThreaded;
+    while (arguments.read(&quot;--CullDrawThreadPerContext&quot;)) threadingModel = osgViewer::ViewerBase::CullDrawThreadPerContext;
+    while (arguments.read(&quot;--DrawThreadPerContext&quot;)) threadingModel = osgViewer::ViewerBase::DrawThreadPerContext;
+    while (arguments.read(&quot;--CullThreadPerCameraDrawThreadPerContext&quot;)) threadingModel = osgViewer::ViewerBase::CullThreadPerCameraDrawThreadPerContext;
+
+#if QT_VERSION &gt;= 0x040800
+    // Required for multithreaded QGLWidget on Linux/X11, see http://blog.qt.io/blog/2011/06/03/threaded-opengl-in-4-8/
+    if (threadingModel != osgViewer::ViewerBase::SingleThreaded)
+        QApplication::setAttribute(Qt::AA_X11InitThreads);
+#endif
+
+    QApplication app(argc, argv);
+    ViewerWidget* viewWidget = new ViewerWidget(0, Qt::Widget, threadingModel);
+    viewWidget-&gt;setGeometry( 100, 100, 800, 600 );
+    viewWidget-&gt;show();
+    return app.exec();
+}</code></pre>
+<h2 id="多线程问题">2) 多线程问题</h2>
+<p>在OSG中提供了诸如CullDrawThreadPerContext等多线程模式，但是在这里是没办法支持这些多线程模式的，只能支持单线程。在网上查阅了一些解决方案，但是最后都不是很完美，有空再把其解决方案写出来。</p>
+<h2 id="其他">3) 其他</h2>
+<p>GraphicsWindowQt最终继承的还是QT中的QGLWidget类，提供OpenGL功能。而在新版本的QT中，这个类已经被废弃了，取而代之的是一个叫做QOpenGLWidget的类。所以这里面问题还是不少的，好在内容相对较少，以后有空可以自己改进。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,187 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法</center></div><div class='banquan'>原文出处:本文由博客园博主灼光提供。<br/>
+原文连接:https://www.cnblogs.com/laiyingpeng/p/11541881.html</div><br>
+    <h1>一、常见故障介绍　　</h1>
+<p>　　最近在开发相机项目（项目细节由于公司保密就不介绍了），程序运行5个来月以来首次出现msvcr100.dll故障等问题，于是乎开始了分析之路，按照度娘上的一顿操作，期间也是出现了各种不一样的问题，现总结了遇到的问题如：</p>
+<h2>1、MSVCR100.dll/MSVCR100D.dll/MSVCP100.dll/MSVCP100D.dll问题</h2>
+<p>　　问题事件名称:&nbsp; &nbsp; &nbsp; &nbsp; APPCRASH</p>
+<p>　　故障模块名称:&nbsp; &nbsp; &nbsp; &nbsp; MSVCR100.dll</p>
+<p><img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法0.png" alt="" /></p>
+<h2>2、R6010错误</h2>
+<p><img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法1.png" alt="" /></p>
+<p>　　现场遇到的情况基本都是这两类</p>
+<h1>二、故障排查</h1>
+<h2>1、静心思考</h2>
+<p>　　主要说一下我走过的历程，心酸只有自己知道，排查问题难免浮躁，但一定要沉得住，浮躁主要有以下几点：</p>
+<ul>
+<li>程序明明在自己机器上运行的好好的在客户机器上就会出问题；</li>
+<li>程序明明试着好好的，可你一离开就出现问题；</li>
+<li>程序连续运行好几个月版本都稳定了，可突然出问题，换电脑又复现不出来；</li>
+<li>连续处理一段时间后仍然没有结果，客户领导天天催。</li>
+</ul>
+<h2>2、检查库</h2>
+<ul>
+<li>1、如果新打包的程序提示缺少MSVCR100.dll、MSVCP100.dll&rdquo;或者&ldquo;MSVCR100d.dll\MSVCP100d.dll&rdquo;等类似错误信息，请从源机器或者网上下载该库拷贝到目标机器，库分32位和64位（跟自己操作系统有关），32拷贝到C:\Windows\System32，64位拷贝到C:\Windows\SysWOW64，记住库一定要统一版本，不要从别的机器东拼西凑，以一个机器为准；</li>
+<li>2、程序发布时最好将所需要的库也一并打包，在这我以vs编译器为例，可以从vs安装目录里拷贝MSVCR100.dll等相关运行库，记得区分32或者64位版本，目录如下：</li>
+</ul>
+<p><img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法2.png" alt="" /></p>
+<ul>
+<li>3.如果以上两步完成，程序重启后，还会出现类似问题，则继续往下排查，我给现场换完所有库之后，出现了R6010问题引起程序宕机</li>
+</ul>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法1.png" alt="" /></p>
+<h2>3、排查代码</h2>
+<h3>1）、代码层面检查</h3>
+<p>　　以上若还没解决问题，此时一定不要再纠结库（不要以为库版本不对），一定是你代码的问题，检查代码着重检查</p>
+<ul>
+<li>1.非法指针访问和内存泄漏</li>
+<li>2.设置的指针范围跟你运行的不对</li>
+<li>3.指针访问内存越界出现问题。</li>
+<li>4.因为不支持中文。</li>
+<li>5.内存不够分配</li>
+<li>6.多线程访问资源出的问题。</li>
+<li>7.检查exe和dll是否混用的不同版本的crt</li>
+</ul>
+<p>代码检查出异常更新版本后若问题解决皆大欢喜，若还没有解决，请接着往下走（本人就属于后者）。</p>
+<h3>2）、生成dump文件</h3>
+<p>　　一定要正视你的代码，C++系统崩溃无非就是内存访问无效、无效对象、堆栈溢出、空指针调用等常见的问题，当然有些问题不是立马能复现，它需要一定的条件，而这个条件它很复杂又由许多因素所制约；</p>
+<p>　　Dump文件是进程的内存镜像。可以把程序的执行状态通过调试器保存到dump文件中，Dump文件是用来给驱动程序编写人员调试驱动程序用的，这种文件必须用专用工具软件打开，比如使用WinDbg、VS打开，当程序崩溃时会生成dump文件，通过生成dump文件使用调试工具进行调试，还原程序崩溃时的状态，能够起到快速定位排查问题的作用，dump文件生成的方式如下：</p>
+<h4>(a)通过任务管理器生成</h4>
+<p>打开任务管理器，找到对应的进程，右击，选择创建转储文件</p>
+<p><img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法4.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>生成的文件路径如下：</p>
+<p><img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法5.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;<img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法6.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>生成的转储文件可以通过VS打开，但是正常运行的程序生成.DMP文件并没有什么大的作用，上述的方法要求在程序崩溃时并不直接退出时才可以使用，但是一般程序都是粗鲁的退出，所以这种方法适用于特定场合。</p>
+<h4>&nbsp;&nbsp;(b)编写代码生成</h4>
+<p>　　<span style="background-color: #ff0000;">一定要生成debug版本程序</span></p>
+<p>　　Windows提供了<span style="color: #ff0000;">SetUnhandledExceptionFilter</span>函数，MSDN中描述为：</p>
+<p>Issuing SetUnhandledExceptionFilter replaces the existing top-level exception filter for all existing and all future threads in the calling process.</p>
+<p>用于当程序遇到未经处理的异常(主要指非指针造成)导致程序崩溃宕机时的异常接受处理，该函数必须在异常可能发生之前调用才有效，我们可以在该函数中生成dump文件，以方便我们调试，代码网上很多，我贴出一部分（大佬不嫌弃请留言），在程序崩溃后会生成dump文件</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> GenerateMiniDump(HANDLE hFile, PEXCEPTION_POINTERS pExceptionPointers, PWCHAR pwAppName)
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span>     BOOL bOwnDumpFile =<span style="color: #000000;"> FALSE;
+</span><span style="color: #008080;"> 4</span>     HANDLE hDumpFile =<span style="color: #000000;"> hFile;
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">    MINIDUMP_EXCEPTION_INFORMATION ExpParam;
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span>     typedef BOOL(WINAPI *<span style="color: #000000;"> MiniDumpWriteDumpT)(
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">        HANDLE,
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">        DWORD,
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">        HANDLE,
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">        MINIDUMP_TYPE,
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">        PMINIDUMP_EXCEPTION_INFORMATION,
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">        PMINIDUMP_USER_STREAM_INFORMATION,
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">        PMINIDUMP_CALLBACK_INFORMATION
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">        );
+</span><span style="color: #008080;">16</span> 
+<span style="color: #008080;">17</span>     MiniDumpWriteDumpT pfnMiniDumpWriteDump =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">18</span>     HMODULE hDbgHelp = LoadLibrary(L<span style="color: #800000;">"</span><span style="color: #800000;">DbgHelp.dll</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;"> (hDbgHelp)
+</span><span style="color: #008080;">20</span>         pfnMiniDumpWriteDump = (MiniDumpWriteDumpT)GetProcAddress(hDbgHelp, <span style="color: #800000;">"</span><span style="color: #800000;">MiniDumpWriteDump</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">21</span> 
+<span style="color: #008080;">22</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;"> (pfnMiniDumpWriteDump)
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">24</span>         <span style="color: #0000ff;">if</span> (hDumpFile == NULL || hDumpFile ==<span style="color: #000000;"> INVALID_HANDLE_VALUE)
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">26</span>             <span style="color: #008000;">//</span><span style="color: #008000;">TCHAR szPath[MAX_PATH] = { 0 };</span>
+<span style="color: #008080;">27</span>             TCHAR szFileName[MAX_PATH] = { <span style="color: #800080;">0</span><span style="color: #000000;"> };
+</span><span style="color: #008080;">28</span>             <span style="color: #008000;">//</span><span style="color: #008000;">TCHAR* szAppName = pwAppName;</span>
+<span style="color: #008080;">29</span>             TCHAR* szVersion = L<span style="color: #800000;">"</span><span style="color: #800000;">v1.0</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">30</span>             TCHAR dwBufferSize =<span style="color: #000000;"> MAX_PATH;
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">            SYSTEMTIME stLocalTime;
+</span><span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span>             GetLocalTime(&amp;<span style="color: #000000;">stLocalTime);
+</span><span style="color: #008080;">34</span>             <span style="color: #008000;">//</span><span style="color: #008000;">GetTempPath(dwBufferSize, szPath);
+</span><span style="color: #008080;">35</span> 
+<span style="color: #008080;">36</span>             <span style="color: #008000;">//</span><span style="color: #008000;">wsprintf(szFileName, L"%s%s", szPath, szAppName);</span>
+<span style="color: #008080;">37</span> <span style="color: #000000;">            CreateDirectory(szFileName, NULL);
+</span><span style="color: #008080;">38</span> 
+<span style="color: #008080;">39</span>             wsprintf(szFileName, L<span style="color: #800000;">"</span><span style="color: #800000;">%s-%04d%02d%02d-%02d%02d%02d-%ld-%ld.dmp</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+</span><span style="color: #008080;">40</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">szPath, szAppName, szVersion,</span>
+<span style="color: #008080;">41</span> <span style="color: #000000;">                szVersion,
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">                stLocalTime.wYear, stLocalTime.wMonth, stLocalTime.wDay,
+</span><span style="color: #008080;">43</span> <span style="color: #000000;">                stLocalTime.wHour, stLocalTime.wMinute, stLocalTime.wSecond,
+</span><span style="color: #008080;">44</span> <span style="color: #000000;">                GetCurrentProcessId(), GetCurrentThreadId());
+</span><span style="color: #008080;">45</span>             hDumpFile = CreateFile(szFileName, GENERIC_READ |<span style="color: #000000;"> GENERIC_WRITE,
+</span><span style="color: #008080;">46</span>                 FILE_SHARE_WRITE | FILE_SHARE_READ, <span style="color: #800080;">0</span>, CREATE_ALWAYS, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">47</span> 
+<span style="color: #008080;">48</span>             bOwnDumpFile =<span style="color: #000000;"> TRUE;
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">            OutputDebugString(szFileName);
+</span><span style="color: #008080;">50</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">51</span> 
+<span style="color: #008080;">52</span>         <span style="color: #0000ff;">if</span> (hDumpFile !=<span style="color: #000000;"> INVALID_HANDLE_VALUE)
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">54</span>             ExpParam.ThreadId =<span style="color: #000000;"> GetCurrentThreadId();
+</span><span style="color: #008080;">55</span>             ExpParam.ExceptionPointers =<span style="color: #000000;"> pExceptionPointers;
+</span><span style="color: #008080;">56</span>             ExpParam.ClientPointers =<span style="color: #000000;"> FALSE;
+</span><span style="color: #008080;">57</span> 
+<span style="color: #008080;">58</span> <span style="color: #000000;">            pfnMiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(),
+</span><span style="color: #008080;">59</span>                 hDumpFile, MiniDumpWithDataSegs, (pExceptionPointers ? &amp;<span style="color: #000000;">ExpParam : NULL), NULL, NULL);
+</span><span style="color: #008080;">60</span> 
+<span style="color: #008080;">61</span>             <span style="color: #0000ff;">if</span><span style="color: #000000;"> (bOwnDumpFile)
+</span><span style="color: #008080;">62</span> <span style="color: #000000;">                CloseHandle(hDumpFile);
+</span><span style="color: #008080;">63</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">64</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">65</span> 
+<span style="color: #008080;">66</span>     <span style="color: #0000ff;">if</span> (hDbgHelp !=<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;">67</span> <span style="color: #000000;">        FreeLibrary(hDbgHelp);
+</span><span style="color: #008080;">68</span> 
+<span style="color: #008080;">69</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> EXCEPTION_EXECUTE_HANDLER;
+</span><span style="color: #008080;">70</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">71</span> 
+<span style="color: #008080;">72</span> 
+<span style="color: #008080;">73</span> <span style="color: #000000;">LONG WINAPI ExceptionFilter(LPEXCEPTION_POINTERS lpExceptionInfo)
+</span><span style="color: #008080;">74</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">75</span>     <span style="color: #0000ff;">if</span><span style="color: #000000;"> (IsDebuggerPresent())
+</span><span style="color: #008080;">76</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">77</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> EXCEPTION_CONTINUE_SEARCH;
+</span><span style="color: #008080;">78</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">79</span> 
+<span style="color: #008080;">80</span>     <span style="color: #0000ff;">return</span> GenerateMiniDump(NULL, lpExceptionInfo, L<span style="color: #800000;">"</span><span style="color: #800000;">test</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">81</span> }</pre>
+</div>
+<h4>（c）调试dump文件</h4>
+<p>　　终于在慢慢的等待中，现场程序崩溃，预期生成了dump文件，此时我们将dump文件拷贝到我们当时编译的debug版本可执行程序的同级目录下，注意pdb文件必须也在此目录</p>
+<p>&nbsp;<img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法7.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;用vs打开dmp文件并点击使用仅限本机进行调试<em id="__mceDel"><br /></em></p>
+<p><img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法8.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>出现异常时的弹窗即UnhandledExceptionFilter为默认的异常处理器工作产生的会出现中断的提示框，此时点击中断</p>
+<p>&nbsp;<img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法9.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>右下角会弹出堆栈信息</p>
+<p><img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法10.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;双击有问题的一行，会出现弹窗，再选择代码工程所在目录（sln的目录），即可定位到有问题的那一行</p>
+<p><img src="./images/关于MSVCR100.dll、MSVCR100d.dll、Msvcp100.dll、abort()R6010等故障模块排查及解决方法11.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>分析错误，加上异常保护，重新生成版本，问题解决，收工！</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

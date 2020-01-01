@@ -1,0 +1,208 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go语言打造p2p网络' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go语言打造p2p网络</center></div><div class='banquan'>原文出处:本文由博客园博主通证派大本营提供。<br/>
+原文连接:https://www.cnblogs.com/tokenpai/p/10759273.html</div><br>
+    <p><img src="//upload-images.jianshu.io/upload_images/14620919-08cd586dfb32d977.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" /><br />
+传送门: <a href="http://pdjedu.com">柏链项目学院</a></p>
+<hr />
+<p><br></p>
+<p>就像1000个人眼中有1000个哈姆雷特一样，每个人眼中的区块链也是不一样的！作为技术人员眼中的区块链就是将各种技术的融合，包括密码学，p2p网络，分布式共识机制以及博弈论等。我们今天就来讨论一下区块链技术中的p2p网络，这是一种点到点的通信技术。</p>
+<p>说到p2p通信，它并没有名字看上去那样简单，在网络世界里实现p2p还是需要一些手段的！很多朋友可能会说，实现一个c/s模式的点到点通信很简单呀，但是前提是彼此可以看见，比如服务器在公网，或者服务器和客户端都在同一个局域网内，我们要探讨的p2p通信是指通信的双方分别在两个局域网内部！</p>
+<p>由于在两个局域网内部，两台设备并没有公网IP，彼此要通信需要借助路由器，但是路由器又会对不识别的ip进行过滤，也就是路由器有个陌生人排除机制！怎么办呢？类似于我们去一个安保较为严格的场所时，需要内部的工作人员接引才可入内，在网络编程中也是这样的原理！但和现实中不同的是，假设设备A想和另一个局域网的设备B通信，设备B是并不认识设备A的，设备A通过路由器NAT（Network Address Translation，网络地址转换）技术获得了一个公网映射IP，但是设备B并不认识，那么怎么样能让两者通信呢？所以这个时候需要一个介绍人，此时需要有一个公网的服务器作为媒介，介绍两个人介绍，当B设备对应路由器添加了A设备对应的公网IP后，A设备就可以与B设备建立连接了，这个时候就可以顺畅的通信了！</p>
+<pre><code><code>Server S
+                    10.47.58.139:9527
+                           |
+                           |
+    +----------------------|----------------------+
+    |                                             |
+  NAT A                                         NAT B
+122.27.219.161:10001                            123.29.210.131:10002
+    |                                             |
+    |                                             |
+ Client A                                      Client B
+ 192.168.1.126:9901                           192.168.1.102:9902</code></pre>
+<p>如上图所示，CLientA与ClientB想要通信，因为两个客户端都在各自的局域网内，都是通过NAT技术生成公网映射IP的，想要彼此访问必须通过一个中间服务器进行中介介绍，这样两个客户端才能彼此认识并建立连接，否则双方直接通信都会被路由器丢弃。那么为什么非要用NAT呢？直接为每个Client分配一个公网IP不可以吗？这是由于IPv4的限制，公网IP数量是有限的，我们国家拿到的公网IP段更是有限，甚至不及美国一所大学的IP段数量多。这样也就不可能为每个机器都分配一个公网IP，正因为此NAT技术才非常重要，它可以很好的帮我们解决公网IP不足的问题。</p>
+<p>接下来我们还是介绍一下NAT的原理和类型：</p>
+<p>NAT主要可以分为两类：</p>
+<ul>
+<li>基本NAT，这种要求NAT有多个公网IP，这样可以将公网IP和内网设备静态绑定</li>
+<li>NAPT（Network Address Port Translation），更为常见的NAT，内网设备的网络请求通过不同端口加以映射</li>
+</ul>
+<p>针对NAPT端口的映射方式，又可以分为四种形式：</p>
+<ul>
+<li>完全圆锥型NAT( Full Cone NAT )，将从一个内部IP地址和端口来的所有请求，都映射到相同的外部IP地址和端口。并且，任何外部主机通过向映射的外部地址发送报文，都可以实现和内部主机进行通信。</li>
+<li>地址限制圆锥型NAT( Address Restricted Cone NAT )，将从相同的内部IP地址和端口来的所有请求映射到相同的公网IP地址和端口。但是与完全圆锥型NAT不同，当且仅当内部主机之前已经向公网主机发送过报文，此时公网主机才能向内网主机发送报文。</li>
+<li>端口限制圆锥型NAT( Port Restricted Cone NAT )，端口受限圆锥型NAT增加了端口号的限制，当前仅当内网主机之前已经向公网主机发送了报文，公网主机才能和此内网主机通信。</li>
+<li>对称型NAT( Symmetric NAT)，把从同一内网地址和端口到相同目的地址和端口的所有请求，都映射到同一个公网地址和端口。如果同一个内网主机，用相同的内网地址和端口向另外一个目的地址发送报文，则会用不同的映射。</li>
+</ul>
+<p>本人经过检测发现，本机的NAT类型为上述第四种：Symmetric NAT</p>
+<p>知识点普及后，我们继续来实践我们之前所说的p2p技术，也就是两个设备之间的通信问题，由于两个设备分别在各自的网络内部，我们也称这种行为为打洞！</p>
+<p>接下来我们用go语言来实现这个打洞技术，主要使用UDP来实现，具体流程如下：</p>
+<ol>
+<li>建立UDP服务器 S</li>
+<li>建立A、B客户端，分别与S建立会话，SA与SB</li>
+<li>S当好中介人，将A的ip+端口通过SB告诉B，将B的ip+端口通过SA告诉A</li>
+<li>A向B公网地址发送一个UDP包，代表握手，打通A-B的路径</li>
+<li>B向A公网地址发送一个UDP包，A-B的会话建立成功</li>
+</ol>
+<p>代码如下：</p>
+<pre><code><code>//server.go
+    &quot;log&quot;
+    &quot;net&quot;
+    &quot;time&quot;
+)
+
+func main() {
+    listener, err := net.ListenUDP(&quot;udp&quot;, &amp;net.UDPAddr{IP: net.IPv4zero, Port: 9527})
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    log.Printf(&quot;本地地址: &lt;%s&gt; \n&quot;, listener.LocalAddr().String())
+    peers := make([]net.UDPAddr, 0, 2)
+    data := make([]byte, 1024)
+    for {
+        n, remoteAddr, err := listener.ReadFromUDP(data)
+        if err != nil {
+            fmt.Printf(&quot;error during read: %s&quot;, err)
+        }
+        log.Printf(&quot;&lt;%s&gt; %s\n&quot;, remoteAddr.String(), data[:n])
+        peers = append(peers, *remoteAddr)
+        if len(peers) == 2 {
+            log.Printf(&quot;进行UDP打洞,建立 %s &lt;--&gt; %s 的连接\n&quot;, peers[0].String(), peers[1].String())
+            listener.WriteToUDP([]byte(peers[1].String()), &amp;peers[0])
+            listener.WriteToUDP([]byte(peers[0].String()), &amp;peers[1])
+            time.Sleep(time.Second * 8)
+            log.Println(&quot;中转服务器退出,仍不影响peers间通信&quot;)
+            return
+        }
+    }
+}
+
+</code></pre>
+<p>服务端显示如下：</p>
+<pre><code><code>ykdeMac-mini:study yekai$ ./server 
+2019/04/03 14:50:13 本地地址: &lt;[::]:9527&gt; 
+2019/04/03 14:51:48 &lt;192.168.1.102:9901&gt; hello, I&#39;m new peer:yekai1
+2019/04/03 14:52:57 &lt;192.168.1.126:9902&gt; hello, I&#39;m new peer:yekai2
+2019/04/03 14:52:57 进行UDP打洞,建立 192.168.1.102:9901 &lt;--&gt; 192.168.1.126:9902 的连接
+2019/04/03 14:53:05 中转服务器退出,仍不影响peers间通信</code></pre>
+<pre><code><code>//client.go
+package main
+
+import (
+    &quot;fmt&quot;
+    &quot;log&quot;
+    &quot;net&quot;
+    &quot;os&quot;
+    &quot;strconv&quot;
+    &quot;strings&quot;
+    &quot;time&quot;
+)
+
+var tag string
+
+const HAND_SHAKE_MSG = &quot;我是打洞消息&quot;
+
+func main() {
+    if len(os.Args) &lt; 2 {
+        fmt.Println(&quot;请输入一个客户端标志&quot;)
+        os.Exit(0)
+    }
+    // 当前进程标记字符串,便于显示
+    tag = os.Args[1]
+    srcAddr := &amp;net.UDPAddr{IP: net.IPv4zero, Port: 9901} // 注意端口必须固定
+    dstAddr := &amp;net.UDPAddr{IP: net.ParseIP(&quot;192.168.1.102&quot;), Port: 9527}
+    conn, err := net.DialUDP(&quot;udp&quot;, srcAddr, dstAddr)
+    if err != nil {
+        fmt.Println(err)
+    }
+    if _, err = conn.Write([]byte(&quot;hello, I&#39;m new peer:&quot; + tag)); err != nil {
+        log.Panic(err)
+    }
+    data := make([]byte, 1024)
+    n, remoteAddr, err := conn.ReadFromUDP(data)
+    if err != nil {
+        fmt.Printf(&quot;error during read: %s&quot;, err)
+    }
+    conn.Close()
+    anotherPeer := parseAddr(string(data[:n]))
+    fmt.Printf(&quot;local:%s server:%s another:%s\n&quot;, srcAddr, remoteAddr, anotherPeer.String())
+    // 开始打洞
+    bidirectionHole(srcAddr, &amp;anotherPeer)
+}
+func parseAddr(addr string) net.UDPAddr {
+    t := strings.Split(addr, &quot;:&quot;)
+    port, _ := strconv.Atoi(t[1])
+    return net.UDPAddr{
+        IP:   net.ParseIP(t[0]),
+        Port: port,
+    }
+}
+func bidirectionHole(srcAddr *net.UDPAddr, anotherAddr *net.UDPAddr) {
+    conn, err := net.DialUDP(&quot;udp&quot;, srcAddr, anotherAddr)
+    if err != nil {
+        fmt.Println(err)
+    }
+    defer conn.Close()
+    // 向另一个peer发送一条udp消息(对方peer的nat设备会丢弃该消息,非法来源),用意是在自身的nat设备打开一条可进入的通道,这样对方peer就可以发过来udp消息
+    if _, err = conn.Write([]byte(HAND_SHAKE_MSG)); err != nil {
+        log.Println(&quot;send handshake:&quot;, err)
+    }
+    go func() {
+        for {
+            time.Sleep(10 * time.Second)
+            if _, err = conn.Write([]byte(&quot;from [&quot; + tag + &quot;]&quot;)); err != nil {
+                log.Println(&quot;send msg fail&quot;, err)
+            }
+        }
+    }()
+    for {
+        data := make([]byte, 1024)
+        n, _, err := conn.ReadFromUDP(data)
+        if err != nil {
+            log.Printf(&quot;error during read: %s\n&quot;, err)
+        } else {
+            log.Printf(&quot;收到数据:%s\n&quot;, data[:n])
+        }
+    }
+}
+</code></pre>
+<p>客户端1显示如下：</p>
+<pre><code><code>ykdeMac-mini:study yekai$ ./client yekai1
+local:0.0.0.0:9901 server:192.168.1.102:9527 another:192.168.1.126:9902
+2019/04/03 14:52:57 收到数据:我是打洞消息
+2019/04/03 14:52:57 error during read: read udp 192.168.1.102:9901-&gt;192.168.1.126:9902: recvfrom: connection refused
+2019/04/03 14:53:07 收到数据:from [yekai2]
+2019/04/03 14:53:17 收到数据:from [yekai2]</code></pre>
+<p>客户端2显示如下：</p>
+<pre><code><code>localhost:zhuhai yk$ ./client yekai2
+local:0.0.0.0:9902 server:192.168.1.102:9527 another:192.168.1.102:9901
+2019/04/03 14:53:07 收到数据:from [yekai1]
+2019/04/03 14:53:17 收到数据:from [yekai1]</code></pre>
+<p>备注：本文中的公网服务器使用的是192.168.1.102进行替代，测试时并没有实际走NAT映射，不过其他童鞋可以用代码在公网服务器进行验证！</p>
+<p><br></p>
+<hr />
+<p><img src="//upload-images.jianshu.io/upload_images/14620919-b10050ea63a7494b.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" /></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

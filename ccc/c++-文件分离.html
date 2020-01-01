@@ -1,0 +1,81 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++-文件分离' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++-文件分离</center></div><div class='banquan'>原文出处:本文由博客园博主跌倒的小黄瓜提供。<br/>
+原文连接:https://www.cnblogs.com/ygjzs/p/12089039.html</div><br>
+    <h2 id="实现文件分离">实现文件分离</h2>
+<p>1.头文件中不要使用using namespace，由于c++编译的特性，由于初学还没深入了解，不做具体编译的解释<br />
+2.由于没有了命名空间，所以string定义要写成std::string<br />
+3.main.cpp中引入staff.cpp,staff.cpp中引入staff.h</p>
+<p>main.cpp</p>
+<pre><code><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;fstream&gt;
+
+#include &quot;staff.cpp&quot;</code></pre>
+<p>staff.cpp</p>
+<pre><code><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;fstream&gt;
+#include &quot;staff.h&quot;
+
+using namespace std;</code></pre>
+<p>这样就可以通过编译了</p>
+<p>那么为什么呢？经过网上查阅资料找到了原因：</p>
+<p>但是下面的解释我感觉还是有不对，下面的内容仅供参考，带我对c++有了更深的了解之后，再写一篇完整的博客来解释文件分离的实现，迫于课程设计的安排，不得不囫囵吞枣一下，嘻嘻嘻<br />
+还有一点就是在解决这，个问题的时候，又看到有说函数模板解决的，我现在大致明白了函数模板是干什么的，但在实现文件分离这一块还不是很明白，以后再补上，嘿嘿嘿！！~··<br />
+接下来介绍一篇我发现的一篇博客，底部有转载处：</p>
+<ol>
+<li>namespace和class</li>
+</ol>
+<p>命名空间和类，非常相似，比如：</p>
+<p>std::cout 和A::f()， 都用到了作用域符，都可以防止重名函数，可以更好的支持多人编程。</p>
+<p>但是有几个不同：</p>
+<ol>
+<li><p>namespace 可以写在多个不同的文件中，而class只能在一个文件中。</p></li>
+<li><p>如果想使用A类中的函数如A::f()， 需要建立一个类的实例（静态函数等除外），而namespace则相当于本身就是一个建立好的实例，可以直接调用函数。</p></li>
+</ol>
+<p>除此之外，可以将命名空间看做特殊的类。</p>
+<p>需要注意的是千万不要在h文件中使用using namespace，否则整个文件都会带上。</p>
+<ol>
+<li>.h文件和.cpp文件</li>
+</ol>
+<p>首先要知道的是两种文件的最大区别：</p>
+<p>编译器将所有.cpp文件编译为.obj文件再串联起来。如果.cpp中有#include X.h文件，那么第一步预处理会把X.h代码粘贴到.cpp中代替#include语句。</p>
+<p>基于这个特性，显然，如果我们include 同一工程下的.cpp文件，那么会将该.cpp文件重复两次（一次是本身的编译，一次是include的复制）。因此，.cpp文件不适合进行include。</p>
+<p>而我们往往需要在一个.cpp文件中include很多其他文件的代码，那么这时候就需要.h文件。</p>
+<p>一个比喻就是.h是目录，.cpp是内容。</p>
+<p>这里需要再说一下编译的过程，关键是声明和定义的区分。</p>
+<p>如果是声明的话，比如声明了一个函数，在汇编语言中就会通过call语句等在全局中寻找这个函数，只需要这个函数在别的.cpp文件中有定义就可以了，而不需要当时就定义。</p>
+<p>对变量也是这样，当想使用一个别处定义的变量时，首先要声明，使得该名字为程序所知。</p>
+<p>如果不加“extern”的声明，如</p>
+<p>int j;</p>
+<p>则会自动将j定义为j=0，自动初始化。那么这时就会出现重复定义等错误问题。</p>
+<p>因此，应该使用</p>
+<p>extern int j;</p>
+<p>这将告知程序 有这样一个j存在，就可以使用了。而j的定义在其他.cpp中，整体编译完后就可以获得j的定义了。</p>
+<p>函数则会自动默认为是extern的效果。</p>
+<p>因此，在.h中进行声明，在.cpp中进行定义。可以避免重复的编译，也更便于管理。</p>
+<p>注意，不能在函数体内初始化一个extern变量，因为函数体的作用域仅在函数内。</p>
+<p><a href="https://blog.csdn.net/zanbaixi2128/article/details/81255174">感谢这篇博客给的我启发</a></p>
+
+</div>
+</div></div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,131 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修yzoj 2372 小B的数字 题解' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>yzoj 2372 小B的数字 题解</center></div><div class='banquan'>原文出处:本文由博客园博主End_donkey提供。<br/>
+原文连接:https://www.cnblogs.com/donkey2603089141/p/11663671.html</div><br>
+    <h3 id="题意">题意</h3>
+<p>判断是否存在一个序列 $ b_i $ 使得 $ \prod_{i = 1}^{n} b_i  | b_i^{a_i}$ 恒成立，其中 $ b_i $ 中的每个数都是2的正整数次幂。</p>
+<h3 id="样例输入">样例输入</h3>
+<pre><code>3
+2
+3 2
+3
+3 3 3
+2
+1 10</code></pre>
+<h3 id="样例输出">样例输出</h3>
+<pre><code>YES
+YES
+NO</code></pre>
+<h3 id="数据范围">数据范围</h3>
+<p>对于 100% 的数据有 $ n \leq 10^5,a_i \leq 10,T \leq 10$</p>
+<h3 id="解析">解析</h3>
+<p>首先拿到这道题，考场一看就知道不是规律题就是数学公式题，事实上是的。</p>
+<p>我们可以设 $ b_i=2^{x_i} $ 其中 $ x_i <span class="math inline">\(为正整数，\)</span> lcm(a_1,a_2,a_3....a_n)=LCM $ , $ sum=\sum_{i = 0}^{n} x_i $。</p>
+<p>那么我们可以将原式子化为 $ 2^{sum} | 2^{x_i * a_i} $,显然要使此式恒成立，就要满足 $ a_i * x_i \geq sum $.</p>
+<p><img src="./images/yzoj 2372 小B的数字 题解0.png" /></p>
+<p>此式子可以转化为 $ lcm* x_i \geq sum* \frac{lcm}{a_i} $</p>
+<p><img src="./images/yzoj 2372 小B的数字 题解1.png" /></p>
+<p>左右两边相加可得</p>
+<p>$ lcm* sum \geq sum * ( \sum_{i = 1}^{n} {\frac{lcm}{a_i}} )$</p>
+<p>即 $ lcm \geq ( \sum_{i = 1}^{n} {\frac{lcm}{a_i}} )$</p>
+<p>两边提出 $ lcm $约去得到 $ 1 \geq ( \sum_{i = 1}^{n} {\frac{1}{a_i}} )$</p>
+<p>那么我们可以得出最终公式就是 $ ( \sum_{i = 1}^{n} {\frac{1}{a_i}} \leq 1) $</p>
+<p>如果我们直接同分比较，很显然会超数据范围。</p>
+<p>对于这一题，由于涉及倒数，会产生浮点误差，我们有三种方法去处理</p>
+<h4 id="方法一不推荐">方法一（不推荐</h4>
+<p>在最终判断的时候设置精度进行调控</p>
+<pre><code>#include&lt;bits/stdc++.h&gt;
+using namespace std;
+const double eps=1e-6;
+int T,n,k;
+bool cheak(double a,double b){
+    if(a-b&lt;=eps) return true;
+    else return false;
+}
+int main(){
+    scanf(&quot;%d&quot;,&amp;T);
+    while(T--){
+        scanf(&quot;%d&quot;,&amp;n);
+        double sum=0;
+        for(int i=1;i&lt;=n;++i){
+            scanf(&quot;%d&quot;,&amp;k);
+            sum+=1.0/(double)k;
+        }
+        if(cheak(sum,(double)1)) printf(&quot;YES\n&quot;);
+        else printf(&quot;NO\n&quot;);
+    }
+    return 0;
+}</code></pre>
+<h4 id="方法二正解">方法二(正解</h4>
+<p>我们可以观察数据，可以知道 $ a_i \leq 10 $ 我们最终得到得式子也只与 $ a_i $ 得倒数有关,所以我们可以将式子改造，左右两边乘以 $ 10! $,也就是<br />
+$ ( \sum_{i = 1}^{n} {\frac{10!}{a_i}} \leq 10!) $</p>
+<p>于是运算便变为了整数运算，便不存在浮点误差了！（常用技巧）</p>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;cstdlib&gt;
+#include &lt;cstdio&gt;
+using namespace std; 
+typedef long long ll;
+int main(){ 
+   int t; 
+   scanf(&quot;%d&quot;,&amp;t); 
+   while (t--){
+       int n; 
+       scanf(&quot;%d&quot;,&amp;n); 
+       ll tot=0; 
+       for(int i=0;i&lt;n;i++){
+           int x;
+           scanf(&quot;%d&quot;,&amp;x); 
+           tot+=3628800/x; 
+       }
+       puts(tot&lt;=3628800 ? &quot;YES&quot; : &quot;NO&quot;);
+   }
+   return 0; 
+}</code></pre>
+<h4 id="方法三巧妙的暴力">方法三(巧妙的暴力</h4>
+<p>分析式子 $ ( \sum_{i = 1}^{n} {\frac{1}{a_i}} \leq 1) $ 我们可以发现如果 $ n &gt; max(a_i) $ 那么这个式子必然不成立，所以我们可以把n的范围缩小到 $ max(a_i) $ 以内，那么我们通分就不会超出范围了于是便有了一个愉快的暴力</p>
+<pre><code>#include&lt;bits/stdc++.h&gt;
+using namespace std; 
+int main(){ 
+    int t; 
+    scanf(&quot;%d&quot;,&amp;t); 
+    while (t--){
+        int n;bool flag=1; 
+        scanf(&quot;%d&quot;,&amp;n); 
+        long long tot=0;
+        long long pop=1; 
+        int maxn=0; 
+        for(int i=1;i&lt;=n;i++){
+            int x;
+            scanf(&quot;%d&quot;,&amp;x); 
+            maxn=max(maxn,x);
+            if(x==1) flag=0;
+            tot+=x;
+            pop*=x;
+        }
+        if(!flag || n&gt;maxn) printf(&quot;NO\n&quot;);
+        else puts(tot&lt;=pop ? &quot;YES&quot; : &quot;NO&quot;);
+    }
+    return 0; 
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

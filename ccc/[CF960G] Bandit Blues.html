@@ -1,0 +1,117 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[CF960G] Bandit Blues' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[CF960G] Bandit Blues</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/10972968.html</div><br>
+    <h2 id="problem">problem</h2>
+<p>求满足<span class="math inline">\(\sum_i[p_i=\max_{j=1}^i p_j]=a\)</span>，<span class="math inline">\(\sum_i[p_i=\max_{j=i}^n p_j]=b\)</span>的1到n的排列p的个数。</p>
+<h2 id="solution">solution</h2>
+<p>设f[i,j]为从大到小地向序列中加入i个数，形成了j个前缀最大值的情况，转移有<br />
+<span class="math display">\[
+\begin{aligned}
+f[0,0]=1,&amp;&amp;f[i,j]=f[i-1,j-1]+(i-1)f[i-1,j]
+\end{aligned}
+\]</span><br />
+显然这恰是第一类斯特林数，即<span class="math inline">\(f[i,j]=s(i,j)\)</span>。</p>
+<p>一个数集与一个操作方案能对应一个序列。考虑枚举数n的位置，那么答案为<br />
+<span class="math display">\[
+\sum_{i=1}^ns(i-1,a-1)s(n-i,b-1)\times C(n-1,i-1)
+\]</span><br />
+这相当于是把1到n-1给分成a+b-2个环的方案数（其中环有两类，每类分别由a+1个和b+1个）即答案<br />
+<span class="math display">\[
+s(n-1,a+b-2)\times C(a+b-2,a-1)
+\]</span><br />
+至此问题已完结。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+#define ll long long 
+using namespace std;
+
+const int N=2e5+10;
+const int mod=998244353;
+const int inf=0x3f3f3f3f;
+
+inline ll qpow(ll x,ll y) {
+    ll c=1;
+    for(; y; y&gt;&gt;=1,x=x*x%mod)
+        if(y&amp;1) c=x*c%mod;
+    return c;
+}
+int p,pcur,rev[N];
+inline void ntt_init(int len) {
+    for(p=1,pcur=0; p&lt;(len&lt;&lt;1);) p&lt;&lt;=1,pcur++;
+    for(int i=0; i&lt;p; ++i) rev[i]=(rev[i&gt;&gt;1]&gt;&gt;1)|((i&amp;1)&lt;&lt;(pcur-1));
+}
+inline void ntt(ll*a,int tp) {
+    for(int i=0; i&lt;p; ++i) if(i&lt;rev[i]) swap(a[i],a[rev[i]]);
+    for(int m=1; m&lt;p; m&lt;&lt;=1) {
+        int wm=qpow(3,(mod-1)/(m&lt;&lt;1)); if(tp&lt;0) wm=qpow(wm,mod-2);
+        for(int i=0; i&lt;p; i+=(m&lt;&lt;1)) { ll w=1,tmp;
+            for(int j=0; j&lt;m; ++j,w=w*wm%mod) {
+                tmp=w*a[i+j+m]%mod;
+                a[i+j+m]=(a[i+j]-tmp+mod)%mod;
+                a[i+j]=(a[i+j]+tmp)%mod;
+            }
+        } 
+    }
+    if(tp&lt;0) {
+        ll tmp=qpow(p,mod-2);
+        for(int i=0; i&lt;p; ++i) a[i]=tmp*a[i]%mod;
+    }
+}
+inline void chm(ll*A,ll*B) {
+    ntt(A,1); ntt(B,1);
+    for(int i=0; i&lt;p; ++i) (A[i]*=B[i])%=mod;
+    ntt(A,-1); 
+}
+ll fac[N],fav[N],A[N],B[N];
+void calc(int n,ll*s) {
+    if(n==0) {s[0]=1; return;}
+    if(n==1) {s[1]=1; return;}
+    int m(n/2); calc(m,s); ntt_init(m+1);
+    for(int i=0; i&lt;=m; ++i) A[m-i]=fac[i]*s[i]%mod;
+    for(int i=0; i&lt;=m; ++i) B[i]=fav[i]*qpow(m,i)%mod;
+    for(int i=m+1; i&lt;p; ++i) A[i]=B[i]=0;
+    chm(A,B);
+    for(int i=0; i&lt;=m; ++i) B[i]=A[m-i]*fav[i]%mod;
+    for(int i=0; i&lt;=m; ++i) A[i]=s[i];
+    for(int i=m+1; i&lt;p; ++i) A[i]=B[i]=0;
+    chm(A,B);
+    for(int i=0; i&lt;=m+m; ++i) s[i]=A[i];
+    if(n&amp;1)
+    for(int i=n; i&gt;=0; --i) s[i]=((i?s[i-1]:0)+(n-1)*s[i]%mod)%mod;
+}
+
+ll s[N];
+int main() {
+    fac[0]=fac[1]=fav[0]=fav[1]=1;
+    for(int i=2; i&lt;N; ++i) fav[i]=fav[mod%i]*(mod-mod/i)%mod;
+    for(int i=2; i&lt;N; ++i) fav[i]=fav[i-1]*fav[i]%mod,fac[i]=fac[i-1]*i%mod;
+    //int n; scanf(&quot;%d&quot;,&amp;n); calc(n,s);
+    //for(int i=0; i&lt;=n; ++i) printf(&quot;s(%d,%d)=%d\n&quot;,n,i,s[i]);
+    int n,a,b;
+    scanf(&quot;%d%d%d&quot;,&amp;n,&amp;a,&amp;b);
+    calc(n-1,s);
+    printf(&quot;%lld&quot;,fac[a+b-2]*fav[a-1]%mod*fav[b-1]%mod*s[a+b-2]%mod);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

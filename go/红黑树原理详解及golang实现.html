@@ -1,0 +1,722 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修红黑树原理详解及golang实现' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>红黑树原理详解及golang实现</center></div><div class='banquan'>原文出处:本文由博客园博主艾露米婭娜提供。<br/>
+原文连接:https://www.cnblogs.com/ailumiyana/p/10963658.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#红黑树原理详解及golang实现">红黑树原理详解及golang实现</a><ul>
+        <li><a href="#二叉查找树">二叉查找树</a><ul>
+        <li><a href="#性质">性质</a></li>
+        </ul></li>
+        <li><a href="#红黑树">红黑树</a><ul>
+        <li><a href="#性质-1">性质</a></li>
+        <li><a href="#operation">operation</a></li>
+        <li><a href="#红黑树的插入">红黑树的插入</a></li>
+        </ul></li>
+        <li><a href="#golang实现">golang实现</a><ul>
+        <li><a href="#类型定义">类型定义</a></li>
+        <li><a href="#leftrotate">leftRotate</a></li>
+        <li><a href="#rightrotate">RightRotate</a></li>
+        <li><a href="#item-interface">Item Interface</a></li>
+        <li><a href="#insert">insert</a></li>
+        <li><a href="#完整代码">完整代码</a></li>
+        </ul></li>
+        <li><a href="#小结">小结</a></li>
+        </ul></li>
+        </ul>
+    </div>
+</div>
+<h1 id="红黑树原理详解及golang实现">红黑树原理详解及golang实现</h1>
+<hr />
+<p>在看红黑树原理之前，先看下二叉查找树。</p>
+<h2 id="二叉查找树">二叉查找树</h2>
+<p>二叉查找树，又称二叉排序树，二叉搜索树。</p>
+<h3 id="性质">性质</h3>
+<p>它具备以下性质：</p>
+<p>1、左子树上的所有节点均小于它的根节点值。<br />
+2、右子树上的所有节点的值均大于它根节点的值。<br />
+3、左右子树也分别为二叉排序树。<br />
+4、没有键值相等的节点。</p>
+<p><img src="./images/红黑树原理详解及golang实现0.png" alt="Alt text" /></p>
+<p>既然叫搜索树，那这种结构的好处当然也就是搜索咯，<br />
+假如我们要查找15</p>
+<p>1、从root节点开始，15&lt;50，找左子树。<br />
+2、15&lt;20，找左子树，<br />
+3、15&gt;10，找右子树，这样便找到15了。</p>
+<p>插入也是类似方法，一层一层比较大小，找到合适的位置插入。<br />
+<img src="./images/红黑树原理详解及golang实现1.png" alt="在这里插入图片描述" /></p>
+<p><code>时间复杂度</code><br />
+看见它查找的次数等同于树的高度，在最好的情况下，其平均查找次数和log 2 (n)成正比。<br />
+当然也有坏情况，当先后插入的关键字有序时，构成的二叉排序树蜕变为单支树，树的深度和其节点数成正比(和顺序查找相同）.<br />
+例如依序插入 ： 100、200、90、80、70、60、50、40<br />
+就会成为如下图形态：<br />
+<img src="./images/红黑树原理详解及golang实现2.png" alt="Alt text" /></p>
+<p>为了解决这种不平衡的情形，就有了红黑树。</p>
+<h2 id="红黑树">红黑树</h2>
+<h3 id="性质-1">性质</h3>
+<p>红黑树是一种自平衡的二叉搜索树，它包含了二叉搜索树的特性，同时具备以下性质：</p>
+<p><code>1、所有节点的颜色不是红色就是黑色。</code><br />
+<code>2、根节点是黑色。</code><br />
+<code>3、每个叶子节点都是黑色的空节点(nil)。</code><br />
+<code>4、每个红色节点的两个子节点都是黑色。(从每个叶子到根节点的所有路径上不能有两个连续的红色节点)</code><br />
+<code>5、从任一节点到其叶子节点的所有路径上都包含相同数目的黑节点。</code></p>
+<p><img src="./images/红黑树原理详解及golang实现3.png" alt="Alt text" /></p>
+<p>前四都能理解其意思吧，所以只解释下第五点，比如60这个节点，到其所有叶子节点的路径都只包含1个黑色节点：40和90。</p>
+<p><img src="./images/红黑树原理详解及golang实现4.png" alt="Alt text" /></p>
+<h3 id="operation">operation</h3>
+<p>红黑树为了维持它的这5点性质，于是它支持了这么几个操作 ，</p>
+<p><code>变色</code> ： 顾名思义变色，红变黑，黑变红。<br />
+<code>左旋转</code> : 这里借用百度百科两张旋转图，以图中红色节点为中心，中心节点为右孩子替代，而自己成为它的左孩子，同时节点b作为pivot的有孩子(至于为什么是右孩子，b原本就在pivot的右子树上，所以肯定大于pivot)。<br />
+<img src="./images/红黑树原理详解及golang实现5.png" alt="Alt text" /></p>
+<p><code>右选装</code> : 同左旋转，中心点顺时钟旋转，成为其原来左孩子的右孩子，原来左孩子的右孩子则成为原中心点的左孩子。<br />
+<img src="./images/红黑树原理详解及golang实现6.png" alt="Alt text" /></p>
+<p>接着看看红黑树的插入，看看它是如何通过这几个op维持红黑树这5个性质的。</p>
+<h3 id="红黑树的插入">红黑树的插入</h3>
+<p>关于插入的特点 ： <code>由于性质5的约束，每次插入的节点颜色必然为红色。</code></p>
+<p>插入的化存在几种情形，复杂的树可能会涉及到循环的向树上检索做自平衡，这里先从一颗空树开始先简单理解下这些情形。</p>
+<h4 id="情形1空树"><code>情形1</code>：空树</h4>
+<p>直接插入，直接作为根节点，同时由于性质1的约束，通过变色op变为黑色即可。</p>
+<p><img src="./images/红黑树原理详解及golang实现7.png" alt="Alt text" /></p>
+<h4 id="情形2插入节点父节为黑色"><code>情形2</code>：插入节点父节为黑色，</h4>
+<p>不违反任何性质，无需做任何修改。</p>
+<p><img src="./images/红黑树原理详解及golang实现8.png" alt="Alt text" /></p>
+<h4 id="情形3-插入节点的父节点为红色父节点为父父节点的左孩子父父节点的右孩子为黑色插入节点为左孩子或者父节点为父父节点的右孩子父父节点的左孩子为黑色插入节点为右孩子"><code>情形3</code> 插入节点的父节点为红色，父节点为父父节点的左孩子，父父节点的右孩子为黑色，插入节点为左孩子(或者父节点为父父节点的右孩子，父父节点的左孩子为黑色，插入节点为右孩子)。</h4>
+<p>这是一种插入节点和父节点在一个方向上的情况(例如父节点为左孩子，插入节点也为左孩子)和情形5相反</p>
+<p>父节点 及 父父节点变色，再进行左/右旋转， 具体左还是右看你插入的节点的父节点是左子树还是右子树，图例为左子树。</p>
+<p>此处 : 变色 - &gt; 右旋转</p>
+<p><img src="./images/红黑树原理详解及golang实现9.png" alt="Alt text" /></p>
+<h4 id="情形4-插入节点父节点为红色父父节点的左右孩子为红色"><code>情形4</code> 插入节点父节点为红色，父父节点的左/右孩子为红色</h4>
+<p>先将父节点和父父节点右孩子变黑，父父节点变红，然后将父节点当做新插入的红色节点一样递归向上进行平衡红黑树性质操作。 若父节点为根节点直接变父节点为黑色即可.</p>
+<p>此处 : 变色 -&gt; 变色</p>
+<p><img src="./images/红黑树原理详解及golang实现10.png" alt="Alt text" /></p>
+<h4 id="情形5-插入节点的父节点为红色父节点为父父节点的左孩子父父节点的右孩子为黑色插入节点为右孩子或者父节点为父父节点的右孩子父父节点的左孩子为黑色插入节点为左孩子"><code>情形5</code> 插入节点的父节点为红色，父节点为父父节点的左孩子，父父节点的右孩子为黑色，插入节点为右孩子(或者父节点为父父节点的右孩子，父父节点的左孩子为黑色，插入节点为左孩子)。</h4>
+<p>和情形3类比是一种反向情况，这种情况进行两次旋转，<br />
+先左/右旋转，旋转后变成了情形3，接着按情形3变换即可。</p>
+<p>此处 ：左旋转 -&gt; 变色 -&gt; 右旋转<br />
+<img src="./images/红黑树原理详解及golang实现11.png" alt="Alt text" /></p>
+<h2 id="golang实现">golang实现</h2>
+<h3 id="类型定义">类型定义</h3>
+<p>需要注意的是 红黑树的NIL节点需要单独定义出来，不能直接用nil哦。</p>
+<pre><code><code>const (
+    RED = true
+    BLACK = false
+)
+
+type Node struct {
+    Parent *Node
+    Left   *Node
+    Right  *Node
+    color  bool
+    Item
+}
+
+type Rbtree struct {
+    NIL  *Node
+    root *Node
+    count uint64
+}
+
+func New() *Rbtree{
+    node := Node{nil, nil, nil, BLACK, nil}
+    return &amp;Rbtree{
+        NIL   : &amp;node,
+        root  : &amp;node,
+        count : 0,
+    }
+}</code></pre>
+<h3 id="leftrotate">leftRotate</h3>
+<pre><code><code>// Left Rotate
+func (rbt *Rbtree) LeftRotate(no *Node) {
+    // Since we are doing the left rotation, the right child should *NOT* nil.
+    if no.Right == nil {
+        return
+    }
+
+    //          |                                  |
+    //          X                                  Y
+    //         / \         left rotate            / \
+    //        α  Y       -------------&gt;         X   γ
+    //           / \                            / \
+    //          β  γ                            α  β
+
+    rchild := no.Right
+    no.Right = rchild.Left
+
+    if rchild.Left != nil {
+        rchild.Left.Parent = no
+    }
+
+    rchild.Parent = no.Parent
+
+    if no.Parent == nil {
+        rbt.root = rchild
+    } else if no == no.Parent.Left {
+        no.Parent.Left = rchild
+    } else {
+        no.Parent.Right = rchild
+    }
+
+    rchild.Left = no
+
+    no.Parent = rchild
+
+}
+
+func LeftRotateTest(){
+    var i10 Int = 10
+    var i12 Int = 12
+
+    rbtree := New()
+    x := &amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, BLACK, i10}
+    rbtree.root = x
+    y := &amp;Node{rbtree.root.Right, rbtree.NIL, rbtree.NIL, RED, i12}
+    rbtree.root.Right = y
+
+    log.Println(&quot;root : &quot;, rbtree.root)
+    log.Println(&quot;left : &quot;, rbtree.root.Left)
+    log.Println(&quot;right : &quot;, rbtree.root.Right)
+
+    rbtree.LeftRotate(rbtree.root)
+    
+    log.Println(&quot;root : &quot;, rbtree.root)
+    log.Println(&quot;left : &quot;, rbtree.root.Left)
+    log.Println(&quot;right : &quot;, rbtree.root.Right)
+
+}</code></pre>
+<p><img src="./images/红黑树原理详解及golang实现12.png" alt="Alt text" /></p>
+<h3 id="rightrotate">RightRotate</h3>
+<pre><code><code>// Right Rotate
+func (rbt *Rbtree) RightRotate(no *Node) {
+    if no.Left == nil {
+        return
+    }
+
+    //          |                                  |
+    //          X                                  Y
+    //         / \         right rotate           / \
+    //        Y   γ      -------------&gt;         α  X
+    //       / \                                    / \
+    //      α  β                                    β  γ
+
+    lchild := no.Left
+    no.Left = lchild.Right
+
+    if lchild.Right != nil {
+        lchild.Right.Parent = no
+    }
+
+    lchild.Parent = no.Parent
+
+    if no.Parent == nil {
+        rbt.root = lchild
+    } else if no == no.Parent.Left {
+        no.Parent.Left = lchild
+    } else {
+        no.Parent.Right = lchild
+    }
+
+    lchild.Right = no
+
+    no.Parent = lchild
+
+}
+
+func RightRotateTest(){
+    var i10 Int = 10
+    var i12 Int = 12
+
+    rbtree := New()
+    x := &amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, BLACK, i10}
+    rbtree.root = x
+    y := &amp;Node{rbtree.root.Right, rbtree.NIL, rbtree.NIL, RED, i12}
+    rbtree.root.Right = y
+
+    log.Println(&quot;root : &quot;, rbtree.root)
+    log.Println(&quot;left : &quot;, rbtree.root.Left)
+    log.Println(&quot;right : &quot;, rbtree.root.Right)
+
+    rbtree.RightRotate(rbtree.root)
+    
+    log.Println(&quot;root : &quot;, rbtree.root)
+    log.Println(&quot;left : &quot;, rbtree.root.Left)
+    log.Println(&quot;right : &quot;, rbtree.root.Right)
+
+}</code></pre>
+<p><img src="./images/红黑树原理详解及golang实现13.png" alt="Alt text" /></p>
+<h3 id="item-interface">Item Interface</h3>
+<p>值类型接口</p>
+<pre><code><code>type Item interface {
+    Less(than Item) bool
+}
+
+type Int int
+
+func (x Int) Less(than Item) bool {
+    log.Println(x, &quot; &quot;, than.(Int))
+    return x &lt; than.(Int)
+}
+
+type Uint32 uint32
+
+func (x Uint32) Less(than Item) bool {
+    log.Println(x, &quot; &quot;, than.(Uint32))
+    return x &lt; than.(Uint32)
+}
+
+type String string
+
+func (x String) Less(than Item) bool {
+    log.Println(x, &quot; &quot;, than.(String))
+    return x &lt; than.(String)
+}
+
+func ItemTest(){
+    var itype1 Int = 10
+    var itype2 Int = 12
+
+    log.Println(itype1.Less(itype2))
+
+
+    var strtype1 String = &quot;sola&quot;
+    var strtype2 String = &quot;ailumiyana&quot;
+
+    log.Println(strtype1.Less(strtype2))
+}</code></pre>
+<p><img src="./images/红黑树原理详解及golang实现14.png" alt="Alt text" /></p>
+<h3 id="insert">insert</h3>
+<pre><code><code>func (rbt *Rbtree) Insert(no *Node) {
+    x := rbt.root
+    var y *Node = rbt.NIL
+
+    for x != rbt.NIL {
+        y = x 
+        if less(no.Item, x.Item) {
+            x = x.Left
+        } else if less(x.Item, no.Item) {
+            x = x.Right
+        } else {
+            log.Println(&quot;that node already exist&quot;)
+        }
+    }
+
+    no.Parent = y
+    if y == rbt.NIL {
+        rbt.root = no
+    } else if less(no.Item, y.Item) {
+        y.Left = no
+    } else {
+        y.Right = no
+    }
+
+    rbt.count++
+    rbt.insertFixup(no)
+
+}
+
+func (rbt *Rbtree) insertFixup(no *Node) {
+    for no.Parent.color == RED {
+        if no.Parent == no.Parent.Parent.Left {
+            y := no.Parent.Parent.Right
+            if y.color == RED {
+                //
+                // 情形 4
+
+                log.Println(&quot;TRACE Do Case 4 :&quot;, no.Item)
+
+                no.Parent.color = BLACK
+                y.color = BLACK
+                no.Parent.Parent.color = RED
+                no = no.Parent.Parent  //循环向上自平衡.
+            } else {
+                if no == no.Parent.Right {
+                    //
+                    // 情形 5 : 反向情形
+                    // 直接左旋转 , 然后进行情形3(变色-&gt;右旋)
+                    log.Println(&quot;TRACE Do Case 5 :&quot;, no.Item)
+
+                    if no == no.Parent.Right {
+                        no = no.Parent
+                        rbt.LeftRotate(no)
+                    }
+                }
+                log.Println(&quot;TRACE Do Case 6 :&quot;, no.Item)
+
+                no.Parent.color = BLACK
+                no.Parent.Parent.color = RED
+                rbt.RightRotate(no.Parent.Parent)
+            }
+        } else { //为父父节点右孩子情形，和左孩子一样，改下转向而已.
+            y := no.Parent.Parent.Left
+            if y.color == RED {
+                no.Parent.color = BLACK
+                y.color = BLACK
+                no.Parent.Parent.color = RED
+                no = no.Parent.Parent
+            } else {
+                if no == no.Parent.Left {
+                    no = no.Parent
+                    rbt.RightRotate(no)
+                }
+                
+                no.Parent.color = BLACK
+                no.Parent.Parent.color = RED
+                rbt.LeftRotate(no.Parent.Parent)
+            }
+        }
+    }
+    rbt.root.color = BLACK
+}
+
+func InsertTest(){
+    rbtree := New()
+
+    rbtree.Insert(&amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, RED, Int(10)})
+    rbtree.Insert(&amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, RED, Int(9)})
+    rbtree.Insert(&amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, RED, Int(8)})
+    rbtree.Insert(&amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, RED, Int(6)})
+    rbtree.Insert(&amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, RED, Int(7)})
+
+    log.Println(&quot;rbtree counts : &quot;, rbtree.count)
+
+    log.Println(&quot;------ &quot;, rbtree.root.Item)
+    log.Println(&quot;----&quot;, rbtree.root.Left.Item, &quot;---&quot;, rbtree.root.Right.Item)
+    log.Println(&quot;--&quot;, rbtree.root.Left.Left.Item, &quot;-&quot;, rbtree.root.Left.Right.Item)
+
+}</code></pre>
+<p>InsertTest() 仔细瞧瞧这就是我们 讲情形那棵树 哈 。</p>
+<p><img src="./images/红黑树原理详解及golang实现15.png" alt="Alt text" /></p>
+<h3 id="完整代码">完整代码</h3>
+<pre><code><code>package main
+
+import(
+    &quot;log&quot;
+)
+
+const (
+    RED = true
+    BLACK = false
+)
+
+//-----------------------------------
+//Item interface
+//
+type Item interface {
+    Less(than Item) bool
+}
+
+type Int int
+
+func (x Int) Less(than Item) bool {
+    log.Println(x, &quot; &quot;, than.(Int))
+    return x &lt; than.(Int)
+}
+
+type Uint32 uint32
+
+func (x Uint32) Less(than Item) bool {
+    log.Println(x, &quot; &quot;, than.(Uint32))
+    return x &lt; than.(Uint32)
+}
+
+type String string
+
+func (x String) Less(than Item) bool {
+    log.Println(x, &quot; &quot;, than.(String))
+    return x &lt; than.(String)
+}
+
+//-----------------------------------
+
+type Node struct {
+    Parent *Node
+    Left   *Node
+    Right  *Node
+    color  bool
+    Item
+}
+
+type Rbtree struct {
+    NIL  *Node
+    root *Node
+    count uint64
+}
+
+func New() *Rbtree{
+    node := &amp;Node{nil, nil, nil, BLACK, nil}
+    return &amp;Rbtree{
+        NIL   : node,
+        root  : node,
+        count : 0,
+    }
+}
+
+func less(x, y Item) bool {
+    return x.Less(y)
+}
+
+// Left Rotate
+func (rbt *Rbtree) LeftRotate(no *Node) {
+    // Since we are doing the left rotation, the right child should *NOT* nil.
+    if no.Right == rbt.NIL {
+        return
+    }
+
+    //          |                                  |
+    //          X                                  Y
+    //         / \         left rotate            / \
+    //        α  Y       -------------&gt;         X   γ
+    //           / \                            / \
+    //          β  γ                            α  β
+
+    rchild := no.Right
+    no.Right = rchild.Left
+
+    if rchild.Left != rbt.NIL {
+        rchild.Left.Parent = no
+    }
+
+    rchild.Parent = no.Parent
+
+    if no.Parent == rbt.NIL {
+        rbt.root = rchild
+    } else if no == no.Parent.Left {
+        no.Parent.Left = rchild
+    } else {
+        no.Parent.Right = rchild
+    }
+
+    rchild.Left = no
+
+    no.Parent = rchild
+
+}
+
+// Right Rotate
+func (rbt *Rbtree) RightRotate(no *Node) {
+    if no.Left == rbt.NIL {
+        return
+    }
+
+    //          |                                  |
+    //          X                                  Y
+    //         / \         right rotate           / \
+    //        Y   γ      -------------&gt;         α  X
+    //       / \                                    / \
+    //      α  β                                    β  γ
+
+    lchild := no.Left
+    no.Left = lchild.Right
+
+    if lchild.Right != rbt.NIL {
+        lchild.Right.Parent = no
+    }
+
+    lchild.Parent = no.Parent
+
+    if no.Parent == rbt.NIL {
+        rbt.root = lchild
+    } else if no == no.Parent.Left {
+        no.Parent.Left = lchild
+    } else {
+        no.Parent.Right = lchild
+    }
+
+    lchild.Right = no
+
+    no.Parent = lchild
+
+}
+
+func (rbt *Rbtree) Insert(no *Node) {
+    x := rbt.root
+    var y *Node = rbt.NIL
+
+    for x != rbt.NIL {
+        y = x 
+        if less(no.Item, x.Item) {
+            x = x.Left
+        } else if less(x.Item, no.Item) {
+            x = x.Right
+        } else {
+            log.Println(&quot;that node already exist&quot;)
+        }
+    }
+
+    no.Parent = y
+    if y == rbt.NIL {
+        rbt.root = no
+    } else if less(no.Item, y.Item) {
+        y.Left = no
+    } else {
+        y.Right = no
+    }
+
+    rbt.count++
+    rbt.insertFixup(no)
+
+}
+
+func (rbt *Rbtree) insertFixup(no *Node) {
+    for no.Parent.color == RED {
+        if no.Parent == no.Parent.Parent.Left {
+            y := no.Parent.Parent.Right
+            if y.color == RED {
+                //
+                // 情形 4
+
+                log.Println(&quot;TRACE Do Case 4 :&quot;, no.Item)
+
+                no.Parent.color = BLACK
+                y.color = BLACK
+                no.Parent.Parent.color = RED
+                no = no.Parent.Parent  //循环向上自平衡.
+            } else {
+                if no == no.Parent.Right {
+                    //
+                    // 情形 5 : 反向情形
+                    // 直接左旋转 , 然后进行情形3(变色-&gt;右旋)
+                    log.Println(&quot;TRACE Do Case 5 :&quot;, no.Item)
+
+                    if no == no.Parent.Right {
+                        no = no.Parent
+                        rbt.LeftRotate(no)
+                    }
+                }
+                log.Println(&quot;TRACE Do Case 6 :&quot;, no.Item)
+
+                no.Parent.color = BLACK
+                no.Parent.Parent.color = RED
+                rbt.RightRotate(no.Parent.Parent)
+            }
+        } else { //为父父节点右孩子情形，和左孩子一样，改下转向而已.
+            y := no.Parent.Parent.Left
+            if y.color == RED {
+                no.Parent.color = BLACK
+                y.color = BLACK
+                no.Parent.Parent.color = RED
+                no = no.Parent.Parent
+            } else {
+                if no == no.Parent.Left {
+                    no = no.Parent
+                    rbt.RightRotate(no)
+                }
+                
+                no.Parent.color = BLACK
+                no.Parent.Parent.color = RED
+                rbt.LeftRotate(no.Parent.Parent)
+            }
+        }
+    }
+    rbt.root.color = BLACK
+}
+
+func LeftRotateTest(){
+    var i10 Int = 10
+    var i12 Int = 12
+
+    rbtree := New()
+
+    x := &amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, BLACK, i10}
+    rbtree.root = x
+    y := &amp;Node{rbtree.root.Right, rbtree.NIL, rbtree.NIL, RED, i12}
+    rbtree.root.Right = y
+
+    log.Println(&quot;root : &quot;, rbtree.root)
+    log.Println(&quot;left : &quot;, rbtree.root.Left)
+    log.Println(&quot;right : &quot;, rbtree.root.Right)
+
+    rbtree.LeftRotate(rbtree.root)
+    
+    log.Println(&quot;root : &quot;, rbtree.root)
+    log.Println(&quot;left : &quot;, rbtree.root.Left)
+    log.Println(&quot;right : &quot;, rbtree.root.Right)
+
+}
+
+func RightRotateTest(){
+    var i10 Int = 10
+    var i12 Int = 12
+    
+    rbtree := New()
+
+    x := &amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, BLACK, i10}
+    rbtree.root = x
+    y := &amp;Node{rbtree.root.Right, rbtree.NIL, rbtree.NIL, RED, i12}
+    rbtree.root.Left = y
+
+    log.Println(&quot;root : &quot;, rbtree.root)
+    log.Println(&quot;left : &quot;, rbtree.root.Left)
+    log.Println(&quot;right : &quot;, rbtree.root.Right)
+
+    rbtree.RightRotate(rbtree.root)
+    
+    log.Println(&quot;root : &quot;, rbtree.root)
+    log.Println(&quot;left : &quot;, rbtree.root.Left)
+    log.Println(&quot;right : &quot;, rbtree.root.Right)
+
+}
+
+func ItemTest(){
+    var itype1 Int = 10
+    var itype2 Int = 12
+
+    log.Println(itype1.Less(itype2))
+
+
+    var strtype1 String = &quot;sola&quot;
+    var strtype2 String = &quot;ailumiyana&quot;
+
+    log.Println(strtype1.Less(strtype2))
+}
+
+func InsertTest(){
+    rbtree := New()
+
+    rbtree.Insert(&amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, RED, Int(10)})
+    rbtree.Insert(&amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, RED, Int(9)})
+    rbtree.Insert(&amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, RED, Int(8)})
+    rbtree.Insert(&amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, RED, Int(6)})
+    rbtree.Insert(&amp;Node{rbtree.NIL, rbtree.NIL, rbtree.NIL, RED, Int(7)})
+
+    log.Println(&quot;rbtree counts : &quot;, rbtree.count)
+
+    log.Println(&quot;------ &quot;, rbtree.root.Item)
+    log.Println(&quot;----&quot;, rbtree.root.Left.Item, &quot;---&quot;, rbtree.root.Right.Item)
+    log.Println(&quot;--&quot;, rbtree.root.Left.Left.Item, &quot;-&quot;, rbtree.root.Left.Right.Item)
+
+}
+
+
+func main()  {
+    log.Println(&quot; ---- main ------ &quot;)
+    LeftRotateTest()
+    RightRotateTest()
+    ItemTest()
+    InsertTest()
+}</code></pre>
+<h2 id="小结">小结</h2>
+<p>好了本文 对红黑树的讲解到此结束，刚开始看红黑树的时候这些性质确实特别绕，但是理解了这5点性质，就好多了。 然后就是两个操作 ： <code>变色</code>和<code>旋转</code> 理解红黑树是通过他们进行自平衡的就行了。<br />
+由于时间原因只写了插入了 ，没做删除，有机会再补上吧，不过理解了插入原理，删除也不在话下了吧。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

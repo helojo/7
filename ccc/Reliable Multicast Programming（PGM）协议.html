@@ -1,0 +1,253 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Reliable Multicast Programming（PGM）协议' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Reliable Multicast Programming（PGM）协议</center></div><div class='banquan'>原文出处:本文由博客园博主leno米雷提供。<br/>
+原文连接:https://www.cnblogs.com/lenomirei/p/11324394.html</div><br>
+    <p>Reliable Multicast Programming (PGM)实际通用可靠多播协议，在某种程度上保证多播的可靠性。是IP上层协议，和TCP还有UDP同级，工作在传输层。</p>
+<p>在组播传输视频项目中，发现在网络较差的时候，组播传输视频性能下降迅猛，组播的视频几乎到了无法直视的地步，已经不是马赛克什么的问题了，简直就是一张臭抹布。</p>
+<p>但是上面的要求是让接收端达到1080p 16fps的播放效果，此时组播接收端的实时网络速率只有50KB/s左右，这种情况下要从软件上处理的话（因为路由器不好换），需要让组播的丢包率降低才行，但是使用iperf测了下当时网络的丢包率，能丢到80%，丢到他姥姥家？</p>
+<p>但是此时带宽利用率却很低，赶紧换成udp单播试了一下，速度能上去，也不怎么花屏了，不清楚是不是确认机制的问题。<br />
+但是总不能说把组播换成单播，当接入的接收端变多的时候，不清楚单播效果会不会也变差。</p>
+<p>这个时候发现了PGM，“可靠”多播协议，有不少基于PGM实现的库，打算先用windows上的写个demo出来。</p>
+<p>想要使用PGM需要先在网络适配器上安装协议，安装完成后会在属性中出现可靠多播协议<br />
+<img src="./images/Reliable Multicast Programming（PGM）协议0.png" /></p>
+<p>然后就是开发了，官网文档提供的demo很棒，copy下来几乎就能跑起来。但是除了官网文档，相关资料就比较少了，头文件我还找了半天，环境上坑不少，记录一下</p>
+<h3 id="wsrm.h头文件"><code>wsrm.h</code>头文件</h3>
+<p>首先是windows sdk，我试了一下如果是8.1的sdk的话，是找不到<code>wsrm.h</code>头文件的，我有装10.0.17134.0，8.1还有10.0.15063.0三个版本的windows sdk，用everything找了一下这个头文件，得到了下面图示结果<br />
+<img src="./images/Reliable Multicast Programming（PGM）协议1.png" /></p>
+<p>8.1应该是没有，剩下两个版本均可以使用，更新的版本应该也行。<br />
+<img src="./images/Reliable Multicast Programming（PGM）协议2.png" /></p>
+<p>vs2017以上的话在visual studio installer里面修改多装个sdk就行了</p>
+<h3 id="传输速度">传输速度</h3>
+<p>PGM本身也有发送窗口的概念，如果使用默认设置，窗口小，发送速度非常慢，每秒最多只有70KB左右，这时候需要设置socket选项<br />
+<code>RateKbitsPerSec</code>的单位是kilobits/s，是一个上限</p>
+<pre><code>    RM_SEND_WINDOW send_window;
+    send_window.WindowSizeInBytes = 8000 * 1000;
+    send_window.WindowSizeInMSecs = 1;
+    send_window.RateKbitsPerSec = (send_window.WindowSizeInBytes/send_window.WindowSizeInMSecs)*8;
+
+
+    int rc = setsockopt(s, IPPROTO_RM, RM_RATE_WINDOW_SIZE, (char *)&amp;send_window, sizeof(send_window));
+    if (rc == SOCKET_ERROR)
+    {
+
+        cout &lt;&lt; &quot;setsockopt(): RM_RATE_WINDOW_SIZE failed with error code &quot; &lt;&lt; WSAGetLastError() &lt;&lt; endl;
+
+    }</code></pre>
+<p><code>RM_SEND_WINDOW</code>结构体就这么三个成员，第一个是每秒速度了，第二个是发送窗口的大小，第三个是窗口大小毫秒，其中windows会强制让<br />
+<strong><code>RateKbitsPerSec/8 = WindowSizeInBytes * WindowSizeInMSecs</code></strong></p>
+<p><strong>PS：<code>WindowSzieInMSecs</code>的值需要调整，当<code>WindowSizeInBytes=8000</code>并且<code>WindowSzieInMSecs=1</code>时，发送端较大概率会阻塞，原因未知，可能是发包速度过快导致</strong></p>
+<h3 id="真的可靠么">真的可靠么？</h3>
+<p>在文章一开始的时候可靠被加上了双引号，为的是表明这个协议并不是想象中的那么可靠。</p>
+<p>发送窗口大小有限，如果需要恢复重传的数据在发送窗口之外了，那数据就是不可恢复的，一般当发送端速率过快接收端接收速度明显跟不上时，就会出现不可恢复现象。一旦出现不可恢复数据时，windows就会让接收端的连接重置，此时就不能继续接收。</p>
+<h3 id="源码">源码</h3>
+<p>因为找不到对应的头文件让我着实头疼了很久，相关文档少，还不告诉我头文件是什么，这太不爽了，就好比让你看着门后面有啥，就是不给你钥匙。</p>
+<p>pgm分为server端和client端，功能是发送文件，根据<a href="https://docs.microsoft.com/en-us/windows/win32/winsock/reliable-multicast-programming--pgm-">msdn的文档</a>编写的</p>
+<p>下面是server端代码</p>
+<pre><code>#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define WIN32_LEAN_AND_MEAN
+
+#include &lt;iostream&gt;
+#include&lt;winsock2.h&gt;
+#include&lt;WS2tcpip.h&gt;    //ip_mreqͷ
+#include &lt;wsrm.h&gt;
+#include &lt;stdio.h&gt;
+
+using namespace std;
+#pragma comment(lib,&quot;ws2_32.lib&quot;)
+
+int main() {
+    WSADATA WSAData;
+    WORD sockVersion = MAKEWORD(2, 2);
+    if (WSAStartup(sockVersion, &amp;WSAData) != 0)
+        return 0;
+    
+    FILE *fp;
+    fopen_s(&amp;fp, &quot;test.webm&quot;, &quot;rb+&quot;);
+
+    SOCKET        s;
+    SOCKADDR_IN   salocal, sasession;
+    int           dwSessionPort;
+
+    s = socket(AF_INET, SOCK_RDM, IPPROTO_RM);
+
+    salocal.sin_family = AF_INET;
+    salocal.sin_port = htons(0);    // Port is ignored here
+    salocal.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    bind(s, (SOCKADDR *)&amp;salocal, sizeof(salocal));
+
+    //
+    // Set all relevant sender socket options here
+    //
+
+    //
+    // Now, connect &lt;entity type=&quot;hellip&quot;/&gt;
+    // Setting the connection port (dwSessionPort) has relevance, and
+    // can be used to multiplex multiple sessions to the same
+    // multicast group address over different ports
+    //
+    dwSessionPort = 1234;
+    sasession.sin_family = AF_INET;
+    sasession.sin_port = htons(dwSessionPort);
+    sasession.sin_addr.s_addr = inet_addr(&quot;224.4.5.6&quot;);
+
+    RM_SEND_WINDOW send_window;
+    send_window.WindowSizeInBytes = 8000;
+    send_window.WindowSizeInMSecs = 1;
+    send_window.RateKbitsPerSec = (send_window.WindowSizeInBytes/send_window.WindowSizeInMSecs)*8;
+
+    int rc = setsockopt(s, IPPROTO_RM, RM_RATE_WINDOW_SIZE, (char *)&amp;send_window, sizeof(send_window));
+    if (rc == SOCKET_ERROR)
+    {
+
+        cout &lt;&lt; &quot;setsockopt(): RM_RATE_WINDOW_SIZE failed with error code &quot; &lt;&lt; WSAGetLastError() &lt;&lt; endl;
+
+    }
+    connect(s, (SOCKADDR *)&amp;sasession, sizeof(sasession));
+
+    //
+    // We&#39;re now ready to send data!
+    //
+    char pSendBuffer[1400];
+
+    sockaddr_in serverAddr;
+    int iAddrlen = sizeof(serverAddr);
+
+
+
+
+    while (1) {
+        if (feof(fp))
+            break;
+        memset(pSendBuffer, 0, 1400);
+
+        int data_size = fread(pSendBuffer, 1, 1400, fp);
+        
+        LONG        error;
+
+        error = sendto(s, pSendBuffer, data_size, 0, (sockaddr*)&amp;serverAddr,iAddrlen);
+
+        if (error == SOCKET_ERROR)
+        {
+            fprintf(stderr, &quot;send() failed: Error = %d\n&quot;,
+                WSAGetLastError());
+        }
+    }
+
+    WSACleanup();
+    return 0;
+}</code></pre>
+<p>下面是client端代码</p>
+<pre><code>#include &lt;iostream&gt;
+#include&lt;winsock2.h&gt;
+#include&lt;WS2tcpip.h&gt;    //ip_mreqͷ
+#include &lt;wsrm.h&gt;
+#include &lt;stdio.h&gt;
+
+using namespace std;
+#pragma comment(lib,&quot;ws2_32.lib&quot;)
+
+int main() {
+    WSADATA WSAData;
+    WORD sockVersion = MAKEWORD(2, 2);
+    if (WSAStartup(sockVersion, &amp;WSAData) != 0)
+        return 0;
+
+
+    SOCKET        s,
+        sclient;
+    SOCKADDR_IN   salocal,
+        sasession;
+    int           sasessionsz, dwSessionPort;
+
+    FILE * fp;
+    fopen_s(&amp;fp, &quot;aaatest.webm&quot;, &quot;wb+&quot;);
+
+    s = socket(AF_INET, SOCK_RDM, IPPROTO_RM);
+
+    //
+    // The bind port (dwSessionPort) specified should match that
+    // which the sender specified in the connect call
+    //
+    dwSessionPort = 1234;
+    salocal.sin_family = AF_INET;
+    salocal.sin_port = htons(dwSessionPort);
+    salocal.sin_addr.s_addr = inet_addr(&quot;224.4.5.6&quot;);
+    int receive_buf_size = 65536 * 10;
+    if (setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char*)&amp;receive_buf_size, sizeof(receive_buf_size)) &lt; 0)
+    {
+        std::cout &lt;&lt; &quot;setsockopt():SO_RCVBUF failed with error code&quot; &lt;&lt; WSAGetLastError() &lt;&lt; std::endl;
+    }
+
+
+    bind(s, (SOCKADDR *)&amp;salocal, sizeof(salocal));
+
+    //
+    // Set all relevant receiver socket options here
+    //
+
+    listen(s, 10);
+
+    sasessionsz = sizeof(sasession);
+    sclient = accept(s, (SOCKADDR *)&amp;sasession, &amp;sasessionsz);
+
+    if (setsockopt(sclient, SOL_SOCKET, SO_RCVBUF, (char*)&amp;receive_buf_size, sizeof(receive_buf_size)) &lt; 0)
+    {
+        std::cout &lt;&lt; &quot;setsockopt():SO_RCVBUF failed with error code&quot; &lt;&lt; WSAGetLastError() &lt;&lt; std::endl;
+    }
+    //
+    // accept will return the client socket and we are now ready
+    // to receive data on the new socket!
+    //
+    LONG BytesRead;
+    char pTestBuffer[1400];
+
+    sockaddr_in clientAddr;
+    int iAddrlen = sizeof(clientAddr);
+
+    while (1)
+    {
+        memset(pTestBuffer, 0, 1400);
+        cout &lt;&lt; &quot;start&quot; &lt;&lt; endl;
+        BytesRead = recvfrom(sclient, pTestBuffer, 1400, 0, (sockaddr*)&amp;clientAddr, &amp;iAddrlen);
+        cout &lt;&lt; &quot;end&quot; &lt;&lt; endl;
+        if (BytesRead == 0)
+        {
+            fprintf(stdout, &quot;Session was terminated\n&quot;);
+        }
+        else if (BytesRead == -1)
+        {
+            std::cout &lt;&lt; &quot;no data?!&quot; &lt;&lt; std::endl;
+        }
+        if (BytesRead &gt; 0)
+        {
+            fwrite(pTestBuffer, 1, BytesRead, fp);
+            std::cout &lt;&lt; BytesRead &lt;&lt; std::endl;
+        }
+    }
+    fclose(fp);
+    WSACleanup();
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,152 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++基础——运算符重载友元函数示例' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++基础——运算符重载友元函数示例</center></div><div class='banquan'>原文出处:本文由博客园博主没落骑士提供。<br/>
+原文连接:https://www.cnblogs.com/moluoqishi/p/10729034.html</div><br>
+    <p><strong><span style="font-size: 18pt;">一、前言</span></strong></p>
+<p>　<span style="font-size: 16px;">　其实本人学习C++的目的，只是为了体会OOP设计思想，并为利用System Verilog验证复杂设计做准备。如果想要真正做点软件方面项目级的东西，还需要掌握其他高级语言和库、框架等知识。因此该系列博文仅注重语言基础和设计思想。上一篇该系列博文讲述了C++中基本的类封装，这次利用运算符重载友元函数来体会下C++的灵活性。</span></p>
+<p><span style="font-size: 18pt;"><strong>二、运算符重载友元函数</strong></span></p>
+<p><span style="font-size: 18pt;"><strong>　&nbsp;</strong><span style="font-size: 16px;">本文同样以《C++ Primer Plus》中的一个简单示例来讲解此内容。场景如下：时间粗劣地分为时和分两部分。需要完成两个时间的相加、时间与倍数的相乘（这个操作不太恰当，凑活看吧）以及显示时间操作。先上代码：</span></span></p>
+<p><span style="font-size: 18pt;"><span style="font-size: 16px;">类声明：</span></span></p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('d34a0f99-514a-4e03-9d19-0fa9d88ce4c2')"><img id="code_img_closed_d34a0f99-514a-4e03-9d19-0fa9d88ce4c2" class="code_img_closed" src="./images/C++基础——运算符重载友元函数示例0.png" alt="" /><img id="code_img_opened_d34a0f99-514a-4e03-9d19-0fa9d88ce4c2" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('d34a0f99-514a-4e03-9d19-0fa9d88ce4c2',event)" src="./images/C++基础——运算符重载友元函数示例1.png" alt="" />
+<div id="cnblogs_code_open_d34a0f99-514a-4e03-9d19-0fa9d88ce4c2" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">#ifndef MYTIME_H_
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">#define</span> MYTIME_H_
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">using</span><span style="color: #000000;"> std::ostream;
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Time
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> hours;
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> minutes;
+</span><span style="color: #008080;">11</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    Time();
+</span><span style="color: #008080;">13</span>     Time(<span style="color: #0000ff;">int</span> h,<span style="color: #0000ff;">int</span> m=<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">void</span> Reset(<span style="color: #0000ff;">int</span> h = <span style="color: #800080;">0</span>,<span style="color: #0000ff;">int</span> m = <span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;">15</span>     Time <span style="color: #0000ff;">operator</span>+(<span style="color: #0000ff;">const</span> Time&amp; t) <span style="color: #0000ff;">const</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span>     Time <span style="color: #0000ff;">operator</span>*(<span style="color: #0000ff;">double</span> mult) <span style="color: #0000ff;">const</span>;<span style="color: #008000;">//</span><span style="color: #008000;">成员函数</span>
+<span style="color: #008080;">17</span> 
+<span style="color: #008080;">18</span>     friend Time <span style="color: #0000ff;">operator</span>*(<span style="color: #0000ff;">double</span> m,<span style="color: #0000ff;">const</span> Time&amp; t) <span style="color: #008000;">//</span><span style="color: #008000;">友元函数(inline)</span>
+<span style="color: #008080;">19</span>         {<span style="color: #0000ff;">return</span> t *<span style="color: #000000;"> m;}
+</span><span style="color: #008080;">20</span>     friend ostream&amp; <span style="color: #0000ff;">operator</span>&lt;&lt;(ostream &amp; os,<span style="color: #0000ff;">const</span> Time&amp; t);<span style="color: #008000;">//</span><span style="color: #008000;">&lt;&lt;左侧必须是ostream对象 返回ostream&amp;</span>
+<span style="color: #008080;">21</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">22</span> <span style="color: #0000ff;">#endif</span></pre>
+</div>
+<span class="cnblogs_code_collapse">mytime.h</span></div>
+<p><span style="font-size: 16px;">类方法定义：</span></p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('c66b4e87-69ef-4de9-9dea-2ef2a79ad5db')"><img id="code_img_closed_c66b4e87-69ef-4de9-9dea-2ef2a79ad5db" class="code_img_closed" src="./images/C++基础——运算符重载友元函数示例0.png" alt="" /><img id="code_img_opened_c66b4e87-69ef-4de9-9dea-2ef2a79ad5db" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('c66b4e87-69ef-4de9-9dea-2ef2a79ad5db',event)" src="./images/C++基础——运算符重载友元函数示例1.png" alt="" />
+<div id="cnblogs_code_open_c66b4e87-69ef-4de9-9dea-2ef2a79ad5db" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">mytime.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #000000;">Time::Time()
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 6</span>     hours = minutes = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 8</span> 
+<span style="color: #008080;"> 9</span> Time::Time(<span style="color: #0000ff;">int</span> h,<span style="color: #0000ff;">int</span><span style="color: #000000;"> m)
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">11</span>     hours =<span style="color: #000000;"> h;
+</span><span style="color: #008080;">12</span>     minutes =<span style="color: #000000;"> m;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> <span style="color: #0000ff;">void</span> Time::Reset(<span style="color: #0000ff;">int</span> h,<span style="color: #0000ff;">int</span><span style="color: #000000;"> m)
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">17</span>     hours =<span style="color: #000000;"> h;
+</span><span style="color: #008080;">18</span>     minutes =<span style="color: #000000;"> m;
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span> Time Time::<span style="color: #0000ff;">operator</span>+(<span style="color: #0000ff;">const</span> Time&amp; t) <span style="color: #0000ff;">const</span>
+<span style="color: #008080;">22</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">    Time sum;
+</span><span style="color: #008080;">24</span>     sum.minutes = minutes +<span style="color: #000000;"> t.minutes;
+</span><span style="color: #008080;">25</span>     sum.hours = hours +t.hours +sum.minutes / <span style="color: #800080;">60</span><span style="color: #000000;">;
+</span><span style="color: #008080;">26</span>     sum.minutes %= <span style="color: #800080;">60</span><span style="color: #000000;">;
+</span><span style="color: #008080;">27</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> sum;
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">29</span> 
+<span style="color: #008080;">30</span> Time Time::<span style="color: #0000ff;">operator</span>*(<span style="color: #0000ff;">double</span> mult) <span style="color: #0000ff;">const</span>
+<span style="color: #008080;">31</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">    Time result;
+</span><span style="color: #008080;">33</span>     <span style="color: #0000ff;">long</span> totalminutes = hours * mult * <span style="color: #800080;">60</span> + minutes *<span style="color: #000000;"> mult;
+</span><span style="color: #008080;">34</span>     result.hours = totalminutes / <span style="color: #800080;">60</span><span style="color: #000000;">;
+</span><span style="color: #008080;">35</span>     result.minutes = totalminutes % <span style="color: #800080;">60</span><span style="color: #000000;">;
+</span><span style="color: #008080;">36</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> result;
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">38</span> 
+<span style="color: #008080;">39</span> ostream&amp; <span style="color: #0000ff;">operator</span>&lt;&lt;(ostream&amp; os,<span style="color: #0000ff;">const</span> Time&amp;<span style="color: #000000;"> t)
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">41</span>     os &lt;&lt; t.hours &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;"> hours, </span><span style="color: #800000;">"</span> &lt;&lt; t.minutes &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;"> minutes</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">42</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> os;
+</span><span style="color: #008080;">43</span> }</pre>
+</div>
+<span class="cnblogs_code_collapse">mytime.cpp</span></div>
+<p>　　<span style="font-size: 16px;">以上代码的设计原则是：想让Time类对象的相加、与常数相乘以及打印操作与C++内置类型一致。因此+、*、&lt;&lt;三个符号必须进行运算符重载操作，即对此类对象使用这三个运算符时的具体实现细节需重新定义。声明格式为：&lt;返回值类型&gt; operator&lt;op&gt;()。但是这里存在一个问题，成员函数Time operator*(double mult) 在被调用时，类对象必须放置在*符号左侧，也就是说当表达式为m*t(t为Time类对象)时，编译器会报错。使用&lt;&lt;运算符打印Time类对象时同样会遇到此问题。</span></p>
+<p><span style="font-size: 16px;">　　为了实现用户友好，使用没有此限制的友元函数重载运算符是个不错的选择。友元函数是类接口的扩展，这类函数虽然不是类成员函数，但可以访问类私有成员。需要注意的一点是：&lt;&lt;输出数据时，左侧必须是ostream类对象。因此重载&lt;&lt;运算符时，必须使函数返回参数中ostream类对象本身才能正确编译cout &lt;&lt; A &lt;&lt; B;语句。这条语句与(cout &lt;&lt; A) &lt;&lt; B;等同。</span></p>
+<p><strong><span style="font-size: 18pt;">三、应用程序及结果分析</span></strong></p>
+<p><span style="font-size: 16px;">应用程序示例代码：</span></p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('3b66d04f-1cd1-4917-95f4-623d46bd0192')"><img id="code_img_closed_3b66d04f-1cd1-4917-95f4-623d46bd0192" class="code_img_closed" src="./images/C++基础——运算符重载友元函数示例0.png" alt="" /><img id="code_img_opened_3b66d04f-1cd1-4917-95f4-623d46bd0192" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('3b66d04f-1cd1-4917-95f4-623d46bd0192',event)" src="./images/C++基础——运算符重载友元函数示例1.png" alt="" />
+<div id="cnblogs_code_open_3b66d04f-1cd1-4917-95f4-623d46bd0192" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">mytime.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">using</span><span style="color: #000000;"> std::endl;
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">using</span><span style="color: #000000;"> std::cout;
+</span><span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span> <span style="color: #000000;">    Time planning;
+</span><span style="color: #008080;">11</span>     Time coding(<span style="color: #800080;">2</span>,<span style="color: #800080;">40</span><span style="color: #000000;">);
+</span><span style="color: #008080;">12</span>     Time fixing(<span style="color: #800080;">5</span>,<span style="color: #800080;">55</span><span style="color: #000000;">);
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    Time total;
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    Time adjusted1,adjusted2;
+</span><span style="color: #008080;">15</span> 
+<span style="color: #008080;">16</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">planning time = </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">17</span>     cout &lt;&lt; planning &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">18</span> 
+<span style="color: #008080;">19</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">coding time = </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">20</span>     cout &lt;&lt; coding &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">21</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">fixing time = </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">22</span>     cout &lt;&lt; fixing &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">23</span>     cout &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">24</span> 
+<span style="color: #008080;">25</span>     total = coding +<span style="color: #000000;"> fixing;
+</span><span style="color: #008080;">26</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">coding + fixing = </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">27</span>     cout &lt;&lt; total &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">28</span> 
+<span style="color: #008080;">29</span>     adjusted1 = total * <span style="color: #800080;">1.5</span>;<span style="color: #008000;">//</span><span style="color: #008000;">调用成员函数</span>
+<span style="color: #008080;">30</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">total * 1.5 = </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">31</span>     cout &lt;&lt; adjusted1 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span>     adjusted2 = <span style="color: #800080;">1.5</span> * total;<span style="color: #008000;">//</span><span style="color: #008000;">调用友元函数</span>
+<span style="color: #008080;">34</span>     cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">1.5 * total = </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">35</span>     cout &lt;&lt; adjusted2 &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">36</span> 
+<span style="color: #008080;">37</span> }</pre>
+</div>
+<span class="cnblogs_code_collapse">usetime.cpp</span></div>
+<p><span style="font-size: 16px;">　　Time类对象planning创建时隐式调用用户定义默认构造函数，而coding和fixing因有参数传递调用第二个构造函数，这正是C++的多态性质。可以看到，打印Time类对象与打印C++内置类型对象无异。重点关注&ldquo;*&rdquo;运算符的使用，adjusted1和adjusted2表达式中乘法运算依次调用了成员函数和友元函数。C++编译器同样会自动识别用户的意图。</span><span style="font-size: 16px;">打印结果如图：</span></p>
+<p><span style="font-size: 16px;"><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/C++基础——运算符重载友元函数示例6.png" alt="" width="435" height="207" /></span></p>
+<p>　　<span style="font-size: 16px;">应用程序运行正确，重载的两个Time类对象的加法运算和Time类对象与常数的乘法运算结果无误。之后的两篇博客依次讲述动态内存分配与类继承内容，有错误的地方欢迎指正。</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

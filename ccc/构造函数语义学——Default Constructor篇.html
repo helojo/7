@@ -1,0 +1,728 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修构造函数语义学——Default Constructor篇' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>构造函数语义学——Default Constructor篇</center></div><div class='banquan'>原文出处:本文由博客园博主cookcocck提供。<br/>
+原文连接:https://www.cnblogs.com/xhb19960928/p/11688972.html</div><br>
+    <h1 id="构造函数语义学default-constructor-篇">构造函数语义学——Default Constructor 篇</h1>
+<p>这一章原书主要分析了：编译器关于<code>对象构造过程</code>的干涉，即在对象构造这个过程中，编译器到底在背后做了什么</p>
+<p>这一章的重点在于 default constructor 和 copy constructor 的相关知识</p>
+<h1 id="default-constructor-详解">Default Constructor 详解</h1>
+<p>一些 C++的书籍中告诉我们：如果不写任何构造函数，那么编译器会为我们生成一个<code>默认构造函数（default constructor）</code></p>
+<p>那么，针对这个观点，有两个问题：</p>
+<ul>
+<li>这句话是正确的吗？</li>
+<li>如果这句话是正确的，那么编译器为我们生成的 default constructor 里有什么动作吗？</li>
+</ul>
+<h3 id="这句话是正确的吗">1 这句话是正确的吗？</h3>
+<p>这句话大体是正确的，但是 cppreference 中有更详细的说明：</p>
+<blockquote>
+<p>若不对类类型（struct、class 或 union）提供任何<code>用户声明的构造函数</code>，则编译器将始终声明一个作为其类的 inline public 成员的默认构造函数。<br />
+当存在用户声明的构造函数时，用户仍可以关键词 default 强制编译器自动生成原本隐式声明的默认构造函数。</p>
+</blockquote>
+<p><strong>上面这段话告诉我们：只有在没有任何用户声明的构造函数的情况下，编译器才会声明一个 default constructor。换言之，只要有任何用户声明的构造函数（不一定要是 default constructor），哪怕该构造函数不是 default constructor，那么编译器就不会为我们生成 default constructor（除了强制编译器生成）</strong></p>
+<blockquote>
+<p><strong>隐式定义的默认构造函数</strong><br />
+若隐式声明的默认构造函数未被定义为弃置的，则当其被 ODR 式使用时，它为编译器所定义（即生成函数体并编译之），且它与拥有空函数体和空初始化器列表的用户定义的构造函数有严格相同的效果。即它调用这个类的各基类和各非静态成员的默认构造函数</p>
+</blockquote>
+<p>有没有什么证据能证明编译器真的隐式定义了一个默认构造函数呢？有，考虑如下的一个类：</p>
+<pre><code>class A {};</code></pre>
+<p>这个类中没有任何成员变量或者成员函数，此时打印出该类的相关信息如下：</p>
+<pre><code>// clang -cc1 -fdump-record-layouts -emit-llvm main.cpp 命令
+*** Dumping AST Record Layout
+         0 | class A (empty)
+           | [sizeof=1, dsize=1, align=1,
+           |  nvsize=1, nvalign=1]
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x55c6626abc70 &lt;main.cpp:1:1, line:3:1&gt; line:1:7 referenced class A definition
+|-DefinitionData pass_in_registers empty aggregate standard_layout trivially_copyable pod trivial literal has_constexpr_non_copy_move_ctor can_const_default_init
+| |-DefaultConstructor exists trivial constexpr defaulted_is_constexpr
+| |-CopyConstructor simple trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple trivial
+| |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
+| |-MoveAssignment exists simple trivial needs_implicit
+| `-Destructor simple irrelevant trivial needs_implicit
+|-CXXRecordDecl 0x55c6626abd88 &lt;col:1, col:7&gt; col:7 implicit class A
+|-CXXConstructorDecl 0x55c6626ac020 &lt;col:7&gt; col:7 implicit used constexpr A &#39;void () noexcept&#39; inline default trivial
+| `-CompoundStmt 0x55c6626ac4b8 &lt;col:7&gt;
+|-CXXConstructorDecl 0x55c6626ac158 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (const A &amp;)&#39; inline default trivial noexcept-unevaluated 0x55c6626ac158
+| `-ParmVarDecl 0x55c6626ac268 &lt;col:7&gt; col:7 &#39;const A &amp;&#39;
+`-CXXConstructorDecl 0x55c6626ac308 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (A &amp;&amp;)&#39; inline default trivial noexcept-unevaluated 0x55c6626ac308
+  `-ParmVarDecl 0x55c6626ac418 &lt;col:7&gt; col:7 &#39;A &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.A = type { i8 }
+  NonVirtualBaseLLVMType:%class.A = type { i8 }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;</code></pre>
+<p><code>DefaultConstructor exists trivial constexpr defaulted_is_constexpr</code>这一行证明了这个类存在一个 default constructor 且是 trivial 的，而我们并没有声明和定义，那么自然是编译器为我们自动生成的</p>
+<h3 id="隐式定义的默认构造函数里发生了什么">2 隐式定义的默认构造函数里发生了什么？</h3>
+<p>在解决这个问题之前，首先有需要了解一些额外的知识：</p>
+<p><strong>default constructor 是分为 trivial default constructor（平凡默认构造函数，即不进行任何构造动作）和 non trivial default constructor（非平凡默认构造函数）</strong></p>
+<p>什么情况下 default constructor 是 trivial 的呢？cppreference 中说明了这一点：</p>
+<blockquote>
+<p>当下列各项全部为真时，类 T 的默认构造函数为平凡的（平凡默认构造函数是不进行任何动作的构造函数。）：<br />
+构造函数并非用户提供（即为隐式定义或于其首个声明中预置的）<br />
+T 没有虚成员函数<br />
+T 没有虚基类<br />
+T 没有拥有默认初始化器的非静态数据成员。<br />
+每个 T 的直接基类都拥有平凡默认构造函数<br />
+每个类类型的非静态成员都拥有平凡默认构造函数</p>
+</blockquote>
+<p><strong>注意上述条件中的第一点也说明了一个事实：如果构造函数是用户定义的，那么必定是非平凡的</strong></p>
+<p>再回到<code>隐式定义的默认构造函数里发生了什么？</code>这个问题，就需要从两个角度来考虑了：</p>
+<ol>
+<li><strong>当编译器隐式定义的默认构造函数是一个 trivial default constructor 时，那么该 trivial default constructor 什么也不做</strong></li>
+<li><strong>那么当编译器隐式定义的默认构造函数是一个 non-trivial default constructor 时，该 non-trivial default constructor 调用这个类的各基类和各非静态成员的默认构造函数</strong></li>
+</ol>
+<p>通过以上，我们已经知道了编译器在特定情况下，真的会隐式定义一个 default constructor，也知道了在哪些情况下产生的 default constructor 是 trivial 的，那么再来详细的讨论一下，什么情况下，编译器生成的 default constructor 是 non-trivial 的</p>
+<ol>
+<li><p>带有 default constructor 的 member class object</p>
+<p>如果一个 class A 没有任何的 constructor，但是它内含一个 member object，而该 member object 拥有 non-trivial default constructor，那么编译器为这个 class 隐式定义的 default constructor 是 non-trivial。为什么呢？因为编译器为该 class A 产生的 default constructor 里必须要调用 member object 的 non-trivial default constructor，否则无法完整的构造 class A 的对象</p>
+<p>仍然用代码来证明：</p>
+<pre><code>class B {
+ private:
+  int b;
+ public:
+  B() {}
+};
+
+class A {
+ private:
+  B b;
+    int a;
+};</code></pre>
+<p>打印出 class A 的相关信息，如下：</p>
+<pre><code>*** Dumping AST Record Layout
+         0 | class B
+         0 |   int b
+           | [sizeof=4, dsize=4, align=4,
+           |  nvsize=4, nvalign=4]
+
+*** Dumping AST Record Layout
+         0 | class A
+         0 |   class B b
+         0 |     int b
+         4 |   int a
+           | [sizeof=8, dsize=8, align=4,
+           |  nvsize=8, nvalign=4]
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x55ba37562c50 &lt;main.cpp:1:1, line:6:1&gt; line:1:7 referenced class B definition
+|-DefinitionData pass_in_registers standard_layout trivially_copyable has_user_declared_ctor can_const_default_init
+| |-DefaultConstructor exists non_trivial user_provided
+| |-CopyConstructor simple trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple trivial
+| |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
+| |-MoveAssignment exists simple trivial needs_implicit
+| `-Destructor simple irrelevant trivial
+|-CXXRecordDecl 0x55ba37562d68 &lt;col:1, col:7&gt; col:7 implicit referenced class B
+|-AccessSpecDecl 0x55ba37562df8 &lt;line:2:2, col:9&gt; col:2 private
+|-FieldDecl 0x55ba37562e38 &lt;line:3:3, col:7&gt; col:7 b &#39;int&#39;
+|-AccessSpecDecl 0x55ba37562e88 &lt;line:4:2, col:8&gt; col:2 public
+|-CXXConstructorDecl 0x55ba37562f38 &lt;line:5:3, col:8&gt; col:3 used B &#39;void ()&#39;
+| `-CompoundStmt 0x55ba37562ff8 &lt;col:7, col:8&gt;
+|-CXXDestructorDecl 0x55ba37563590 &lt;line:1:7&gt; col:7 implicit ~B &#39;void ()&#39; inline default trivial noexcept-unevaluated 0x55ba37563590
+|-CXXConstructorDecl 0x55ba375636c8 &lt;col:7&gt; col:7 implicit constexpr B &#39;void (const B &amp;)&#39; inline default trivial noexcept-unevaluated 0x55ba375636c8
+| `-ParmVarDecl 0x55ba375637d8 &lt;col:7&gt; col:7 &#39;const B &amp;&#39;
+`-CXXConstructorDecl 0x55ba37563878 &lt;col:7&gt; col:7 implicit constexpr B &#39;void (B &amp;&amp;)&#39; inline default trivial noexcept-unevaluated 0x55ba37563878
+  `-ParmVarDecl 0x55ba37563988 &lt;col:7&gt; col:7 &#39;B &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.B = type { i32 }
+  NonVirtualBaseLLVMType:%class.B = type { i32 }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x55ba37563008 &lt;main.cpp:8:1, line:12:1&gt; line:8:7 referenced class A definition
+|-DefinitionData pass_in_registers standard_layout trivially_copyable
+| |-DefaultConstructor exists non_trivial
+| |-CopyConstructor simple trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple trivial
+| |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
+| |-MoveAssignment exists simple trivial needs_implicit
+| `-Destructor simple irrelevant trivial needs_implicit
+|-CXXRecordDecl 0x55ba37563128 &lt;col:1, col:7&gt; col:7 implicit class A
+|-AccessSpecDecl 0x55ba375631b8 &lt;line:9:2, col:9&gt; col:2 private
+|-FieldDecl 0x55ba375631f0 &lt;line:10:3, col:5&gt; col:5 b &#39;B&#39;
+|-FieldDecl 0x55ba37563258 &lt;line:11:3, col:7&gt; col:7 a &#39;int&#39;
+|-CXXConstructorDecl 0x55ba375634b0 &lt;line:8:7&gt; col:7 implicit used A &#39;void () noexcept(false)&#39; inline default
+| |-CXXCtorInitializer Field 0x55ba375631f0 &#39;b&#39; &#39;B&#39;
+| | `-CXXConstructExpr 0x55ba37592090 &lt;col:7&gt; &#39;B&#39; &#39;void ()&#39;
+| `-CompoundStmt 0x55ba375920e8 &lt;col:7&gt;
+|-CXXConstructorDecl 0x55ba375639f8 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (const A &amp;)&#39; inline default trivial noexcept-unevaluated 0x55ba375639f8
+| `-ParmVarDecl 0x55ba37591e30 &lt;col:7&gt; col:7 &#39;const A &amp;&#39;
+`-CXXConstructorDecl 0x55ba37591ec8 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (A &amp;&amp;)&#39; inline default trivial noexcept-unevaluated 0x55ba37591ec8
+  `-ParmVarDecl 0x55ba37591fd8 &lt;col:7&gt; col:7 &#39;A &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.A = type { %class.B, i32 }
+  NonVirtualBaseLLVMType:%class.A = type { %class.B, i32 }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+DefaultConstructor exists non_trivial user_provided</code></pre>
+<p>这一行中说明 class B 是用户定义的一个 default constructor，是 non-trivial 的</p>
+<pre><code>DefaultConstructor exists non_trivial</code></pre>
+<p>第二行中则说明 class A 的 default constructor 也是存在的且是 non-trivial 的。在这个 non-trivial default constructor 中，编译器会调用 class B 的 default constructor 来初始化 class A 的对象中的 b 成分，但是不会初始化 a（编译器看来，初始化 b 是它的工作，但是初始化 a 是程序员的工作）</p>
+<pre><code>|-CXXConstructorDecl 0x55ba375634b0 &lt;line:8:7&gt; col:7 implicit used A &#39;void () noexcept(false)&#39; inline default
+| |-CXXCtorInitializer Field 0x55ba375631f0 &#39;b&#39; &#39;B&#39;
+| | `-CXXConstructExpr 0x55ba37592090 &lt;col:7&gt; &#39;B&#39; &#39;void ()&#39;
+| `-CompoundStmt 0x55ba375920e8 &lt;col:7&gt;</code></pre>
+<p>这一段则说明了在 class A 的 default constructor 中调用了 class B 的 default constructor</p>
+<p><strong>如果，class A 中提供了一个 default constructor，那么编译器会怎么办呢？</strong></p>
+<pre><code>class B {
+ private:
+  int b;
+ public:
+  B() {}
+};
+
+class A {
+ private:
+  B b;
+  int a;
+ public:
+  A() {
+    a = 0;
+  }
+};</code></pre>
+<p>打印相关信息如下：</p>
+<pre><code>*** Dumping AST Record Layout
+         0 | class B
+         0 |   int b
+           | [sizeof=4, dsize=4, align=4,
+           |  nvsize=4, nvalign=4]
+
+*** Dumping AST Record Layout
+         0 | class A
+         0 |   class B b
+         0 |     int b
+         4 |   int a
+           | [sizeof=8, dsize=8, align=4,
+           |  nvsize=8, nvalign=4]
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x5641e5965d20 &lt;main.cpp:1:1, line:6:1&gt; line:1:7 referenced class B definition
+|-DefinitionData pass_in_registers standard_layout trivially_copyable has_user_declared_ctor can_const_default_init
+| |-DefaultConstructor exists non_trivial user_provided
+| |-CopyConstructor simple trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple trivial
+| |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
+| |-MoveAssignment exists simple trivial needs_implicit
+| `-Destructor simple irrelevant trivial
+|-CXXRecordDecl 0x5641e5965e38 &lt;col:1, col:7&gt; col:7 implicit referenced class B
+|-AccessSpecDecl 0x5641e5965ec8 &lt;line:2:2, col:9&gt; col:2 private
+|-FieldDecl 0x5641e5965f08 &lt;line:3:3, col:7&gt; col:7 b &#39;int&#39;
+|-AccessSpecDecl 0x5641e5965f58 &lt;line:4:2, col:8&gt; col:2 public
+|-CXXConstructorDecl 0x5641e5966008 &lt;line:5:3, col:8&gt; col:3 used B &#39;void ()&#39;
+| `-CompoundStmt 0x5641e59660c8 &lt;col:7, col:8&gt;
+|-CXXConstructorDecl 0x5641e59664e8 &lt;line:1:7&gt; col:7 implicit constexpr B &#39;void (const B &amp;)&#39; inline default trivial noexcept-unevaluated 0x5641e59664e8
+| `-ParmVarDecl 0x5641e59665f8 &lt;col:7&gt; col:7 &#39;const B &amp;&#39;
+|-CXXConstructorDecl 0x5641e5966698 &lt;col:7&gt; col:7 implicit constexpr B &#39;void (B &amp;&amp;)&#39; inline default trivial noexcept-unevaluated 0x5641e5966698
+| `-ParmVarDecl 0x5641e59667a8 &lt;col:7&gt; col:7 &#39;B &amp;&amp;&#39;
+`-CXXDestructorDecl 0x5641e59953b8 &lt;col:7&gt; col:7 implicit ~B &#39;void ()&#39; inline default trivial noexcept-unevaluated 0x5641e59953b8
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.B = type { i32 }
+  NonVirtualBaseLLVMType:%class.B = type { i32 }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x5641e59660d8 &lt;main.cpp:8:1, line:16:1&gt; line:8:7 referenced class A definition
+|-DefinitionData pass_in_registers standard_layout trivially_copyable has_user_declared_ctor can_const_default_init
+| |-DefaultConstructor exists non_trivial user_provided
+| |-CopyConstructor simple trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple trivial
+| |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
+| |-MoveAssignment exists simple trivial needs_implicit
+| `-Destructor simple irrelevant trivial needs_implicit
+|-CXXRecordDecl 0x5641e59661f8 &lt;col:1, col:7&gt; col:7 implicit referenced class A
+|-AccessSpecDecl 0x5641e5966288 &lt;line:9:2, col:9&gt; col:2 private
+|-FieldDecl 0x5641e59662c0 &lt;line:10:3, col:5&gt; col:5 b &#39;B&#39;
+|-FieldDecl 0x5641e5966328 &lt;line:11:3, col:7&gt; col:7 referenced a &#39;int&#39;
+|-AccessSpecDecl 0x5641e5966378 &lt;line:12:2, col:8&gt; col:2 public
+|-CXXConstructorDecl 0x5641e5966400 &lt;line:13:3, line:15:3&gt; line:13:3 used A &#39;void ()&#39;
+| |-CXXCtorInitializer Field 0x5641e59662c0 &#39;b&#39; &#39;B&#39;
+| | `-CXXConstructExpr 0x5641e5966818 &lt;col:3&gt; &#39;B&#39; &#39;void ()&#39;
+| `-CompoundStmt 0x5641e59668f0 &lt;col:7, line:15:3&gt;
+|   `-BinaryOperator 0x5641e59668d0 &lt;line:14:5, col:9&gt; &#39;int&#39; lvalue &#39;=&#39;
+|     |-MemberExpr 0x5641e5966880 &lt;col:5&gt; &#39;int&#39; lvalue -&gt;a 0x5641e5966328
+|     | `-CXXThisExpr 0x5641e5966870 &lt;col:5&gt; &#39;A *&#39; implicit this
+|     `-IntegerLiteral 0x5641e59668b0 &lt;col:9&gt; &#39;int&#39; 0
+|-CXXConstructorDecl 0x5641e5966b18 &lt;line:8:7&gt; col:7 implicit constexpr A &#39;void (const A &amp;)&#39; inline default trivial noexcept-unevaluated 0x5641e5966b18
+| `-ParmVarDecl 0x5641e5995348 &lt;col:7&gt; col:7 &#39;const A &amp;&#39;
+`-CXXConstructorDecl 0x5641e59954c8 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (A &amp;&amp;)&#39; inline default trivial noexcept-unevaluated 0x5641e59954c8
+  `-ParmVarDecl 0x5641e59955d8 &lt;col:7&gt; col:7 &#39;A &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.A = type { %class.B, i32 }
+  NonVirtualBaseLLVMType:%class.A = type { %class.B, i32 }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+|-CXXConstructorDecl 0x5641e5966400 &lt;line:13:3, line:15:3&gt; line:13:3 used A &#39;void ()&#39;
+| |-CXXCtorInitializer Field 0x5641e59662c0 &#39;b&#39; &#39;B&#39;
+| | `-CXXConstructExpr 0x5641e5966818 &lt;col:3&gt; &#39;B&#39; &#39;void ()&#39;</code></pre>
+<p>可以发现，在我们定义的 default constructor 中，也调用了 class B 的 default constructor，且这个调用动作发生在 a = 0;这条语句之前，然而我们并没有写呀，这便是<code>编译器自动安插的调用</code></p>
+<p>也就是说，在这种情况下，编译器会扩充已经存在 constructor，在其中安插一些代码，使得在该 constgructor 中所有代码执行之前，先调用必要的 default constructor</p>
+<p><strong>如果 class A 提供了其他的 constructors，但是没有提供 default constructor，那么编译器还会为我们生成 default consturctor 吗？</strong></p>
+<p>这个之前已经说过了，答案是<code>不会</code>。依然用事实证明：</p>
+<pre><code>class B {
+ private:
+  int b;
+ public:
+  B() {}
+};
+
+class A {
+ private:
+  B b;
+  int a;
+ public:
+  A(int _a) : a(_a) {}
+};
+
+int main() {
+  A a(1);
+}
+
+*** Dumping AST Record Layout
+         0 | class B
+         0 |   int b
+           | [sizeof=4, dsize=4, align=4,
+           |  nvsize=4, nvalign=4]
+
+*** Dumping AST Record Layout
+         0 | class A
+         0 |   class B b
+         0 |     int b
+         4 |   int a
+           | [sizeof=8, dsize=8, align=4,
+           |  nvsize=8, nvalign=4]
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x55df47367d20 &lt;main.cpp:1:1, line:6:1&gt; line:1:7 referenced class B definition
+|-DefinitionData pass_in_registers standard_layout trivially_copyable has_user_declared_ctor can_const_default_init
+| |-DefaultConstructor exists non_trivial user_provided
+| |-CopyConstructor simple trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple trivial
+| |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
+| |-MoveAssignment exists simple trivial needs_implicit
+| `-Destructor simple irrelevant trivial
+|-CXXRecordDecl 0x55df47367e38 &lt;col:1, col:7&gt; col:7 implicit referenced class B
+|-AccessSpecDecl 0x55df47367ec8 &lt;line:2:2, col:9&gt; col:2 private
+|-FieldDecl 0x55df47367f08 &lt;line:3:3, col:7&gt; col:7 b &#39;int&#39;
+|-AccessSpecDecl 0x55df47367f58 &lt;line:4:2, col:8&gt; col:2 public
+|-CXXConstructorDecl 0x55df47368008 &lt;line:5:3, col:8&gt; col:3 used B &#39;void ()&#39;
+| `-CompoundStmt 0x55df473680c8 &lt;col:7, col:8&gt;
+|-CXXConstructorDecl 0x55df47368628 &lt;line:1:7&gt; col:7 implicit constexpr B &#39;void (const B &amp;)&#39; inline default trivial noexcept-unevaluated 0x55df47368628
+| `-ParmVarDecl 0x55df47368738 &lt;col:7&gt; col:7 &#39;const B &amp;&#39;
+|-CXXConstructorDecl 0x55df473687d8 &lt;col:7&gt; col:7 implicit constexpr B &#39;void (B &amp;&amp;)&#39; inline default trivial noexcept-unevaluated 0x55df473687d8
+| `-ParmVarDecl 0x55df473688e8 &lt;col:7&gt; col:7 &#39;B &amp;&amp;&#39;
+`-CXXDestructorDecl 0x55df473978a8 &lt;col:7&gt; col:7 implicit ~B &#39;void ()&#39; inline default trivial noexcept-unevaluated 0x55df473978a8
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.B = type { i32 }
+  NonVirtualBaseLLVMType:%class.B = type { i32 }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x55df473680d8 &lt;main.cpp:8:1, line:14:1&gt; line:8:7 referenced class A definition
+|-DefinitionData pass_in_registers standard_layout trivially_copyable has_user_declared_ctor can_const_default_init
+| |-DefaultConstructor
+| |-CopyConstructor simple trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple trivial
+| |-CopyAssignment trivial has_const_param needs_implicit implicit_has_const_param
+| |-MoveAssignment exists simple trivial needs_implicit
+| `-Destructor simple irrelevant trivial needs_implicit
+|-CXXRecordDecl 0x55df473681f8 &lt;col:1, col:7&gt; col:7 implicit referenced class A
+|-AccessSpecDecl 0x55df47368288 &lt;line:9:2, col:9&gt; col:2 private
+|-FieldDecl 0x55df473682c0 &lt;line:10:3, col:5&gt; col:5 b &#39;B&#39;
+|-FieldDecl 0x55df47368328 &lt;line:11:3, col:7&gt; col:7 a &#39;int&#39;
+|-AccessSpecDecl 0x55df47368378 &lt;line:12:2, col:8&gt; col:2 public
+|-CXXConstructorDecl 0x55df473684b8 &lt;line:13:3, col:22&gt; col:3 used A &#39;void (int)&#39;
+| |-ParmVarDecl 0x55df473683b8 &lt;col:5, col:9&gt; col:9 used _a &#39;int&#39;
+| |-CXXCtorInitializer Field 0x55df473682c0 &#39;b&#39; &#39;B&#39;
+| | `-CXXConstructExpr 0x55df47368958 &lt;col:3&gt; &#39;B&#39; &#39;void ()&#39;
+| |-CXXCtorInitializer Field 0x55df47368328 &#39;a&#39; &#39;int&#39;
+| | `-ImplicitCastExpr 0x55df473685c0 &lt;col:17&gt; &#39;int&#39; &lt;LValueToRValue&gt;
+| |   `-DeclRefExpr 0x55df47368580 &lt;col:17&gt; &#39;int&#39; lvalue ParmVar 0x55df473683b8 &#39;_a&#39; &#39;int&#39;
+| `-CompoundStmt 0x55df473689b8 &lt;col:21, col:22&gt;
+|-CXXConstructorDecl 0x55df47397720 &lt;line:8:7&gt; col:7 implicit constexpr A &#39;void (const A &amp;)&#39; inline default trivial noexcept-unevaluated 0x55df47397720
+| `-ParmVarDecl 0x55df47397838 &lt;col:7&gt; col:7 &#39;const A &amp;&#39;
+`-CXXConstructorDecl 0x55df473979b8 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (A &amp;&amp;)&#39; inline default trivial noexcept-unevaluated 0x55df473979b8
+  `-ParmVarDecl 0x55df47397ac8 &lt;col:7&gt; col:7 &#39;A &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.A = type { %class.B, i32 }
+  NonVirtualBaseLLVMType:%class.A = type { %class.B, i32 }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+Record: CXXRecordDecl 0x55df473680d8 &lt;main.cpp:8:1, line:14:1&gt; line:8:7 referenced class A definition
+|-DefinitionData pass_in_registers standard_layout trivially_copyable has_user_declared_ctor can_const_default_init
+| |-DefaultConstructor</code></pre>
+<p>这几行证明了，编译器没有为 class A 生成 default constructor</p>
+<pre><code>|-CXXConstructorDecl 0x55df473684b8 &lt;line:13:3, col:22&gt; col:3 used A &#39;void (int)&#39;
+| |-ParmVarDecl 0x55df473683b8 &lt;col:5, col:9&gt; col:9 used _a &#39;int&#39;
+| |-CXXCtorInitializer Field 0x55df473682c0 &#39;b&#39; &#39;B&#39;
+| | `-CXXConstructExpr 0x55df47368958 &lt;col:3&gt; &#39;B&#39; &#39;void ()&#39;</code></pre>
+<p>这几行证明了编译器扩充了 A 的单参数 constructor，在里面安插了对 B 的 default consturctor 的调用</p></li>
+<li><p>带有 default constructor 的 Base class</p>
+<p>如果一个<code>没有任何user_provided constructors的class</code>派生自一个<code>带有default constructor的base class</code>，那么这个 dervied class 的 default constructor 会被编译器自动合成出来且是 non-trivial 的</p>
+<p>一个需要注意的地方是，上述成立的一个充分不必要条件是：base class 的 default constructor 只有是 non-tirvial 时，dervied class 被合成的这个 default constructor 才是 non-trivial 的；具体原因可以回顾一下之前所说的<code>平凡默认构造函数的所需条件</code></p>
+<p>同理，如果 derived class 提供了 defualt constructor 或者其他 constructors 的话，其结果也与第 1 点中所述情况类似，读者可以自行实验</p></li>
+<li><p>带有一个 virtual function 的 class</p>
+<p>如果一个<code>没有任何user_provided constructors的class</code>中声明（或继承）了一个<code>virtual function</code>，那么编译器会自动为该 class 生成一个 default constructor，且该 defalut constructor 是 non-trivial 的</p>
+<p>举例证明：</p>
+<pre><code>// 定义了一个virtual function
+class A {
+ public:
+  virtual void vfunc() {}
+};
+
+// 继承了一个virtual function
+class B: public A {
+};</code></pre>
+<p>打印相关信息：</p>
+<pre><code>*** Dumping AST Record Layout
+         0 | class A
+         0 |   (A vtable pointer)
+           | [sizeof=8, dsize=8, align=8,
+           |  nvsize=8, nvalign=8]
+
+*** Dumping AST Record Layout
+         0 | class B
+         0 |   class A (primary base)
+         0 |     (A vtable pointer)
+           | [sizeof=8, dsize=8, align=8,
+           |  nvsize=8, nvalign=8]
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x55d1c6dc4c50 &lt;main.cpp:1:1, line:4:1&gt; line:1:7 referenced class A definition
+|-DefinitionData polymorphic literal has_constexpr_non_copy_move_ctor can_const_default_init
+| |-DefaultConstructor exists non_trivial constexpr defaulted_is_constexpr
+| |-CopyConstructor simple non_trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple non_trivial
+| |-CopyAssignment non_trivial has_const_param implicit_has_const_param
+| |-MoveAssignment exists simple non_trivial
+| `-Destructor simple irrelevant trivial
+|-CXXRecordDecl 0x55d1c6dc4d68 &lt;col:1, col:7&gt; col:7 implicit class A
+|-AccessSpecDecl 0x55d1c6dc4df8 &lt;line:2:2, col:8&gt; col:2 public
+|-CXXMethodDecl 0x55d1c6dc4e98 &lt;line:3:3, col:25&gt; col:16 vfunc &#39;void ()&#39; virtual
+| `-CompoundStmt 0x55d1c6dc53c0 &lt;col:24, col:25&gt;
+|-CXXMethodDecl 0x55d1c6dc4f98 &lt;line:1:7&gt; col:7 implicit constexpr operator= &#39;A &amp;(const A &amp;)&#39; inline default noexcept-unevaluated 0x55d1c6dc4f98
+| `-ParmVarDecl 0x55d1c6dc50a8 &lt;col:7&gt; col:7 &#39;const A &amp;&#39;
+|-CXXMethodDecl 0x55d1c6dc5148 &lt;col:7&gt; col:7 implicit constexpr operator= &#39;A &amp;(A &amp;&amp;)&#39; inline default noexcept-unevaluated 0x55d1c6dc5148
+| `-ParmVarDecl 0x55d1c6dc5258 &lt;col:7&gt; col:7 &#39;A &amp;&amp;&#39;
+|-CXXDestructorDecl 0x55d1c6dc52e0 &lt;col:7&gt; col:7 implicit ~A &#39;void ()&#39; inline default trivial noexcept-unevaluated 0x55d1c6dc52e0
+|-CXXConstructorDecl 0x55d1c6df4028 &lt;col:7&gt; col:7 implicit used constexpr A &#39;void () noexcept&#39; inline default
+| `-CompoundStmt 0x55d1c6df4738 &lt;col:7&gt;
+|-CXXConstructorDecl 0x55d1c6df4100 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (const A &amp;)&#39; inline default noexcept-unevaluated 0x55d1c6df4100
+| `-ParmVarDecl 0x55d1c6df4218 &lt;col:7&gt; col:7 &#39;const A &amp;&#39;
+`-CXXConstructorDecl 0x55d1c6df4288 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (A &amp;&amp;)&#39; inline default noexcept-unevaluated 0x55d1c6df4288
+  `-ParmVarDecl 0x55d1c6df4398 &lt;col:7&gt; col:7 &#39;A &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.A = type { i32 (...)** }
+  NonVirtualBaseLLVMType:%class.A = type { i32 (...)** }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x55d1c6dc53d0 &lt;main.cpp:7:1, line:8:1&gt; line:7:7 referenced class B definition
+|-DefinitionData polymorphic literal has_constexpr_non_copy_move_ctor can_const_default_init
+| |-DefaultConstructor exists non_trivial constexpr defaulted_is_constexpr
+| |-CopyConstructor simple non_trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple non_trivial
+| |-CopyAssignment non_trivial has_const_param implicit_has_const_param
+| |-MoveAssignment exists simple non_trivial
+| `-Destructor simple irrelevant trivial
+|-public &#39;A&#39;
+|-CXXRecordDecl 0x55d1c6dc5528 &lt;col:1, col:7&gt; col:7 implicit class B
+|-CXXMethodDecl 0x55d1c6dc5618 &lt;col:7&gt; col:7 implicit constexpr operator= &#39;B &amp;(const B &amp;)&#39; inline default noexcept-unevaluated 0x55d1c6dc5618
+| `-ParmVarDecl 0x55d1c6dc5728 &lt;col:7&gt; col:7 &#39;const B &amp;&#39;
+|-CXXMethodDecl 0x55d1c6dc57c8 &lt;col:7&gt; col:7 implicit constexpr operator= &#39;B &amp;(B &amp;&amp;)&#39; inline default noexcept-unevaluated 0x55d1c6dc57c8
+| `-ParmVarDecl 0x55d1c6dc58d8 &lt;col:7&gt; col:7 &#39;B &amp;&amp;&#39;
+|-CXXDestructorDecl 0x55d1c6dc5960 &lt;col:7&gt; col:7 implicit ~B &#39;void ()&#39; inline default trivial noexcept-unevaluated 0x55d1c6dc5960
+|-CXXConstructorDecl 0x55d1c6df3f30 &lt;col:7&gt; col:7 implicit used constexpr B &#39;void () noexcept&#39; inline default
+| |-CXXCtorInitializer &#39;A&#39;
+| | `-CXXConstructExpr 0x55d1c6df4748 &lt;col:7&gt; &#39;A&#39; &#39;void () noexcept&#39;
+| `-CompoundStmt 0x55d1c6df47b0 &lt;col:7&gt;
+|-CXXConstructorDecl 0x55d1c6df4408 &lt;col:7&gt; col:7 implicit constexpr B &#39;void (const B &amp;)&#39; inline default noexcept-unevaluated 0x55d1c6df4408
+| `-ParmVarDecl 0x55d1c6df4518 &lt;col:7&gt; col:7 &#39;const B &amp;&#39;
+`-CXXConstructorDecl 0x55d1c6df4588 &lt;col:7&gt; col:7 implicit constexpr B &#39;void (B &amp;&amp;)&#39; inline default noexcept-unevaluated 0x55d1c6df4588
+  `-ParmVarDecl 0x55d1c6df4698 &lt;col:7&gt; col:7 &#39;B &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.B = type { %class.A }
+  NonVirtualBaseLLVMType:%class.B = type { %class.A }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+Record: CXXRecordDecl 0x55d1c6dc4c50 &lt;main.cpp:1:1, line:4:1&gt; line:1:7 referenced class A definition
+|-DefinitionData polymorphic literal has_constexpr_non_copy_move_ctor can_const_default_init
+| |-DefaultConstructor exists non_trivial constexpr defaulted_is_constexpr
+
+Record: CXXRecordDecl 0x55d1c6dc53d0 &lt;main.cpp:7:1, line:8:1&gt; line:7:7 referenced class B definition
+|-DefinitionData polymorphic literal has_constexpr_non_copy_move_ctor can_const_default_init
+| |-DefaultConstructor exists non_trivial constexpr defaulted_is_constexpr</code></pre>
+<p>这几行证明了之前的所述的观点</p>
+<p><strong>与之前的情况不同的时，这种情况下所生成的 default constructor，不仅需要调用必须的基类的 default constructor，还需要完成设定 vptr 的动作，才能满足虚机制的运行</strong></p>
+<p>与之前相同的是，如果提供了任何用户声明的 constructors，那么自然不会生成 default constructor，编译器会对现有的 constrcutors 进行扩充，来完成必要的工作</p>
+<p>还是举个例子吧：</p>
+<pre><code>class A {
+ public:
+  virtual void vfunc() {}
+  A(int a) : _a(a) {}
+ private:
+  int _a;
+};
+
+class B : public A {
+ public:
+  B(int a, int b) : A(a), _b(b) {}
+ private:
+  int _b;
+};</code></pre>
+<p>打印相关信息：</p>
+<pre><code>*** Dumping AST Record Layout
+         0 | class A
+         0 |   (A vtable pointer)
+         8 |   int _a
+           | [sizeof=16, dsize=12, align=8,
+           |  nvsize=12, nvalign=8]
+
+*** Dumping AST Record Layout
+         0 | class B
+         0 |   class A (primary base)
+         0 |     (A vtable pointer)
+         8 |     int _a
+        12 |   int _b
+           | [sizeof=16, dsize=16, align=8,
+           |  nvsize=16, nvalign=8]
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x56506d274d60 &lt;main.cpp:1:1, line:7:1&gt; line:1:7 referenced class A definition
+|-DefinitionData polymorphic has_user_declared_ctor can_const_default_init
+| |-DefaultConstructor
+| |-CopyConstructor simple non_trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple non_trivial
+| |-CopyAssignment non_trivial has_const_param implicit_has_const_param
+| |-MoveAssignment exists simple non_trivial
+| `-Destructor simple irrelevant trivial
+|-CXXRecordDecl 0x56506d274e78 &lt;col:1, col:7&gt; col:7 implicit referenced class A
+|-AccessSpecDecl 0x56506d274f08 &lt;line:2:2, col:8&gt; col:2 public
+|-CXXMethodDecl 0x56506d274fa8 &lt;line:3:3, col:25&gt; col:16 vfunc &#39;void ()&#39; virtual
+| `-CompoundStmt 0x56506d275700 &lt;col:24, col:25&gt;
+|-CXXConstructorDecl 0x56506d275138 &lt;line:4:3, col:21&gt; col:3 used A &#39;void (int)&#39;
+| |-ParmVarDecl 0x56506d275060 &lt;col:5, col:9&gt; col:9 used a &#39;int&#39;
+| |-CXXCtorInitializer Field 0x56506d275228 &#39;_a&#39; &#39;int&#39;
+| | `-ImplicitCastExpr 0x56506d275750 &lt;col:17&gt; &#39;int&#39; &lt;LValueToRValue&gt;
+| |   `-DeclRefExpr 0x56506d275710 &lt;col:17&gt; &#39;int&#39; lvalue ParmVar 0x56506d275060 &#39;a&#39; &#39;int&#39;
+| `-CompoundStmt 0x56506d275798 &lt;col:20, col:21&gt;
+|-AccessSpecDecl 0x56506d2751e8 &lt;line:5:2, col:9&gt; col:2 private
+|-FieldDecl 0x56506d275228 &lt;line:6:3, col:7&gt; col:7 _a &#39;int&#39;
+|-CXXMethodDecl 0x56506d2752d8 &lt;line:1:7&gt; col:7 implicit operator= &#39;A &amp;(const A &amp;)&#39; inline default noexcept-unevaluated 0x56506d2752d8
+| `-ParmVarDecl 0x56506d2753e8 &lt;col:7&gt; col:7 &#39;const A &amp;&#39;
+|-CXXMethodDecl 0x56506d275488 &lt;col:7&gt; col:7 implicit operator= &#39;A &amp;(A &amp;&amp;)&#39; inline default noexcept-unevaluated 0x56506d275488
+| `-ParmVarDecl 0x56506d275598 &lt;col:7&gt; col:7 &#39;A &amp;&amp;&#39;
+|-CXXDestructorDecl 0x56506d275620 &lt;col:7&gt; col:7 implicit ~A &#39;void ()&#39; inline default trivial noexcept-unevaluated 0x56506d275620
+|-CXXConstructorDecl 0x56506d2a4af0 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (const A &amp;)&#39; inline default noexcept-unevaluated 0x56506d2a4af0
+| `-ParmVarDecl 0x56506d2a4c08 &lt;col:7&gt; col:7 &#39;const A &amp;&#39;
+`-CXXConstructorDecl 0x56506d2a4c78 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (A &amp;&amp;)&#39; inline default noexcept-unevaluated 0x56506d2a4c78
+  `-ParmVarDecl 0x56506d2a4d88 &lt;col:7&gt; col:7 &#39;A &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.A = type &lt;{ i32 (...)**, i32, [4 x i8] }&gt;
+  NonVirtualBaseLLVMType:%class.A.base = type &lt;{ i32 (...)**, i32 }&gt;
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x56506d2757a8 &lt;main.cpp:9:1, line:14:1&gt; line:9:7 referenced class B definition
+|-DefinitionData polymorphic has_user_declared_ctor can_const_default_init
+| |-DefaultConstructor
+| |-CopyConstructor simple non_trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple non_trivial
+| |-CopyAssignment non_trivial has_const_param implicit_has_const_param
+| |-MoveAssignment exists simple non_trivial
+| `-Destructor simple irrelevant trivial
+|-public &#39;A&#39;
+|-CXXRecordDecl 0x56506d275908 &lt;col:1, col:7&gt; col:7 implicit referenced class B
+|-AccessSpecDecl 0x56506d275998 &lt;line:10:2, col:8&gt; col:2 public
+|-CXXConstructorDecl 0x56506d275b68 &lt;line:11:3, col:34&gt; col:3 used B &#39;void (int, int)&#39;
+| |-ParmVarDecl 0x56506d2759d8 &lt;col:5, col:9&gt; col:9 used a &#39;int&#39;
+| |-ParmVarDecl 0x56506d275a58 &lt;col:12, col:16&gt; col:16 used b &#39;int&#39;
+| |-CXXCtorInitializer &#39;A&#39;
+| | `-CXXConstructExpr 0x56506d2a4e10 &lt;col:21, col:24&gt; &#39;A&#39; &#39;void (int)&#39;
+| |   `-ImplicitCastExpr 0x56506d2a4df8 &lt;col:23&gt; &#39;int&#39; &lt;LValueToRValue&gt;
+| |     `-DeclRefExpr 0x56506d2a4aa0 &lt;col:23&gt; &#39;int&#39; lvalue ParmVar 0x56506d2759d8 &#39;a&#39; &#39;int&#39;
+| |-CXXCtorInitializer Field 0x56506d2a45d0 &#39;_b&#39; &#39;int&#39;
+| | `-ImplicitCastExpr 0x56506d2a4ea8 &lt;col:30&gt; &#39;int&#39; &lt;LValueToRValue&gt;
+| |   `-DeclRefExpr 0x56506d2a4e68 &lt;col:30&gt; &#39;int&#39; lvalue ParmVar 0x56506d275a58 &#39;b&#39; &#39;int&#39;
+| `-CompoundStmt 0x56506d2a4ef8 &lt;col:33, col:34&gt;
+|-AccessSpecDecl 0x56506d275c20 &lt;line:12:2, col:9&gt; col:2 private
+|-FieldDecl 0x56506d2a45d0 &lt;line:13:3, col:7&gt; col:7 _b &#39;int&#39;
+|-CXXMethodDecl 0x56506d2a4678 &lt;line:9:7&gt; col:7 implicit operator= &#39;B &amp;(const B &amp;)&#39; inline default noexcept-unevaluated 0x56506d2a4678
+| `-ParmVarDecl 0x56506d2a4788 &lt;col:7&gt; col:7 &#39;const B &amp;&#39;
+|-CXXMethodDecl 0x56506d2a4828 &lt;col:7&gt; col:7 implicit operator= &#39;B &amp;(B &amp;&amp;)&#39; inline default noexcept-unevaluated 0x56506d2a4828
+| `-ParmVarDecl 0x56506d2a4938 &lt;col:7&gt; col:7 &#39;B &amp;&amp;&#39;
+|-CXXDestructorDecl 0x56506d2a49c0 &lt;col:7&gt; col:7 implicit ~B &#39;void ()&#39; inline default trivial noexcept-unevaluated 0x56506d2a49c0
+|-CXXConstructorDecl 0x56506d2a5150 &lt;col:7&gt; col:7 implicit constexpr B &#39;void (const B &amp;)&#39; inline default noexcept-unevaluated 0x56506d2a5150
+| `-ParmVarDecl 0x56506d2a5268 &lt;col:7&gt; col:7 &#39;const B &amp;&#39;
+`-CXXConstructorDecl 0x56506d2a52d8 &lt;col:7&gt; col:7 implicit constexpr B &#39;void (B &amp;&amp;)&#39; inline default noexcept-unevaluated 0x56506d2a52d8
+  `-ParmVarDecl 0x56506d2a53e8 &lt;col:7&gt; col:7 &#39;B &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.B = type { %class.A.base, i32 }
+  NonVirtualBaseLLVMType:%class.B = type { %class.A.base, i32 }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;</code></pre>
+<p>读者想必应该能够自己寻找答案了</p></li>
+<li><p>带有一个 virtual base class 的 class</p>
+<p>为了实现 virtual base class 的语义和功能，在 derived class 中必然需要进行一些额外的工作，这些工作是编译器来完成的</p>
+<p>如果存在任何 user_provided constructors，那么这些工作会被安插进入这些 user_provided constructors 中，如果没有 user_provided constructors，那么编译器会合成 non-trivial default constructor 来完成必要的工作（比如调用基类的 default constructor、设定虚机制所必须的相关信息之类）</p>
+<p>最后再举个例子吧：</p>
+<pre><code>class A {
+ private:
+  int _a;
+};
+
+class B: public virtual A {
+ private:
+  int _b;
+};</code></pre>
+<p>打印相关信息：</p>
+<pre><code>*** Dumping AST Record Layout
+         0 | class A
+         0 |   int _a
+           | [sizeof=4, dsize=4, align=4,
+           |  nvsize=4, nvalign=4]
+
+*** Dumping AST Record Layout
+         0 | class B
+         0 |   (B vtable pointer)
+         8 |   int _b
+        12 |   class A (virtual base)
+        12 |     int _a
+           | [sizeof=16, dsize=16, align=8,
+           |  nvsize=12, nvalign=8]
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x557ad6558c50 &lt;main.cpp:1:1, line:4:1&gt; line:1:7 referenced class A definition
+|-DefinitionData pass_in_registers standard_layout trivially_copyable trivial literal
+| |-DefaultConstructor exists trivial
+| |-CopyConstructor simple trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple trivial
+| |-CopyAssignment trivial has_const_param implicit_has_const_param
+| |-MoveAssignment exists simple trivial
+| `-Destructor simple irrelevant trivial
+|-CXXRecordDecl 0x557ad6558d68 &lt;col:1, col:7&gt; col:7 implicit class A
+|-AccessSpecDecl 0x557ad6558df8 &lt;line:2:2, col:9&gt; col:2 private
+|-FieldDecl 0x557ad6558e38 &lt;line:3:3, col:7&gt; col:7 _a &#39;int&#39;
+|-CXXMethodDecl 0x557ad6559368 &lt;line:1:7&gt; col:7 implicit constexpr operator= &#39;A &amp;(const A &amp;)&#39; inline default trivial noexcept-unevaluated 0x557ad6559368
+| `-ParmVarDecl 0x557ad6559478 &lt;col:7&gt; col:7 &#39;const A &amp;&#39;
+|-CXXMethodDecl 0x557ad6559518 &lt;col:7&gt; col:7 implicit constexpr operator= &#39;A &amp;(A &amp;&amp;)&#39; inline default trivial noexcept-unevaluated 0x557ad6559518
+| `-ParmVarDecl 0x557ad6559628 &lt;col:7&gt; col:7 &#39;A &amp;&amp;&#39;
+|-CXXDestructorDecl 0x557ad6559970 &lt;col:7&gt; col:7 implicit ~A &#39;void ()&#39; inline default trivial noexcept-unevaluated 0x557ad6559970
+|-CXXConstructorDecl 0x557ad6586a08 &lt;col:7&gt; col:7 implicit used A &#39;void () noexcept&#39; inline default trivial
+| `-CompoundStmt 0x557ad6587118 &lt;col:7&gt;
+|-CXXConstructorDecl 0x557ad6586c68 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (const A &amp;)&#39; inline default trivial noexcept-unevaluated 0x557ad6586c68
+| `-ParmVarDecl 0x557ad6586d78 &lt;col:7&gt; col:7 &#39;const A &amp;&#39;
+`-CXXConstructorDecl 0x557ad6586de8 &lt;col:7&gt; col:7 implicit constexpr A &#39;void (A &amp;&amp;)&#39; inline default trivial noexcept-unevaluated 0x557ad6586de8
+  `-ParmVarDecl 0x557ad6586ef8 &lt;col:7&gt; col:7 &#39;A &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.A = type { i32 }
+  NonVirtualBaseLLVMType:%class.A = type { i32 }
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+*** Dumping IRgen Record Layout
+Record: CXXRecordDecl 0x557ad6558ea0 &lt;main.cpp:6:1, line:9:1&gt; line:6:7 referenced class B definition
+|-DefinitionData
+| |-DefaultConstructor exists non_trivial
+| |-CopyConstructor simple non_trivial has_const_param implicit_has_const_param
+| |-MoveConstructor exists simple non_trivial
+| |-CopyAssignment non_trivial has_const_param implicit_has_const_param
+| |-MoveAssignment exists simple non_trivial
+| `-Destructor simple irrelevant trivial
+|-virtual public &#39;A&#39;
+|-CXXRecordDecl 0x557ad6559010 &lt;col:1, col:7&gt; col:7 implicit class B
+|-AccessSpecDecl 0x557ad65590a0 &lt;line:7:2, col:9&gt; col:2 private
+|-FieldDecl 0x557ad65590e0 &lt;line:8:3, col:7&gt; col:7 _b &#39;int&#39;
+|-CXXMethodDecl 0x557ad6559188 &lt;line:6:7&gt; col:7 implicit operator= &#39;B &amp;(const B &amp;)&#39; inline default noexcept-unevaluated 0x557ad6559188
+| `-ParmVarDecl 0x557ad6559298 &lt;col:7&gt; col:7 &#39;const B &amp;&#39;
+|-CXXMethodDecl 0x557ad65596c8 &lt;col:7&gt; col:7 implicit operator= &#39;B &amp;(B &amp;&amp;)&#39; inline default noexcept-unevaluated 0x557ad65596c8
+| `-ParmVarDecl 0x557ad65597d8 &lt;col:7&gt; col:7 &#39;B &amp;&amp;&#39;
+|-CXXDestructorDecl 0x557ad6559860 &lt;col:7&gt; col:7 implicit ~B &#39;void ()&#39; inline default trivial noexcept-unevaluated 0x557ad6559860
+|-CXXConstructorDecl 0x557ad6586910 &lt;col:7&gt; col:7 implicit used B &#39;void () noexcept&#39; inline default
+| |-CXXCtorInitializer &#39;A&#39;
+| | `-CXXConstructExpr 0x557ad6587128 &lt;col:7&gt; &#39;A&#39; &#39;void () noexcept&#39;
+| `-CompoundStmt 0x557ad6587190 &lt;col:7&gt;
+|-CXXConstructorDecl 0x557ad6586ae0 &lt;col:7&gt; col:7 implicit B &#39;void (const B &amp;)&#39; inline default noexcept-unevaluated 0x557ad6586ae0
+| `-ParmVarDecl 0x557ad6586bf8 &lt;col:7&gt; col:7 &#39;const B &amp;&#39;
+`-CXXConstructorDecl 0x557ad6586f68 &lt;col:7&gt; col:7 implicit B &#39;void (B &amp;&amp;)&#39; inline default noexcept-unevaluated 0x557ad6586f68
+  `-ParmVarDecl 0x557ad6587078 &lt;col:7&gt; col:7 &#39;B &amp;&amp;&#39;
+
+Layout: &lt;CGRecordLayout
+  LLVMType:%class.B = type &lt;{ i32 (...)**, i32, %class.A }&gt;
+  NonVirtualBaseLLVMType:%class.B.base = type &lt;{ i32 (...)**, i32 }&gt;
+  IsZeroInitializable:1
+  BitFields:[
+]&gt;
+
+Record: CXXRecordDecl 0x557ad6558ea0 &lt;main.cpp:6:1, line:9:1&gt; line:6:7 referenced class B definition
+|-DefinitionData
+| |-DefaultConstructor exists non_trivial</code></pre>
+<p>可以看到 class B 存在 default constructor 且是 non-trivial 的</p></li>
+</ol>
+<h1 id="总结">总结</h1>
+<ol>
+<li>如果没有任何 user_provided constructor，那么编译器会始终生成一个 default constructor（反之，如果存在任何 user_provided constrcutor，那么除非强制生成，否则编译器是不会生成 defualt construcotor 的）</li>
+<li>编译器生成的 default constructor 分 trivial 和 non-trivial 两种</li>
+</ol>
+<p>C++新手一般有两个误区：</p>
+<ul>
+<li>任何 class 如果没有定义 default constructor，编译器就会自动合成一个</li>
+<li>编译器合成出来的 default constructor 会为成员变量设定默认值</li>
+</ul>
+<p>PS：default constructor 的大概知识就到此结束啦，本文也只是走马观花的介绍了 default constructor 的相关知识，更加详细的还是请移步至 cppreference 查阅相关文档</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

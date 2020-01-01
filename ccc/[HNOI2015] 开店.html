@@ -1,0 +1,143 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[HNOI2015] 开店' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[HNOI2015] 开店</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/10590773.html</div><br>
+    <p><del>「前言」为防止在某巨巨的毒瘤idea 紫荆花之“店&quot; 面前一脸懵，特滚来补此题。</del> <del>我还是太naive了。</del></p>
+<p>「题义」给出一棵单点度数很小的无根带边权、点权的树，每次询问在所有点权在[l,r]的点到c的距离之和。</p>
+<p>「分析」考虑建立点分树，分治结构每个点都储存对应分治范围（简称范围）内的信息，询问时从c向后跳分治链，并逐级将信息合并得到整棵树的答案。</p>
+<p>对于链上某一点x，设前一个点为px，显然我们需要用到的，x范围中（除去px范围）的所有合法的点（即点权在[l,r]内的点）到c的距离之和，拆开为这些点到x的距离和+这些点的个数乘以x到c的距离。对于第一部分我们将它看作x范围内所有点到x的距离和-px范围内所有点到x的距离和，第二部分同理。</p>
+<p>这样，我们只需要对每个节点x储存范围内所有点点权age、到x的距离dis以及到上一级分治中心fa[x]的距离ldis（放在集合d[x]）。然后将d[x]按照age排序，那么x的分治范围对于查询中心c的产生贡的点献处于d[x]的一段区间上。利用前（后）缀和+二分就能地很好处理了。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+#define IL inline 
+#define LL long long 
+using namespace std;
+
+const int N=150010;
+const int inf=0x3f3f3f3f;
+
+int n,Q,A,age[N];
+int head[N],to[N&lt;&lt;1],last[N&lt;&lt;1],len[N&lt;&lt;1];
+
+IL void addEdge(int x,int y,int w) {
+    static int cnt=0;
+    to[++cnt]=y,len[cnt]=w,last[cnt]=head[x],head[x]=cnt;
+    to[++cnt]=x,len[cnt]=w,last[cnt]=head[y],head[y]=cnt;
+}
+namespace dbl {
+    int fa[N][20],dep[N];
+    LL ds[N][20];
+    void prDfs(int x,int d) {
+        dep[x]=dep[fa[x][0]=d]+1;
+        for(int i=1; (1&lt;&lt;i)&lt;=dep[x]; ++i) {
+            fa[x][i]=fa[fa[x][i-1]][i-1];
+            ds[x][i]=ds[fa[x][i-1]][i-1]+ds[x][i-1];
+        }
+        for(int i=head[x]; i; i=last[i]) {
+            if(to[i]!=d) ds[to[i]][0]=len[i],prDfs(to[i],x);
+        }
+    }
+    IL LL gtDis(int x,int y) {
+        if(dep[x]&lt;dep[y]) swap(x,y);
+        LL ret=0; int dif=dep[x]-dep[y];
+        for(int i=19; ~i; --i) if((dif&gt;&gt;i)&amp;1) 
+            ret+=ds[x][i],x=fa[x][i];
+        if(x==y) return ret;
+        for(int i=19; ~i; --i) if(fa[x][i]!=fa[y][i]) 
+            ret+=ds[x][i],x=fa[x][i],ret+=ds[y][i],y=fa[y][i];
+        return ret+ds[x][0]+ds[y][0];
+    }
+}
+namespace dpd {
+    struct node {
+        LL dis,ldis; int age;
+        IL node(LL d=0,LL ld=0,int a=0):dis(d),ldis(ld),age(a){}    
+        IL bool operator&lt;(const node&amp;d) const {
+            return age&lt;d.age;
+        }
+    };
+    vector&lt;node&gt; d[N];
+    int root,siz[N],fa[N];
+    bool ban[N];
+    void prSiz(int x,int d) {
+        siz[x]=1; 
+        for(int i=head[x]; i; i=last[i]) if(!ban[to[i]]&amp;&amp;to[i]!=d) 
+            prSiz(to[i],x),siz[x]+=siz[to[i]];
+    }
+    void gtRoot(int x,int d,int t) {
+        static int f[N]={inf}; f[x]=siz[t]-siz[x];
+        for(int i=head[x]; i; i=last[i]) if(!ban[to[i]]&amp;&amp;to[i]!=d) 
+            gtRoot(to[i],x,t),f[x]=max(f[x],siz[to[i]]);
+        if(f[x]&lt;f[root]) root=x;
+    }
+    void prNode(int x,int d,LL dis) {
+        dpd::d[root].push_back(node(dis,dbl::gtDis(x,fa[root]),age[x]));
+        for(int i=head[x]; i; i=last[i]) {
+            if(!ban[to[i]]&amp;&amp;to[i]!=d) prNode(to[i],x,dis+len[i]);
+        }
+    }
+    void build(int x,int lrt) {
+        root=0; prSiz(x,0); gtRoot(x,0,x); 
+        x=root; fa[x]=lrt; ban[x]=1; prNode(x,0,0);
+        sort(d[x].begin(),d[x].end());
+        d[x].push_back(node(0,0,A));
+        for(unsigned i=d[x].size()-2; ~i; --i) {
+            d[x][i].dis+=d[x][i+1].dis;
+            d[x][i].ldis+=d[x][i+1].ldis;
+        }
+        for(int i=head[x]; i; i=last[i]) {
+            if(!ban[to[i]]) build(to[i],x);
+        }
+    }
+    IL LL query(int c,int l,int r) {
+        vector&lt;node&gt;::iterator L,R; LL ans=0;
+        for(int x=c; x; x=fa[x]) {
+            L=lower_bound(d[x].begin(),d[x].end(),node(0,0,l));
+            R=upper_bound(d[x].begin(),d[x].end(),node(0,0,r));
+            ans+=dbl::gtDis(x,c)*(R-L)+(L-&gt;dis-R-&gt;dis);
+            if(fa[x]) ans-=dbl::gtDis(fa[x],c)*(R-L)+(L-&gt;ldis-R-&gt;ldis);
+        }
+        return ans;
+    }
+}
+
+int main() {
+    scanf(&quot;%d%d%d&quot;,&amp;n,&amp;Q,&amp;A);
+    for(int i=1; i&lt;=n; ++i) scanf(&quot;%d&quot;,&amp;age[i]);
+    for(int x,y,w,i=n; --i; ) {
+        scanf(&quot;%d%d%d&quot;,&amp;x,&amp;y,&amp;w);
+        addEdge(x,y,w);
+    }
+    dbl::prDfs(1,0);
+    dpd::build(1,0); 
+    LL lans=0;
+    for(int u,a,b; Q--; ) {
+        scanf(&quot;%d%d%d&quot;,&amp;u,&amp;a,&amp;b);
+        a=(lans+a)%A, b=(lans+b)%A; if(a&gt;b) swap(a,b); 
+        printf(&quot;%lld\n&quot;,lans=dpd::query(u,a,b));
+    }
+    return 0;
+} // 代码O2需要
+</code></pre>
+<p><del>好了，滚去看 紫荆花之恋 了</del></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

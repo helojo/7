@@ -1,0 +1,144 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c 正则表达式' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c 正则表达式</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11493201.html</div><br>
+    <p>c 正则表达式</p>
+<p>参考教程：<a href="https://github.com/ziishaned/learn-regex/blob/master/translations/README-cn.md" class="uri">https://github.com/ziishaned/learn-regex/blob/master/translations/README-cn.md</a></p>
+<p>在linux下主要有三个函数，用于正则表达式</p>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;regex.h&gt;
+
+//生成规则
+int regcomp(regex_t *preg, const char *regex, int cflags);
+
+//要匹配的目标字符串
+int regexec(const regex_t *preg, const char *string, size_t nmatch,
+                   regmatch_t pmatch[], int eflags);
+
+//释放内存
+void regfree(regex_t *preg);
+</code></code></pre>
+<h3 id="函数regcomp的参数cflags">函数regcomp的参数cflags</h3>
+<ul>
+<li><p>REG_EXTENDED</p>
+<p>使用扩展的正则表达式语法。</p>
+<p>意思是，解释正则表达式时使用扩展的正则表达式语法。POSIX规范将正则表达式的实现方法分为了两种：基本正则表达式（BRE）和扩展正则表 达式（ERE）。</p>
+<p>BRE和ERE到底有什么区别？其实仅仅是元字符的不同！在BRE方式中，只承认^ 、$、 . 、[ 、] 、*这些是元字符，所有其他的字符都被识别为文字字符。而ERE中，则添加了(、 ) 、{ 、} 、?、 + |、等元字符（及其相关功能）。grep命令默认支持BRE，要想支持ERE需要使用-E选项。</p></li>
+<li><p>REG_ICASE</p>
+<p>忽略大小写。</p></li>
+<li><p>REG_NOSUB</p>
+<p>如果使用了这个选项得到的编译后的正则表达式，在被后面的regexec()函数使用时，regexec()的nmatch参数和pmatch参数将会被忽略 。</p></li>
+<li><p>REG_NEWLINE</p>
+<p>其实REG_NEWLINE的作用就两个：</p>
+<p>1、 使^和$有效。</p>
+<p>2、 绝对不匹配换行符</p></li>
+</ul>
+<h3 id="函数regexec的参数eflags还没弄明白">函数regexec的参数eflags：还没弄明白</h3>
+<h3 id="括号的作用">括号()的作用</h3>
+<p>假如有正则表达式【name=[^&amp;]*】（目的是匹配URL里的name=xxx）,如果匹配上了，则在pmatch里返回的是【name=xxx】,但是如果我还想要=号后面的xxx，怎么办呢？</p>
+<p>那就加个括号，【name=([^&amp;]*)】，这个正则表达式，匹配后，pmatch[0]里匹配的值是【name=xxx】，pmatch[1]里匹配的值则是【xxx】，这就是括号的妙用。</p>
+<h3 id="reg_newline的作用">REG_NEWLINE的作用</h3>
+<p>假如有正则表达式【^age=[^&amp;]*】（目的是匹配URL里的\r\n后面的name=xxx）。如果在调用regcomp是没有指定参数REG_NEWLINE，则目标字符串：【username=xdd\r\nage=22&amp;husband=qinger\r\n&amp;like=study&amp;look=pretty\r\n 】无法被匹配；</p>
+<p>加了REG_NEWLINE，【age=22】就被匹配出来了。</p>
+<h3 id="函数regexec的局限匹配到一个后即使后面还有它也不去匹配了也就是说只匹配一次">函数regexec的局限：匹配到一个后，即使后面还有，它也不去匹配了，也就是说只匹配一次。</h3>
+<p>那么，如果想匹配多次怎么办呢，手动改变目标字符串，把已经匹配完的切掉，用剩下的串在继续调用regexec函数，直到全部匹配完。提供个小例子，完成多次匹配。</p>
+<p>原理：rm_eo返回的是匹配到的末尾位置，所以让新的串sbuf，指向上一次的末尾，再继续调用regexec，也就是每次都改变sbuf</p>
+<pre><code><code>/* 取子串的函数 */
+static char* substr(const char*str, unsigned start, unsigned end)
+{
+    unsigned n = end - start;
+    static char stbuf[256];
+    strncpy(stbuf, str + start, n);
+    stbuf[n] = 0;
+    return stbuf;
+}
+
+
+size_t nmatch = 3;
+regmatch_t pmatch[3];
+const char* lbuf = &quot;The fat cat. sat. on the mat.&quot;;
+const char* sbuf = lbuf;
+
+while(regexec(&amp;reg, sbuf, nmatch, pmatch, 0) == 0){
+
+  for (x = 0; x &lt; nmatch &amp;&amp; pmatch[x].rm_so != -1; ++x) {
+    printf(&quot;    $%d=&#39;%s&#39;\n&quot;, x, substr(sbuf, pmatch[x].rm_so, pmatch[x].rm_eo));
+
+  }
+  //rm_eo返回的是匹配到的末尾位置，所以让新的串，指向上一次的末尾，再继续调用regexec
+  sbuf = &amp;sbuf[pmatch[--x].rm_eo];
+}</code></code></pre>
+<p>完整的小例子：</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;regex.h&gt;
+#include &lt;string.h&gt;
+
+/* 取子串的函数 */
+static char* substr(const char*str, unsigned start, unsigned end)
+{
+    unsigned n = end - start;
+    static char stbuf[256];
+    strncpy(stbuf, str + start, n);
+    stbuf[n] = 0;
+    return stbuf;
+}
+
+int main(){
+
+  regex_t reg;
+
+  int ret = regcomp(&amp;reg, &quot;(at\\.)$&quot;, REG_NEWLINE | REG_EXTENDED);
+  if(ret != 0){
+    printf(&quot;regcomp error %d\n&quot;, ret);
+    return 1;
+  }
+
+
+  size_t nmatch = 3;
+  regmatch_t pmatch[3];
+  const char* lbuf = &quot;The fat cat. sat. on the mat.&quot;;
+  const char* sbuf = lbuf;
+  int x = 0;
+
+  while(regexec(&amp;reg, sbuf, nmatch, pmatch, 0) == 0){
+
+    for (x = 0; x &lt; nmatch &amp;&amp; pmatch[x].rm_so != -1; ++x) {
+      printf(&quot;    $%d=&#39;%s&#39;\n&quot;, x, substr(sbuf, pmatch[x].rm_so, pmatch[x].rm_eo));
+
+    }
+    sbuf = &amp;sbuf[pmatch[--x].rm_eo];
+  }
+
+
+
+  regfree(&amp;reg);
+}  </code></code></pre>
+<p>参考：<a href="https://www.cnblogs.com/qingergege/p/7359935.html" class="uri">https://www.cnblogs.com/qingergege/p/7359935.html</a></p>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/c 正则表达式0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

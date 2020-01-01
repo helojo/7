@@ -1,0 +1,88 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修循环优先级队列' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>循环优先级队列</center></div><div class='banquan'>原文出处:本文由博客园博主二狗啸地提供。<br/>
+原文连接:https://www.cnblogs.com/zuofaqi/p/11808767.html</div><br>
+    <h2><span style="font-size: 15px;">由来</span></h2>
+<p><span style="font-size: 15px;">在最近的项目中，我需要用到一个能设置固定长度的优先级队列，查了一下知名的第三方库，没有找到合适的，于是，决定自己写一个。</span></p>
+<p><span style="font-size: 15px;">需要的功能主要是：</span></p>
+<ol>
+<li><span style="font-size: 15px;">一个能存放对象的队列，支持push和pop</span></li>
+<li><span style="font-size: 15px;">容量固定，可以配置</span></li>
+<li><span style="font-size: 15px;">能自动排序</span></li>
+<li><span style="font-size: 15px;">能够遍历</span></li>
+<li><span style="font-size: 15px;">ring buffer</span></li>
+</ol>
+<p><span style="font-size: 15px;">因为，我通读过STL的源码，对stl容器比较熟悉，写一个类似的应该不难，节约时间。所以就仿照STL的list，写了一个这样的容器</span></p>
+<p><span style="font-size: 15px;">源码地址：<a href="https://github.com/zfq559/ring_queue">https://github.com/zfq559/ring_queue</a></span></p>
+<h2><span style="font-size: 15px;">实现</span></h2>
+<p><span style="font-size: 15px;">首先想到的思路就是用循环数组，事先申请好固定长度的对象数组，循环使用，类似vector，但是，增删的时候，需要移动元素，而且没法实现emplace函数了，写到一半，这个思路就被废弃了。于是，改用双向链表，这样，五个条件，都比较容易满足，但是，如果内存不是连续的话，遍历的cache miss就比较高，于是就加入了内存池。</span></p>
+<p><span style="font-size: 15px;">类定义为：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 15px;">template &lt;<span style="color: #0000ff;">class</span> T, uint32_t Size = <span style="color: #800080;">10</span>, <span style="color: #0000ff;">class</span> Compare = std::less&lt;T&gt;&gt;
+<span style="color: #0000ff;">class</span> RingQueue;</span></pre>
+</div>
+<p><span style="font-size: 15px;">其中，T为容器中存放的数据类型，Size表示容器大小</span></p>
+<p><span style="font-size: 15px;">元素节点定义成了这样：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 15px;">template &lt;<span style="color: #0000ff;">class</span> T&gt; <span style="color: #0000ff;">struct</span><span style="color: #000000;"> QueueNode {
+  </span><span style="color: #0000ff;">char</span> data[<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(T)];
+  QueueNode</span>&lt;T&gt; *<span style="color: #000000;">prev{nullptr};
+  QueueNode</span>&lt;T&gt; *<span style="color: #000000;">next{nullptr};
+};</span></span></pre>
+</div>
+<p><span style="font-size: 15px;">STL中，data的类型是一个 T*。我这里之所以这样定义，为了只创建一个内存池对象，让内存尽可能连续。</span></p>
+<p><span style="font-size: 15px;">插入元素使用的是插入排序：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 15px;">    Node *node =<span style="color: #000000;"> nullptr;
+    </span><span style="color: #0000ff;">for</span> (node = dummy_-&gt;prev; node != dummy_; node = node-&gt;<span style="color: #000000;">prev) {
+      </span><span style="color: #0000ff;">if</span> (value_compare_(*(T *)node-&gt;<span style="color: #000000;">data, value)) {
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+      }
+    }</span></span></pre>
+</div>
+<p><span style="font-size: 15px;">考虑到，使用的时候，更多情况下，按顺序插入元素，所以，这里寻找插入点的时候，从后往前查找</span></p>
+<p><span style="font-size: 15px;">判断队列是否满，使用成员变量length_，如果插入一个元素之后，队列超过Size大小了，删除头节点就可以了，因为头节点保存的是最小值：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 15px;">    <span style="color: #008000;">//</span><span style="color: #008000;"> if queue is full, delete head node</span>
+    <span style="color: #0000ff;">if</span> (length_ &gt;<span style="color: #000000;"> Size) {
+      Node </span>*head = dummy_-&gt;<span style="color: #000000;">next;
+      _destroy((T </span>*)head-&gt;<span style="color: #000000;">data); // 析构节点中保存的对象
+
+      dummy_</span>-&gt;next = head-&gt;<span style="color: #000000;">next; // 删除节点
+      head</span>-&gt;next-&gt;prev =<span style="color: #000000;"> dummy_;
+      length_</span>--<span style="color: #000000;">;
+
+      alloc_.PutNode(head); // 内存回收
+    }</span></span></pre>
+</div>
+<p><span style="font-size: 15px;">内存池也是类似STL中的分配器：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 15px;">template &lt;<span style="color: #0000ff;">class</span> T, uint32_t Num&gt; <span style="color: #0000ff;">class</span> Allocator;</span></pre>
+</div>
+<p><span style="font-size: 15px;">事先申请 (Num+2)*(sizeof(T)8字节对齐)的内存，每个块，称为一个 pool，内存池自动扩容，不过最多申请10个 pool。不能自动减少容量</span></p>
+<h2><span style="font-size: 15px;">测试</span></h2>
+<p><span style="font-size: 15px;">使用 googletest 写了十几个用例，并和 std::list，std::set 作对比，在 win10/ubuntu18-x64/ubuntu16-armv8测试发现，这个容器性能是超过 std::set 的，更是超过了排序的 list</span></p>
+<h2><span style="font-size: 15px;">结语</span></h2>
+<p><span style="font-size: 15px;">TODO：需要加入 benchmark 和 profile。增加erase函数，删除指定节点</span></p>
+<p><span style="font-size: 15px;">主要的特点就是上面所描述的，个人难免有考虑不到的地方，或者程序有bug，如果有人提出来，我非常感谢！</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

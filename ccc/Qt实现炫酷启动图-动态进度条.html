@@ -1,0 +1,302 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Qt实现炫酷启动图-动态进度条' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Qt实现炫酷启动图-动态进度条</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/10844338.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一简述">一、简述</a></li>
+        <li><a href="#二动效进度条">二、动效进度条</a><ul>
+        <li><a href="#光效进度条">1、光效进度条</a></li>
+        <li><a href="#延迟到达进度条">2、延迟到达进度条</a></li>
+        <li><a href="#接口说明">3、接口说明</a></li>
+        </ul></li>
+        <li><a href="#三启动图">三、启动图</a><ul>
+        <li><a href="#实现思路">1、实现思路</a></li>
+        <li><a href="#背景图切换">2、背景图切换</a></li>
+        </ul></li>
+        <li><a href="#四测试">四、测试</a><ul>
+        <li><a href="#构造启动图">1、构造启动图</a></li>
+        <li><a href="#背景图">2、背景图</a></li>
+        <li><a href="#其他信息">3、其他信息</a></li>
+        <li><a href="#事件循环">4、事件循环</a></li>
+        </ul></li>
+        <li><a href="#五源码">五、源码</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="一简述">一、简述</h2>
+<p>最近接到一个新需求，让做一个动效进度条。</p>
+<p>由于我们的产品比较大，在软件启动的时候会消耗比较长的时间，原生的进度条已经不能满足我们的需求，这里我们就需要一个会动的进度条，效果如下图所示。</p>
+<blockquote>
+<p>光效进度条主要是做了一个进度动画，在已完成的部分上进行快速的迭代渲染，给用户一种直观感受，我们的软件一直努力加载，它还活着。</p>
+</blockquote>
+<html>
+<center>
+<div>
+    <img src="./images/Qt实现炫酷启动图-动态进度条0.png" />
+</div>
+</center>
+</html>
+<p>有了这个进度条之后，当我们的进度从40%到50%这个持续的过程中，界面再也不会出现假死的情况，是不是很完美呢。。。</p>
+<p>下面我就来分析下这个动效进度条是怎么做的</p>
+<h2 id="二动效进度条">二、动效进度条</h2>
+<p>如效果图所示，光效进度条不同于一般的进度条，他在基础的任务进度之上还添加了一层光效，主要是想告诉用户我们的软件一直在努力运行，请在耐心的等待一下下。</p>
+<p>我自己在做功能的时候，往往喜欢先做一个测试demo，然后在把做好的功能集成在正式环境，这个功能也不列外，如第一节中展示的效果图，就是测试demo的样子，虽然很丑，但是基础功能是有的。</p>
+<p>现在的很多软件，在进度展示上都有了比较绚丽的效果，比如压缩软件，解压文件的时候都会有动效进度条，用过的同学应该都知道长啥样，而我们的光效进度条跟这个效果差不多，除此之外我们还提供了另一种动效，延迟动效，他们两个在一定程度上都展示了更友好的进度效果。</p>
+<p>在开始分析功能前，首先我们先来考虑下我们的需求：动效进度条，也就是说在原来的进度条基础上需要添加实时动画，让进度条看起来更炫酷一些，除了光效进度条以外，还有一种延迟到达进度条，也属于动态进度条。</p>
+<blockquote>
+<p>延迟动效、说直白一点儿就是延迟到达，当我们设置了进度从10%到20%时，程序模拟了一个渐进的过程，使用一个时间段走完了这10%的进度。</p>
+</blockquote>
+<p>下面我们分别来介绍这两种进度条的实现</p>
+<blockquote>
+<p>实现炫酷的进度条我们可以从QWidget自定义开始写，也就是说从头开始写，但通常我们不这样干，因为这样可能会写出无穷无尽的bug，而且现有的轮子已经很稳定了，为什么还要造呢。</p>
+</blockquote>
+<h3 id="光效进度条">1、光效进度条</h3>
+<p>光效进度条我们使用了一个小技巧，采用一个简单的办法实现，我们的光效进度条控件继承自Qt原生进度条类QProgressBar，在新类中我们只需要在Qt绘制完原生进度条之后，补画动效即可。</p>
+<h4 id="apaintevent函数">a、paintEvent函数</h4>
+<p>paintEvent函数是Qt的绘制函数，当界面刷新的时候，这个接口函数就会被调用，因此我们需要重写这个接口，首先调用父窗口的绘制方法，然后我们在绘制我们自己的动效，代码如下所示</p>
+<pre><code>QProgressBar::paintEvent(event);
+drawCache绘制动效</code></pre>
+<h4 id="bdrawcache绘制动效">b、drawCache绘制动效</h4>
+<blockquote>
+<p>绘制动效的时候，我们需要知道动效的绘制区域，这个地方我们需要主动去解析qss的一些参数，Qt的style()-&gt;subElementRect这个接口刚好可以拿到我们需要的信息</p>
+</blockquote>
+<p>下面简单描述下我们的实现流程</p>
+<ul>
+<li>首先我们获取进度条的几何大小和中间进度的几何大小，这样的话我们就可以计算出来各border的数值</li>
+<li>然后根据我们当前的value值就可以计算出进度条已经走过(就是值小于我们设定的区域)的几何大小</li>
+<li>我们的光效将是跑在第二步计算出来的区域上，一直循环迭代</li>
+<li>内存里我们维护一个cacheValue，这个值在每次界面刷新的时候递增，但是不能大于第二步的value值，cacheValue将是我们动效绘制的一个关键参数，他表示了动效绘制的长度</li>
+<li>构造一个渐变刷子，设置给QPainter</li>
+<li>绘制动效</li>
+</ul>
+<p>上下大致描述了下绘制动效的一个流程，下面送上具体代码，由于篇幅原因，代码我进行了部分伪代码处理。</p>
+<pre><code>void GMPProgressBar::drawCache()
+{
+    QStyleOptionProgressBarV2 opt;
+    QRect outerRect = style()-&gt;subElementRect(QStyle::SE_ProgressBarGroove, &amp;opt, this);
+    QRect innerRect = style()-&gt;subElementRect(QStyle::SE_ProgressBarContents, &amp;opt, this);
+    QMargins borders(构造一个QMargins);
+
+    QRectF rect(动效绘制区域);
+
+    if (m_iCacheValue != 0)
+    {
+        QPainter painter(this);
+        QLinearGradient gradient(构造绘图刷子);
+        painter.setBrush(gradient);
+        painter.drawRoundedRect(rect, 2, 2);
+    }
+}</code></pre>
+<h4 id="c定时刷新">c、定时刷新</h4>
+<p>由于我们的动效是需要主动去刷新的，因此我们需要声明一个定时器，然后定时去刷新，实现代码可能像下面这样</p>
+<pre><code>connect(m_pCacheTimer, &amp;QTimer::timeout, this, [this]{
+        if (TM_CACHE == m_mode)
+        {
+            ++m_iCacheValue;
+            repaint();
+        }else
+        {
+            m_pCacheTimer-&gt;stop();
+        }
+    });</code></pre>
+<p>定时器只需要在我们第一次设置进度条值的时候启动，或者当我们设置一个新的值，而定时器没有启动，我们就需要去激活定时器。</p>
+<blockquote>
+<p>TM_CACHE模式即是我们的动效模式，TM_SMOOTH模式则是我们的延迟到达模式</p>
+</blockquote>
+<pre><code>connect(this, &amp;QProgressBar::valueChanged, [this](int value){//TM_CACHE模式下 启动动画时机
+        if (!m_pCacheTimer-&gt;isActive() &amp;&amp; value != 0 &amp;&amp; TM_CACHE == m_mode)
+        {
+            m_pCacheTimer-&gt;start(m_iRefreshleveling);
+        }
+    });</code></pre>
+<p>动效进度条效果如下图所示<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/Qt实现炫酷启动图-动态进度条1.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<h3 id="延迟到达进度条">2、延迟到达进度条</h3>
+<p>动效进度条可能更适用于启动界面，但是也有一些时候，我们可能需要更平缓的一个加载曲线，例如安装软件、卸载软件的时候。</p>
+<h4 id="asetvalue">a、setValue</h4>
+<p>延迟到达进度条和动效进度条的实现方式就有所差别了，对于实现延迟到达进度条，我们这里重写了setValue函数，当外部调用该接口设置value值时，我们并没有立即去设置当前值，而是使用了一个时间段去完成这个值得刷新。</p>
+<ul>
+<li>外部调用setValue时，我们首先计算出我们应该绘制的最大宽度PixelMax、当前已经绘制到的最大宽度cacheValue和我们的步长</li>
+<li>设置定时器刷新频率，并重启定时器</li>
+<li>定时器刷新时，cacheValue自增我们的步长</li>
+<li>调用父类的QProgressBar::setValue接口设置值</li>
+</ul>
+<h4 id="b定时器">b、定时器</h4>
+<p>延迟达到功能的的定时器和之前我们什么的动效定时器可以混用一个，我们定时器刷新的时候，针对不同的动画模式，我们执行不同的的代码即可，实现代码可能像下面这样</p>
+<pre><code>connect(m_pCacheTimer, &amp;QTimer::timeout, this, [this]{
+    if (TM_CACHE == m_mode)
+    {
+        ++m_iCacheValue;
+        repaint();
+    }
+    else if (TM_SMOOTH == m_mode)
+    {
+        changeSmooth();
+    }
+    else
+    {
+        m_pCacheTimer-&gt;stop();
+    }
+});</code></pre>
+<p>延迟到达进度条效果如下图所示<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/Qt实现炫酷启动图-动态进度条2.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<h3 id="接口说明">3、接口说明</h3>
+<p>光效进度条类对外只暴露了3个接口，分别是设置动画模式、动画时长和刷新频率</p>
+<blockquote>
+<p>特别需要注意的是，我们这里重写了父类的setValue接口，这意味着我们不能使用多态来操作这个接口</p>
+</blockquote>
+<pre><code>void setTransitionMode(TransitionMode mode);//设置动画模式
+void setSmoothDuration(int duration);//设置刷新总时长 模式为TM_SMOOTH时有效
+void setRefreshleveling(int rate);//设置刷新频率 每次更改TransitionMode之后会变为默认值</code></pre>
+<h4 id="a修改动画模式">a、修改动画模式</h4>
+<p>修改动画模式的时候，我们需要清空内存中的所有数据，并把value值设为0。</p>
+<pre><code>void GMPProgressBar::setTransitionMode(TransitionMode mode)
+{
+    if (m_mode == mode)
+    {
+        return;
+    }
+
+    m_mode = mode;
+    clearData();
+
+    QProgressBar::setValue(0);
+}</code></pre>
+<h4 id="b其他接口">b、其他接口</h4>
+<p>设置刷新时长和频率接口都比较简单，不做特别说明</p>
+<blockquote>
+<p>特别注意：这个3个接口最好是在动画启动前设置，动画开始后尽量不要去调用</p>
+</blockquote>
+<h2 id="三启动图">三、启动图</h2>
+<p>第二节我们主要是讲述了怎么做一个动效进度条，这一节我们来做一个启动图页面，把这个动效使用进去。</p>
+<blockquote>
+<p>启动图不是我们主要分析的内容，这个我就简单说下这个类的实现方式和一些借口说明</p>
+</blockquote>
+<h3 id="实现思路">1、实现思路</h3>
+<p>Qt已经给我们提供了一个QSplashScreen，但是使用起来还是特别有限，因此这里我把Qt的源码直接进行了二次开发</p>
+<ul>
+<li>首先Qt的原生实现方式基本都被移植了出来</li>
+<li>启动图使用了简单的上下布局，上面是一张我自绘制的图片，放在了一个QLabel上，下面是动效进度条</li>
+<li>自绘制的图片上包括了，产品名称、logo、背景图等等</li>
+</ul>
+<h3 id="背景图切换">2、背景图切换</h3>
+<p>当我们调用setPixmap设置背景图时，如果我们指定了多张图，我将会启动一个定时器，在指定时长后重新构造一张大的背景图，并添加到启动窗口上</p>
+<p>这里主要说明下背景图是怎么构造出来的，代码如下所示</p>
+<h4 id="a根据背景图构造启动图大小并移动到屏幕中间">a、根据背景图构造启动图大小，并移动到屏幕中间</h4>
+<pre><code>m_currentPixmap = m_lstPixmaps.at(m_iCurrentIndex);
+
+QRect size(QPoint(), m_currentPixmap.size()  / m_currentPixmap.devicePixelRatio());
+size.setHeight(size.height() + StatusBarHeight);
+setFixedSize(size.size());
+m_pProgressBar-&gt;setFixedWidth(size.width() / 8 * 3);
+move(QApplication::desktop()-&gt;screenGeometry().center() - size.center());</code></pre>
+<h4 id="b绘制程序logo">b、绘制程序logo</h4>
+<pre><code>QPainter painter(&amp;m_currentPixmap);
+painter.drawPixmap(m_startPos, m_logo);</code></pre>
+<h4 id="c绘制标题栏">c、绘制标题栏</h4>
+<pre><code>painter.save();
+painter.setFont(m_titleFont);
+
+QFontMetrics fontMetrics(m_titleFont);
+int textWidth = fontMetrics.width(m_strWindowTitle);
+int textHegith = m_logo.height();
+QRect textTect = QRect(m_startPos + QPoint(13 + m_logo.width(), 0), QSize(textWidth, textHegith));
+painter.drawText(textTect, m_strWindowTitle, QTextOption(Qt::AlignCenter));
+painter.restore();</code></pre>
+<h4 id="d设置给qlabel背景图">d、设置给QLabel背景图</h4>
+<pre><code>m_pWindowBackground-&gt;setPixmap(m_currentPixmap);</code></pre>
+<blockquote>
+<p>启动图的效果这里就不在贴图了，第三节上的两个gif图都是最终的启动图效果</p>
+</blockquote>
+<h2 id="四测试">四、测试</h2>
+<p>最后就是测试代码了，主要是模拟了程序的一个加载过程</p>
+<h3 id="构造启动图">1、构造启动图</h3>
+<p>首先我们构造一个启动图对象，并设置程序logo和动画模式</p>
+<pre><code>GMPSplashScreen * screen = new GMPSplashScreen(QPixmap(&quot;:/splashScreen/start.png&quot;));
+screen-&gt;show();
+screen-&gt;setLogo(QIcon(&quot;logo.ico&quot;).pixmap(48, 48));
+screen-&gt;setTransitionMode(GMPProgressBar::TM_CACHE);</code></pre>
+<h3 id="背景图">2、背景图</h3>
+<p>设置背景图，并设置背景图更换时间间隔</p>
+<pre><code>QList&lt;QPixmap&gt; lstPixmap;
+lstPixmap.append(QPixmap(&quot;:/splashScreen/start.png&quot;));
+lstPixmap.append(QPixmap(&quot;:/splashScreen/start.jpg&quot;));
+screen-&gt;setPixmap(lstPixmap, 2000);</code></pre>
+<h3 id="其他信息">3、其他信息</h3>
+<p>设置程序的提示信息和标题栏</p>
+<pre><code>screen-&gt;showMessage(&quot;Established connections&quot;, 0);
+screen-&gt;setTitle(QStringLiteral(&quot;广联达BIM土建计量GTJ2018&quot;));</code></pre>
+<h3 id="事件循环">4、事件循环</h3>
+<p>这里写了一个死循环，主要是为了模拟程序的一个加载过程，每隔10ms处理下界面刷新事件</p>
+<pre><code>a.processEvents();
+
+while (1)
+{
+    QTest::qSleep(10);
+    a.processEvents();
+}
+splashScreen w;
+w.show();
+
+screen-&gt;finish(&amp;w);</code></pre>
+<h2 id="五源码">五、源码</h2>
+<p>需要源码的留邮箱，现在的csdn简直太坑爹了。。。</p>
+<html>
+    <div style='font-weight:600;'>
+    如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！
+    </div>
+<center>
+    <div>
+        <table>
+        <tr>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td>
+        </tr>
+        </table>
+    </div>
+</center>
+</html>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

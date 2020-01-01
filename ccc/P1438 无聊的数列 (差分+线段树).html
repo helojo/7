@@ -1,0 +1,122 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修P1438 无聊的数列 (差分+线段树)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>P1438 无聊的数列 (差分+线段树)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/10782298.html</div><br>
+    <h2 id="题目">题目</h2>
+<p><a href="https://www.luogu.org/problemnew/show/P1438">P1438 无聊的数列</a></p>
+<h2 id="解析">解析：</h2>
+<p>了解差分的话就很好做了</p>
+<ul>
+<li>先考虑修改，用差分的基本思想，左端点加上首项<span class="math inline">\(k\)</span>，因为是等差数列，所以修改的区间内都应该加一个增量，即修改区间<span class="math inline">\((l,r]\)</span>内每个数的差分数组都加上公差<span class="math inline">\(d\)</span>，显然最后的<span class="math inline">\(r+1\)</span>再减去<span class="math inline">\(k+(r-l)\times d\)</span>。</li>
+<li>查询的话就是求出<span class="math inline">\(1-p\)</span>的前缀和，也就是区间求和。</li>
+</ul>
+<p>不难看出，这实际上就是一个点修改+区间修改+区间求和的题，所以直接上线段树，用线段树维护差分数组。</p>
+<p>这个题目还有坑点就是要判断<span class="math inline">\(l,r\)</span>的大小关系和<span class="math inline">\(r+1\)</span>是否出界。</p>
+<h2 id="代码">代码</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N = 2e6 + 10;
+int n, m, rt;
+int a[N];
+class tree {
+    public :
+        int sum, lazy;
+        int len;
+} t[N &lt;&lt; 2];
+
+#define lson rt &lt;&lt; 1
+#define rson rt &lt;&lt; 1 | 1
+
+template&lt;class T&gt;inline void read(T &amp;x) {
+    x = 0; int f = 0; char ch = getchar();
+    while (!isdigit(ch)) f |= (ch == &#39;-&#39;), ch = getchar();
+    while (isdigit(ch)) x = x * 10 + ch - &#39;0&#39;, ch = getchar();
+    x = f ? -x : x;
+    return;
+}
+
+void pushup(int rt) {
+    t[rt].sum = t[lson].sum + t[rson].sum;
+}
+
+void build(int l, int r, int rt) {
+    t[rt].len = r - l + 1;
+    if (l == r) return;
+    int m = (l + r) &gt;&gt; 1;
+    build(l, m, lson);
+    build(m + 1, r, rson);
+}
+
+inline void pushdown(int rt) {
+    if (t[rt].lazy) {
+        t[lson].lazy += t[rt].lazy;
+        t[rson].lazy += t[rt].lazy;
+        t[lson].sum += t[lson].len * t[rt].lazy;
+        t[rson].sum += t[rson].len * t[rt].lazy;
+        t[rt].lazy = 0;
+    }
+}
+
+void update(int L, int R, int c, int l, int r, int rt) {
+    if (L &lt;= l &amp;&amp; r &lt;= R) {
+        t[rt].sum += c * t[rt].len;
+        t[rt].lazy += c;
+        return;
+    }
+    pushdown(rt);
+    int m = (l + r) &gt;&gt; 1;
+    if (L &lt;= m) update(L, R, c, l, m, lson);
+    if (R &gt; m) update(L, R, c, m + 1, r, rson);
+    pushup(rt);
+}
+
+
+int query(int L, int R, int l, int r, int rt) {
+    if(L &lt;= l &amp;&amp; r &lt;= R) return t[rt].sum;
+    pushdown(rt);
+    int m = (l + r) &gt;&gt; 1, ans = 0;
+    if (L &lt;= m) ans += query(L, R, l, m, lson);
+    if (R &gt; m) ans += query(L, R, m + 1, r, rson);
+    return ans;
+}
+
+main() {
+    read(n), read(m);
+    for (int i = 1; i &lt;= n; ++i) read(a[i]);
+    build(1, n, 1);
+    for (int i = 1, opt, l ,r, k, d; i &lt;= m; ++i) {
+        read(opt);
+        if (opt == 1) {
+            read(l), read(r), read(k), read(d);
+            update(l, l, k, 1, n, 1);
+            if (r &gt; l) update(l + 1, r, d, 1, n, 1);
+            if (r != n) update(r + 1, r + 1, -(k + (r - l) * d), 1, n, 1);
+        } else {
+            read(k);
+            printf(&quot;%d\n&quot;, a[k] + query(1, k, 1, n, 1));
+        }
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

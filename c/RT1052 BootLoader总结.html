@@ -1,0 +1,161 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修RT1052 BootLoader总结' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>RT1052 BootLoader总结</center></div><div class='banquan'>原文出处:本文由博客园博主leida_3669提供。<br/>
+原文连接:https://www.cnblogs.com/zhihui-3669/p/10902192.html</div><br>
+    <p>RT1052 BootLoader总结&zwj;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<ol class=" list-paddingleft-2">
+<li>
+<p>概述</p>
+<p>Bootloader涉及到的RT1052单片机资源有：Cache，ram，外部SDRAM，ARM7汇编指令，外部dataFlash.</p>
+<p>升级功能涉及到的其他功能有：服务器存贮和传输升级Bin文件；上位机接收和发送BiN文件；判断升级是否成功和提示。​</p>
+</li>
+<li>
+<p>流程图</p>
+</li>
+</ol>
+<p><img src="./images/RT1052 BootLoader总结0.png" alt="" /></p>
+<p><img src="./images/RT1052 BootLoader总结1.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<ol class=" list-paddingleft-2">
+<li>
+<p>app程序与Bootloader程序不同的地方总结如下</p>
+<p>3.1&nbsp;&nbsp;&nbsp;xxx.s启动文件增加了如下区域</p>
+<p>AREA &nbsp;&nbsp;&nbsp;|.ram_vtor_table|, DATA, READONLY</p>
+</li>
+</ol>
+<p>&nbsp;</p>
+<p>&nbsp;IMPORT &nbsp;|Image$$ARM_LIB_STACK$$ZI$$Limit|</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;R_Vectors &nbsp;&nbsp;DCD &nbsp;|Image$$ARM_LIB_STACK$$ZI$$Limit| ; Top of Stack</p>
+<p>&nbsp;</p>
+<p>&nbsp;DCD &nbsp;&nbsp;&nbsp;&nbsp;Reset_Handler &nbsp;; Reset Handler</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;DCD &nbsp;&nbsp;&nbsp;&nbsp;NMI_Handler &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;NMI Handler</p>
+<p>&nbsp;</p>
+<p><strong>《MIMXRT1052xxxxx_flexspi_nor_sdram.scf》</strong></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>#define m_itcm_vectors_start &nbsp;&nbsp;&nbsp;&nbsp;0x00000000</p>
+<p>#define m_itcm_vectors_size &nbsp; &nbsp;&nbsp;&nbsp;0x00000400</p>
+<p>&nbsp;</p>
+<p>#define m_itcm_start &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0x00000400</p>
+<p>#define m_itcm_size &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0x0001FC00</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;RW_vectors_data m_itcm_vectors_start m_itcm_vectors_size { ; RW data</p>
+<p>startup_MIMXRT1052.o (.ram_vtor_table)</p>
+<p>&nbsp;&nbsp;}</p>
+<p>&nbsp;</p>
+<p>ARM_LIB_HEAP +0 EMPTY Heap_Size { &nbsp;&nbsp;&nbsp;; Heap region growing up</p>
+<p>&nbsp;&nbsp;}</p>
+<p>&nbsp;&nbsp;ARM_LIB_STACK m_data_start+m_data_size EMPTY -Stack_Size { ; Stack region growing down</p>
+<p>&nbsp;&nbsp;}</p>
+<p>&nbsp;</p>
+<p>3.2 &nbsp;evkbimxrt1050_flexspi_nor.ini更改SP,PC</p>
+<p>&nbsp;&nbsp;SP = _RDWORD(0x60008000); &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Setup Stack Pointer</p>
+<p>&nbsp;&nbsp;PC = _RDWORD(0x60008004); &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;// Setup Program Counter</p>
+<p>_WDWORD(0xE000ED08, 0x60008000); &nbsp;&nbsp;// Setup Vector Table Offset Register</p>
+<p>3.3 ***.scf分散加载文件更改</p>
+<p>#define m_interrupts_start &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0x60008000</p>
+<p>#define m_interrupts_size &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0x00000400</p>
+<p>3.4&nbsp;target--&gt;user,生成Bin，命令。</p>
+<p>RUN1:fromelf.exe &nbsp;--bincombined --bincombined_base=0x60008000 --output &nbsp;"$L@L.bin" <a href="mailto:\">"$L@L.out"</a></p>
+<p>RUN2:fromelf.exe &nbsp;--m32 &nbsp;--output &nbsp;"$L@L.srec" "#L"</p>
+<p>3.5 &nbsp;Linker:设置改变：</p>
+<ol class=" list-paddingleft-2">
+<li>
+<p>--remove</p>
+</li>
+<li>
+<p>--keep=*(.boot_hdr.ivt)</p>
+</li>
+<li>
+<p>--keep=*(.boot_hdr.boot_data)</p>
+</li>
+<li>
+<p>--keep=*(.boot_hdr.dcd_data)</p>
+</li>
+</ol><ol class=" list-paddingleft-2">
+<li>
+<p>--keep=*(.boot_hdr.conf)</p>
+</li>
+<li>
+<p>--keep=*(NonCacheable)</p>
+</li>
+<li>
+<p>--keep=*(m_usb_dma_init_data)</p>
+<p>--predefine="-DXIP_BOOT_HEADER_ENABLE=1"</p>
+</li>
+</ol>
+<p>改为：</p>
+<p>--remove</p>
+<p>--keep=*(.ram_vtor_table)</p>
+<p>--predefine="-DXIP_BOOT_HEADER_ENABLE=1"</p>
+<p>3.6应用程序初始化里面的SDRAM的初始化一定要去掉！！</p>
+<p>// &nbsp;&nbsp;&nbsp;/* Set SEMC_PODF. */</p>
+<p>// &nbsp;&nbsp;&nbsp;CLOCK_SetDiv(kCLOCK_SemcDiv, 7);</p>
+<p>// &nbsp;&nbsp;&nbsp;/* Set Semc alt clock source. */</p>
+<p>// &nbsp;&nbsp;&nbsp;CLOCK_SetMux(kCLOCK_SemcAltMux, 0);</p>
+<p>// &nbsp;&nbsp;&nbsp;/* Set Semc clock source. */</p>
+<p>// &nbsp;&nbsp;&nbsp;CLOCK_SetMux(kCLOCK_SemcMux, 0);</p>
+<p>&nbsp;</p>
+<p>3.8 Main函数里面：增加</p>
+<p>&nbsp;</p>
+<p><em>&nbsp;__disable_irq<em>();&nbsp;&nbsp;</em></em></p>
+<p>&nbsp;</p>
+<p><em>SCB-&gt;VTOR = 0x00000000; &nbsp;//Enable ITCM Vectors Table</em></p>
+<p><em>__enable_irq();</em></p>
+<p>4.0 keil报错处理："flexspi_nor_debug\CGAaxf.out": Error: Q0471E: Base address 0x60008000 is above start address 0x60000000 of load region #0&nbsp;</p>
+<p>处理办法：<em>&nbsp;</em><em>删掉输出文件夹里面的*.bin文件。</em></p>
+<p>&nbsp;</p>
+<p><em>4.1需要深入研究的地方有：</em></p>
+<p><em>&nbsp;</em><em>&nbsp;__ISB();</em></p>
+<p><em>&nbsp;&nbsp;&nbsp;&nbsp;__DSB();</em></p>
+<p><em>&nbsp;&nbsp;&nbsp;&nbsp;/* Enable I cache and D cache */</em></p>
+<p><em>&nbsp;&nbsp;&nbsp;&nbsp;SCB_DisableDCache();</em></p>
+<p><em>&nbsp;&nbsp;&nbsp;&nbsp;SCB_DisableICache();</em></p>
+<p><em>vControlSwitch();</em></p>
+<p><strong>已经确认，</strong><strong>vControlSwitch();</strong><strong>之前，必须关闭cache。创造一个干净的环境。</strong></p>
+<p>&nbsp;</p>
+<p><strong>B</strong><strong>ootloader打印信息如下：</strong></p>
+<p><em>Start xmodem1k client.</em></p>
+<p><em>&nbsp;</em></p>
+<p><em>App SP:0x81d00000.</em></p>
+<p><em>App PC:0x6000863d.</em></p>
+<p><em>mcu ready to recv data...</em></p>
+<p><em>CCCCCCCCCCCCCCCCCCCC</em></p>
+<p><em>&nbsp;Wait timeout,Jump App.</em></p>
+<p>&nbsp;</p>
+<p><em>------------------------------------------</em></p>
+<p><em>App SP:0x81d00000.</em></p>
+<p><em>App PC:0x60008415.</em></p>
+<p><em>mcu ready to recv data...</em></p>
+<p>&nbsp;</p>
+<p><em>Wait timeout,Jump App.</em></p>
+<p><em>------------------------------------------</em></p>
+<p><em>&nbsp;20181217 TWO int main2(void) : 0x6000a6b5.</em></p>
+<p><em>&nbsp;PC:0x6000a6b5</em></p>
+<p>技术咨询请加微信：18124528727</p>
+<p>​</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,140 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++ pipe实现父子进程通信' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++ pipe实现父子进程通信</center></div><div class='banquan'>原文出处:本文由博客园博主奋斗女战士提供。<br/>
+原文连接:https://www.cnblogs.com/freedomworld/p/11703447.html</div><br>
+    <p class="p">1、<span style="font-family: 宋体;">父子进程通信</span>pipe<span style="font-family: 宋体;">编程流程</span></p>
+<p class="p">-<span style="font-family: 宋体;">创建管道</span></p>
+<p class="p">-<span style="font-family: 宋体;">设置进程的输出到管道</span></p>
+<p class="p">-<span style="font-family: 宋体;">创建进程</span></p>
+<p class="p">-<span style="font-family: 宋体;">关闭管道写句柄</span></p>
+<p class="p">-<span style="font-family: 宋体;">读管道读句柄，把数据读到一个</span><span style="font-family: Calibri;">buffer</span><span style="font-family: 宋体;">里</span></p>
+<p class="p">2、<span style="font-family: 宋体;">注意事项</span></p>
+<p class="p">-<span style="font-family: 宋体;">读管道数据的时候，一定要关闭写句柄；</span></p>
+<p>-<span style="font-family: 宋体;">父子进程通信时，句柄的传递多通过继承来完成，父进程允许这些句柄为子进程继承；创建子进程，是否继承的属性要设置为</span><span style="font-family: Calibri;">true</span><span style="font-family: 宋体;">；</span></p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;"> //<span style="color: #008000;"> pdfprintconsole.cpp : 此文件包含 "main" 函数。程序执行将在此处开始并结束。
+<span style="color: #008000;">//
+<span style="color: #000000;">
+#include <span style="color: #800000;">"<span style="color: #800000;">pch.h<span style="color: #800000;">"<span style="color: #000000;">
+#include &lt;iostream&gt;<span style="color: #000000;">
+#include &lt;Windows.h&gt;<span style="color: #000000;">
+#include&lt;tchar.h&gt;<span style="color: #000000;">
+#include &lt;<span style="color: #0000ff;">string.h&gt;
+
+<span style="color: #0000ff;">int<span style="color: #000000;"> main()
+{
+
+
+
+    <span style="color: #0000ff;">int page_index = <span style="color: #800080;">0<span style="color: #000000;">;
+    <span style="color: #0000ff;">char currentBuff[<span style="color: #800080;">1000] = { <span style="color: #800080;">0<span style="color: #000000;"> };
+    <span style="color: #0000ff;">char cachFileName[<span style="color: #800080;">1000] = { <span style="color: #800080;">0<span style="color: #000000;"> };
+    <span style="color: #0000ff;">char printCommand[<span style="color: #800080;">1000] = { <span style="color: #800080;">0<span style="color: #000000;"> };
+    <span style="color: #0000ff;">char command[<span style="color: #800080;">500] = { <span style="color: #800080;">0<span style="color: #000000;"> };
+    HANDLE handle = <span style="color: #800080;">0<span style="color: #000000;">;
+    BOOL                bTest = <span style="color: #800080;">0<span style="color: #000000;">;
+    SECURITY_ATTRIBUTES sa = { <span style="color: #800080;">0<span style="color: #000000;"> };
+    DWORD               dwNumberOfBytesRead = <span style="color: #800080;">0<span style="color: #000000;">;
+    CHAR szBuffer[<span style="color: #800080;">10000] = { <span style="color: #800080;">0<span style="color: #000000;"> };
+    DWORD ret = <span style="color: #800080;">0<span style="color: #000000;">;
+    HANDLE   hPipeOutputRead =<span style="color: #000000;"> NULL;
+    HANDLE    hPipeOutputWrite =<span style="color: #000000;"> NULL;
+    
+    STARTUPINFOA si = { <span style="color: #800080;">0<span style="color: #000000;"> };
+    PROCESS_INFORMATION pi = { <span style="color: #800080;">0<span style="color: #000000;"> };    
+
+    sa.bInheritHandle = TRUE; <span style="color: #008000;">//<span style="color: #008000;"> TRUE为管道可以被子进程所继承  
+    sa.lpSecurityDescriptor = NULL; <span style="color: #008000;">//<span style="color: #008000;"> 默认为NULL
+    sa.nLength = <span style="color: #0000ff;">sizeof<span style="color: #000000;">(SECURITY_ATTRIBUTES);
+    <span style="color: #008000;">//<span style="color: #008000;"> Create pipe for standard output redirection.
+    CreatePipe(&amp;hPipeOutputRead,  <span style="color: #008000;">//<span style="color: #008000;"> read handle
+        &amp;hPipeOutputWrite, <span style="color: #008000;">//<span style="color: #008000;"> write handle
+        &amp;sa,      <span style="color: #008000;">//<span style="color: #008000;"> security attributes
+        <span style="color: #800080;">0      <span style="color: #008000;">//<span style="color: #008000;"> number of bytes reserved for pipe - 0 default
+<span style="color: #000000;">    );
+    <span style="color: #008000;">//<span style="color: #008000;"> Make child process use hPipeOutputWrite as standard out,
+        <span style="color: #008000;">//<span style="color: #008000;"> and make sure it does not show on screen.
+    si.cb = <span style="color: #0000ff;">sizeof<span style="color: #000000;">(si);
+    si.dwFlags = STARTF_USESHOWWINDOW |<span style="color: #000000;"> STARTF_USESTDHANDLES;
+    si.wShowWindow =<span style="color: #000000;"> SW_HIDE;
+    <span style="color: #008000;">//<span style="color: #008000;">si.hStdInput = hPipeInputRead;
+    si.hStdOutput =<span style="color: #000000;"> hPipeOutputWrite;
+    si.hStdError =<span style="color: #000000;"> hPipeOutputWrite;
+    <span style="color: #008000;">//<span style="color: #008000;">strcpy_s(command, " -printer \"FX DocuCentre S2011\" -paper 9 -printermargins C:\\Users\\QJ\\Desktop\\f3044688ce88a4b0a78c16ba85076570-5378-0010-0.png");
+    strcpy_s(command,<span style="color: #800000;">"<span style="color: #800000;"> -printer \"FX DocuCentre S2011\" -listpapers<span style="color: #800000;">"<span style="color: #000000;">);
+    <span style="color: #008000;">//<span style="color: #008000;">一共执行三次
+    <span style="color: #0000ff;">for (<span style="color: #0000ff;">int i = <span style="color: #800080;">0; i &lt; <span style="color: #800080;">3; i++<span style="color: #000000;">)
+    {
+
+        <span style="color: #0000ff;">if (!CreateProcessA(<span style="color: #800000;">"<span style="color: #800000;">C:\\Users\\QJ\\source\\repos\\WindowsFormsApp1\\x64\\Debug\\pdfprint.exe<span style="color: #800000;">", command, NULL, NULL, TRUE, NULL, NULL, NULL, &amp;si, &amp;<span style="color: #000000;">pi))
+        {
+            <span style="color: #008000;">//<span style="color: #008000;">AfxMessageBox("缺失pdfprint.exe文件",0,0);        
+            <span style="color: #0000ff;">break<span style="color: #000000;">;
+        }
+        <span style="color: #0000ff;">else<span style="color: #000000;">
+        {
+            HANDLE hProcess =<span style="color: #000000;"> pi.hProcess;
+            <span style="color: #008000;">//<span style="color: #008000;">等待进程退出    <span style="color: #008000;">//<span style="color: #008000;">CloseHandle(hPipeOutputRead);
+            <span style="color: #0000ff;">while (WaitForSingleObject(hProcess, INFINITE) !=<span style="color: #000000;"> WAIT_OBJECT_0);
+            GetExitCodeProcess(hProcess, &amp;<span style="color: #000000;">ret);
+            <span style="color: #008000;">//<span style="color: #008000;">如果ret!=0,异常退出；
+
+            <span style="color: #008000;">//
+<span style="color: #000000;">            CloseHandle(hPipeOutputWrite);
+            <span style="color: #0000ff;">while (<span style="color: #0000ff;">true<span style="color: #000000;">)
+            {
+                bTest =<span style="color: #000000;"> ReadFile(
+                    hPipeOutputRead,      <span style="color: #008000;">//<span style="color: #008000;"> handle of the read end of our pipe
+                    &amp;szBuffer,            <span style="color: #008000;">//<span style="color: #008000;"> address of buffer that receives data
+                    <span style="color: #0000ff;">sizeof(szBuffer),                  <span style="color: #008000;">//<span style="color: #008000;"> number of bytes to read
+                    &amp;dwNumberOfBytesRead, <span style="color: #008000;">//<span style="color: #008000;"> address of number of bytes read
+                    NULL                  <span style="color: #008000;">//<span style="color: #008000;"> non-overlapped.
+<span style="color: #000000;">                );
+            
+                <span style="color: #0000ff;">if (!<span style="color: #000000;">bTest)
+                {
+                    <span style="color: #0000ff;">break<span style="color: #000000;">;
+                }
+                <span style="color: #008000;">//<span style="color: #008000;"> do something with data.
+                szBuffer[dwNumberOfBytesRead] = <span style="color: #800080;">0;  <span style="color: #008000;">//<span style="color: #008000;"> null terminate
+<span style="color: #000000;">            }
+            <span style="color: #0000ff;">if (!<span style="color: #000000;">ret)
+            {
+                printf(<span style="color: #800000;">"<span style="color: #800000;">123%s456\nbtest:%d\n<span style="color: #800000;">"<span style="color: #000000;">, szBuffer, bTest);
+                CloseHandle(hProcess);            
+                CloseHandle(hPipeOutputRead);
+                <span style="color: #0000ff;">break<span style="color: #000000;">;
+            }
+
+
+
+
+        }
+    }
+    <span style="color: #008000;">//<span style="color: #008000;">std::cout &lt;&lt; "Hello World!\n"; 
+    system(<span style="color: #800000;">"<span style="color: #800000;">pause<span style="color: #800000;">"<span style="color: #000000;">);
+}</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

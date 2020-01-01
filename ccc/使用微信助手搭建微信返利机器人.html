@@ -1,0 +1,101 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修使用微信助手搭建微信返利机器人' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>使用微信助手搭建微信返利机器人</center></div><div class='banquan'>原文出处:本文由博客园博主指间人生提供。<br/>
+原文连接:https://www.cnblogs.com/gracexu/p/11540136.html</div><br>
+    <p>之前做了一个淘宝客返利微信公众号，后来很多人提到过微信返利机器人，现在微信助手开发好了，可以通过微信助手接口功能实现微信返利机器人。<br />
+流程如下：<br />
+<img src="./images/使用微信助手搭建微信返利机器人0.png" /></p>
+<p>下面是c#实现返利接口的部分代码：</p>
+<pre><code>    [HttpPost]
+    public async Task&lt;ActionResult&gt; FanliAsync(string appkey)
+    {
+        WeixinTBKConfigEntity configEntity = GetConfigEntity(appkey);
+        if (configEntity == null)
+        {
+            LogHelper.WriteLog(typeof(OtherWechatController), &quot;appkey接口验证时，appkey不存在&quot;);
+            return Content(&quot;验证失败。appkey接口验证时，appkey不存在&quot;);
+
+        }
+
+        Request.InputStream.Position = 0;
+        Stream stream = Request.InputStream;
+        string json = string.Empty;
+        if (stream.Length != 0)
+        {
+            StreamReader streamreader = new StreamReader(stream);
+            json = streamreader.ReadToEnd();
+        }
+
+        WeChatToolMessage responseMsg = new WeChatToolMessage();
+
+        if (string.IsNullOrEmpty(json))
+        {
+            return Json(responseMsg);
+        }
+
+        WeChatToolMessage msg = JsonConvert.DeserializeObject&lt;WeChatToolMessage&gt;(json);
+
+        if (string.IsNullOrEmpty(msg.wxid) || string.IsNullOrEmpty(msg.content))
+        {
+            return Json(responseMsg);
+        }
+
+        string content = msg.content;
+
+        string responseStr = string.Empty;
+
+        if (content.Contains(&quot;yangkeduo.com&quot;))
+        {
+            //访问拼多多接口
+            responseStr = await GetPddCouponAsync(configEntity, msg);
+
+        }
+        else if (content.Contains(&quot;jd.com&quot;))
+        {
+            if (!string.IsNullOrEmpty(configEntity.JdPID))
+            {
+                //访问京东联盟接口
+                responseStr = GetJdCoupon(configEntity, msg);
+            }      
+        }
+
+        else
+        {
+            //访问淘宝联盟接口
+            responseStr = GetTBKCouponByPassword(configEntity, msg.content);
+        }
+
+        responseMsg.wxid = msg.wxid;
+        responseMsg.content = responseStr;
+
+        return Json(responseMsg);
+    }</code></pre>
+<p>发布接口之后将接口地址填入微信助手“自动回复”菜单url输入框中，如下图所示：<br />
+<img src="./images/使用微信助手搭建微信返利机器人1.png" alt="捕获2.JPG" /></p>
+<p>下面就可以开始查券了，是不是很简单。</p>
+<p><img src="./images/使用微信助手搭建微信返利机器人2.png" alt="0190917171456.png" /><br />
+<img src="./images/使用微信助手搭建微信返利机器人3.png" alt="20190917171448.png" /></p>
+<p>微信助手可以到这里下载：<a href="http://blog.yshizi.cn/104.html" class="uri">http://blog.yshizi.cn/104.html</a><br />
+需要返利接口请加微信znana2019</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

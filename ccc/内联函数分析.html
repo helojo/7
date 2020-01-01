@@ -1,0 +1,105 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修内联函数分析' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>内联函数分析</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11518886.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#内联函数的声明">1. 内联函数的声明</a></li>
+        <li><a href="#内联函数的特性">2. 内联函数的特性</a></li>
+        <li><a href="#内联函数与编译器">3. 内联函数与编译器</a></li>
+        <li><a href="#内联函数的限制">4. 内联函数的限制</a></li>
+        </ul>
+    </div>
+</div>
+<h1 id="内联函数的声明">1. 内联函数的声明</h1>
+<ul>
+<li><font color=red>在C++中，const常量可以代替宏常数定义，而宏代码段则推荐使用内联函数来代替。</font></li>
+<li>C++中使用<code>inline</code>关键字声明内联函数</li>
+<li><font color=magenta>inline只是一种请求，编译器不一定允许这种请求</font></li>
+<li><font color=blue>inline关键字必须和函数定义结合在一起</font>，否则编译器会直接忽略内联请求</li>
+</ul>
+<pre><code>inline int func(int a, int b)
+{
+    return a &lt; b ? a : b;
+}</code></pre>
+<h1 id="内联函数的特性">2. 内联函数的特性</h1>
+<ul>
+<li>C++编译器直接将<font color=red>内联函数的函数体扩展到函数调用的地方</font></li>
+<li>内联函数调用时<font color=magenta>没有压栈、跳转、返回等额外开销</font></li>
+<li>内联函数<font color=blue>具有参数检查、返回类型等普通函数特征</font></li>
+<li><font color=orange>内联函数与宏代码段相比，保留了比普通函数效率更高、开销更小的优点，摒弃了宏代码段不经过编译器可能带来副作用的缺点</font></li>
+</ul>
+<pre><code>#include &lt;stdio.h&gt;
+
+#define MAX(a, b) ((a) &lt; (b) ? (a) : (b))
+
+inline int max(int a, int b)
+{
+    return a &lt; b ? a : b;
+}
+
+int main(int argc, char *argv[])
+{
+    int a1 = 1;
+    int b1 = 3;
+    int c1 = MAX(++a1, b1);
+
+    int a2 = 1;
+    int b2 = 3;
+    int c2 = max(++a2, b2);
+
+    printf(&quot;a1 = %d\n&quot;, a1);
+    printf(&quot;b1 = %d\n&quot;, b1);
+    printf(&quot;c1 = %d\n&quot;, c1);
+
+    printf(&quot;\n&quot;);
+
+    printf(&quot;a2 = %d\n&quot;, a2);
+    printf(&quot;b2 = %d\n&quot;, b2);
+    printf(&quot;c2 = %d\n&quot;, c2);
+
+    return 0;
+}</code></pre>
+<p><img src="./images/内联函数分析0.png" /></p>
+<h1 id="内联函数与编译器">3. 内联函数与编译器</h1>
+<ul>
+<li>现代C++编译器能够进行编译优化，函数即使没有inline声明，也可能被内联编译；声明了inline，编译器也未必会同意</li>
+<li>一些现代C++编译器还提供了扩展语法，允许强制内联，如g++的<code>__attribute__((always_inline))</code></li>
+</ul>
+<pre><code>__attribute__((always_inline)) int func(int a, int b)
+{
+    return a &lt; b ? a : b;
+}</code></pre>
+<h1 id="内联函数的限制">4. 内联函数的限制</h1>
+<p>C++语言对内联函数具有以下限制：</p>
+<ul>
+<li>不能存在任何形式的循环语句</li>
+<li>不能存在过多的条件判断语句</li>
+<li>函数体不能过于庞大</li>
+<li>不能对函数进行取址操作</li>
+<li>函数内联声明必须在调用语句之前</li>
+</ul>
+<p><font color=red><strong>注意：这些只是C++语言本身对内联函数的限制，现代C++编译器可以突破这些限制，</strong></font>实际上，只要函数不是过于夸张，内联一般都是可以成功的。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

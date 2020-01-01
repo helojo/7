@@ -1,0 +1,146 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C语言实现封装、继承和多态' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C语言实现封装、继承和多态</center></div><div class='banquan'>原文出处:本文由博客园博主崔安兵提供。<br/>
+原文连接:https://www.cnblogs.com/cuianbing/p/11580594.html</div><br>
+    <h1 id="封装">1. 封装</h1>
+<p>C语言中虽然没有类，但有struct和指针。我们可以在一个struct中存入数据和函数指针，以此来模拟类行为。</p>
+<pre><code><code>typedef struct _Parent
+{
+    int a;
+    int b;
+    void (*print)(struct _Parent *This);
+
+}Parent;
+</code></code></pre>
+<p>封装性的意义在于，函数和数据是绑在一起的，数据和数据是绑在一起的。这样，我们就可以通过简单的一个结构指针访问到所有的数据，遍历所有的函数。封装性，这是类拥有的属性，当然也是数据结构体拥有的属性。</p>
+<h1 id="继承">2.继承</h1>
+<p>如果要完全地用C语言实现继承，可能有点难度。但如果只是简单的做一下，保证子类中含有父类中的所有成员。这还是不难的。</p>
+<pre><code><code>typedef struct _Child
+{  
+    Parent parent;  
+    int c;  
+}Child;  </code></code></pre>
+<p>在设计C语言继承性的时候，我们需要做的就是把基础数据放在继承的结构的首位置即可。这样，不管是数据的访问、数据的强转、数据的访问都不会有什么问题。</p>
+<h1 id="多态">3. 多态</h1>
+<p>这个特性恐怕是面向对象思想里面最有用的了。<br />
+要用C语言实现这个特性需要一点点技巧，但也不是不可能的。<br />
+我们使用上面定义的两个结构体Parent, Child。简单地描述了一个多态的例子。</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+typedef struct _Parent
+{  
+    int a;  
+    int b;  
+    void (*print)(struct _Parent *This);  
+}Parent; 
+
+typedef struct _Child
+{  
+    Parent parent;  
+    int c;  
+}Child;
+
+void print_parent(Parent *This)  
+{  
+    printf(&quot;a = %d. b = %d.\n&quot;,   This-&gt;a, This-&gt;b);  
+}  
+  
+void print_child(Parent *This)  
+{  
+    Child *p = (Child *)This;  
+    printf(&quot;a = %d. b = %d. c = %d.\n&quot;, p-&gt;parent.a, p-&gt;parent.b, p-&gt;c);  
+}  
+  
+Parent *create_parent(int a, int b)  
+{  
+    Parent *This;  
+  
+    This = NULL;  
+    This = (Parent *)malloc(sizeof(Parent));  
+    if (This != NULL)
+    {  
+        This-&gt;a = a;  
+        This-&gt;b = b;  
+        This-&gt;print = print_parent;  
+        printf(&quot;Create parent successfully!\n&quot;);  
+    }  
+      
+    return This;  
+}  
+  
+void destroy_parent(Parent **p)  
+{  
+    if (*p != NULL)
+    {  
+        free(*p);  
+        *p = NULL;  
+        printf(&quot;Delete parent successfully!\n&quot;);  
+    }  
+}  
+  
+Child *create_child(int a, int b, int c)  
+{  
+    Child *This;  
+  
+    This = NULL;  
+    This = (Child *)malloc(sizeof(Child));  
+    if (This != NULL)
+    {  
+        This-&gt;parent.a = a;  
+        This-&gt;parent.b = b;  
+        This-&gt;c = c;  
+        This-&gt;parent.print = print_child;  
+        printf(&quot;Create child successfully!\n&quot;);  
+    }  
+      
+    return This;  
+}  
+  
+void destroy_child(Child **p)  
+{  
+    if (*p != NULL)
+    {  
+        free(*p);  
+        *p = NULL;  
+        printf(&quot;Delete child successfully!\n&quot;);  
+    }  
+}  
+  
+int main()  
+{  
+    Child *p = create_child(1, 2, 3);  
+    Parent *q;  
+  
+
+    q = (Parent *)p;  
+    
+    q-&gt;print(q);  
+  
+    destroy_child(&amp;p); 
+    system(&quot;pause&quot;);
+    return 0;  
+  
+}  </code></code></pre>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

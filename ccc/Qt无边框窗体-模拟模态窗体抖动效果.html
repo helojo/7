@@ -1,0 +1,171 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Qt无边框窗体-模拟模态窗体抖动效果' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Qt无边框窗体-模拟模态窗体抖动效果</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11568821.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一概述">一、概述</a></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三功能实现">三、功能实现</a></li>
+        <li><a href="#四相关文章">四、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11568821.html">Qt无边框窗体-模拟模态窗体抖动效果</a></p>
+<h2 id="一概述">一、概述</h2>
+<p>用Qt开发windows客户端界面确实是一大利器，兼顾性能的同时，速度相对来说也不错。再加上qss的辅助，那么一个漂亮的界面就不在话下了。</p>
+<p>想要做出漂亮的界面，重写一个标题栏是必不可少的，那么我们肯定是需要使用Qt给我们提供的一个无边框Qt::FramelessWindowHint窗体属性。但是设置了这个属性以后，随之而来的就是一系列的问题，比如说标题栏拖拽需要我们自己搞；窗口放大缩小需要自己实现；最要命的是一些模态窗体原生的抖动效果没有了。</p>
+<p><strong>既然出现问题，那么我们就得想办法解决。</strong></p>
+<p>窗口放大缩小和拖拽在Qt的早期版本是提供了一个类文件支持的，作者本人也对这个文件进行了二次开发，可以提供更为丰富的功能。由于拖拽和缩放跟本篇文章关系不大，因此这里不做说明，感兴趣的同学可以到<a href="https://www.cnblogs.com/swarmbees/p/11415829.html">Qt无边框窗体-最大化时支持拖拽还原</a>这里查看</p>
+<p>本篇文章我们就来说一说当模态窗体弹出来时，如果点击了非模态窗体以外的应用程序界面，怎么实现一个闪动的效果。</p>
+<blockquote>
+<p>闪动只是一个对外的信息交互，如果大家想要一些其他交互效果，可以自行实现。</p>
+</blockquote>
+<h2 id="二效果展示">二、效果展示</h2>
+<p>如效果图所示，做了一个简单的效果</p>
+<ol>
+<li>点击主应用程序时，弹出的模态窗体边框颜色发生了变动，实现了一个抖动的效果。</li>
+<li>点击桌面时，模态窗体也有一个失去焦点时的状态变化。</li>
+</ol>
+<center>
+    <img src="./images/Qt无边框窗体-模拟模态窗体抖动效果0.png" />
+</center>
+<h2 id="三功能实现">三、功能实现</h2>
+<p>实现窗口抖动效果，首先需要了解windows的消息ID，知道我们要接受哪个windows消息来完成闪动效果，其次就是Qt怎么接收这样的原生windows消息。</p>
+<p><strong>windowws消息</strong></p>
+<p>了解windows消息ID，随手打开一个搜索引擎，输入关键字<code>Windows消息ID</code>，然后就能找到大量的文章专门讲述windwos消息，博主这里找了一篇整理windows消息列表的文章<a href="https://www.cnblogs.com/easypass/archive/2011/04/25/2028629.html">Windows消息ID说明</a>，文章中的消息基本上都有中文注释，因此阅读起来比较容易。</p>
+<p>然后我们就会发现有这样一个消息，可能是我们需要的，如下图所示。</p>
+<center>
+    <img src="./images/Qt无边框窗体-模拟模态窗体抖动效果1.png" />
+</center>
+<p><strong>第130条内容，ID为86的WM_NCACTIVATE消息。消息触发的实际是当某个窗口它的非客户区需要被改变来显示是激活还是非激活状态时。</strong> 听着有点儿意思，好像是我们需要的，然后就试呗。</p>
+<p><strong>Qt接收原生消息</strong></p>
+<p>既然锁定了消息ID，那么接下来就是接收这个消息，然后实现响应的UI交互效果即可。</p>
+<p><strong>那么问题来了，Qt窗口怎么接收windows原生消息呢！</strong></p>
+<p>这个问题当然难不倒我们了。Qt为啥这么火，可不仅仅是因为库封装的好，而是它帮助文档更全。下一步大家应该知道该干什么了吧，打开帮助文档，然后搜索关键字<code>nativeEv</code>，如果不知道函数的具体名字或者功能名字，最好进行模糊搜索。</p>
+<p>不搜不知道，一搜吓一跳，原来还有不少接收原生消息的函数，如下不所示。</p>
+<center>
+    <img src="./images/Qt无边框窗体-模拟模态窗体抖动效果2.png" />
+</center>
+<p>上图中总共有如下几个函数</p>
+<ol>
+<li>filterNativeEvent：安装事件过滤器的回调函数</li>
+<li>installNativeEventFilter：安装事件过滤器，回调函数是第4个函数</li>
+<li>nativeEvent：窗口原生事件回调</li>
+<li>nativeEventFilter：事件过滤器回调函数，使用方法2安装</li>
+</ol>
+<p>看到这里大家卡能会有些迷茫，好像都差不多呀！其实不然，还是有却别的，感兴趣的同学可以看看我之前写的几篇相关文章，都使用了接收全局windows消息来实现先关功能，具体一点来说就是使用上述的方法2+方法4来完成。</p>
+<ol>
+<li><a href="https://www.cnblogs.com/swarmbees/p/6044361.html">Qt之自定义QLineEdit右键菜单</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/">qt捕获全局windows消息</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/11154821.html">Qt之股票组件-股票检索--支持搜索结果预览、鼠标、键盘操作</a></li>
+</ol>
+<p>除过方法2和方法4搭配起来使用外，方法1和方法2也可以一起搭配使用，言外之意就是方法2是按照事件过滤器的，方法1和方法4只是事件过滤器的回调处理接口而已。</p>
+<p>为什么这么说呢，大家可以来验证一下，还是打开帮助文档，我们输入关键字<code>installNativeEventFilter</code>，回车就会发现，事件过滤器可以被安装到两个对象上，一个是我们熟知的QCoreApplication，另外一个看着好像也会牛逼的样子，好像还是一个全局的抽象事件派发器。恭喜你，答对了，这两个对象都很牛逼，都能优先处理到Qt的全局事件。</p>
+<center>
+    <img src="./images/Qt无边框窗体-模拟模态窗体抖动效果3.png" />
+</center>
+<p>本篇文章我们只是要实现一个模态窗体的抖动而已，因此就不需要大材小用了，我们使用QWidget的nativeEvent函数即可，同样能达到我们的目的。</p>
+<p><strong>大方向都定了，那么还等什么</strong></p>
+<p>打开vs，新建了一个demo。哐哐哐，就是一顿干。。。。</p>
+<p>发现还真好使，窃喜中。。。</p>
+<p>下面是实现的核心代码，由于是demo，所以写的比较粗糙，大家在写到项目里时最好能规范下代码。</p>
+<pre><code>bool XXX::nativeEvent(const QByteArray &amp;eventType, void *message, long *result)
+{
+    if (&quot;windows_generic_MSG&quot; == eventType)
+    {
+        MSG * pMsg = reinterpret_cast&lt;MSG *&gt;(message);
+
+        if (pMsg-&gt;message == WM_NCACTIVATE)
+        {
+            bool active = (bool)(pMsg-&gt;wParam);
+
+            if (active)
+            {
+                setStyleSheet(&quot;border:2 solid blue;background:gray;&quot;);
+            }
+            else
+            {
+                setStyleSheet(&quot;border:2 solid red;background:gray;&quot;);
+            }
+
+            style()-&gt;unpolish(this);
+            style()-&gt;polish(this);
+        }
+    }
+
+    return  QDialog::nativeEvent(eventType, message, result);
+}</code></pre>
+<p><strong>重点强调</strong></p>
+<p>这里还需要说一点，有些同学按照文档操作了，调试时代码也走到相关位置了，但是发现没有效果，然后就开始怀疑人生了。</p>
+<p>这里博主重点说几个可能出现错误的地方</p>
+<ol>
+<li>我们的模态窗体一定要指定模态的父窗体是谁</li>
+<li>窗体一定要设置上Qt::Dialog属性</li>
+</ol>
+<blockquote>
+<p>第二点是非常关键的，很多同学都是没有设置这个属性，导致失去了效果。</p>
+</blockquote>
+<h2 id="四相关文章">四、相关文章</h2>
+<ol>
+<li><a href="https://blog.csdn.net/r5014/article/details/70172375">Qt自定义的无边框Dialog 在点击其他窗口时处理闪烁效果</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/11415829.html">Qt无边框窗体-最大化时支持拖拽还原</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/6044361.html">Qt之自定义QLineEdit右键菜单</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/">qt捕获全局windows消息</a></li>
+<li><a href="https://www.cnblogs.com/swarmbees/p/11154821.html">Qt之股票组件-股票检索--支持搜索结果预览、鼠标、键盘操作</a></li>
+</ol>
+<hr />
+<p><strong>值得一看的优秀文章：</strong></p>
+<ol>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/6707798.html">财联社-产品展示</a></strong></li>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/10836505.html">广联达-产品展示</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95527107">Qt定制控件列表</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95526527">牛逼哄哄的Qt库</a></strong></li>
+</ol>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

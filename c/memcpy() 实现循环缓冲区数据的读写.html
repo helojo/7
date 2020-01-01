@@ -1,0 +1,132 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修memcpy() 实现循环缓冲区数据的读写' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>memcpy() 实现循环缓冲区数据的读写</center></div><div class='banquan'>原文出处:本文由博客园博主Farmer_xu提供。<br/>
+原文连接:https://www.cnblogs.com/xuxiaojianlucky/p/11596474.html</div><br>
+    <h1>使用memcpy()函数做循环缓冲区的读写</h1>
+<h2>首先对mencpy函数做个简单的介绍</h2>
+<h3>下面是 memcpy() 函数的声明</h3>
+<p>　　void *memcpy(void *str1, const void *str2, size_t n)<br />　　参数<br />&nbsp;&nbsp; &nbsp;　　str1 -- 指向用于存储复制内容的目标数组，类型强制转换为 void* 指针。<br />&nbsp;&nbsp; 　　&nbsp;str2 -- 指向要复制的数据源，类型强制转换为 void* 指针。<br />&nbsp;&nbsp; &nbsp;　　n -- 要被复制的字节数。<br />　　该函数返回一个指向目标存储区 str1 的指针。<br /><br />/*******************************<br />mencpy的常见用法有如下：<br />1. 复制字符串<br />2. 复制字符串中从某个位置开始的某些子连续字符串<br />3. 覆盖字符串的原有内容<br />******/</p>
+<p>&nbsp;</p>
+<p>好了长话短说， 直接进入主题</p>
+<p><img src="./images/memcpy() 实现循环缓冲区数据的读写0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>具体实现代码如下</p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;fstream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;cstring&gt;
+<span style="color: #008080;"> 3</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">stdio.h</span><span style="color: #800000;">"</span>    
+<span style="color: #008080;"> 4</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">stdlib.h</span><span style="color: #800000;">"</span>   
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> 
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">#define</span> DATA_RECV_BUFF_LEN             13                   <span style="color: #008000;">//</span><span style="color: #008000;">缓冲区大小</span>
+<span style="color: #008080;"> 9</span> <span style="color: #0000ff;">#define</span> DATA_SAVE_BUFF_LEN             2000                   <span style="color: #008000;">//</span><span style="color: #008000;">保存区大小</span>
+<span style="color: #008080;">10</span> <span style="color: #0000ff;">int</span> recv_buff_write = <span style="color: #800080;">0</span>;                <span style="color: #008000;">//</span><span style="color: #008000;">缓冲区写指针</span>
+<span style="color: #008080;">11</span> <span style="color: #0000ff;">int</span> mark = -<span style="color: #800080;">1</span>;                          <span style="color: #008000;">//</span><span style="color: #008000;">缓冲区数据溢出</span>
+<span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span> 
+<span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> 
+<span style="color: #008080;">16</span> 
+<span style="color: #008080;">17</span> <span style="color: #008000;">/*</span><span style="color: #008000;"> buf--&gt;recv 把数据放入循环缓冲区</span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">18</span> <span style="color: #0000ff;">void</span> recvbuf(<span style="color: #0000ff;">char</span>* buf, <span style="color: #0000ff;">char</span>* save_recv, <span style="color: #0000ff;">int</span><span style="color: #000000;"> len)
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">20</span>     <span style="color: #008000;">//</span><span style="color: #008000;">数据为空则返回不做缓存</span>
+<span style="color: #008080;">21</span>     <span style="color: #0000ff;">if</span> (NULL == buf) <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> data--&gt;buf </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">24</span>     <span style="color: #008000;">//</span><span style="color: #008000;">判断缓存区是否还有足够的空间</span>
+<span style="color: #008080;">25</span>     <span style="color: #0000ff;">if</span> (len &lt; (DATA_RECV_BUFF_LEN -<span style="color: #000000;"> recv_buff_write))
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">27</span>         
+<span style="color: #008080;">28</span>             memcpy(&amp;<span style="color: #000000;">save_recv[recv_buff_write], buf, len);
+</span><span style="color: #008080;">29</span>             recv_buff_write +=<span style="color: #000000;"> len;
+</span><span style="color: #008080;">30</span>         
+<span style="color: #008080;">31</span> 
+<span style="color: #008080;">32</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">33</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">34</span> <span style="color: #000000;">    {    
+</span><span style="color: #008080;">35</span>             memcpy(&amp;save_recv[recv_buff_write], buf, (DATA_RECV_BUFF_LEN -<span style="color: #000000;"> recv_buff_write ));
+</span><span style="color: #008080;">36</span>             memcpy(&amp;save_recv[<span style="color: #800080;">0</span>], &amp;buf[(DATA_RECV_BUFF_LEN - recv_buff_write )], (len - (DATA_RECV_BUFF_LEN -<span style="color: #000000;"> recv_buff_write )));
+</span><span style="color: #008080;">37</span>             <span style="color: #008000;">//</span><span style="color: #008000;">写指针重新计数</span>
+<span style="color: #008080;">38</span>             recv_buff_write = (len - (DATA_RECV_BUFF_LEN -<span style="color: #000000;"> recv_buff_write));
+</span><span style="color: #008080;">39</span>             mark = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">42</span> 
+<span style="color: #008080;">43</span> <span style="color: #008000;">//</span><span style="color: #008000;">读取保存区数据数据</span>
+<span style="color: #008080;">44</span> <span style="color: #0000ff;">void</span> getrecv(<span style="color: #0000ff;">char</span>*<span style="color: #000000;"> recv_buff)
+</span><span style="color: #008080;">45</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">46</span>     <span style="color: #0000ff;">char</span> data_buff[DATA_SAVE_BUFF_LEN] = { <span style="color: #800080;">0</span> };    <span style="color: #008000;">//</span><span style="color: #008000;">数据读取</span>
+<span style="color: #008080;">47</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> buf--&gt;data </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">48</span>     <span style="color: #008000;">//</span><span style="color: #008000;">清空数组</span>
+<span style="color: #008080;">49</span>     memset(data_buff, <span style="color: #800080;">0</span><span style="color: #000000;">, DATA_SAVE_BUFF_LEN);
+</span><span style="color: #008080;">50</span>     <span style="color: #0000ff;">if</span> (recv_buff_write &gt;=<span style="color: #800080;">0</span> and mark == -<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">51</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">52</span>         memcpy(data_buff, &amp;recv_buff[<span style="color: #800080;">0</span><span style="color: #000000;">], recv_buff_write);
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">54</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">55</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">56</span>         
+<span style="color: #008080;">57</span>         memcpy(&amp;data_buff[<span style="color: #800080;">0</span>], &amp;recv_buff[recv_buff_write], DATA_RECV_BUFF_LEN -<span style="color: #000000;"> recv_buff_write );
+</span><span style="color: #008080;">58</span>         memcpy(&amp;data_buff[DATA_RECV_BUFF_LEN - recv_buff_write ], &amp;recv_buff[<span style="color: #800080;">0</span><span style="color: #000000;">], recv_buff_write );
+</span><span style="color: #008080;">59</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">60</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, data_buff);
+</span><span style="color: #008080;">61</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">62</span> 
+<span style="color: #008080;">63</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">64</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">65</span>     <span style="color: #0000ff;">char</span> st1[<span style="color: #800080;">10</span>] =<span style="color: #800000;">"</span><span style="color: #800000;">abcd</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">66</span>     <span style="color: #0000ff;">char</span> st2[<span style="color: #800080;">10</span>] = <span style="color: #800000;">"</span><span style="color: #800000;">abcd</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">67</span>     <span style="color: #0000ff;">char</span> st3[<span style="color: #800080;">10</span>] = <span style="color: #800000;">"</span><span style="color: #800000;">abcd</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">68</span>     <span style="color: #0000ff;">char</span> st4[<span style="color: #800080;">10</span>] = <span style="color: #800000;">"</span><span style="color: #800000;">efgh</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">69</span>     <span style="color: #0000ff;">char</span> recv_buff[DATA_RECV_BUFF_LEN] = { <span style="color: #800080;">0</span> };    <span style="color: #008000;">//</span><span style="color: #008000;">缓冲区</span>
+<span style="color: #008080;">70</span> <span style="color: #000000;">    recvbuf(st1, recv_buff, strlen(st1));
+</span><span style="color: #008080;">71</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, recv_buff_write);
+</span><span style="color: #008080;">72</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, recv_buff);
+</span><span style="color: #008080;">73</span> <span style="color: #000000;">    recvbuf(st2, recv_buff, strlen(st2));
+</span><span style="color: #008080;">74</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, recv_buff_write);
+</span><span style="color: #008080;">75</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, recv_buff);
+</span><span style="color: #008080;">76</span> <span style="color: #000000;">    recvbuf(st3, recv_buff, strlen(st3));
+</span><span style="color: #008080;">77</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, recv_buff_write);
+</span><span style="color: #008080;">78</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, recv_buff);
+</span><span style="color: #008080;">79</span> <span style="color: #000000;">    recvbuf(st4, recv_buff, strlen(st4));
+</span><span style="color: #008080;">80</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, recv_buff_write);
+</span><span style="color: #008080;">81</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, recv_buff);
+</span><span style="color: #008080;">82</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">读取缓冲区的数据：\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">83</span> <span style="color: #000000;">    getrecv(recv_buff);
+</span><span style="color: #008080;">84</span>     printf(<span style="color: #800000;">"</span><span style="color: #800000;">mark is %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, mark);
+</span><span style="color: #008080;">85</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">86</span> }</code></pre>
+
+<p>&nbsp;</p>
+<p>运行结果如下</p>
+<p>&nbsp;</p>
+<p><img src="./images/memcpy() 实现循环缓冲区数据的读写1.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>好了，本次分享到此结束，不喜勿喷</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

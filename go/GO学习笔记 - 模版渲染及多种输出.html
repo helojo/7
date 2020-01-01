@@ -1,0 +1,166 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修GO学习笔记 - 模版渲染及多种输出' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>GO学习笔记 - 模版渲染及多种输出</center></div><div class='banquan'>原文出处:本文由博客园博主小慢哥提供。<br/>
+原文连接:https://www.cnblogs.com/fzxiaomange/p/golang-template.html</div><br>
+    <p><img src="./images/GO学习笔记 - 模版渲染及多种输出0.png" /></p>
+<p><strong>本文主题：基于内置的text/template实现Golang模版渲染，并将结果写入文件、屏幕、变量。</strong></p>
+<p>小慢哥的原创文章，欢迎转载</p>
+<hr />
+<h1 id="目录">目录</h1>
+<p>▪ 定义结构体<br />
+▪ 定义模版文本<br />
+▪ 模版渲染及输出方式<br />
+▪ 完整例子</p>
+<hr />
+<h1 id="定义结构体">定义结构体</h1>
+<p>首先，定义一个结构体，用于后面的模版渲染</p>
+<pre><code><code>type Person struct {
+    Name string
+    Age int
+    Boy bool
+}</code></pre>
+<p><strong>注意：struct的元素必须要可导出（大写打头），否则渲染时候找不到</strong></p>
+<p>实例化结构体，用于模版渲染时候获得对应值</p>
+<pre><code><code>foo := Person{
+    Name: &quot;foo&quot;,
+    Age: 18,
+    Boy: false,
+}</code></pre>
+<hr />
+<h1 id="定义模版文本">定义模版文本</h1>
+<p>接下来，定义一个模版文本，此处直接定义了一个常量，表示模版文本</p>
+<pre><code><code>const text = `My name is {{.Name}},
+I&#39;m {{.Age}} years old,
+I&#39;m a {{if .Boy}}boy{{else}}girl{{end}}.
+`</code></pre>
+<p>读取文本，获取template的handler</p>
+<pre><code><code>tmpl, err := template.New(&quot;&quot;).Parse(text)
+if err != nil {
+    log.Fatalln(err)
+}</code></pre>
+<hr />
+<h1 id="模版渲染及输出方式">模版渲染及输出方式</h1>
+<p>在渲染时候需要传递一个参数，用于指定输出到何处，常见的有3种目的地：</p>
+<p>▷ 输出到文件<br />
+▷ 输出到变量<br />
+▷ 输出到屏幕</p>
+<p>输出到文件：需要先open一个文件并获得文件句柄</p>
+<pre><code><code>f, err := os.OpenFile(&quot;/tmp/test&quot;, os.O_WRONLY|os.O_CREATE, 0644)
+defer f.Close()
+if err != nil {
+    log.Fatalln(err)
+}
+
+// 渲染并写入文件
+if err := tmpl.Execute(f, foo); err != nil {
+    log.Fatalln(err)
+}</code></pre>
+<p>输出到变量</p>
+<pre><code><code>var buf bytes.Buffer
+
+if err := tmpl.Execute(&amp;buf, foo); err != nil {
+    log.Fatalln(err)
+}
+fmt.Println(buf.String())</code></pre>
+<p>输出到屏幕</p>
+<pre><code><code>if err := tmpl.Execute(os.Stdout, foo); err != nil {
+    log.Fatalln(err)
+}</code></pre>
+<hr />
+<h1 id="完整例子">完整例子</h1>
+<pre><code><code>package main
+
+import (
+    &quot;log&quot;
+    &quot;os&quot;
+    &quot;text/template&quot;
+)
+
+type Person struct {
+    Name string
+    Age int
+    Boy bool
+}
+
+func main() {
+    // 实例化结构体
+    foo := Person{
+        Name: &quot;foo&quot;,
+        Age: 18,
+        Boy: false,
+    }
+
+    // 定义模版文本
+    const text = `My name is {{.Name}},
+I&#39;m {{.Age}} years old,
+I&#39;m a {{if .Boy}}boy{{else}}girl{{end}}.
+`
+
+    // 根据指定模版文本生成handler
+    tmpl, err := template.New(&quot;&quot;).Parse(text)
+    if err != nil {
+        log.Fatalln(err)
+    }
+
+    // 模版渲染，并写入文件
+    f, err := os.OpenFile(&quot;/tmp/test&quot;, os.O_WRONLY|os.O_CREATE, 0644)
+    defer f.Close()
+    if err != nil {
+        log.Fatalln(err)
+    }
+    if err := tmpl.Execute(f, foo); err != nil {
+        log.Fatalln(err)
+    }
+
+    // 模版渲染，并赋值给变量
+    var buf bytes.Buffer
+    if err := tmpl.Execute(&amp;buf, foo); err != nil {
+        log.Fatalln(err)
+    }
+    fmt.Println(buf.String())
+
+    // 模版渲染，并输出到屏幕标准输出
+    if err := tmpl.Execute(os.Stdout, foo); err != nil {
+        log.Fatalln(err)
+    }
+}</code></pre>
+<p>测试效果</p>
+<pre><code><code># 编译
+go build template.go
+./template
+
+# 输出
+My name is foo,
+I&#39;m 18 years old,
+I&#39;m a girl.
+
+My name is foo,
+I&#39;m 18 years old,
+I&#39;m a girl.
+
+# 查看文件（/tmp/test）内容
+My name is foo,
+I&#39;m 18 years old,
+I&#39;m a girl.</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

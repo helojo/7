@@ -1,0 +1,312 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go-客户信息关系系统' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go-客户信息关系系统</center></div><div class='banquan'>原文出处:本文由博客园博主跌倒的小黄瓜提供。<br/>
+原文连接:https://www.cnblogs.com/ygjzs/p/11878271.html</div><br>
+    <h1 id="客户信息关系系统">客户信息关系系统</h1>
+<p><strong>项目需求分析</strong><br />
+1) 模拟实现基于文本界面的《 客户信息管理软件》。<br />
+2) 该软件能够实现对客户对象的插入、修改和删除（用切片实现），并能够打印客户明细表</p>
+<h2 id="项目的界面设计">项目的界面设计</h2>
+<p>见代码的运行结果</p>
+<h2 id="项目功能实现-显示主菜单和完成退出软件功能">项目功能实现-显示主菜单和完成退出软件功能</h2>
+<p>功能的说明<br />
+当用户运行程序时，可以看到主菜单，当输入 5 时，可以退出该软件.<br />
+思路分析<br />
+编写 customerView.go ,另外可以把 customer.go 和 customerService.go 写上.</p>
+<h2 id="项目功能实现-完成显示客户列表的功能">项目功能实现-完成显示客户列表的功能</h2>
+<h2 id="项目功能实现-添加客户的功能">项目功能实现-添加客户的功能</h2>
+<h2 id="项目功能实现-完成删除客户的功能">项目功能实现-完成删除客户的功能</h2>
+<p>代码实现:customerService.go</p>
+<pre><code><code>package service
+import (
+    &quot;go_code/code/customerManage/model&quot;
+
+)
+
+//该CustomerService， 完成对Customer的操作,包括
+//增删改查
+type CustomerService struct {
+    customers []model.Customer
+    //声明一个字段，表示当前切片含有多少个客户
+    //该字段后面，还可以作为新客户的id+1
+    customerNum int 
+}
+
+//编写一个方法，可以返回 *CustomerService
+func NewCustomerService() *CustomerService {
+    //为了能够看到有客户在切片中，我们初始化一个客户
+    customerService := &amp;CustomerService{}
+    customerService.customerNum = 1
+    customer := model.NewCustomer(1, &quot;张三&quot;, &quot;男&quot;, 20, &quot;112&quot;, &quot;zs@sohu.com&quot;)
+    customerService.customers = append(customerService.customers, customer)
+    return customerService
+}
+
+//返回客户切片
+func (this *CustomerService) List() []model.Customer {
+    return this.customers
+}
+
+//添加客户到customers切片
+//!!!
+func (this *CustomerService) Add(customer model.Customer) bool {
+
+    //我们确定一个分配id的规则,就是添加的顺序
+    this.customerNum++
+    customer.Id = this.customerNum
+    this.customers = append(this.customers, customer)
+    return true
+}
+
+//根据id删除客户(从切片中删除)
+func (this *CustomerService) Delete(id int) bool {
+    index := this.FindById(id)
+    //如果index == -1, 说明没有这个客户
+    if index == -1 {
+        return false 
+    }
+    //如何从切片中删除一个元素
+    this.customers = append(this.customers[:index], this.customers[index+1:]...)
+    return true
+}
+
+//根据id查找客户在切片中对应下标,如果没有该客户，返回-1
+func (this *CustomerService) FindById(id int)  int {
+    index := -1
+    //遍历this.customers 切片
+    for i := 0; i &lt; len(this.customers); i++ {
+        if this.customers[i].Id == id {
+            //找到
+            index = i
+        }
+    }
+    return index
+}
+</code></pre>
+<p>代码实现:customer.go</p>
+<pre><code><code>package model
+import (
+    &quot;fmt&quot;
+)
+//声明一个Customer结构体，表示一个客户信息 
+
+type Customer struct {
+    Id int 
+    Name string
+    Gender string
+    Age int
+    Phone string
+    Email string
+}
+
+//使用工厂模式，返回一个Customer的实例 
+
+func NewCustomer(id int, name string, gender string, 
+    age int, phone string, email string ) Customer {
+    return Customer{
+        Id : id,
+        Name : name,
+        Gender : gender,
+        Age : age,
+        Phone : phone,
+        Email : email,
+    }
+}
+
+//第二种创建Customer实例方法，不带id
+func NewCustomer2(name string, gender string, 
+    age int, phone string, email string ) Customer {
+    return Customer{
+        Name : name,
+        Gender : gender,
+        Age : age,
+        Phone : phone,
+        Email : email,
+    }
+}
+
+//返回用户的信息,格式化的字符串
+func (this Customer) GetInfo()  string {
+    info := fmt.Sprintf(&quot;%v\t%v\t%v\t%v\t%v\t%v\t&quot;, this.Id, 
+        this.Name, this.Gender,this.Age, this.Phone, this.Email)
+    return info
+
+}</code></pre>
+<p>代码实现:customerView.go</p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    &quot;go_code/code/customerManage/service&quot;
+    &quot;go_code/code/customerManage/model&quot;
+)
+
+type customerView struct {
+
+    //定义必要字段
+    key string //接收用户输入...
+    loop bool  //表示是否循环的显示主菜单
+    //增加一个字段customerService
+    customerService *service.CustomerService
+
+}
+
+//显示所有的客户信息
+func (this *customerView) list() {
+
+    //首先，获取到当前所有的客户信息(在切片中)
+    customers := this.customerService.List()
+    //显示
+    fmt.Println(&quot;---------------------------客户列表---------------------------&quot;)
+    fmt.Println(&quot;编号\t姓名\t性别\t年龄\t电话\t邮箱&quot;)
+    for i := 0; i &lt; len(customers); i++ {
+        //fmt.Println(customers[i].Id,&quot;\t&quot;, customers[i].Name...)
+        fmt.Println(customers[i].GetInfo())
+    }
+    fmt.Printf(&quot;\n-------------------------客户列表完成-------------------------\n\n&quot;)
+}
+
+//得到用户的输入，信息构建新的客户，并完成添加
+func (this *customerView) add() {
+    fmt.Println(&quot;---------------------添加客户---------------------&quot;)
+    fmt.Println(&quot;姓名:&quot;)
+    name := &quot;&quot;
+    fmt.Scanln(&amp;name)
+    fmt.Println(&quot;性别:&quot;)
+    gender := &quot;&quot;
+    fmt.Scanln(&amp;gender)
+    fmt.Println(&quot;年龄:&quot;)
+    age := 0
+    fmt.Scanln(&amp;age)
+    fmt.Println(&quot;电话:&quot;)
+    phone := &quot;&quot;
+    fmt.Scanln(&amp;phone)
+    fmt.Println(&quot;电邮:&quot;)
+    email := &quot;&quot;
+    fmt.Scanln(&amp;email)
+    //构建一个新的Customer实例
+    //注意: id号，没有让用户输入，id是唯一的，需要系统分配
+    customer := model.NewCustomer2(name, gender, age, phone, email)
+    //调用
+    if this.customerService.Add(customer) {
+        fmt.Println(&quot;---------------------添加完成---------------------&quot;)
+    } else {
+        fmt.Println(&quot;---------------------添加失败---------------------&quot;)
+    }
+}
+
+//得到用户的输入id，删除该id对应的客户
+func (this *customerView) delete() {
+    fmt.Println(&quot;---------------------删除客户---------------------&quot;)
+    fmt.Println(&quot;请选择待删除客户编号(-1退出)：&quot;)
+    id := -1
+    fmt.Scanln(&amp;id)
+    if id == -1 {
+        return //放弃删除操作
+    }
+    fmt.Println(&quot;确认是否删除(Y/N)：&quot;)
+    //这里同学们可以加入一个循环判断，直到用户输入 y 或者 n,才退出..
+    choice := &quot;&quot;
+    fmt.Scanln(&amp;choice)
+    if choice == &quot;y&quot; || choice == &quot;Y&quot; {
+        //调用customerService 的 Delete方法
+        if this.customerService.Delete(id) {
+            fmt.Println(&quot;---------------------删除完成---------------------&quot;)
+        } else {
+            fmt.Println(&quot;---------------------删除失败，输入的id号不存在----&quot;)
+        }
+    }
+}
+
+//退出软件 
+func (this *customerView) exit() {
+
+    fmt.Println(&quot;确认是否退出(Y/N)：&quot;)
+    for {
+        fmt.Scanln(&amp;this.key)
+        if this.key == &quot;Y&quot; || this.key == &quot;y&quot; || this.key == &quot;N&quot; || this.key == &quot;n&quot; {
+            break
+        }
+
+        fmt.Println(&quot;你的输入有误，确认是否退出(Y/N)：&quot;)
+    }
+
+    if this.key == &quot;Y&quot; || this.key == &quot;y&quot; {
+        this.loop = false
+    }
+
+}
+
+//显示主菜单
+func (this *customerView) mainMenu() {
+
+    for {
+        
+        fmt.Println(&quot;-----------------客户信息管理软件-----------------&quot;)
+        fmt.Println(&quot;                 1 添 加 客 户&quot;)
+        fmt.Println(&quot;                 2 修 改 客 户&quot;)
+        fmt.Println(&quot;                 3 删 除 客 户&quot;)
+        fmt.Println(&quot;                 4 客 户 列 表&quot;)
+        fmt.Println(&quot;                 5 退       出&quot;)
+        fmt.Print(&quot;请选择(1-5)：&quot;)
+
+        fmt.Scanln(&amp;this.key)
+        switch this.key {
+            case &quot;1&quot; :
+                this.add()
+            case &quot;2&quot; :
+                fmt.Println(&quot;修 改 客 户&quot;)
+            case &quot;3&quot; :
+                this.delete()
+            case &quot;4&quot; :
+                this.list()
+            case &quot;5&quot; :
+                this.exit()
+            default :
+                fmt.Println(&quot;你的输入有误，请重新输入...&quot;)
+        }
+
+        if !this.loop {
+            break
+        }
+
+    }
+    fmt.Println(&quot;你退出了客户关系管理系统...&quot;)
+}
+
+
+
+func main() {
+    //在main函数中，创建一个customerView,并运行显示主菜单..
+    customerView := customerView{
+        key : &quot;&quot;,
+        loop : true,
+    }
+    //这里完成对customerView结构体的customerService字段的初始化
+    customerView.customerService = service.NewCustomerService()
+    //显示主菜单..
+    customerView.mainMenu()
+
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

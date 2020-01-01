@@ -1,0 +1,196 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修xorm插入数据实例' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>xorm插入数据实例</center></div><div class='banquan'>原文出处:本文由博客园博主j_x_x提供。<br/>
+原文连接:https://www.cnblogs.com/jiangxiangxiang/p/10923005.html</div><br>
+    <blockquote>
+<pre><code><code>
+package main
+
+import (
+  &quot;fmt&quot;
+  _ &quot;github.com/go-sql-driver/mysql&quot;
+  &quot;github.com/go-xorm/xorm&quot;
+  &quot;log&quot;
+)
+
+var engine *xorm.Engine
+
+
+
+type User2 struct {
+  Name string `xorm:&quot;varchar(25) &#39;usr_name&#39;&quot;`
+  Id   int    `xorm:&quot;pk &#39;id&#39; autoincr&quot;`
+}
+
+
+type User3 struct {
+  Name string `xorm:&quot;varchar(25) &#39;usr_name&#39;&quot;`
+  Id   int    `xorm:&quot;pk &#39;id&#39; autoincr&quot;`
+}
+
+
+
+func main() {
+  var err error
+  engine, err = xorm.NewEngine(&quot;mysql&quot;, &quot;root:123456@/test&quot;)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+
+
+  err = engine.CreateTables(User2{})
+  if err!=nil {
+      log.Fatal(err)
+      return
+  }
+
+  err = engine.CreateTables(User3{})
+  if err!=nil {
+      log.Fatal(err)
+      return
+  }
+
+
+
+  //func (engine *Engine) Insert(beans ...interface{}) (int64, error)
+  //返回的第一个参数是受影响的行数
+  //插入一条数据，可以用Insert
+  stu:= new(User2)
+  stu.Name =&quot;user&quot;
+  affected ,err :=engine.Insert(stu)
+  if err!=nil {
+      log.Fatal(err)
+      return
+  }
+  fmt.Println(&quot;插入一条数据用Insert受影响的行数：&quot;,affected)
+
+  //插入一条数据，也可以用InsertOne
+  stu1:= new(User2)
+  stu1.Name=&quot;user2222&quot;
+  affected ,err =engine.InsertOne(stu1)
+  if err!=nil {
+      log.Fatal(err)
+      return
+  }
+  fmt.Println(&quot;InsertOne受影响的行数：&quot;,affected)
+
+
+/*    插入同一个表的多条数据，
+  此时如果数据库支持批量插入，那么会进行批量插入，
+  但是这样每条记录就无法被自动赋予id值。
+  如果数据库不支持批量插入，那么就会一条一条插入。*/
+  sts:=make([]User2,3)
+  sts[0].Name =&quot;name&quot;
+  sts[1].Name =&quot;name&quot;
+  sts[2].Name =&quot;name&quot;
+
+  affected,err = engine.Insert(sts)
+  if err !=nil {
+      log.Fatal(err)
+      return
+  }
+  fmt.Println(&quot;插入同一个表的多条数据受影响的行数：&quot;,affected)
+      //使用指针Slice插入多条记录，同上
+  stus:=make([]*User2,3)
+  stus[0] =new(User2)
+  stus[0].Name=&quot;name&quot;
+  stus[1] =new(User2)
+  stus[1].Name=&quot;name&quot;
+  stus[2] =new(User2)
+  stus[2].Name=&quot;name&quot;
+
+  affected,err = engine.Insert(stus)
+  if err !=nil {
+      log.Fatal(err)
+      return
+  }
+
+  fmt.Println(&quot;使用指针Slice插入多条记录受影响的行数：&quot;,affected)
+
+//插入不同表的一条记录
+  s := new(User2)
+  s.Name=&quot;s&quot;
+  s1:= new(User3)
+  s1.Name=&quot;s1&quot;
+  affected,err = engine.Insert(s,s1)
+  if err !=nil {
+      log.Fatal(err)
+      return
+  }
+
+  fmt.Println(&quot;插入不同表的一条记录受影响的行数：&quot;,affected)
+
+
+  //插入不同表的多条记录
+  ss:=make([]User2,3)
+  ss[0].Name =&quot;name&quot;
+  ss[1].Name =&quot;name&quot;
+  ss[2].Name =&quot;name&quot;
+
+  ss1:=make([]User3,2)
+  ss1[0].Name =&quot;name&quot;
+  ss1[1].Name =&quot;name&quot;
+
+  affected,err = engine.Insert(ss,ss1)
+  if err !=nil {
+      log.Fatal(err)
+      return
+  }
+  fmt.Println(&quot;插入不同表的多条记录受影响的行数：&quot;,affected)
+
+
+  //插入不同表的一条或多条记录
+  s0:= new(User2)
+  s0.Name=&quot;s0&quot;
+
+  ss0:=make([]User3,2)
+  ss1[0].Name =&quot;name&quot;
+  ss1[1].Name =&quot;name&quot;
+
+  affected,err = engine.Insert(s0,ss0)
+  if err !=nil {
+      log.Fatal(err)
+      return
+  }
+  fmt.Println(&quot;插入不同表的一条或多条记录受影响的行数：&quot;,affected)
+
+}
+
+/*输出:
+插入一条数据用Insert受影响的行数： 1
+InsertOne受影响的行数： 1
+插入同一个表的多条数据受影响的行数： 3
+使用指针Slice插入多条记录受影响的行数： 3
+插入不同表的一条记录受影响的行数： 2
+插入不同表的多条记录受影响的行数： 5
+插入不同表的一条或多条记录受影响的行数： 3
+*/</code></pre>
+</blockquote>
+<p>这里需要注意以下几点：</p>
+<ul>
+<li>这里虽然支持同时插入，但这些插入并没有事务关系。因此有可能在中间插入出错后，后面的插入将不会继续。此时前面的插入已经成功，如果需要回滚，请开启事务。</li>
+<li>批量插入会自动生成<code>Insert into table values (),(),()</code>的语句，因此各个数据库对SQL语句有长度限制，因此这样的语句有一个最大的记录数，根据经验测算在150条左右。大于150条后，生成的sql语句将太长可能导致执行失败。因此在插入大量数据时，目前需要自行分割成每150条插入一次。</li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

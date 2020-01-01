@@ -1,0 +1,47 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修GO与PHP的AES交互,key长度问题' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>GO与PHP的AES交互,key长度问题</center></div><div class='banquan'>原文出处:本文由博客园博主随彦心MO提供。<br/>
+原文连接:https://www.cnblogs.com/smartrui/p/12020144.html</div><br>
+    <p>今天在使用go与php的AES加解密交互中，一直有个问题那就是在go中加密后，在php端始终都是无法解密，经过排查最后发现是加密key长度引起的问题， 这里简单记录下。</p>
+<p>go的AES使用的是第三方的库，<a href="https://github.com/thinkoner/openssl">openssl</a>,因为用的匆忙，没注意看文档，所以就直接弄了示例代码，才发现和php端无法解密，其实在文档中它其实讲的很清楚了， “The length of the key can be 16/24/32 characters (128/192/256 bits)”，这个key的长度只能是16,24和32个字符，分别对应AES-128, AES-192, or AES-256等模式。</p>
+<p>我在php中因为没有太在意这个长度，所以搞的32位，但由于我用的是ECB模式，所以其实32位的字符长度实际是截成16个字符了，那么我在go中还配置成32个字符就不对了，直接在go中把key的长度改成php中配置的key的一半就行了,哎，你说这坑货php，如果key配置不对提示下多好。</p>
+<p>go代码</p>
+<pre><code><code>func Encrypt(data map[string]interface{})  (s string) {
+    src,_ :=json.Marshal(data)
+    key := []byte(&quot;YzfNCQoF9P7tjwyZ&quot;)
+    dst , err := openssl.AesECBEncrypt(src, key, openssl.PKCS7_PADDING)
+    if err !=nil {
+        fmt.Printf(&quot;encrypt error:%s&quot; ,err)
+    }
+    fmt.Printf(SafeBase64Encode(base64.StdEncoding.EncodeToString(dst)) )
+    return SafeBase64Encode(base64.StdEncoding.EncodeToString(dst))
+}
+</code></pre>
+<p>php代码</p>
+<pre class="php"><code>public static function  encrypt($str, $key){
+        $encryptStr =  openssl_encrypt($str, &#39;AES-128-ECB&#39;，$key,OPENSSL_RAW_DATA);
+        return static::urlsafe_b64encode($encryptStr);
+    }</code></pre>
+<p>总结：php与golang的AES, 要多注意下key的长度</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

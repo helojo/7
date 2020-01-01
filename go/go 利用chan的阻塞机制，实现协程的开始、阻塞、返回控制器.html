@@ -1,0 +1,171 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go 利用chan的阻塞机制，实现协程的开始、阻塞、返回控制器' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go 利用chan的阻塞机制，实现协程的开始、阻塞、返回控制器</center></div><div class='banquan'>原文出处:本文由博客园博主我有酒，你有故事吗？提供。<br/>
+原文连接:https://www.cnblogs.com/zhaosc-haha/p/11966215.html</div><br>
+    <p>一、使用场景</p>
+<p>大背景是从kafka 中读取oplog进行增量处理，但是当我想发一条命令将这个增量过程阻塞，然后开始进行一次全量同步之后，在开始继续增量。</p>
+<p>所以需要对多个协程进行控制。</p>
+<p>二、使用知识</p>
+<p>1. 从一个未初始化的管道读会阻塞</p>
+<p>2.从一个关闭的管道读不会阻塞</p>
+<p>利用两个管道和select 进行控制</p>
+<p>三、上代码</p>
+<p>控制器代码</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package util
+
+import (
+	"errors"
+	"sync"
+)
+
+const (
+	//STOP 停止
+	STOP = iota
+	//START 开始
+	START
+	//PAUSE 暂停
+	PAUSE
+)
+
+//Control 控制器
+type Control struct {
+	ch1  chan struct{}
+	ch2  chan struct{}
+	stat int64
+	lock sync.RWMutex
+}
+
+var (
+	//ErrStat 错误状态
+	ErrStat = errors.New("stat error")
+)
+
+//NewControl 获得一个新Control
+func NewControl() *Control {
+	return &amp;Control{
+		ch1:  make(chan struct{}),
+		ch2:  nil,
+		stat: START,
+		lock: sync.RWMutex{},
+	}
+}
+
+//Stop 停止
+func (c *Control) Stop() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if c.stat == START {
+		c.ch2 = nil
+		close(c.ch1)
+		c.stat = STOP
+	} else if c.stat == PAUSE {
+		ch2 := c.ch2
+		c.ch2 = nil
+		close(c.ch1)
+		close(ch2)
+		c.stat = STOP
+	} else {
+		return ErrStat
+	}
+	return nil
+}
+
+//Pause 暂停
+func (c *Control) Pause() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if c.stat == START {
+		c.ch2 = make(chan struct{})
+		close(c.ch1)
+		c.stat = PAUSE
+	} else {
+		return ErrStat
+	}
+	return nil
+}
+
+//Start 开始
+func (c *Control) Start() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	if c.stat == PAUSE {
+		c.ch1 = make(chan struct{})
+		close(c.ch2)
+		c.stat = START
+	} else {
+		return ErrStat
+	}
+	return nil
+}
+
+//C 控制管道
+func (c *Control) C() &lt;-chan struct{} {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.ch1
+}
+
+//Wait 等待
+func (c *Control) Wait() bool {
+	c.lock.RLock()
+	ch2 := c.ch2
+	c.lock.RUnlock()
+	if ch2 == nil {　　//通过赋值nil 发送停止推出命令
+		return false
+	}
+	&lt;-ch2　　//会进行阻塞
+	return true
+}
+</pre>
+</div>
+<p>&nbsp;</p>
+<p>使用代码</p>
+<div class="cnblogs_Highlighter">
+<pre><code>	for {
+		select {
+		case part, ok := &lt;-c.Partitions():
+			if !ok {
+				conf.Logger.Error("get kafka Partitions not ok", regular.Name)
+				return
+			}
+			go readFromPart(c, part, regular, respChan)
+		case &lt;-regular.C():　　　//regular 为Control 类
+			if !regular.Wait() {
+				conf.Logger.Debug("Stop! ")
+				return
+			}
+			conf.Logger.Debug("Start! ")
+		}
+	}</pre>
+</div>
+<p>这样就可以随时随地的控制工程中的协程</p>
+<div class="cnblogs_Highlighter">
+<pre><code>regular  := util.NewControl()
+regular.Pause()
+regular.Start()
+regular.Stop()
+</pre>
+</div>
+<p>　　</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

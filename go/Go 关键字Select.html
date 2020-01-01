@@ -1,0 +1,110 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go 关键字Select' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go 关键字Select</center></div><div class='banquan'>原文出处:本文由博客园博主Yven提供。<br/>
+原文连接:https://www.cnblogs.com/louyefeng/p/11368537.html</div><br>
+    <h1 id="select">select</h1>
+<p>select 是Go语言中常用的一个关键字,Linux再也早也引入了这个函数,用来实现非阻塞的一种方式,一个select语句用来选择哪个case中的发送或接收操作可以被立即执行。它类似于switch语句,但是它的case涉及到channel有关的I/O操作。</p>
+<pre><code><code>select{
+case &lt;-chan1:
+    // 如果成功读取到chan1中得数据,则进行该case处理语句
+case chan2 &lt;- value:
+    // 如果成功像chan2中写入数据,则进行该case处理语句
+default:
+    // 如果上面都没有成功,则进入default处理语句
+}</code></pre>
+<p>简单案例:</p>
+<pre><code><code>func main(){
+    ch := make(chan int)
+    go func(){
+        ch &lt;- 10
+    }()
+    time.Sleep(time.Second)
+    
+    select{
+    case &lt;- ch:
+        fmt.Println(&quot;come to read channel&quot;)
+    default:
+        fmt.Println(&quot;come to default&quot;)
+    }
+}</code></pre>
+<h1 id="超时控制">超时控制</h1>
+<p>如果所有的case都没有成功,且没有default语句存在时,select语句会一直阻塞,知道至少有一个I/O操作进行,但如果没有,就会一直阻塞,这时我们就可以设置一个超时控制。</p>
+<p>实现方法一,使用协程:</p>
+<pre><code><code>func main(){
+    timeout := make(chan bool)
+    ch := make(chan string)
+    
+    go func(ch chan bool){
+        time.Sleep(time.Second * 2)
+        ch &lt;- true
+    }(timeout)
+    
+    select {
+    case value := &lt;-ch:
+        fmt.Printf(&quot;value is %v&quot;,value)
+    case &lt;= timeout: 
+        fmt.Println(&quot;runing timeout...&quot;)
+    }
+    fmt.Println(&quot;end this demo&quot;)
+}</code></pre>
+<p>输出结果:</p>
+<pre><code><code>runing timeout...
+end this demo</code></pre>
+<p>实现方法二,使用time.After()方法实现:</p>
+<pre><code><code>func main(){
+    ch := make(chan string)
+    
+    select {
+    case value := &lt;-ch:
+        fmt.Printf(&quot;value is %v&quot;,value)
+    case &lt;= time.After(time.Second): 
+        fmt.Println(&quot;runing timeout...&quot;)
+    }
+    fmt.Println(&quot;end this demo&quot;)
+}</code></pre>
+<p>输出结果:</p>
+<pre><code><code>runing timeout...
+end this demo</code></pre>
+<h1 id="break关键字结束select">break关键字结束select</h1>
+<p>案例:</p>
+<pre><code><code>func main(){
+    ch1 := make(chan int,1)
+    ch2 := make(chan int,1)
+    
+    select{
+    case ch1 &lt;- 10:
+        fmt.Println(&quot;this is ch1&quot;)
+        break
+        fmt.Println(&quot;ch1 write value&quot;)
+    case ch2 &lt;-20:
+        fmt.Println(&quot;this is ch2&quot;)
+        fmt.Println(&quot;ch2 write value&quot;)
+    }
+}</code></pre>
+<p>上述代码中,ch1和ch2两个通道都可以写入值,所以系统会随机选择一个case执行,发现先择执行ch1的case时,由于又break关键字的存在,所以只会打印一句:</p>
+<pre><code><code>this is ch1</code></pre>
+<p>但执行ch2的case时,所有内容都会被打印:</p>
+<pre><code><code>this is ch2
+ch2 write value</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

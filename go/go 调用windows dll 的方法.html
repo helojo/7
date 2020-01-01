@@ -1,0 +1,139 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go 调用windows dll 的方法' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go 调用windows dll 的方法</center></div><div class='banquan'>原文出处:本文由博客园博主追风的浪子提供。<br/>
+原文连接:https://www.cnblogs.com/echojson/p/10743636.html</div><br>
+    <p>go 调用windows dll 的方法 ，代码如下：</p>
+<p>&nbsp;</p>
+<div class="cnblogs_Highlighter">
+<pre><code>package main
+import (
+	"fmt"
+	"syscall"
+	"time"
+	"unsafe"
+)
+
+const (
+	MB_OK                = 0x00000000
+	MB_OKCANCEL          = 0x00000001
+	MB_ABORTRETRYIGNORE  = 0x00000002
+	MB_YESNOCANCEL       = 0x00000003
+	MB_YESNO             = 0x00000004
+	MB_RETRYCANCEL       = 0x00000005
+	MB_CANCELTRYCONTINUE = 0x00000006
+	MB_ICONHAND          = 0x00000010
+	MB_ICONQUESTION      = 0x00000020
+	MB_ICONEXCLAMATION   = 0x00000030
+	MB_ICONASTERISK      = 0x00000040
+	MB_USERICON          = 0x00000080
+	MB_ICONWARNING       = MB_ICONEXCLAMATION
+	MB_ICONERROR         = MB_ICONHAND
+	MB_ICONINFORMATION   = MB_ICONASTERISK
+	MB_ICONSTOP          = MB_ICONHAND
+
+	MB_DEFBUTTON1 = 0x00000000
+	MB_DEFBUTTON2 = 0x00000100
+	MB_DEFBUTTON3 = 0x00000200
+	MB_DEFBUTTON4 = 0x00000300
+)
+
+func abort(funcname string, err syscall.Errno) {
+	panic(funcname + " failed: " + err.Error())
+}
+
+var (
+	//    kernel32, _        = syscall.LoadLibrary("kernel32.dll")
+	//    getModuleHandle, _ = syscall.GetProcAddress(kernel32, "GetModuleHandleW")
+
+	user32, _     = syscall.LoadLibrary("user32.dll")
+	messageBox, _ = syscall.GetProcAddress(user32, "MessageBoxW")
+)
+
+func IntPtr(n int) uintptr {
+	return uintptr(n)
+}
+
+func StrPtr(s string) uintptr {
+	return uintptr(unsafe.Pointer(syscall.StringToUTF16Ptr(s)))
+}
+
+func MessageBox(caption, text string, style uintptr) (result int) {
+	ret, _, callErr := syscall.Syscall9(messageBox,
+		4,
+		0,
+		StrPtr(text),
+		StrPtr(caption),
+		style,
+		0, 0, 0, 0, 0)
+	if callErr != 0 {
+		abort("Call MessageBox", callErr)
+	}
+	result = int(ret)
+	return
+}
+
+//func GetModuleHandle() (handle uintptr) {
+//    if ret, _, callErr := syscall.Syscall(getModuleHandle, 0, 0, 0, 0); callErr != 0 {
+//        abort("Call GetModuleHandle", callErr)
+//    } else {
+//        handle = ret
+//    }
+//    return
+//}
+
+// windows下的另一种DLL方法调用
+func ShowMessage2(title, text string) {
+	user32 := syscall.NewLazyDLL("user32.dll")
+	MessageBoxW := user32.NewProc("MessageBoxW")
+	MessageBoxW.Call(IntPtr(0), StrPtr(text), StrPtr(title), IntPtr(0))
+}
+
+// windows下的第三种DLL方法调用
+func ShowMessage3(title, text string) {
+	user32,_ := syscall.LoadDLL("user32.dll")
+	MessageBoxW,_ := user32.FindProc("MessageBoxW")
+	MessageBoxW.Call(IntPtr(0), StrPtr(text), StrPtr(title), IntPtr(0))
+}
+
+func main() {
+	//    defer syscall.FreeLibrary(kernel32)
+	defer syscall.FreeLibrary(user32) //释放指定的动态链接库
+
+	ShowMessage2("windows下的另一种DLL方法调用", "HELLO !")
+
+	ShowMessage3("windows下的第三种DLL方法调用", "HELLO3 !")
+
+	//fmt.Printf("Retern: %d\n", MessageBox("Done Title", "This test is Done.", MB_YESNOCANCEL))
+	num := MessageBox("Done Title", "This test is Done.", MB_YESNOCANCEL)
+	fmt.Printf("Get Retrun Value Before MessageBox Invoked: %d\n", num)
+
+	time.Sleep(3 * time.Second)
+}
+
+func init() {
+	fmt.Print("Starting Up\n")
+}
+</pre>
+</div>
+<p>　　</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

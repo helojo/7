@@ -1,0 +1,99 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Kinect V2入门之数据获取步骤' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Kinect V2入门之数据获取步骤</center></div><div class='banquan'>原文出处:本文由博客园博主三行代码划江湖提供。<br/>
+原文连接:https://www.cnblogs.com/mld-code-life/p/10891434.html</div><br>
+    <p>在Kinect for windows SDK2.0中，获取并处理数据源接口步骤如下：</p>
+<p>　　Sensor -&gt; Source -&gt; Reader -&gt; Frame -&gt; Data</p>
+<p>（一）Sensor<br />IKinectSensor *pSensor=nullptr;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //定义类指针<br />GetDefaultKinectSensor(&amp;pSensor);&nbsp; //捕获传感器<br />pSensor-&gt;Open();&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //调用类函数Open（），打开Kinect<br />（二）Source<br />IDepthFrameSource *pFrameSource=nullptr;<br />pSensor-&gt;get_DefrrmeSource(&amp;pFrameSource); //get source 存放在pFrameSource中<br />（三）<br />IDepthFrameReader *pReader=nullptr ;&nbsp;&nbsp;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; //Source是Kinect端拥有的，需要创建电脑端的接口Reader读取<br />pFrameSource-&gt;get_OpenReader(&amp;pFrameSource);&nbsp; //将pFrameSource中的数据读取到pReader中<br />（四）Frame<br />IDepthFrame *pFrame=nullptr ;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; //Frame是真正存储数据的类，每一次都让Reader把数据读到Frame类中<br />pFrameSource-&gt;AcquireLatestFrame(&amp;pFrame) ;&nbsp; //获取最新的数据，并且装入另一个数据帧里。但是这个函数必须要判断是否返回一个成功值，因为获取失败的几率非常高。<br />（五）处理数据&nbsp; </p>
+<p>（如何从Frame类中获得数据,请求Source和创建Reader对于每一个数据类型都是一模一样的，但从Frame中提取信息则各有不同）<br />pFrame-&gt;AccessUnderlyingBuffer( &amp;uBufferSize , &amp;pBuffer)<br />//取到数据帧后，通过AccessUnderlyingBuffer()这个函数将数据复制到数组，这个函数有两个参数，<br />第一个是个记录大小的变量，第二个是个接受数据的数组指针，传入后会分别返回数组的大小以及数据。<br />它传入数组的数据代表的是那一个像素点上的物体距离传感器的位置。</p>
+<p>读取深度信息 示例代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include<span style="color: #800000;">"</span><span style="color: #800000;">Kinect.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">int</span><span style="color: #000000;">  main()
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 7</span>     IKinectSensor *pSensor = nullptr;  <span style="color: #008000;">//</span><span style="color: #008000;">1.get default Sensor</span>
+<span style="color: #008080;"> 8</span>     GetDefaultKinectSensor(&amp;<span style="color: #000000;">pSensor);
+</span><span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span>     pSensor-&gt;Open(); <span style="color: #008000;">//</span><span style="color: #008000;">open sensor</span>
+<span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span>     IDepthFrameSource *pFrameSource = nullptr; <span style="color: #008000;">//</span><span style="color: #008000;">2.Get frame source</span>
+<span style="color: #008080;">13</span>     pSensor-&gt;get_DepthFrameSource(&amp;<span style="color: #000000;">pFrameSource);
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span>     IDepthFrameReader* pFrameReader = nullptr;<span style="color: #008000;">//</span><span style="color: #008000;">3.get frame reader</span>
+<span style="color: #008080;">16</span>     pFrameSource-&gt;OpenReader(&amp;<span style="color: #000000;">pFrameReader);
+</span><span style="color: #008080;">17</span> 
+<span style="color: #008080;">18</span>     size_t uFrameCount = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">while</span> (uFrameCount &lt; <span style="color: #800080;">100</span><span style="color: #000000;">) {        // cirlce of <span style="color: #000000;"><span style="color: #000000;">100 times</span></span>
+</span><span style="color: #008080;">20</span>     <span style="color: #008000;">//</span><span style="color: #008000;">4.get lastest frame</span>
+<span style="color: #008080;">21</span>         IDepthFrame *pFrame =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span>         <span style="color: #0000ff;">if</span> (pFrameReader-&gt;AcquireLatestFrame(&amp;pFrame) ==<span style="color: #000000;"> S_OK) {
+</span><span style="color: #008080;">24</span> 
+<span style="color: #008080;">25</span>             <span style="color: #0000ff;">int</span> iWidth = <span style="color: #800080;">0</span>, iHeight = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">26</span>             IFrameDescription *pFrameDescription =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">27</span>             pFrame-&gt;get_FrameDescription(&amp;<span style="color: #000000;">pFrameDescription);
+</span><span style="color: #008080;">28</span>             pFrameDescription-&gt;get_Width(&amp;<span style="color: #000000;">iWidth);
+</span><span style="color: #008080;">29</span>             pFrameDescription-&gt;get_Height(&amp;<span style="color: #000000;">iHeight);
+</span><span style="color: #008080;">30</span>             pFrameDescription-&gt;<span style="color: #000000;">Release();
+</span><span style="color: #008080;">31</span>             pFrameDescription =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span>             <span style="color: #008000;">//</span><span style="color: #008000;">get image buffer</span>
+<span style="color: #008080;">34</span>             UINT uBufferSize = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">35</span>             UINT16* pBuffer =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">36</span>             pFrame-&gt;AccessUnderlyingBuffer(&amp;uBufferSize, &amp;<span style="color: #000000;">pBuffer);
+</span><span style="color: #008080;">37</span> 
+<span style="color: #008080;">38</span>             <span style="color: #008000;">//</span><span style="color: #008000;">output depth value</span>
+<span style="color: #008080;">39</span>             <span style="color: #0000ff;">int</span> x = iWidth / <span style="color: #800080;">2</span>, y = iHeight / <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">40</span>             size_t idx = x + iWidth *<span style="color: #000000;"> y;
+</span><span style="color: #008080;">41</span>             cout &lt;&lt; pBuffer[idx] &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">42</span> 
+<span style="color: #008080;">43</span>             pFrame-&gt;<span style="color: #000000;">Release();
+</span><span style="color: #008080;">44</span>             pFrame =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">45</span> 
+<span style="color: #008080;">46</span>             ++<span style="color: #000000;">uFrameCount;
+</span><span style="color: #008080;">47</span> 
+<span style="color: #008080;">48</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">50</span> 
+<span style="color: #008080;">51</span>     pFrameReader-&gt;<span style="color: #000000;">Release();
+</span><span style="color: #008080;">52</span>     pFrameReader =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">53</span> 
+<span style="color: #008080;">54</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 2b. release Frame source</span>
+<span style="color: #008080;">55</span>     pFrameSource-&gt;<span style="color: #000000;">Release();
+</span><span style="color: #008080;">56</span>     pFrameSource =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">57</span> 
+<span style="color: #008080;">58</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 1c. Close Sensor</span>
+<span style="color: #008080;">59</span>     pSensor-&gt;<span style="color: #000000;">Close();
+</span><span style="color: #008080;">60</span> 
+<span style="color: #008080;">61</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 1d. Release Sensor</span>
+<span style="color: #008080;">62</span>     pSensor-&gt;<span style="color: #000000;">Release();
+</span><span style="color: #008080;">63</span>     pSensor =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">64</span> 
+<span style="color: #008080;">65</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">66</span> }</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

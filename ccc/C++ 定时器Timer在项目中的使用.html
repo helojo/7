@@ -1,0 +1,74 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ 定时器Timer在项目中的使用' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ 定时器Timer在项目中的使用</center></div><div class='banquan'>原文出处:本文由博客园博主Mr.woniu提供。<br/>
+原文连接:https://www.cnblogs.com/woniu-felix/p/10794380.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#情况说明">1、情况说明</a></li>
+        <li><a href="#空循环实现">2、空循环实现</a></li>
+        <li><a href="#定时器实现">3、定时器实现</a></li>
+        </ul>
+    </div>
+</div>
+<h3 id="情况说明">1、情况说明</h3>
+<ul>
+<li>由于最近要在项目里做弹出弹幕，要求是弹出1秒后消失，一开始我使用空循环进行计时，发现执行到这段代码CPU占用率上升十几个百分点，后来改成定时器实现，发现CPU表现正常。</li>
+</ul>
+<h3 id="空循环实现">2、空循环实现</h3>
+<pre><code>ShowWindow(true);
+time_t start_time = GetTickCount();
+time_t now_time = start_time;
+while((now_time - start_time) &lt;= 1000)
+{
+now_time = GetTickCount();
+};
+ShowWindow(false);</code></pre>
+<ul>
+<li><strong>后来查了一下资料，空循环为啥使CPU占用率大幅升高，空循环执行快，在一个单位时间内会被调度很多次；再者是因为现在cpu占用率的算法。</strong></li>
+</ul>
+<h3 id="定时器实现">3、定时器实现</h3>
+<ul>
+<li>首先要包含&lt;Windows.h&gt;</li>
+<li>可以设置定时器，也可以杀死它。</li>
+<li>每个定时器都有一个id，设置定时器的时候可以自己设置它，方便后面定时器的管理。</li>
+<li>设置定时器的时候需要设置回调函数。</li>
+<li>这部分代码如下</li>
+</ul>
+<pre><code>#include&lt;Windows.h&gt;
+void  CALLBACK HideWnd(HWND   hwnd,UINT   uMsg,UINT   idEvent,DWORD   dwTime);//回调函数声明
+
+//这2行在需要调用的时候调用，比如需要弹幕弹出来的时候。
+ShowWindow(true);
+SetTimer(m_hWnd,1, 1000, HideWnd);
+
+void  CALLBACK HideWnd(HWND   hwnd,UINT   uMsg,UINT   idEvent,DWORD   dwTime)//回调函数
+{
+    ShowWindow(hwnd, false);
+    KillTimer(hwnd,1);
+}</code></pre>
+<ul>
+<li><strong>我这里在回调里面把定时器杀死了，这就实现了单次执行。若是想每隔1秒执行一次回调，可以不在回调中杀死定时器，在合适的地方再管理它。定时器每到时间，都会发WM_TIME消息，我们也可以响应这个消息去处理，这样可以不用在回调中写code。</strong></li>
+</ul>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

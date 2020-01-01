@@ -1,0 +1,216 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[BZOJ4379][POI2015]Modernizacja autostrady' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[BZOJ4379][POI2015]Modernizacja autostrady</center></div><div class='banquan'>原文出处:本文由博客园博主dsjkafdsaf提供。<br/>
+原文连接:https://www.cnblogs.com/dsjkafdsaf/p/11254532.html</div><br>
+    <h2 id="题目描述">题目描述</h2>
+<p>给定一棵无根树，边权都是<span class="math inline">\(1\)</span>，请去掉一条边并加上一条新边，定义直径为最远的两个点的距离，请输出所有可能的新树的直径的最小值和最大值。</p>
+<h2 id="input">Input</h2>
+<p>第一行包含一个正整数$ n(2&lt;=n&lt;=500000) $，表示这棵树的点数。</p>
+<p>接下来<span class="math inline">\(n-1\)</span>行，每行包含两个正整数<span class="math inline">\(u,v(1&lt;=u,v&lt;=n)\)</span>，表示<span class="math inline">\(u\)</span>与<span class="math inline">\(v\)</span>之间有一条边。</p>
+<h2 id="output">Output</h2>
+<p>第一行输出五个正整数<span class="math inline">\(k,x_1,y_1,x_2,y_2\)</span>，其中k表示新树直径的最小值，<span class="math inline">\(x_1,y_1\)</span>表示这种情况下要去掉的边的两端点，<span class="math inline">\(x_2,y_2\)</span>表示这种情况下要加上的边的两端点。</p>
+<p>第二行输出五个正整数<span class="math inline">\(k,x_1,y_1,x_2,y_2\)</span>，其中k表示新树直径的最大值，<span class="math inline">\(x_1,y_1\)</span>表示这种情况下要去掉的边的两端点，<span class="math inline">\(x_2,y_2\)</span>表示这种情况下要加上的边的两端点。</p>
+<p>若有多组最优解，输出任意一组。</p>
+<h2 id="sample-input">Sample Input</h2>
+<pre><code>6
+1 2
+2 3
+2 4
+4 5
+6 5</code></pre>
+<h2 id="sample-output">Sample Output</h2>
+<pre><code>3 4 2 2 5
+5 2 1 1 6</code></pre>
+<p>树形<span class="math inline">\(DP\)</span>题。</p>
+<p>很显然我们需要对于每条边的断开分类讨论。</p>
+<p>对于一条边，断开后分为两个连通块<span class="math inline">\(A\)</span>,<span class="math inline">\(B\)</span>。</p>
+<p>记两个连通块的直径为<span class="math inline">\(d_A,d_B\)</span></p>
+<p>对于最小值很显然就是连接两条直径中点或两条直径，即<br />
+<span class="math inline">\(max(max(d_A,d_B),1+(d_A+1)/2+(d_b+1)/2)\)</span>。</p>
+<p>而对于最大值，我们只用连接两条直径的端点即可。</p>
+<p>现在，问题变成了怎么快速的求出上述的<span class="math inline">\(d_A,d_B\)</span>。</p>
+<p><strong>这是一颗树</strong></p>
+<p>对于节点<span class="math inline">\(A\)</span>来说，上述的<span class="math inline">\(d_A\)</span>为在该节点子树内的最大的直径。</p>
+<p>而<span class="math inline">\(d_B\)</span>，为不在该点子树内的最大直径。</p>
+<p>我们又将问题转换为了求每个节点的在该节点子树内的最大直径以及不在该节点子树内的最大直径。</p>
+<p>我们该如何快速的求出每个节点的值呢？</p>
+<p>我们需要维护每个节点的前三子链（不同的儿子），向上最长链以及前二最大子节点的子树直径。</p>
+<p>很显然，一个节点的子树内直径为前两个子链之和，或最大的子节点的子树直径。这样要用子树更新节点。</p>
+<p>而一个节点的不在该点子树内的直径为，其父亲的该值或其父亲的向上最长链加除他外父亲的最长子链，或其父亲除它外的前两子链和。<br />
+这里要用父亲节点更新子节点。</p>
+<p>两次<span class="math inline">\(dfs\)</span>树形<span class="math inline">\(DP\)</span>即可。</p>
+<pre class="cpp"><code>#include &lt;cstdio&gt;
+#include &lt;cstring&gt;
+#include &lt;map&gt;
+#include &lt;set&gt;
+#include &lt;iostream&gt;
+#include &lt;algorithm&gt;
+ 
+using namespace std;
+ 
+#define LL long long
+#define u64 unsigned long long
+#define reg register
+#define debug(x) cerr&lt;&lt;#x&lt;&lt;&quot; = &quot;&lt;&lt;x&lt;&lt;endl;
+#define rep(a,b,c) for(reg int a=(b),a##_end_=(c); a&lt;=a##_end_; ++a)
+#define ret(a,b,c) for(reg int a=(b),a##_end_=(c); a&lt;a##_end_; ++a)
+#define drep(a,b,c) for(reg int a=(b),a##_end_=(c); a&gt;=a##_end_; --a)
+#define erep(i,G,x) for(reg int i=(G).Head[x]; i; i=(G).Nxt[i])
+ 
+inline int Read() {
+    int res = 0, f = 1;
+    char c;
+    while (c = getchar(), c &lt; 48 || c &gt; 57)if (c == &#39;-&#39;)f = 0;
+    do res = (res &lt;&lt; 3) + (res &lt;&lt; 1) + (c ^ 48);
+    while (c = getchar(), c &gt;= 48 &amp;&amp; c &lt;= 57);
+    return f ? res : -res;
+}
+ 
+template&lt;class T&gt;inline bool Min(T &amp;a, T const&amp;b) {
+    return a &gt; b ? a = b, 1 : 0;
+}
+template&lt;class T&gt;inline bool Max(T &amp;a, T const&amp;b) {
+    return a &lt; b ? a = b, 1 : 0;
+}
+ 
+const int N = 5e5 + 5, M = 5e5 + 5, mod = 1e9 + 9;
+ 
+int n;
+ 
+struct Link_list {
+    int Tot, Nxt[M &lt;&lt; 1], to[M &lt;&lt; 1], Head[N];
+    inline void AddEdgepair(int a, int b) {
+        to[++Tot] = b, Nxt[Tot] = Head[a], Head[a] = Tot;
+        to[++Tot] = a, Nxt[Tot] = Head[b], Head[b] = Tot;
+    }
+} G;
+ 
+int Fa[N], dep[N], Tree_sonD[N], Tree_unsonD[N], List_son[N][4], List_unson[N], Mason_D[N][3];
+ 
+void dfs1(int x, int pre) {
+    Fa[x] = pre, dep[x] = dep[pre] + 1;
+    erep(i, G, x) {
+        int y = G.to[i];
+        if (y == pre)continue;
+        dfs1(y, x);
+        reg int pos = 3;
+        int cnt = List_son[y][0] + 1;
+        for (pos = 3; pos &amp;&amp; List_son[x][pos - 1] &lt; cnt; pos--)List_son[x][pos] = List_son[x][pos - 1];
+        List_son[x][pos] = cnt;
+        cnt = Tree_sonD[y];
+        for (pos = 2; pos &amp;&amp; Mason_D[x][pos - 1] &lt; cnt; pos--)Mason_D[x][pos] = Mason_D[x][pos - 1];
+        Mason_D[x][pos] = cnt;
+    }
+    Tree_sonD[x] = max(Mason_D[x][0], List_son[x][0] + List_son[x][1]);
+}
+ 
+void dfs2(int x, int pre) {
+    erep(i, G, x) {
+        int y = G.to[i];
+        if (y == pre)continue;
+        int pos1, pos2;
+        pos1 = (List_son[x][0] == List_son[y][0] + 1);
+        List_unson[y] = max(List_son[x][pos1], List_unson[x]) + 1;
+        pos1 = (Tree_sonD[y] == Mason_D[x][0]);
+        Max(Tree_unsonD[y], max(Tree_unsonD[x], Mason_D[x][pos1]));
+        if (List_son[y][0] + 1 == List_son[x][0])pos1 = 1, pos2 = 2;
+        else if (List_son[y][0] + 1 == List_son[x][1])pos1 = 0, pos2 = 2;
+        else pos1 = 0, pos2 = 1;
+        Max(Tree_unsonD[y], max(List_son[x][pos1] + List_son[x][pos2], List_son[x][pos1] + List_unson[x]));
+        dfs2(y, x);
+    }
+}
+ 
+inline int Mid(int x, int y, int len) {
+    if (dep[x] &lt; dep[y])swap(x, y);
+    len /= 2;
+    rep(i, 1, len)x = Fa[x];
+    return x;
+}
+ 
+int Dis[N], Ans;
+ 
+void dfs3(int x, int pre, int F) {
+    Dis[x] = Dis[pre] + 1;
+    if (Dis[Ans] &lt; Dis[x])Ans = x;
+    erep(i, G, x) {
+        int y = G.to[i];
+        if (y == pre || y == F)continue;
+        dfs3(y, x, F);
+    }
+}
+ 
+inline int Farest(int x, int y) {
+    memset(Dis, 0, sizeof Dis);
+    Ans = x;
+    dfs3(x, 0, y);
+    return Ans;
+}
+ 
+int Mi[N], Ma[N];
+ 
+inline void Debug(void) {
+    rep(i, 1, n)printf(&quot;%d %d %d %d %d\n&quot;, Tree_sonD[i], Tree_unsonD[i], Fa[i], List_unson[i], dep[i]);
+}
+ 
+int _main(void) {
+    int n = Read(), a, b;
+    ret(i, 1, n) {
+        a = Read(), b = Read();
+        G.AddEdgepair(a, b);
+    }
+    dfs1(1, 0); dfs2(1, 0);
+    int Ans1 = 1, Ans2 = 1;
+    Mi[1] = Ma[1] = Tree_sonD[1];
+    rep(i, 2, n) {
+        int res1 = Tree_sonD[i] + Tree_unsonD[i] + 1;
+        int res2 = max(max(Tree_sonD[i], Tree_unsonD[i]), 1 + (Tree_unsonD[i] + 1 ) / 2 + (Tree_sonD[i] + 1) / 2);
+        Mi[i] = res2, Ma[i] = res1;
+        if (Ma[Ans1] &lt; Ma[i])Ans1 = i;
+        if (Mi[Ans2] &gt; Mi[i])Ans2 = i;
+    }
+    if (Ans2 == 1)printf(&quot;%d %d %d %d %d\n&quot;, Mi[1], a, b, a, b);
+    else {
+        printf(&quot;%d %d %d &quot;, Mi[Ans2], Ans2, Fa[Ans2]);
+        int x1 = Farest(Ans2, Fa[Ans2]), y1 = Farest(x1, Fa[Ans2]), x2 = Farest(Fa[Ans2], Ans2), y2 = Farest(x2, Ans2);
+        printf(&quot;%d %d\n&quot;, Mid(x1, y1, Tree_sonD[Ans2]), Mid(x2, y2 , Tree_unsonD[Ans2]));
+    }
+    if (Ans1 == 1)printf(&quot;%d %d %d %d %d\n&quot;, Ma[1], a, b, a, b);
+    else printf(&quot;%d %d %d %d %d\n&quot;, Ma[Ans1], Ans1 , Fa[Ans1], Farest(Ans1, Fa[Ans1]), Farest(Fa[Ans1], Ans1));
+    return 0;
+}
+ 
+int main() {
+#define offline1
+#ifdef offline
+    freopen(&quot;.in&quot;, &quot;r&quot;, stdin);
+    freopen(&quot;.out&quot;, &quot;w&quot;, stdout);
+    _main();
+    fclose(stdin); fclose(stdout);
+#else
+    _main();
+#endif
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

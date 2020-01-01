@@ -1,0 +1,484 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++学习（三十七）（C语言部分）之 链式栈（推箱子实现）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++学习（三十七）（C语言部分）之 链式栈（推箱子实现）</center></div><div class='banquan'>原文出处:本文由博客园博主Yuuki丶提供。<br/>
+原文连接:https://www.cnblogs.com/Yuuki-/p/10639157.html</div><br>
+    <p><span style="font-family: 宋体; font-size: 18px;">用链表实现栈</span><br /><span style="font-family: 宋体; font-size: 18px;">一开始在表头插入，就要一直在表头插入</span><br /><span style="font-family: 宋体; font-size: 18px;">一开始在表尾插入，就要一直在表头插尾</span><br /><span style="font-family: 宋体; font-size: 18px;">表头当栈底 也可以把表尾当栈底</span></p>
+<p><span style="font-family: 宋体; font-size: 18px;">实现的测试代码笔记如下：</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> #include&lt;stdio.h&gt;
+<span style="color: #008080;">  2</span> #include&lt;stdlib.h&gt;
+<span style="color: #008080;">  3</span> #include&lt;<span style="color: #0000ff;">string</span>.h&gt;
+<span style="color: #008080;">  4</span> 
+<span style="color: #008080;">  5</span> <span style="color: #008000;">//</span><span style="color: #008000;">节点的结构体</span>
+<span style="color: #008080;">  6</span> typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> Node
+</span><span style="color: #008080;">  7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">  8</span>     <span style="color: #0000ff;">char</span> *<span style="color: #000000;">name;
+</span><span style="color: #008080;">  9</span>     <span style="color: #0000ff;">struct</span> Node *<span style="color: #000000;">pNext;
+</span><span style="color: #008080;"> 10</span> }LIST, *<span style="color: #000000;">PLIST;
+</span><span style="color: #008080;"> 11</span> 
+<span style="color: #008080;"> 12</span> <span style="color: #008000;">//</span><span style="color: #008000;">1.创建&ldquo;火车头&rdquo;  创建一个表头</span>
+<span style="color: #008080;"> 13</span> <span style="color: #0000ff;">void</span> CreateListHead(PLIST *p_list)  <span style="color: #008000;">//</span><span style="color: #008000;">传入头结点指针 给他分配内存</span>
+<span style="color: #008080;"> 14</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 15</span>     <span style="color: #008000;">//</span><span style="color: #008000;">一级指针 形参和实参结合时
+</span><span style="color: #008080;"> 16</span>     <span style="color: #008000;">//</span><span style="color: #008000;">PLIST p_list = p_head;  形参和实参结合时候的赋值
+</span><span style="color: #008080;"> 17</span>     <span style="color: #008000;">//</span><span style="color: #008000;">p_list 改变 是不影响到p_head  就好像是A给B发送了一个文件 B对文件进行了修改，是不会影响A手中的文件
+</span><span style="color: #008080;"> 18</span> 
+<span style="color: #008080;"> 19</span>     <span style="color: #008000;">//</span><span style="color: #008000;">要改变一级指针的实参 函数要传入一级指针的地址 保存一级指针的地址 要使用二级指针</span>
+<span style="color: #008080;"> 20</span>     *p_list = (PLIST)<span style="color: #0000ff;">malloc</span>(<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(LIST));
+</span><span style="color: #008080;"> 21</span>     (*p_list)-&gt;pNext =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 22</span> 
+<span style="color: #008080;"> 23</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 24</span> 
+<span style="color: #008080;"> 25</span> <span style="color: #008000;">//</span><span style="color: #008000;">实现一个栈 
+</span><span style="color: #008080;"> 26</span> <span style="color: #008000;">//</span><span style="color: #008000;">2.写入栈函数</span>
+<span style="color: #008080;"> 27</span> <span style="color: #0000ff;">void</span> Push_Stack(PLIST p_list, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">name)
+</span><span style="color: #008080;"> 28</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 29</span>     <span style="color: #008000;">//</span><span style="color: #008000;">头插法</span>
+<span style="color: #008080;"> 30</span>     PLIST node = (PLIST)<span style="color: #0000ff;">malloc</span>(<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(LIST));
+</span><span style="color: #008080;"> 31</span>     <span style="color: #008000;">//</span><span style="color: #008000;">node-&gt;name - name;  可以这么写 但是如果存入得扇区内存，会被释放掉 就会出错</span>
+<span style="color: #008080;"> 32</span>     node-&gt;name = (<span style="color: #0000ff;">char</span> *)<span style="color: #0000ff;">malloc</span>(<span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">char</span>)*strlen(name) + <span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 33</span>     strcpy(node-&gt;<span style="color: #000000;">name, name);
+</span><span style="color: #008080;"> 34</span>     node-&gt;pNext = p_list-&gt;<span style="color: #000000;">pNext;
+</span><span style="color: #008080;"> 35</span>     p_list-&gt;pNext =<span style="color: #000000;"> node;
+</span><span style="color: #008080;"> 36</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 37</span> 
+<span style="color: #008080;"> 38</span> <span style="color: #008000;">//</span><span style="color: #008000;">3.获取栈顶元素</span>
+<span style="color: #008080;"> 39</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> GetStackTop(PLIST p_list)
+</span><span style="color: #008080;"> 40</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 41</span>     <span style="color: #008000;">//</span><span style="color: #008000;">如果不是空 就返回头结点的下一个节点的name</span>
+<span style="color: #008080;"> 42</span>     PLIST p_Temp = p_list-&gt;<span style="color: #000000;">pNext;
+</span><span style="color: #008080;"> 43</span>     <span style="color: #0000ff;">if</span> (p_Temp !=<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;"> 44</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 45</span>         <span style="color: #0000ff;">return</span> p_Temp-&gt;<span style="color: #000000;">name;
+</span><span style="color: #008080;"> 46</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 47</span>     <span style="color: #0000ff;">return</span> NULL;  <span style="color: #008000;">//</span><span style="color: #008000;">说明栈是空</span>
+<span style="color: #008080;"> 48</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 49</span> 
+<span style="color: #008080;"> 50</span> <span style="color: #008000;">//</span><span style="color: #008000;">4.出栈</span>
+<span style="color: #008080;"> 51</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Pop_Stack(PLIST p_list)
+</span><span style="color: #008080;"> 52</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 53</span>     <span style="color: #008000;">//</span><span style="color: #008000;">相当于删除结点  之前是头插法  那么最后一个在最前面</span>
+<span style="color: #008080;"> 54</span>     PLIST p_Temp = p_list-&gt;<span style="color: #000000;">pNext;
+</span><span style="color: #008080;"> 55</span>     <span style="color: #0000ff;">if</span> (p_Temp !=<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;"> 56</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 57</span>         <span style="color: #008000;">//</span><span style="color: #008000;">p_remp保存第一个节点的地址</span>
+<span style="color: #008080;"> 58</span>         p_Temp = p_list-&gt;<span style="color: #000000;">pNext;
+</span><span style="color: #008080;"> 59</span>         <span style="color: #008000;">//</span><span style="color: #008000;">让头结点的pnext连接到第二个节点</span>
+<span style="color: #008080;"> 60</span>         p_list-&gt;pNext = p_Temp-&gt;<span style="color: #000000;">pNext;
+</span><span style="color: #008080;"> 61</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 62</span>     <span style="color: #0000ff;">free</span>(p_Temp);  <span style="color: #008000;">//</span><span style="color: #008000;">释放内存  释放掉第一个节点 是释放p_temp里面所保存的内存 而不是释放指针变量</span>
+<span style="color: #008080;"> 63</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 64</span> 
+<span style="color: #008080;"> 65</span> <span style="color: #008000;">//</span><span style="color: #008000;">5.判断栈是否为空</span>
+<span style="color: #008080;"> 66</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> isEmpty(PLIST p_list)
+</span><span style="color: #008080;"> 67</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 68</span>     <span style="color: #008000;">//</span><span style="color: #008000;">如果栈为空 返回1</span>
+<span style="color: #008080;"> 69</span>     <span style="color: #0000ff;">return</span> p_list-&gt;pNext ==<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 70</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 71</span> 
+<span style="color: #008080;"> 72</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 73</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 74</span>     PLIST p_head = NULL;  <span style="color: #008000;">//</span><span style="color: #008000;">作为链表的标记</span>
+<span style="color: #008080;"> 75</span>     CreateListHead(&amp;<span style="color: #000000;">p_head);
+</span><span style="color: #008080;"> 76</span>     <span style="color: #008000;">/*</span><span style="color: #008000;">if (NULL == p_head)
+</span><span style="color: #008080;"> 77</span> <span style="color: #008000;">    {
+</span><span style="color: #008080;"> 78</span> <span style="color: #008000;">        printf("内存分配失败！\n");
+</span><span style="color: #008080;"> 79</span> <span style="color: #008000;">    }
+</span><span style="color: #008080;"> 80</span> <span style="color: #008000;">    else
+</span><span style="color: #008080;"> 81</span> <span style="color: #008000;">    {
+</span><span style="color: #008080;"> 82</span> <span style="color: #008000;">        printf("内存分配成功！\n");
+</span><span style="color: #008080;"> 83</span> <span style="color: #008000;">    }</span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 84</span> 
+<span style="color: #008080;"> 85</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">力</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 86</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">努</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 87</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">的</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 88</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">人</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 89</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">何</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 90</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">任</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 91</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">于</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 92</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">亚</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 93</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">不</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 94</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">的</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 95</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">出</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 96</span>     Push_Stack(p_head, <span style="color: #800000;">"</span><span style="color: #800000;">付</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 97</span>     <span style="color: #0000ff;">while</span> (!<span style="color: #000000;">isEmpty(p_head))
+</span><span style="color: #008080;"> 98</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 99</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s</span><span style="color: #800000;">"</span><span style="color: #000000;">, GetStackTop(p_head));
+</span><span style="color: #008080;">100</span> <span style="color: #000000;">        Pop_Stack(p_head);
+</span><span style="color: #008080;">101</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">102</span> 
+<span style="color: #008080;">103</span> <span style="color: #000000;">    getchar();
+</span><span style="color: #008080;">104</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">105</span> }</pre>
+</div>
+<p>附：</p>
+<p><img src="./images/C++学习（三十七）（C语言部分）之 链式栈（推箱子实现）0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-family: 宋体; font-size: 18px;">推箱子实现，代码笔记如下所示：</span></p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> <span style="color: #800080;">1</span><span style="color: #000000;">、main.cpp文件
+</span><span style="color: #008080;">  2</span> 
+<span style="color: #008080;">  3</span> <span style="color: #008000;">//</span><span style="color: #008000;">推箱子
+</span><span style="color: #008080;">  4</span> <span style="color: #008000;">//</span><span style="color: #008000;">操作说明 WASD表示上下左右移动 空格键可以退回到上一步</span>
+<span style="color: #008080;">  5</span> <span style="color: #0000ff;">#if</span> 1
+<span style="color: #008080;">  6</span> #include&lt;graphics.h&gt;
+<span style="color: #008080;">  7</span> #include&lt;stdio.h&gt;
+<span style="color: #008080;">  8</span> #include &lt;conio.h&gt;
+<span style="color: #008080;">  9</span> 
+<span style="color: #008080;"> 10</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">Stack.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 11</span> <span style="color: #008000;">//</span><span style="color: #008000;">地图</span>
+<span style="color: #008080;"> 12</span> <span style="color: #0000ff;">int</span> Map[<span style="color: #800080;">9</span>][<span style="color: #800080;">8</span>] =<span style="color: #000000;"> {
+</span><span style="color: #008080;"> 13</span>     <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 14</span>     <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 15</span>     <span style="color: #800080;">1</span>, <span style="color: #800080;">3</span>, <span style="color: #800080;">5</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 16</span>     <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">3</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 17</span>     <span style="color: #800080;">1</span>, <span style="color: #800080;">3</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 18</span>     <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">3</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 19</span>     <span style="color: #800080;">1</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">7</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">3</span>, <span style="color: #800080;">1</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 20</span>     <span style="color: #800080;">1</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">3</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>, <span style="color: #800080;">1</span><span style="color: #000000;">,
+</span><span style="color: #008080;"> 21</span>     <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>, <span style="color: #800080;">1</span>
+<span style="color: #008080;"> 22</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 23</span> 
+<span style="color: #008080;"> 24</span> <span style="color: #008000;">//</span><span style="color: #008000;">实现退回操作</span>
+<span style="color: #008080;"> 25</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Retrogress(PLIST p_list)
+</span><span style="color: #008080;"> 26</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 27</span>     <span style="color: #008000;">//</span><span style="color: #008000;">1.获取栈顶数据</span>
+<span style="color: #008080;"> 28</span>     PLIST p_Temp =<span style="color: #000000;"> GetStackTop(p_list);
+</span><span style="color: #008080;"> 29</span>     <span style="color: #0000ff;">if</span> (NULL ==<span style="color: #000000;"> p_Temp)
+</span><span style="color: #008080;"> 30</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 31</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 32</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 33</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">9</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 34</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 35</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">8</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 36</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 37</span>             Map[i][j] = p_Temp-&gt;<span style="color: #000000;">p[i][j];
+</span><span style="color: #008080;"> 38</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 39</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 40</span>     Pop_Stack(p_list);  <span style="color: #008000;">//</span><span style="color: #008000;">出栈</span>
+<span style="color: #008080;"> 41</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 42</span> 
+<span style="color: #008080;"> 43</span> <span style="color: #008000;">//</span><span style="color: #008000;">对于一个游戏1.初始化  加载图片</span>
+<span style="color: #008080;"> 44</span> <span style="color: #000000;">IMAGE g_box, g_dbox, g_people, g_point, g_wall, g_blank;
+</span><span style="color: #008080;"> 45</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Init_Game()
+</span><span style="color: #008080;"> 46</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 47</span>     loadimage(&amp;g_box, L<span style="color: #800000;">"</span><span style="color: #800000;">./source/box.jpg</span><span style="color: #800000;">"</span>);  <span style="color: #008000;">//</span><span style="color: #008000;">相对路径</span>
+<span style="color: #008080;"> 48</span>     loadimage(&amp;g_dbox, L<span style="color: #800000;">"</span><span style="color: #800000;">./source/dbox.jpg</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 49</span>     loadimage(&amp;g_people, L<span style="color: #800000;">"</span><span style="color: #800000;">./source/people.jpg</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 50</span>     loadimage(&amp;g_point, L<span style="color: #800000;">"</span><span style="color: #800000;">./source/point.jpg</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 51</span>     loadimage(&amp;g_wall, L<span style="color: #800000;">"</span><span style="color: #800000;">./source/wall.jpg</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 52</span>     loadimage(&amp;g_blank, L<span style="color: #800000;">"</span><span style="color: #800000;">./source/blank.jpg</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 53</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 54</span> 
+<span style="color: #008080;"> 55</span> <span style="color: #008000;">//</span><span style="color: #008000;">2.加载图片</span>
+<span style="color: #008080;"> 56</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Paint_Game()
+</span><span style="color: #008080;"> 57</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 58</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">9</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 59</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 60</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">8</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 61</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 62</span>             <span style="color: #0000ff;">switch</span><span style="color: #000000;"> (Map[i][j])
+</span><span style="color: #008080;"> 63</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;"> 64</span>             <span style="color: #0000ff;">case</span> <span style="color: #800080;">0</span>: <span style="color: #008000;">//</span><span style="color: #008000;">0表示空地</span>
+<span style="color: #008080;"> 65</span>                 putimage(j * <span style="color: #800080;">45</span>, i * <span style="color: #800080;">45</span>, &amp;<span style="color: #000000;">g_blank);
+</span><span style="color: #008080;"> 66</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 67</span>             <span style="color: #0000ff;">case</span> <span style="color: #800080;">1</span>: <span style="color: #008000;">//</span><span style="color: #008000;"> 1表示墙壁</span>
+<span style="color: #008080;"> 68</span>                 putimage(j * <span style="color: #800080;">45</span>, i * <span style="color: #800080;">45</span>, &amp;<span style="color: #000000;">g_wall);
+</span><span style="color: #008080;"> 69</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 70</span>             <span style="color: #0000ff;">case</span> <span style="color: #800080;">3</span>: <span style="color: #008000;">//</span><span style="color: #008000;"> 3表示目的地</span>
+<span style="color: #008080;"> 71</span>                 putimage(j * <span style="color: #800080;">45</span>, i * <span style="color: #800080;">45</span>, &amp;<span style="color: #000000;">g_point);
+</span><span style="color: #008080;"> 72</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 73</span>             <span style="color: #0000ff;">case</span> <span style="color: #800080;">4</span>: <span style="color: #008000;">//</span><span style="color: #008000;"> 4表示箱子</span>
+<span style="color: #008080;"> 74</span>                 putimage(j * <span style="color: #800080;">45</span>, i * <span style="color: #800080;">45</span>, &amp;<span style="color: #000000;">g_box);
+</span><span style="color: #008080;"> 75</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 76</span>             <span style="color: #0000ff;">case</span> <span style="color: #800080;">5</span>: <span style="color: #008000;">//</span><span style="color: #008000;"> 5表示人</span>
+<span style="color: #008080;"> 77</span>                 putimage(j * <span style="color: #800080;">45</span>, i * <span style="color: #800080;">45</span>, &amp;<span style="color: #000000;">g_people);
+</span><span style="color: #008080;"> 78</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 79</span>             <span style="color: #0000ff;">case</span> <span style="color: #800080;">7</span>: <span style="color: #008000;">//</span><span style="color: #008000;"> 7表示箱子在目的地   4+3</span>
+<span style="color: #008080;"> 80</span>                 putimage(j * <span style="color: #800080;">45</span>, i * <span style="color: #800080;">45</span>, &amp;<span style="color: #000000;">g_dbox);
+</span><span style="color: #008080;"> 81</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 82</span>             <span style="color: #0000ff;">case</span> <span style="color: #800080;">8</span>: <span style="color: #008000;">//</span><span style="color: #008000;"> 8表示人在目的地   5+3</span>
+<span style="color: #008080;"> 83</span>                 putimage(j * <span style="color: #800080;">45</span>, i * <span style="color: #800080;">45</span>, &amp;<span style="color: #000000;">g_people);
+</span><span style="color: #008080;"> 84</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 85</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 86</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 87</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 88</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 89</span> 
+<span style="color: #008080;"> 90</span> <span style="color: #008000;">//</span><span style="color: #008000;">3.实现人物移动</span>
+<span style="color: #008080;"> 91</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> MovePeople(PLIST p_list)
+</span><span style="color: #008080;"> 92</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 93</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> i, j;
+</span><span style="color: #008080;"> 94</span>     <span style="color: #0000ff;">for</span> (i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">9</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 95</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 96</span>         <span style="color: #0000ff;">for</span> (j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">8</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 97</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 98</span>             <span style="color: #008000;">//</span><span style="color: #008000;">找到人的位置</span>
+<span style="color: #008080;"> 99</span>             <span style="color: #0000ff;">if</span> (Map[i][j] == <span style="color: #800080;">5</span> || Map[i][j] == <span style="color: #800080;">8</span><span style="color: #000000;">)
+</span><span style="color: #008080;">100</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">101</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">if成立说明找到人</span>
+<span style="color: #008080;">102</span>                 <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">103</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">104</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">105</span>         <span style="color: #0000ff;">if</span> (Map[i][j] == <span style="color: #800080;">5</span> || Map[i][j] == <span style="color: #800080;">8</span><span style="color: #000000;">)
+</span><span style="color: #008080;">106</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">107</span>             <span style="color: #008000;">//</span><span style="color: #008000;">if成立说明找到人</span>
+<span style="color: #008080;">108</span>             <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">109</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">110</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">111</span>     <span style="color: #0000ff;">switch</span><span style="color: #000000;"> (getch())
+</span><span style="color: #008080;">112</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">113</span> <span style="color: #008000;">//</span><span style="color: #008000;">表示往左边移动</span>
+<span style="color: #008080;">114</span>     <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span><span style="color: #000000;">:  
+</span><span style="color: #008080;">115</span>         <span style="color: #008000;">//</span><span style="color: #008000;">人的左边是空地 或者 是目的</span>
+<span style="color: #008080;">116</span>         <span style="color: #0000ff;">if</span> (Map[i][j - <span style="color: #800080;">1</span>] == <span style="color: #800080;">0</span> || Map[i][j - <span style="color: #800080;">1</span>] == <span style="color: #800080;">3</span><span style="color: #000000;">)
+</span><span style="color: #008080;">117</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">118</span>             Map[i][j - <span style="color: #800080;">1</span>] += <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">人往左边移动</span>
+<span style="color: #008080;">119</span>             Map[i][j] -= <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">人离开了当前位置</span>
+<span style="color: #008080;">120</span>         }<span style="color: #008000;">//</span><span style="color: #008000;">人的左边是箱子或者是箱子在目的</span>
+<span style="color: #008080;">121</span>         <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (Map[i][j - <span style="color: #800080;">1</span>] == <span style="color: #800080;">4</span> || Map[i][j - <span style="color: #800080;">1</span>] == <span style="color: #800080;">7</span><span style="color: #000000;">)
+</span><span style="color: #008080;">122</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">123</span>             <span style="color: #0000ff;">if</span> (Map[i][j - <span style="color: #800080;">2</span>] == <span style="color: #800080;">0</span> || Map[i][j - <span style="color: #800080;">2</span>] == <span style="color: #800080;">3</span><span style="color: #000000;">)
+</span><span style="color: #008080;">124</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">125</span>                 Map[i][j - <span style="color: #800080;">2</span>] += <span style="color: #800080;">4</span><span style="color: #000000;">;
+</span><span style="color: #008080;">126</span>                 Map[i][j - <span style="color: #800080;">1</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">127</span>                 Map[i][j] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+</span><span style="color: #008080;">128</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">129</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">130</span>         <span style="color: #008000;">//</span><span style="color: #008000;">每次移动都要入栈</span>
+<span style="color: #008080;">131</span> <span style="color: #000000;">        Push_Stack(p_list, Map);
+</span><span style="color: #008080;">132</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">133</span> 
+<span style="color: #008080;">134</span> <span style="color: #008000;">//</span><span style="color: #008000;">表示往右边</span>
+<span style="color: #008080;">135</span>     <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">d</span><span style="color: #800000;">'</span><span style="color: #000000;">: 
+</span><span style="color: #008080;">136</span>         <span style="color: #008000;">//</span><span style="color: #008000;">人的右边是空地 或者 是目的</span>
+<span style="color: #008080;">137</span>         <span style="color: #0000ff;">if</span> (Map[i][j + <span style="color: #800080;">1</span>] == <span style="color: #800080;">0</span> || Map[i][j + <span style="color: #800080;">1</span>] == <span style="color: #800080;">3</span><span style="color: #000000;">)
+</span><span style="color: #008080;">138</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">139</span>             Map[i][j + <span style="color: #800080;">1</span>] += <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">人往左边移动</span>
+<span style="color: #008080;">140</span>             Map[i][j] -= <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">人离开了当前位置</span>
+<span style="color: #008080;">141</span>         }<span style="color: #008000;">//</span><span style="color: #008000;">人的右边是箱子或者是箱子在目的</span>
+<span style="color: #008080;">142</span>         <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (Map[i][j + <span style="color: #800080;">1</span>] == <span style="color: #800080;">4</span> || Map[i][j + <span style="color: #800080;">1</span>] == <span style="color: #800080;">7</span><span style="color: #000000;">)
+</span><span style="color: #008080;">143</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">144</span>             <span style="color: #0000ff;">if</span> (Map[i][j + <span style="color: #800080;">2</span>] == <span style="color: #800080;">0</span> || Map[i][j + <span style="color: #800080;">2</span>] == <span style="color: #800080;">3</span><span style="color: #000000;">)
+</span><span style="color: #008080;">145</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">146</span>                 Map[i][j + <span style="color: #800080;">2</span>] += <span style="color: #800080;">4</span><span style="color: #000000;">;
+</span><span style="color: #008080;">147</span>                 Map[i][j + <span style="color: #800080;">1</span>] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">148</span>                 Map[i][j] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+</span><span style="color: #008080;">149</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">150</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">151</span>         <span style="color: #008000;">//</span><span style="color: #008000;">每次移动都要入栈</span>
+<span style="color: #008080;">152</span> <span style="color: #000000;">        Push_Stack(p_list, Map);
+</span><span style="color: #008080;">153</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">154</span> 
+<span style="color: #008080;">155</span> <span style="color: #008000;">//</span><span style="color: #008000;">表示往上边移动</span>
+<span style="color: #008080;">156</span>     <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">w</span><span style="color: #800000;">'</span><span style="color: #000000;">:  
+</span><span style="color: #008080;">157</span>         <span style="color: #008000;">//</span><span style="color: #008000;">人的上边是空地 或者 是目的</span>
+<span style="color: #008080;">158</span>         <span style="color: #0000ff;">if</span> (Map[i - <span style="color: #800080;">1</span>][j] == <span style="color: #800080;">0</span> || Map[i - <span style="color: #800080;">1</span>][j] == <span style="color: #800080;">3</span><span style="color: #000000;">)
+</span><span style="color: #008080;">159</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">160</span>             Map[i - <span style="color: #800080;">1</span>][j] += <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">人往上边移动</span>
+<span style="color: #008080;">161</span>             Map[i][j] -= <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">人离开了当前位置</span>
+<span style="color: #008080;">162</span>         }<span style="color: #008000;">//</span><span style="color: #008000;">人的上边是箱子或者是箱子在目的</span>
+<span style="color: #008080;">163</span>         <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (Map[i - <span style="color: #800080;">1</span>][j] == <span style="color: #800080;">4</span> || Map[i - <span style="color: #800080;">1</span>][j] == <span style="color: #800080;">7</span><span style="color: #000000;">)
+</span><span style="color: #008080;">164</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">165</span>             <span style="color: #0000ff;">if</span> (Map[i - <span style="color: #800080;">2</span>][j] == <span style="color: #800080;">0</span> || Map[i - <span style="color: #800080;">2</span>][j] == <span style="color: #800080;">3</span><span style="color: #000000;">)
+</span><span style="color: #008080;">166</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">167</span>                 Map[i - <span style="color: #800080;">2</span>][j] += <span style="color: #800080;">4</span><span style="color: #000000;">;
+</span><span style="color: #008080;">168</span>                 Map[i - <span style="color: #800080;">1</span>][j] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">169</span>                 Map[i][j] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+</span><span style="color: #008080;">170</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">171</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">172</span>         <span style="color: #008000;">//</span><span style="color: #008000;">每次移动都要入栈</span>
+<span style="color: #008080;">173</span> <span style="color: #000000;">        Push_Stack(p_list, Map);
+</span><span style="color: #008080;">174</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">175</span> 
+<span style="color: #008080;">176</span> <span style="color: #008000;">//</span><span style="color: #008000;">表示什么往下边移动</span>
+<span style="color: #008080;">177</span>     <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">s</span><span style="color: #800000;">'</span><span style="color: #000000;">:  
+</span><span style="color: #008080;">178</span>         <span style="color: #008000;">//</span><span style="color: #008000;">人的下边是空地 或者 是目的</span>
+<span style="color: #008080;">179</span>         <span style="color: #0000ff;">if</span> (Map[i + <span style="color: #800080;">1</span>][j] == <span style="color: #800080;">0</span> || Map[i + <span style="color: #800080;">1</span>][j] == <span style="color: #800080;">3</span><span style="color: #000000;">)
+</span><span style="color: #008080;">180</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">181</span>             Map[i + <span style="color: #800080;">1</span>][j] += <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">人往左边移动</span>
+<span style="color: #008080;">182</span>             Map[i][j] -= <span style="color: #800080;">5</span>;  <span style="color: #008000;">//</span><span style="color: #008000;">人离开了当前位置</span>
+<span style="color: #008080;">183</span>         }<span style="color: #008000;">//</span><span style="color: #008000;">人的下边是箱子或者是箱子在目的</span>
+<span style="color: #008080;">184</span>         <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> (Map[i + <span style="color: #800080;">1</span>][j] == <span style="color: #800080;">4</span> || Map[i + <span style="color: #800080;">1</span>][j] == <span style="color: #800080;">7</span><span style="color: #000000;">)
+</span><span style="color: #008080;">185</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">186</span>             <span style="color: #0000ff;">if</span> (Map[i + <span style="color: #800080;">2</span>][j] == <span style="color: #800080;">0</span> || Map[i + <span style="color: #800080;">2</span>][j] == <span style="color: #800080;">3</span><span style="color: #000000;">)
+</span><span style="color: #008080;">187</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">188</span>                 Map[i + <span style="color: #800080;">2</span>][j] += <span style="color: #800080;">4</span><span style="color: #000000;">;
+</span><span style="color: #008080;">189</span>                 Map[i + <span style="color: #800080;">1</span>][j] += <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">190</span>                 Map[i][j] -= <span style="color: #800080;">5</span><span style="color: #000000;">;
+</span><span style="color: #008080;">191</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">192</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">193</span>         <span style="color: #008000;">//</span><span style="color: #008000;">每次移动都要入栈</span>
+<span style="color: #008080;">194</span> <span style="color: #000000;">        Push_Stack(p_list, Map);
+</span><span style="color: #008080;">195</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">196</span>     <span style="color: #0000ff;">case</span> VK_SPACE: <span style="color: #008000;">//</span><span style="color: #008000;">空格</span>
+<span style="color: #008080;">197</span>         <span style="color: #0000ff;">if</span> (!<span style="color: #000000;">isEmpty(p_list))
+</span><span style="color: #008080;">198</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">199</span> <span style="color: #000000;">            Retrogress(p_list);
+</span><span style="color: #008080;">200</span> <span style="color: #000000;">            Paint_Game();
+</span><span style="color: #008080;">201</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">202</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">203</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">204</span> 
+<span style="color: #008080;">205</span> <span style="color: #008000;">//</span><span style="color: #008000;">4.判断游戏是否结束</span>
+<span style="color: #008080;">206</span> <span style="color: #0000ff;">int</span><span style="color: #000000;">  isWin()
+</span><span style="color: #008080;">207</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">208</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">9</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">209</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">210</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">8</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">211</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">212</span>             <span style="color: #0000ff;">if</span> (Map[i][j] == <span style="color: #800080;">4</span><span style="color: #000000;">)
+</span><span style="color: #008080;">213</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">214</span>                 <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">215</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">216</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">217</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">218</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">219</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">220</span> 
+<span style="color: #008080;">221</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">222</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">223</span>     initgraph(<span style="color: #800080;">360</span>, <span style="color: #800080;">405</span>);  <span style="color: #008000;">//</span><span style="color: #008000;">初始化图形界面</span>
+<span style="color: #008080;">224</span> <span style="color: #000000;">    Init_Game();
+</span><span style="color: #008080;">225</span>     PLIST p_head =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">226</span>     CreateListHead(&amp;<span style="color: #000000;">p_head);
+</span><span style="color: #008080;">227</span> <span style="color: #000000;">    Paint_Game();
+</span><span style="color: #008080;">228</span>     <span style="color: #0000ff;">while</span> (!<span style="color: #000000;">isWin())
+</span><span style="color: #008080;">229</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">230</span> <span style="color: #000000;">        Paint_Game();
+</span><span style="color: #008080;">231</span> <span style="color: #000000;">        MovePeople(p_head);
+</span><span style="color: #008080;">232</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">233</span> <span style="color: #000000;">    Paint_Game();
+</span><span style="color: #008080;">234</span>     getchar();<span style="color: #008000;">//</span><span style="color: #008000;">防止运行到closegraph() 直接退出 看不到效果</span>
+<span style="color: #008080;">235</span>     closegraph(); <span style="color: #008000;">//</span><span style="color: #008000;">关闭图形界面</span>
+<span style="color: #008080;">236</span> 
+<span style="color: #008080;">237</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">238</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">239</span> 
+<span style="color: #008080;">240</span> 
+<span style="color: #008080;">241</span> *********************分割线************************
+<span style="color: #008080;">242</span> 
+<span style="color: #008080;">243</span> 
+<span style="color: #008080;">244</span> <span style="color: #800080;">2</span><span style="color: #000000;">、Stack.h文件
+</span><span style="color: #008080;">245</span> #include &lt;stdlib.h&gt;
+<span style="color: #008080;">246</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;">247</span> <span style="color: #008000;">/*</span>
+<span style="color: #008080;">248</span> <span style="color: #008000;">以后  头文件是用来声明函数 或者类
+</span><span style="color: #008080;">249</span> <span style="color: #008000;">*/</span>
+<span style="color: #008080;">250</span> typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> Node
+</span><span style="color: #008080;">251</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">252</span>     <span style="color: #008000;">//</span><span style="color: #008000;">char *name;   </span><span style="color: #008000;">//</span><span style="color: #008000;">前面是不是讲过动态分配二维数组
+</span><span style="color: #008080;">253</span>     <span style="color: #008000;">//</span><span style="color: #008000;">通过指针数组来实现</span>
+<span style="color: #008080;">254</span>     <span style="color: #0000ff;">int</span> **p;  <span style="color: #008000;">//</span><span style="color: #008000;">目的：分配二维数组用来保存我的地图信息</span>
+<span style="color: #008080;">255</span>     <span style="color: #0000ff;">struct</span> Node *<span style="color: #000000;"> pNext; 
+</span><span style="color: #008080;">256</span> }LIST, *<span style="color: #000000;">PLIST;
+</span><span style="color: #008080;">257</span> 
+<span style="color: #008080;">258</span> <span style="color: #0000ff;">void</span> CreateListHead(PLIST *<span style="color: #000000;">p_list);
+</span><span style="color: #008080;">259</span> 
+<span style="color: #008080;">260</span> <span style="color: #0000ff;">void</span> Push_Stack(PLIST p_list, <span style="color: #0000ff;">int</span>(*pArr)[<span style="color: #800080;">8</span><span style="color: #000000;">]);
+</span><span style="color: #008080;">261</span> 
+<span style="color: #008080;">262</span> <span style="color: #008000;">//</span><span style="color: #008000;">返回整个结点的内容</span>
+<span style="color: #008080;">263</span> <span style="color: #000000;">PLIST  GetStackTop(PLIST p_list);  
+</span><span style="color: #008080;">264</span> 
+<span style="color: #008080;">265</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Pop_Stack(PLIST p_list);
+</span><span style="color: #008080;">266</span> 
+<span style="color: #008080;">267</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> isEmpty(PLIST p_list);
+</span><span style="color: #008080;">268</span> 
+<span style="color: #008080;">269</span> 
+<span style="color: #008080;">270</span> *********************分割线************************
+<span style="color: #008080;">271</span> 
+<span style="color: #008080;">272</span> 
+<span style="color: #008080;">273</span> <span style="color: #800080;">3</span><span style="color: #000000;">、Stack.cpp文件
+</span><span style="color: #008080;">274</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">Stack.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">275</span> 
+<span style="color: #008080;">276</span> <span style="color: #0000ff;">void</span> Push_Stack(PLIST p_list, <span style="color: #0000ff;">int</span>(*pArr)[<span style="color: #800080;">8</span><span style="color: #000000;">])
+</span><span style="color: #008080;">277</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">278</span>     PLIST node = (PLIST)<span style="color: #0000ff;">malloc</span>(<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(LIST));
+</span><span style="color: #008080;">279</span>     <span style="color: #008000;">//</span><span style="color: #008000;">先给二级指针申请内存   </span>
+<span style="color: #008080;">280</span>     node-&gt;p = (<span style="color: #0000ff;">int</span> **)<span style="color: #0000ff;">malloc</span>(<span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">int</span>)* <span style="color: #800080;">9</span>); <span style="color: #008000;">//</span><span style="color: #008000;"> p就相当于是一个  指针数组  int *p[9]</span>
+<span style="color: #008080;">281</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">9</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">282</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">283</span>         <span style="color: #008000;">//</span><span style="color: #008000;">通过这个就能够分配一个二维数组</span>
+<span style="color: #008080;">284</span>         node-&gt;p[i] = (<span style="color: #0000ff;">int</span>*)<span style="color: #0000ff;">malloc</span>(<span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">int</span>)* <span style="color: #800080;">8</span><span style="color: #000000;">);
+</span><span style="color: #008080;">285</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">286</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">9</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">287</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">288</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">8</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">289</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">290</span>             node-&gt;p[i][j] =<span style="color: #000000;"> pArr[i][j];
+</span><span style="color: #008080;">291</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">292</span>         <span style="color: #008000;">//</span><span style="color: #008000;">代码  提升写代码能  语法有关
+</span><span style="color: #008080;">293</span>         <span style="color: #008000;">//</span><span style="color: #008000;">思路  实现功能 首先你要有思路
+</span><span style="color: #008080;">294</span>         <span style="color: #008000;">//</span><span style="color: #008000;">逻辑   你的方法的逻辑性是否可以
+</span><span style="color: #008080;">295</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> 栈  链表</span>
+<span style="color: #008080;">296</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">297</span>     <span style="color: #008000;">//</span><span style="color: #008000;">连接指针</span>
+<span style="color: #008080;">298</span>     node-&gt;pNext = p_list-&gt;<span style="color: #000000;">pNext;
+</span><span style="color: #008080;">299</span>     p_list-&gt;pNext =<span style="color: #000000;"> node;
+</span><span style="color: #008080;">300</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> int a[5] 
+</span><span style="color: #008080;">301</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> int *a[5]  a二级指针  </span>
+<span style="color: #008080;">302</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">303</span> 
+<span style="color: #008080;">304</span> <span style="color: #000000;">PLIST  GetStackTop(PLIST p_list)
+</span><span style="color: #008080;">305</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">306</span>     <span style="color: #0000ff;">if</span> (p_list-&gt;pNext !=<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;">307</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">308</span>         <span style="color: #0000ff;">return</span> p_list-&gt;<span style="color: #000000;">pNext;
+</span><span style="color: #008080;">309</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">310</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">311</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">312</span> 
+<span style="color: #008080;">313</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> Pop_Stack(PLIST p_list)
+</span><span style="color: #008080;">314</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">315</span>     PLIST p_Temp =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">316</span>     <span style="color: #0000ff;">if</span> (p_list-&gt;pNext !=<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;">317</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">318</span>         <span style="color: #008000;">//</span><span style="color: #008000;">p_temp保存第一节点的地址</span>
+<span style="color: #008080;">319</span>         p_Temp = p_list-&gt;<span style="color: #000000;">pNext;
+</span><span style="color: #008080;">320</span> 
+<span style="color: #008080;">321</span>         <span style="color: #008000;">//</span><span style="color: #008000;">让头节点的pnext连接到第二个结点</span>
+<span style="color: #008080;">322</span>         p_list-&gt;pNext = p_Temp-&gt;<span style="color: #000000;">pNext;
+</span><span style="color: #008080;">323</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">324</span>     <span style="color: #008000;">//</span><span style="color: #008000;">释放掉第一个结点</span>
+<span style="color: #008080;">325</span>     <span style="color: #0000ff;">free</span>(p_Temp);  <span style="color: #008000;">//</span><span style="color: #008000;">会释放p_temp里面所保存的内存 而不是释放指针变量</span>
+<span style="color: #008080;">326</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">327</span> 
+<span style="color: #008080;">328</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> isEmpty(PLIST p_list)
+</span><span style="color: #008080;">329</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">330</span>     <span style="color: #0000ff;">return</span> p_list-&gt;pNext ==<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">331</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">332</span> 
+<span style="color: #008080;">333</span> <span style="color: #0000ff;">void</span> CreateListHead(PLIST *p_list) <span style="color: #008000;">//</span><span style="color: #008000;">传入头节点指针 给它分配内存</span>
+<span style="color: #008080;">334</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">335</span>     *p_list = (PLIST)<span style="color: #0000ff;">malloc</span>(<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(LIST));
+</span><span style="color: #008080;">336</span>     (*p_list)-&gt;pNext =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">337</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-family: 宋体; font-size: 18px;">最后实现效果如下所示;</span></p>
+<p><img src="./images/C++学习（三十七）（C语言部分）之 链式栈（推箱子实现）1.png" alt="" /></p>
+<p>&nbsp;</p>
+<p><span style="font-family: 宋体; font-size: 18px;">2019-04-01&nbsp;&nbsp;21:33:15</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

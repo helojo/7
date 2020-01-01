@@ -1,0 +1,117 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修深入V8引擎-Time模块介绍' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>深入V8引擎-Time模块介绍</center></div><div class='banquan'>原文出处:本文由博客园博主书生小龙提供。<br/>
+原文连接:https://www.cnblogs.com/QH-Jimmy/p/10909586.html</div><br>
+    <p>　　积跬步，行千里，先从最简单的开始写。</p>
+<p>　　这一篇介绍V8中的时间模块，与libuv粗糙的update_loop_time方法不同，V8有一套独立完整的类负责管理时间。</p>
+<p>　　该类位于src/base/platform/time.h，是一个辅助模块，首先来看一下继承树。</p>
+<p><img src="./images/深入V8引擎-Time模块介绍0.png" alt="" /></p>
+<p>　　整个模块的继承关系比较简单，一般常用的就是Time、TimeTicks类，这里挨个进行介绍吧。</p>
+<p>&nbsp;</p>
+<p><strong>TimeConstants</strong></p>
+<p>　　这个类很直接，只是定义一些常量，比如一星期有7天，一天有24小时，一小时有60分钟等等&hellip;&hellip;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">class</span><span style="color: #000000;"> TimeConstants {
+ </span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+  </span><span style="color: #0000ff;">static</span> constexpr int64_t kHoursPerDay = <span style="color: #800080;">24</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">static</span> constexpr int64_t kMillisecondsPerSecond = <span style="color: #800080;">1000</span><span style="color: #000000;">;
+  </span><span style="color: #0000ff;">static</span> constexpr int64_t kMillisecondsPerDay =<span style="color: #000000;">
+      kMillisecondsPerSecond </span>* <span style="color: #800080;">60</span> * <span style="color: #800080;">60</span> *<span style="color: #000000;"> kHoursPerDay;
+  </span><span style="color: #008000;">//</span><span style="color: #008000;"> ...</span>
+};</pre>
+</div>
+<p>&nbsp;</p>
+<p><strong>TimeDelta</strong></p>
+<p>　　这个类提供把各种单位的时间转换为microseconds的方法。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">class</span><span style="color: #000000;"> V8_BASE_EXPORT TimeDelta final {
+ </span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+  constexpr TimeDelta() : delta_(</span><span style="color: #800080;">0</span><span style="color: #000000;">) {}
+
+  </span><span style="color: #008000;">//</span><span style="color: #008000;"> Converts units of time to TimeDeltas.</span>
+  <span style="color: #0000ff;">static</span> constexpr TimeDelta FromDays(<span style="color: #0000ff;">int</span><span style="color: #000000;"> days) {
+    </span><span style="color: #0000ff;">return</span> TimeDelta(days *<span style="color: #000000;"> TimeConstants::kMicrosecondsPerDay);
+  }
+  </span><span style="color: #008000;">//</span><span style="color: #008000;"> ...</span>
+}</pre>
+</div>
+<p>　　这里的常数定义来源于上面的TimeConstants类。</p>
+<p>&nbsp;</p>
+<p><strong>TimeBase</strong></p>
+<p>　　这个类没啥好说的，比较特殊的地方就是这是个模版类，提供对给定类型的时间序列化功能。</p>
+<div class="cnblogs_code">
+<pre>template &lt;<span style="color: #0000ff;">class</span> TimeClass&gt;
+<span style="color: #0000ff;">class</span> TimeBase : <span style="color: #0000ff;">public</span><span style="color: #000000;"> TimeConstants {
+ </span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+  </span><span style="color: #008000;">//</span><span style="color: #008000;"> ...</span>
+<span style="color: #000000;">
+  int64_t ToInternalValue() </span><span style="color: #0000ff;">const</span> { <span style="color: #0000ff;">return</span><span style="color: #000000;"> us_; }
+
+  </span><span style="color: #008000;">//</span><span style="color: #008000;"> ...</span>
+
+  <span style="color: #0000ff;">static</span> TimeClass FromInternalValue(int64_t us) { <span style="color: #0000ff;">return</span><span style="color: #000000;"> TimeClass(us); }
+ </span><span style="color: #0000ff;">protected</span><span style="color: #000000;">:
+  </span><span style="color: #0000ff;">explicit</span><span style="color: #000000;"> constexpr TimeBase(int64_t us) : us_(us) {}
+
+  </span><span style="color: #008000;">//</span><span style="color: #008000;"> Time value in a microsecond timebase.</span>
+<span style="color: #000000;">  int64_t us_;
+};</span></pre>
+</div>
+<p>&nbsp;</p>
+<p><strong>Time</strong></p>
+<p>　　Time类负责管理JavaScript中Date.now生成的时间戳，用的比较多所以这里就不解释了。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;"> -----------------------------------------------------------------------------
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> Time
+</span><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> This class represents an absolute point in time, internally represented as
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> microseconds (s/1,000,000) since 00:00:00 UTC, January 1, 1970.</span>
+
+<span style="color: #0000ff;">class</span> V8_BASE_EXPORT Time final : <span style="color: #0000ff;">public</span> time_internal::TimeBase&lt;Time&gt;<span style="color: #000000;"> {
+  </span><span style="color: #008000;">//</span><span style="color: #008000;"> ...</span>
+};</pre>
+</div>
+<p>　　关于类的介绍，在注释里面都写的很明白了，需要注意的是在不同的操作系统，这些方法的表现天差地别，甚至有些方法仅在指定的操作系统才能生效。</p>
+<p>&nbsp;</p>
+<p><strong>TimeTicks</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;"> -----------------------------------------------------------------------------
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> TimeTicks
+</span><span style="color: #008000;">//</span>
+<span style="color: #008000;">//</span><span style="color: #008000;"> This class represents an abstract time that is most of the time incrementing
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> for use in measuring time durations. It is internally represented in
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> microseconds.  It can not be converted to a human-readable time, but is
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> guaranteed not to decrease (if the user changes the computer clock,
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> Time::Now() may actually decrease or jump).  But note that TimeTicks may
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> "stand still", for example if the computer suspended.</span>
+
+<span style="color: #0000ff;">class</span> V8_BASE_EXPORT TimeTicks final : <span style="color: #0000ff;">public</span> time_internal::TimeBase&lt;TimeTicks&gt;<span style="color: #000000;"> {
+  </span><span style="color: #008000;">//</span><span style="color: #008000;"> ...</span>
+};</pre>
+</div>
+<p>　　注释相当的精细。</p>
+<p>　　TimeTicks这个类则负责另外一种时间戳，在<a href="https://www.cnblogs.com/QH-Jimmy/p/10080857.html" target="_blank">浅析libuv源码-获取精确时间</a>中有进行过介绍。比如在windows中，有两种计数API，分别返回系统"心跳"一次所花时间与"心跳"次数，由于频繁总是固定不变，所以可以根据每次返回的次数来进行计时。</p>
+<p>　　这类事件戳比起上的Time优势在于可以保证数值一直在增加，并且不会受外界因素影响(机器挂了另算)。所以无论是libuv设置轮询开始时间或处理定时器任务，还是V8在对JS代码进行编译计时，都是用的这个。</p>
+<p>　　最后的ThreadTicks就暂时不看了，等到时候用上了再做解释。</p>
+<p>　　这一篇先简单介绍一下，后面再深入讲一讲在不同操作系统下的，两类时间戳的具体实现。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

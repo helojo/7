@@ -1,0 +1,261 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修线段树' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>线段树</center></div><div class='banquan'>原文出处:本文由博客园博主Dfkuaid提供。<br/>
+原文连接:https://www.cnblogs.com/Dfkuaid-210/p/11953598.html</div><br>
+    <p><span style="font-size: 18pt;"><strong><span style="font-family: 'Microsoft YaHei';">引入：</span></strong></span></p>
+<p><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';">我们经常会遇到需要维护一个序列的问题，例如，给定一个整数序列，每次操作会修改某个位置或某个区间的值，或是询问你序列中的某个区间内所有数的和。或许你可能回去暴力<span style="text-decoration: line-through;">出奇迹</span>或者使用前缀和，但是当数据很大时，时间复杂度明显是受不了的。那么，就需要引入一种时间复杂度相对较小的数据结构 &mdash;&mdash;<strong>线段树</strong></span></span></p>
+<p>&nbsp;</p>
+<hr />
+<p><span style="font-size: 18pt;"><span style="font-family: 'Microsoft YaHei';"><strong>目录</strong></span></span></p>
+<p><span style="font-size: 18px;"><span style="font-family: 'Microsoft YaHei';"><strong>　　<span style="font-size: 18px;">基础</span></strong></span></span></p>
+<p><span style="font-size: 15px;"><span style="font-family: 'Microsoft YaHei';"><span style="font-size: 16px;"><strong>　　　　├ <a href="#tip1">关于线段树</a></strong></span></span></span></p>
+<p><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';"><strong>　　　　├</strong> <a href="#tip2"><strong>建树</strong></a></span></span></p>
+<p><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';"><strong>　　　　├</strong> <a href="#tip3"><strong>区间查询</strong></a></span></span></p>
+<p><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';"><strong>　　　　└</strong> <a href="#tip4"><strong>单点修改</strong></a></span></span></p>
+<p><span style="font-size: 18px;"><span style="font-family: 'Microsoft YaHei';"><strong><span style="font-size: 16px;">　　 <span style="font-size: 18px;">进阶</span><br /></span></strong></span></span></p>
+<p><span style="font-size: 15px;"><span style="font-family: 'Microsoft YaHei';"><span style="font-size: 16px;"><strong>　　　　├</strong> <a href="#tip5"><strong>延迟标记</strong></a></span></span></span></p>
+<p><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';"><strong>　　　　│</strong>&nbsp;　　<strong>└ <a href="#tip5">区间修改 单点查询</a></strong></span></span></p>
+<p><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';"><strong>　　　　</strong></span></span><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';"><strong>└ </strong></span><a href="#tip6"><strong><span style="font-family: 'Microsoft YaHei';">区间修改 区间查询</span></strong></a></span></p>
+<p><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';">　　&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 　　<strong>├</strong> <a href="#xai"><strong>标记下传</strong></a><br /></span></span></p>
+<p><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';">　　&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 　　<strong>└</strong> <a href="#yj"><strong>标记永久化</strong></a></span></span></p>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';"><strong>注：本文用到了位运算优化常数，不会的小伙伴可看这篇博客【<a href="https://www.cnblogs.com/shawnChi/p/5952045.html" target="_blank">传送门</a>】</strong></span></span></p>
+<hr />
+<p><span style="font-size: 18pt;"><strong>Ⅰ 基础篇</strong></span></p>
+<p><a name="tip1"></a><span style="font-size: 14pt;"><strong>一、</strong></span><span style="font-size: 14pt;"><strong>关于线段树</strong></span></p>
+<p><span style="font-size: 15px;">　　<span style="font-family: 'Microsoft YaHei'; font-size: 16px;">线段树是一课<strong>二叉树</strong>树上的每一个结点对应序列的<strong>一段区间</strong>，如下图：</span></span></p>
+<p><span style="font-size: 15px;"><span style="font-family: 'Microsoft YaHei';">&nbsp; &nbsp; &nbsp; &nbsp;<img src="./images/线段树0.png" alt="" width="324" height="147" /></span></span></p>
+<p><span style="font-size: 15px;"><span style="font-family: 'Microsoft YaHei';">　　<span style="font-size: 16px;">不难发现，根节点对应的区间时[0,n-1]，而每个结点对应一个区间[l,r]，且当<strong>l=r</strong>时，该结点为<strong>叶结点</strong>，无左右儿子，否则令&nbsp;<span class="cnblogs_code">mid = (l + r) / <span style="color: #800080;">2</span></span>&nbsp;,则左儿子对应的区间为<strong>[l,mid]</strong>，右儿子为<strong>[mid+1,r]。</strong></span></span></span><span style="font-size: 16px;"><span style="font-family: 'Microsoft YaHei';">同时，也不难发现，最后一行有n个结点，倒数第二行有n/2个结点，倒数第三行有n/4个结点，以此便可以推出一个线段树有n+n/2+n/4+...+1=<strong>2*n+1</strong>个结点，但是要注意，<strong>线段树数组务必要开4倍。</strong></span><span style="font-family: 'Microsoft YaHei';">设线段树的深度为h，那么h为<strong>O(logn)</strong>级别，当我们需要维护的序列长度为<strong>2的整数次幂</strong>时，这个线段数为<strong>满二叉树</strong>，否则最后一层可能不满</span></span></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 14pt;"><span style="font-family: 'Microsoft YaHei';"><a name="tip2"></a><strong>二、建树</strong></span></span></p>
+<p>　　注：接下来的一系列操作都以求区间和为例</p>
+<p>　　<span style="font-size: 16px;">设序列a：5,3,7,9,6,4,1,2，我们将其用线段树构建出来，即</span></p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;<img src="./images/线段树0.png" alt="" width="322" height="146" /></p>
+<p>　　<span style="font-size: 16px;">对应的区间和如图</span></p>
+<p>　　<img src="./images/线段树2.png" alt="" width="354" height="154" /></p>
+<p>　　<span style="font-size: 16px;">从图中可以看出除叶结点区间和为它<strong>本身</strong>外，其他节点的区间和均为其<strong>左右儿子区间和之和</strong>。以此，可以通过递归建树，并在递归后对其区间和进行维护</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">void</span> build(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r){   <span style="color: #008000;">//</span><span style="color: #008000;">k为结点编号，l为区间左端点，r为区间右端点 </span>
+<span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">if</span> (l == r){  <span style="color: #008000;">//</span><span style="color: #008000;">如果该点为叶结点 </span>
+<span style="color: #008080;"> 3</span>         sum[k] = a[l];  <span style="color: #008000;">//</span><span style="color: #008000;">区间和即为本身 </span>
+<span style="color: #008080;"> 4</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 6</span>     <span style="color: #0000ff;">int</span> mid  = l + r &gt;&gt; <span style="color: #800080;">1</span>; <span style="color: #008000;">//</span><span style="color: #008000;">取中间值，位运算优化常数 </span>
+<span style="color: #008080;"> 7</span>     build(k &lt;&lt; <span style="color: #800080;">1</span>,l,mid); <span style="color: #008000;">//</span><span style="color: #008000;">构建左子树 </span>
+<span style="color: #008080;"> 8</span>     build(k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>,mid + <span style="color: #800080;">1</span>,r); <span style="color: #008000;">//</span><span style="color: #008000;">构建右子树 </span>
+<span style="color: #008080;"> 9</span>     sum[k] = sum[k &lt;&lt; <span style="color: #800080;">1</span>] + sum[k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>]; <span style="color: #008000;">//</span><span style="color: #008000;">维护该区间区间和 </span>
+<span style="color: #008080;">10</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 14pt;"><strong><a name="tip3"></a>三、区间查询</strong></span></p>
+<p><span style="font-size: 16px;">　　如果我们要查询区间和[0,6]，那么我们需访问3个区间</span></p>
+<p><span style="font-size: 16px;">　　<img src="./images/线段树3.png" alt="cha" width="371" height="158" /></span></p>
+<p>&nbsp;　　<span style="font-size: 16px;">那么在查询过程中，会有以下三种情况&nbsp;&nbsp;</span></p>
+<p><span style="font-size: 16px;">　　　　├&nbsp;当前区间与需查询区间<strong>无交集</strong>，返回<strong>&nbsp;0</strong></span></p>
+<p><span style="font-size: 16px;">　　　　├<strong>&nbsp;</strong>当前区间被需查询区间<strong>完全包含</strong>，返回<strong>该结点对应区间和</strong></span></p>
+<p><span style="font-size: 16px;"><strong>　　　　└&nbsp;</strong>当前区间与需查询区间<strong>有交集，但不被完全包含</strong>，递归其左右子树进行查询<br /></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">int</span> query(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> x,<span style="color: #0000ff;">int</span> y,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r){ <span style="color: #008000;">//</span><span style="color: #008000;">k为结点编号，x为当前区间左端点，y为当前区间右端点，
+</span><span style="color: #008080;">2</span>                                           <span style="color: #008000;">//</span><span style="color: #008000;">l为需查询区间左端点，r为需查询区间右端点 </span>
+<span style="color: #008080;">3</span>     <span style="color: #0000ff;">if</span> (x &gt; r || y &lt; l) <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span>; <span style="color: #008000;">//</span><span style="color: #008000;">如果无交集，返回0 </span>
+<span style="color: #008080;">4</span>     <span style="color: #0000ff;">if</span> (x &gt;= l &amp;&amp; y &lt;= r) <span style="color: #0000ff;">return</span> sum[k]; <span style="color: #008000;">//</span><span style="color: #008000;">如果完全包含，返回该结点区间和 </span>
+<span style="color: #008080;">5</span>     <span style="color: #0000ff;">int</span> res = <span style="color: #800080;">0</span>,mid = x + y &gt;&gt; <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">6</span>     res = query(k &lt;&lt; <span style="color: #800080;">1</span>,x,mid,l,r); <span style="color: #008000;">//</span><span style="color: #008000;">递归左子树 </span>
+<span style="color: #008080;">7</span>     res += query(k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>,mid + <span style="color: #800080;">1</span>,y,l,r); <span style="color: #008000;">//</span><span style="color: #008000;">递归右子树 </span>
+<span style="color: #008080;">8</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> res;
+</span><span style="color: #008080;">9</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p><strong><span style="font-size: 14pt;">&nbsp;<a name="tip4"></a>四、</span><span style="font-size: 14pt;">单点修改</span></strong></p>
+<p><strong><span style="font-size: 16px;">　　</span></strong><span style="font-size: 16px;">假设要将<strong>a</strong></span><span style="font-size: 16px;"><strong><sub>1</sub>加2</strong>，那么我们要重新计算<strong>4个结点</strong>的值</span></p>
+<p><span style="font-size: 16px;">　　<img src="./images/线段树2.png" alt="改前" width="341" height="148" />&nbsp;</span></p>
+<p><span style="font-size: 14px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; <strong>||</strong></span></p>
+<p><span style="font-size: 14px;">　　　　　　　　　　　&nbsp; &nbsp; &nbsp; &nbsp; <strong>&nbsp; \/&nbsp;&nbsp;</strong></span></p>
+<p><span style="font-size: 14px;">　　&nbsp;&nbsp;<img src="./images/线段树5.png" alt="改后" width="326" height="145" /></span></p>
+<p><span style="font-size: 14px;">　　<span style="font-size: 16px;">那么，在修改时可以用<strong>递归</strong>的形式修改</span></span></p>
+<p><span style="font-size: 16px;">　　在递归中，可能会有以下几种情况</span></p>
+<p><span style="font-size: 16px;">　　　　<strong>├</strong> 当前区间<strong>不包括</strong>需修改区间，直接返回</span></p>
+<p><span style="font-size: 16px;">　　　　<strong>├</strong> <strong>找到</strong>需修改的叶结点，修改，返回</span></p>
+<p><span style="font-size: 16px;">　　　　<strong>└</strong> <strong>有包含，但不是叶结点</strong>，递归修改左右子树</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">void</span> change(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r,<span style="color: #0000ff;">int</span> p,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+</span><span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">if</span> (l &gt; p || r &lt; p) <span style="color: #0000ff;">return</span>; <span style="color: #008000;">//</span><span style="color: #008000;">若该区间不包含需修改点，直接返回 </span>
+<span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">if</span> (l == r &amp;&amp; l == p){ <span style="color: #008000;">//</span><span style="color: #008000;">若当前即为需修改结点 </span>
+<span style="color: #008080;"> 4</span>         sum[l] += v; <span style="color: #008000;">//</span><span style="color: #008000;">修改 </span>
+<span style="color: #008080;"> 5</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span> mid = l + r &gt;&gt; <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 8</span>     change(k &lt;&lt; <span style="color: #800080;">1</span>,l,mid,p,v);<span style="color: #008000;">//</span><span style="color: #008000;">递归修改左子树 </span>
+<span style="color: #008080;"> 9</span>     change(k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>,mid + <span style="color: #800080;">1</span>,r,p,v);<span style="color: #008000;">//</span><span style="color: #008000;">递归修改右子树 </span>
+<span style="color: #008080;">10</span>     sum[k] = sum[k &lt;&lt; <span style="color: #800080;">1</span>] + sum[k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>];<span style="color: #008000;">//</span><span style="color: #008000;">维护区间和 </span>
+<span style="color: #008080;">11</span> } </pre>
+</div>
+<p>&nbsp;</p>
+<hr />
+<p>&nbsp;</p>
+<p><strong><span style="font-size: 18pt;">&nbsp;Ⅱ 进阶篇</span></strong></p>
+<p><span style="font-size: 14pt;"><strong><a name="tip5"></a><strong>一、</strong>延迟标记</strong></span></p>
+<p><span style="font-size: 16px;">　　有时我们需要解决的不只是单点修改、区间询问，而是区间修改、区间询问，那么单纯使用以上的方法已经无法解决问题了，因为我们没有办法高效完成区间修改</span></p>
+<p>&nbsp;　　<span style="font-size: 16px;">以区间内所有数同时加上一个值，以及单点询问为例进行引入</span></p>
+<p><strong><span style="font-size: 18px;">　　区间修改，单点查询</span></strong></p>
+<p><span style="font-size: 16px;">　　考虑在每个结点上维护一个值addsum，表示这个结点所对应的区间内的所有数都加上了addsum。注意到根节点到叶结点[i,i]的路径会经过所有包含点[i,i]的区间对应结点，并且路径上所有结点都包括[i,i]这个点，所以路径经过的所有结点的addsum的值加起来便是当前结点的值</span></p>
+<p><span style="font-size: 16px;">　　<span style="font-size: 16px;"><strong>1）区间修改</strong></span></span></p>
+<p><span style="font-size: 16px;"><span style="font-size: 16px;">　　我们还是采用递归的方式，对所求区间进行修改，我们在递归时，会遇上以下几种情况：</span></span></p>
+<p><span style="font-size: 16px;"><span style="font-size: 16px;">　　　　<strong>├&nbsp;</strong>当前区间<strong>不包括</strong>所修改区间，<strong>直接返回</strong></span></span></p>
+<p><span style="font-size: 16px;"><span style="font-size: 16px;">　　　　<strong>├ </strong>需修改区间<strong>完全包含</strong>当前区间，给当前区间的addsum<strong>加上</strong>需加的值<br /></span></span></p>
+<p><span style="font-size: 16px;"><span style="font-size: 16px;">　　　　<strong>└&nbsp;</strong>否则对该结点的两个子树进行递归</span></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">void</span> modify(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r,<span style="color: #0000ff;">int</span> x,<span style="color: #0000ff;">int</span> y,<span style="color: #0000ff;">int</span> v){<span style="color: #008000;">//</span><span style="color: #008000;">给区间[x,y]加上v </span>
+<span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">if</span> (l &gt; y || r &lt; x) <span style="color: #0000ff;">return</span>; <span style="color: #008000;">//</span><span style="color: #008000;">无交集，直接返回</span>
+<span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">if</span> (l &gt;= x &amp;&amp; r &lt;= y){<span style="color: #008000;">//</span><span style="color: #008000;">完全包含 </span>
+<span style="color: #008080;"> 4</span>         addsum[k] +=<span style="color: #000000;"> v;
+</span><span style="color: #008080;"> 5</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    } 
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span> mid = l + r &gt;&gt;<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 8</span>     modift(k &lt;&lt; <span style="color: #800080;">1</span>,l,mid,x,y,v);<span style="color: #008000;">//</span><span style="color: #008000;">递归左子树 </span>
+<span style="color: #008080;"> 9</span>     modift(k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>,mid + <span style="color: #800080;">1</span>,r,x,y,v);<span style="color: #008000;">//</span><span style="color: #008000;">递归右子树 </span>
+<span style="color: #008080;">10</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-size: 16px;">　　<strong>2）单点查询</strong></span></p>
+<p><span style="font-size: 16px;"><strong>　　</strong>在查询时，要从根结点查询至目标结点，会有以下几种情况</span></p>
+<p><span style="font-size: 16px;">　　　　├ 当前为<strong>叶子结点</strong>（需查询结点），返回当前结点的addsum值</span></p>
+<p><span style="font-size: 16px;">　　　　├ 目标结点编号<strong>小于等于</strong>当前结点对应区间的中点编号，说明目标结点在<strong>左子树</strong>，返回递归左子树得到的值加上该点的</span></p>
+<p><span style="font-size: 16px;">　　　　</span><span style="font-size: 16px;"><strong>│</strong>&nbsp; addsum</span></p>
+<p><span style="font-size: 16px;">　　　　└ 否则说明在<strong>右子树</strong>，返回递归右子树得到的值加上该点的addsum</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">int</span> query(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r,<span style="color: #0000ff;">int</span><span style="color: #000000;"> p){
+</span><span style="color: #008080;">2</span>     <span style="color: #0000ff;">if</span> (l == r) <span style="color: #0000ff;">return</span><span style="color: #000000;"> addsum[k];
+</span><span style="color: #008080;">3</span>     <span style="color: #0000ff;">int</span> mid = l + r &gt;&gt; <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">4</span>     <span style="color: #0000ff;">if</span> (p &lt;=<span style="color: #000000;"> mid)
+</span><span style="color: #008080;">5</span>       <span style="color: #0000ff;">return</span> query(k &lt;&lt; <span style="color: #800080;">1</span>,l,mid,p) +<span style="color: #000000;"> addsum[k];
+</span><span style="color: #008080;">6</span>     <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">7</span>       <span style="color: #0000ff;">return</span> query(k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>,mid + <span style="color: #800080;">1</span>,r,p) +<span style="color: #000000;"> addsum[k];
+</span><span style="color: #008080;">8</span> } </pre>
+</div>
+<p><span style="font-size: 16px;">　　再回到区间修改区间查询这一问题上，此时打标记的方法也不可用了，若是遍历所有会产生影响的结点并将其加起来，复杂度无法接受</span></p>
+<p><span style="font-size: 16px;">　　那么常用的方法有两种：一是<strong>标记下传</strong>，二是<strong>标记永久化。</strong>这俩兄弟有个非常nb的名字&mdash;&mdash;<strong>Lazy-Tag</strong>（懒标记）</span></p>
+<p>&nbsp;</p>
+<p><strong><span style="font-size: 14pt;"><a name="tip6"></a>二、区间修改 区间查询</span></strong></p>
+<p><span style="font-size: 18px;"><strong>　　<a name="xai"></a>1）标记下传</strong></span></p>
+<p><span style="font-size: 16px;">　　执行修改操作时，我们找到对应的结点，修改add(addsum)，并且得到更新的sum值，而这个结点所有的祖先都能通过&nbsp;<strong>sum[k]=sum[k*2]+sum[k*2+1]&nbsp;</strong>得到当前修改后正确的区间和，而这个结点的<strong>子节点</strong>无法立即更新，因为这样的子节点<strong>太多</strong>，所以<strong>时间复杂度他又炸了。。。</strong></span></p>
+<p><span style="font-size: 16px;">　　解决的方案是（<span style="text-decoration: line-through;">敲黑板</span>）：当我们用到这些子结点的信息时再进行更新，其实就是在某个结点<strong>递归</strong>下去，将当前节点的add<strong>下传到两个子结点</strong>，更新两个子结点的<strong>sum和add</strong>，并将当前结点的add<strong>清零。</strong>这样操作以后，当我们访问一个节点时，根节点到他的路径上的add值都<strong>已经下传更新到它的sum上了</strong>，所以<strong>它的sum便是它对应的区间和</strong>。</span></p>
+<p><span style="font-size: 16px;">　　　　<strong>1 》</strong> <strong>打标记<span style="font-size: 12px;">（这里这是单纯的打标记）</span></strong></span></p>
+<p><span style="font-size: 16px;">　　我们在给一个数打标记时，给他打上了标记，就意味着它<span style="text-decoration: line-through; font-size: 12px;">疫检合格了（不是</span><span style="font-size: 12px;"><span style="font-size: 16px;">下面的<strong>所有子节点都加上了这个数，</strong>那么它的区间和便要进行维护（l为区间左端点，r为区间右端点，v为所加的数），他的区间和变成了 sum[k] += (r-1+1) *v&nbsp;</span></span></span></p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">void</span> Add(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+</span><span style="color: #008080;">2</span>     add[k] +=<span style="color: #000000;"> v;
+</span><span style="color: #008080;">3</span>     sum[k] += (r - l + <span style="color: #800080;">1</span>) *<span style="color: #000000;"> v;
+</span><span style="color: #008080;">4</span> }</pre>
+</div>
+<p><span style="font-size: 16px;">　　　　<strong>2 》&nbsp;</strong><strong>标记下传</strong></span></p>
+<p><span style="font-size: 16px;">　　我们这里<span style="text-decoration: line-through; font-size: 13px;">又双叒叕</span>用<strong>递归</strong>实现，如果需下传的这个结点的add为<strong>0</strong>，跳出；否则<strong>下传至左右子树</strong>（其实就是调用一下刚刚的Add）</span></p>
+<p><span style="font-size: 13px;">注意：<strong>记得将该点add清零！！！</strong></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">void</span> pushdown(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r,<span style="color: #0000ff;">int</span><span style="color: #000000;"> mid){
+</span><span style="color: #008080;">2</span>     <span style="color: #0000ff;">if</span> (add[k] == <span style="color: #800080;">0</span>) <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;">3</span>     Add(k &lt;&lt; <span style="color: #800080;">1</span><span style="color: #000000;">,l,mid,add[k]);
+</span><span style="color: #008080;">4</span>     Add(k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>,mid + <span style="color: #800080;">1</span><span style="color: #000000;">,r,add[k]);
+</span><span style="color: #008080;">5</span>     add[k] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">6</span> }</pre>
+</div>
+<p><span style="font-size: 16px;">　　　　<strong>3 》 区间修改</strong></span></p>
+<p><span style="font-size: 16px;"><strong>　　</strong>我们这里<span style="text-decoration: line-through;"><span style="font-size: 12px;">又双叒叕</span></span>用<strong>递归</strong>实现；</span></p>
+<p><span style="font-size: 16px;">　　他会有以下几种情况：</span></p>
+<p><span style="font-size: 16px;">　　　　├ 需修改区间<strong>完全包含</strong>当前区间，给当前区间打标记，就可以返回了</span></p>
+<p><span style="font-size: 16px;">　　　　└ 在<strong>不完全包含</strong>的情况下，先<strong>下传</strong>一下标记，之后又有两种情况，最后<strong>维护一下该节点区间和</strong><br /></span></p>
+<p><span style="font-size: 16px;">　　　　　　├ <strong>需修改区间的左边界在当前区间中点左边</strong>，遍历一次左子树</span></p>
+<p><span style="font-size: 16px;">　　　　　　└&nbsp;<strong>需修改区间的右边界在当前区间中点右边</strong>，遍历一次右子树</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">void</span> modify(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r,<span style="color: #0000ff;">int</span> x,int y,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+</span><span style="color: #008080;">2</span>     <span style="color: #0000ff;">if</span> (l &gt;= x &amp;&amp; r &lt;= y) <span style="color: #0000ff;">return</span><span style="color: #000000;"> Add(k,l,r,v);
+</span><span style="color: #008080;">3</span>     <span style="color: #0000ff;">int</span> mid = l + r &gt;&gt; <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">4</span> <span style="color: #000000;">    pushdown(k,l,r,mid);
+</span><span style="color: #008080;">5</span>     <span style="color: #0000ff;">if</span> (x &lt;= mid) modify(k &lt;&lt; <span style="color: #800080;">1</span><span style="color: #000000;">,l,mid,x,y,v);
+</span><span style="color: #008080;">6</span>     <span style="color: #0000ff;">if</span> (mid &lt; y) modify(k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>,mid + <span style="color: #800080;">1</span><span style="color: #000000;">,r,x,y,v);
+</span><span style="color: #008080;">7</span>     sum[k] = sum[k &lt;&lt; <span style="color: #800080;">1</span>] + sum[k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span><span style="color: #000000;">];
+</span><span style="color: #008080;">8</span> }</pre>
+</div>
+<p><span style="font-size: 16px;">　　　　<strong>4 》 区间查询</strong></span></p>
+<p><span style="font-size: 16px;">　　</span><span style="font-size: 16px;">我们这里<span style="text-decoration: line-through;"><span style="font-size: 12px;">又双叒叕</span></span>用<strong>递归</strong>实现；</span></p>
+<p>　　&nbsp;<span style="font-size: 16px;">他会有以下几种情况：</span></p>
+<p><span style="font-size: 16px;">　　　　├ 需查询区间<strong>完全包含</strong>当前区间，就可以返回当前区间和</span></p>
+<p><span style="font-size: 16px;">　　　　└ 在<strong>不完全包含</strong>的情况下，先<strong>下传</strong>一下标记，之后又有两种情况，定义res储存结果</span></p>
+<p><span style="font-size: 16px;">　　　　　　├ 如<strong>需查询区间的左边界在当前区间中点左边</strong>，遍历一次左子树，res加一次</span></p>
+<p><span style="font-size: 16px;">　　　　　　└ 如<strong>需查询区间的右边界在当前区间中点右边</strong>，遍历一次右子树，res加一次</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">int</span> query(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r,<span style="color: #0000ff;">int</span> x,<span style="color: #0000ff;">int</span><span style="color: #000000;"> y){
+</span><span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">if</span> (l &gt;= x &amp;&amp; r &lt;=<span style="color: #000000;"> y)
+</span><span style="color: #008080;"> 3</span>       <span style="color: #0000ff;">return</span><span style="color: #000000;"> sum[k];
+</span><span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">int</span> mid = l + r &gt;&gt; <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">int</span> res = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    pushdown(k,l,r,mid);
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">if</span> (x &lt;=<span style="color: #000000;"> mid)
+</span><span style="color: #008080;"> 8</span>       res += query(k &lt;&lt; <span style="color: #800080;">1</span><span style="color: #000000;">,l,mid,x,y);
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">if</span> (mid &lt;<span style="color: #000000;"> y)
+</span><span style="color: #008080;">10</span>       res += query(k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>,mid + <span style="color: #800080;">1</span><span style="color: #000000;">,r,x,y);
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> res;
+</span><span style="color: #008080;">12</span> }</pre>
+</div>
+<p>　　</p>
+<p><strong><span style="font-size: 18px;">　　<a name="yj"></a>2）标记永久化</span></strong></p>
+<p><span style="font-size: 16px;">　　另一种方法是不下传add标记，改为在询问过程中计算每个遇到的节点对当前询问的影响。为了保证询问的时间复杂度，子节点的影响须在修改操作时就计算好。因此实际上，sum这个值表示这个区间内所有的数共同加上的值，sum表示这个区间内除了add之外其他值的和。</span></p>
+<p><span style="font-size: 16px;">　　当然，区间的add值可能有一部分在祖先结点上，这在递归时累加即可，与区间修改单点查询相似</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">void</span> modify(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r,<span style="color: #0000ff;">int</span> x,<span style="color: #0000ff;">int</span> y,<span style="color: #0000ff;">int</span> v){ <span style="color: #008000;">//</span><span style="color: #008000;">区间修改 </span>
+<span style="color: #008080;"> 2</span>     <span style="color: #0000ff;">if</span> (l &gt;= x &amp;&amp; r &lt;=<span style="color: #000000;"> y){
+</span><span style="color: #008080;"> 3</span>         add[k] +=<span style="color: #000000;"> v;
+</span><span style="color: #008080;"> 4</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 6</span>     sum[k] += (min(r,y) - max(l,x) + <span style="color: #800080;">1</span>) *<span style="color: #000000;"> v;
+</span><span style="color: #008080;"> 7</span>     <span style="color: #0000ff;">int</span> mid = l + r &gt;&gt; <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">if</span> (x &lt;= mid) modify(k &lt;&lt; <span style="color: #800080;">1</span><span style="color: #000000;">,l,mid,x,y,v);
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">if</span> (mid &lt; y) modify(k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>,mid + <span style="color: #800080;">1</span><span style="color: #000000;">,r,x,y,v);
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">11</span> <span style="color: #0000ff;">int</span> query(<span style="color: #0000ff;">int</span> k,<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span> r,<span style="color: #0000ff;">int</span> x,<span style="color: #0000ff;">int</span> y){ <span style="color: #008000;">//</span><span style="color: #008000;">查询 </span>
+<span style="color: #008080;">12</span>     <span style="color: #0000ff;">if</span> (l &gt;= x &amp;&amp; r &lt;=<span style="color: #000000;"> y)
+</span><span style="color: #008080;">13</span>       <span style="color: #0000ff;">return</span> sum[k] + (r - l + <span style="color: #800080;">1</span>) *<span style="color: #000000;"> add[k];
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">int</span> mid = l + r &gt;&gt; <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">int</span> res = (min(r,y) - max(l,x) + <span style="color: #800080;">1</span>) *<span style="color: #000000;"> add[k];
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">if</span> (x &lt;=<span style="color: #000000;"> mid)
+</span><span style="color: #008080;">17</span>       res += query(k &lt;&lt; <span style="color: #800080;">1</span><span style="color: #000000;">,l,mid,x,y);
+</span><span style="color: #008080;">18</span>     <span style="color: #0000ff;">if</span> (mid &lt;<span style="color: #000000;"> y) 
+</span><span style="color: #008080;">19</span>       res += query(k &lt;&lt; <span style="color: #800080;">1</span> | <span style="color: #800080;">1</span>,mid + <span style="color: #800080;">1</span><span style="color: #000000;">,r,x,y);
+</span><span style="color: #008080;">20</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> res;
+</span><span style="color: #008080;">21</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<p><strong><span style="font-size: 16px;">验证题目：【<a href="https://www.luogu.com.cn/problem/P3372" target="_blank">戳这里</a>】</span></strong></p>
+<hr />
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size: 15px;">如果您有什么见解或疑问，欢迎在<strong>评论区</strong>提出(￣▽￣)／</span></p>
+<hr />
+<p><span style="font-size: 15px;">第一次发布时间：2019.11.28　　完成度：45%</span></p>
+<p><span style="font-size: 15px;">第二次发布时间：2019.12.5　　&nbsp; 完成度：80%</span></p>
+<p><span style="font-size: 15px;">第三次发布时间：2019.12.8　　&nbsp; 初版已完成</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

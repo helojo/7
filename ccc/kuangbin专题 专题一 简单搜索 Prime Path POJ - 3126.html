@@ -1,0 +1,158 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修kuangbin专题 专题一 简单搜索 Prime Path POJ - 3126' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>kuangbin专题 专题一 简单搜索 Prime Path POJ - 3126</center></div><div class='banquan'>原文出处:本文由博客园博主SSummerZzz提供。<br/>
+原文连接:https://www.cnblogs.com/SSummerZzz/p/11164081.html</div><br>
+    <h3><br />题目链接：<a href="https://vjudge.net/problem/POJ-3126" target="_blank">https://vjudge.net/problem/POJ-3126</a></h3>
+<p><span style="font-size: 14px;">题意：给你两个四位的素数N,M，每次改变N四位数中的其中一位，如果能经过有限次数的替换变成四位数M，那么求出最少替换次数，否则输出&ldquo;Impossible&rdquo;.（N,M必须一直是素数）</span></p>
+<p><span style="font-size: 14px; color: #339966;"><strong>思路：bfs。四位数，每一位可以替换为0~9，那么我们可以每次改变N中的一位数，然后放入队列中，当然，在替换数字时难免会出现重复的四位数，这样会造成TLE，那么我们可以创建一个bool数组标记出现过的，我们也需要素数筛999 ~ 10000之间的素数（你想删哪里到哪就到哪里，不要纠结），因为是bfs，所以第一次出现的新的四位素数一定是替换次数最少的，那么题目就简单了。</strong></span></p>
+<hr />
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 14px;"><span style="color: #008080;">  1</span> #include &lt;iostream&gt;
+<span style="color: #008080;">  2</span> #include &lt;cstring&gt;
+<span style="color: #008080;">  3</span> #include &lt;cmath&gt;
+<span style="color: #008080;">  4</span> #include &lt;queue&gt;
+<span style="color: #008080;">  5</span> #include &lt;algorithm&gt;
+<span style="color: #008080;">  6</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;">  7</span> 
+<span style="color: #008080;">  8</span> <span style="color: #0000ff;">#define</span> inf (1LL &lt;&lt; 31) - 1
+<span style="color: #008080;">  9</span> <span style="color: #0000ff;">#define</span> rep(i,j,k) for(int i = (j); i &lt;= (k); i++)
+<span style="color: #008080;"> 10</span> <span style="color: #0000ff;">#define</span> rep__(i,j,k) for(int i = (j); i &lt; (k); i++)
+<span style="color: #008080;"> 11</span> <span style="color: #0000ff;">#define</span> per(i,j,k) for(int i = (j); i &gt;= (k); i--)
+<span style="color: #008080;"> 12</span> <span style="color: #0000ff;">#define</span> per__(i,j,k) for(int i = (j); i &gt; (k); i--)
+<span style="color: #008080;"> 13</span> 
+<span style="color: #008080;"> 14</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> N = (<span style="color: #0000ff;">int</span>)1e4 + <span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 15</span> <span style="color: #0000ff;">bool</span> vis[N]; <span style="color: #008000;">//</span><span style="color: #008000;">素数表 0为素数</span>
+<span style="color: #008080;"> 16</span> <span style="color: #0000ff;">bool</span> app[N]; <span style="color: #008000;">//</span><span style="color: #008000;">标记是否出现过</span>
+<span style="color: #008080;"> 17</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> ans;
+</span><span style="color: #008080;"> 18</span> 
+<span style="color: #008080;"> 19</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> node{
+</span><span style="color: #008080;"> 20</span> 
+<span style="color: #008080;"> 21</span>     <span style="color: #0000ff;">int</span> a[<span style="color: #800080;">4</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 22</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> cost;
+</span><span style="color: #008080;"> 23</span> 
+<span style="color: #008080;"> 24</span>     node(<span style="color: #0000ff;">int</span>* a,<span style="color: #0000ff;">int</span><span style="color: #000000;"> e){
+</span><span style="color: #008080;"> 25</span>         rep(i, <span style="color: #800080;">0</span>, <span style="color: #800080;">3</span><span style="color: #000000;">){
+</span><span style="color: #008080;"> 26</span>             <span style="color: #0000ff;">this</span>-&gt;a[i] =<span style="color: #000000;"> a[i];
+</span><span style="color: #008080;"> 27</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 28</span>         <span style="color: #0000ff;">this</span>-&gt;cost =<span style="color: #000000;"> e;
+</span><span style="color: #008080;"> 29</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 30</span> 
+<span style="color: #008080;"> 31</span>     <span style="color: #0000ff;">int</span> x(){ <span style="color: #008000;">//</span><span style="color: #008000;">返回四位数的成员函数</span>
+<span style="color: #008080;"> 32</span>         <span style="color: #0000ff;">int</span> num = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 33</span>         rep(i, <span style="color: #800080;">0</span>, <span style="color: #800080;">3</span>) num = num * <span style="color: #800080;">10</span> +<span style="color: #000000;"> a[i];
+</span><span style="color: #008080;"> 34</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> num;
+</span><span style="color: #008080;"> 35</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 36</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 37</span> 
+<span style="color: #008080;"> 38</span> <span style="color: #0000ff;">void</span> get_Prime(){ <span style="color: #008000;">//</span><span style="color: #008000;">素数打表</span>
+<span style="color: #008080;"> 39</span> 
+<span style="color: #008080;"> 40</span>     rep(i, <span style="color: #800080;">2</span>, (<span style="color: #0000ff;">int</span>)sqrt(N*<span style="color: #800080;">1.0</span><span style="color: #000000;">)){
+</span><span style="color: #008080;"> 41</span>         <span style="color: #0000ff;">if</span> (!<span style="color: #000000;">vis[i]){
+</span><span style="color: #008080;"> 42</span>             <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> p = i * i; p &lt;= N; p += i) vis[p] = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 43</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 44</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 45</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 46</span> 
+<span style="color: #008080;"> 47</span> <span style="color: #0000ff;">bool</span> work(<span style="color: #0000ff;">int</span> x[], <span style="color: #0000ff;">int</span> y){  <span style="color: #008000;">//</span><span style="color: #008000;">true为有答案，false为没答案</span>
+<span style="color: #008080;"> 48</span> 
+<span style="color: #008080;"> 49</span>     queue&lt;node&gt;<span style="color: #000000;"> que;
+</span><span style="color: #008080;"> 50</span>     node t (x,<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 51</span> 
+<span style="color: #008080;"> 52</span>     app[t.x()] = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 53</span> 
+<span style="color: #008080;"> 54</span> <span style="color: #000000;">    que.push(t);
+</span><span style="color: #008080;"> 55</span> 
+<span style="color: #008080;"> 56</span>     <span style="color: #0000ff;">if</span> (t.x() ==<span style="color: #000000;"> y){
+</span><span style="color: #008080;"> 57</span>         ans = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 58</span>         <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 59</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 60</span> 
+<span style="color: #008080;"> 61</span>     <span style="color: #0000ff;">while</span> (!<span style="color: #000000;">que.empty()){
+</span><span style="color: #008080;"> 62</span> 
+<span style="color: #008080;"> 63</span>         node tmp =<span style="color: #000000;"> que.front();
+</span><span style="color: #008080;"> 64</span> <span style="color: #000000;">        que.pop();
+</span><span style="color: #008080;"> 65</span> 
+<span style="color: #008080;"> 66</span>         rep(i, <span style="color: #800080;">0</span>, <span style="color: #800080;">3</span>){ <span style="color: #008000;">//</span><span style="color: #008000;">1~4不同位置</span>
+<span style="color: #008080;"> 67</span>             rep(j, <span style="color: #800080;">0</span>, <span style="color: #800080;">9</span>){ <span style="color: #008000;">//</span><span style="color: #008000;">替换为0~9</span>
+<span style="color: #008080;"> 68</span>                 <span style="color: #0000ff;">if</span> (i == <span style="color: #800080;">0</span> &amp;&amp; j == <span style="color: #800080;">0</span>) <span style="color: #0000ff;">continue</span>; <span style="color: #008000;">//</span><span style="color: #008000;">第一位不能是0</span>
+<span style="color: #008080;"> 69</span>                 <span style="color: #0000ff;">int</span> tt = tmp.a[i]; <span style="color: #008000;">//</span><span style="color: #008000;">暂存该数</span>
+<span style="color: #008080;"> 70</span>                 tmp.a[i] = j;      <span style="color: #008000;">//</span><span style="color: #008000;">改变
+</span><span style="color: #008080;"> 71</span>                 
+<span style="color: #008080;"> 72</span>                 <span style="color: #008000;">//</span><span style="color: #008000;">该四位数没有出现过且该数是素数</span>
+<span style="color: #008080;"> 73</span>                 <span style="color: #0000ff;">if</span> (!app[tmp.x()] &amp;&amp; !<span style="color: #000000;">vis[tmp.x()]){
+</span><span style="color: #008080;"> 74</span> 
+<span style="color: #008080;"> 75</span>                     app[tmp.x()] = <span style="color: #0000ff;">true</span>; <span style="color: #008000;">//</span><span style="color: #008000;">标记一下</span>
+<span style="color: #008080;"> 76</span> 
+<span style="color: #008080;"> 77</span>                     <span style="color: #0000ff;">if</span> (tmp.x() == y){ <span style="color: #008000;">//</span><span style="color: #008000;">如果变成了想变成的数了</span>
+<span style="color: #008080;"> 78</span>                         ans = tmp.cost + <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 79</span>                         <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 80</span> <span style="color: #000000;">                    }
+</span><span style="color: #008080;"> 81</span>                     que.push(node{tmp.a,tmp.cost + <span style="color: #800080;">1</span>}); <span style="color: #008000;">//</span><span style="color: #008000;">新的四位数放入队列，花费加一</span>
+<span style="color: #008080;"> 82</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 83</span>                 tmp.a[i] = tt; <span style="color: #008000;">//</span><span style="color: #008000;">变回原来的四位数</span>
+<span style="color: #008080;"> 84</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 85</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 86</span> 
+<span style="color: #008080;"> 87</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 88</span> 
+<span style="color: #008080;"> 89</span>     <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 90</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 91</span> 
+<span style="color: #008080;"> 92</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+</span><span style="color: #008080;"> 93</span> 
+<span style="color: #008080;"> 94</span>     ios::sync_with_stdio(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 95</span>     cin.tie(<span style="color: #800080;">0</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 96</span> 
+<span style="color: #008080;"> 97</span>     get_Prime();<span style="color: #008000;">//</span><span style="color: #008000;">得到素数表</span>
+<span style="color: #008080;"> 98</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> n;
+</span><span style="color: #008080;"> 99</span>     cin &gt;&gt;<span style="color: #000000;"> n;
+</span><span style="color: #008080;">100</span> 
+<span style="color: #008080;">101</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> a, b;
+</span><span style="color: #008080;">102</span>     <span style="color: #0000ff;">while</span> (n--<span style="color: #000000;">){
+</span><span style="color: #008080;">103</span> 
+<span style="color: #008080;">104</span>         memset(app, <span style="color: #800080;">0</span>, <span style="color: #0000ff;">sizeof</span>(app)); <span style="color: #008000;">//</span><span style="color: #008000;">每次初始化</span>
+<span style="color: #008080;">105</span> 
+<span style="color: #008080;">106</span>         cin &gt;&gt; a &gt;&gt;<span style="color: #000000;"> b;
+</span><span style="color: #008080;">107</span> 
+<span style="color: #008080;">108</span>         <span style="color: #0000ff;">int</span> aa[<span style="color: #800080;">4</span><span style="color: #000000;">];
+</span><span style="color: #008080;">109</span>         <span style="color: #0000ff;">int</span> len = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">110</span>         rep(i, <span style="color: #800080;">0</span>, <span style="color: #800080;">3</span><span style="color: #000000;">){
+</span><span style="color: #008080;">111</span>             aa[<span style="color: #800080;">3</span>-len++] = a % <span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;">112</span>             a /= <span style="color: #800080;">10</span><span style="color: #000000;">;
+</span><span style="color: #008080;">113</span>         } <span style="color: #008000;">//</span><span style="color: #008000;">分割a变为四个数
+</span><span style="color: #008080;">114</span> 
+<span style="color: #008080;">115</span>         <span style="color: #008000;">//</span><span style="color: #008000;">node tmp(aa, 0);
+</span><span style="color: #008080;">116</span>         <span style="color: #008000;">//</span><span style="color: #008000;">cout &lt;&lt; "tmp:::" &lt;&lt; tmp.x() &lt;&lt; endl;</span>
+<span style="color: #008080;">117</span> 
+<span style="color: #008080;">118</span>         <span style="color: #0000ff;">if</span> (work(aa, b)) cout &lt;&lt; ans &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">119</span>         <span style="color: #0000ff;">else</span> cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Impossible</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">120</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">121</span>     
+<span style="color: #008080;">122</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">123</span> }</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><br /><br /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

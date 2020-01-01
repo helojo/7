@@ -1,0 +1,192 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++构造和解析JSON' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++构造和解析JSON</center></div><div class='banquan'>原文出处:本文由博客园博主蜗牛201提供。<br/>
+原文连接:https://www.cnblogs.com/woniu201/p/11687050.html</div><br>
+    <p>JSON是一种轻量级的数据交互格式，易于人阅读和编写，同时也易于机器解析和生成，并有效地提升网络传输效率，实际项目中经常用到，相比xml有很多优点，问问度娘，优点一箩筐。</p>
+<h2 id="第三方库">第三方库</h2>
+<p>json解析选用jsoncpp作为第三方库，jsoncpp使用广泛，c++开发首选。</p>
+<p>jsoncpp目前已经托管到了github上，地址：https://github.com/open-source-parsers/jsoncpp</p>
+<h2 id="使用">使用</h2>
+<p>使用c++进行构造json和解析json，选用vs2010作为IDE。工程中使用jsoncpp的源码进行编译，没有使用jsoncpp的库，为方便大家使用把dll和lib库也放到了我的工程jsoncpplib文件夹下，有需要的可以直接引用库。</p>
+<p>待解析的json数据格式如下图：</p>
+<p><img src="./images/C++构造和解析JSON0.png" alt="file" /></p>
+<pre><code>/********************************************************
+Copyright (C), 2016-2017,
+FileName:   main
+Author:     woniu201
+Email:      wangpengfei.201@163.com
+Created:    2017/09/06
+Description:use jsoncpp src , not use dll, but i also provide dll and lib.
+********************************************************/
+ 
+#include &quot;stdio.h&quot;
+#include &lt;string&gt;
+#include &quot;jsoncpp/json.h&quot;
+ 
+using namespace std;
+ 
+/************************************
+@ Brief:        read file
+@ Author:       woniu201 
+@ Created:      2017/09/06
+@ Return:       file data  
+************************************/
+char *getfileAll(char *fname)
+{
+    FILE *fp;
+    char *str;
+    char txt[1000];
+    int filesize;
+    if ((fp=fopen(fname,&quot;r&quot;))==NULL){
+        printf(&quot;open file %s fail \n&quot;,fname);
+        return NULL;
+    }
+ 
+    fseek(fp,0,SEEK_END); 
+ 
+    filesize = ftell(fp);
+    str=(char *)malloc(filesize);
+    str[0]=0;
+ 
+    rewind(fp);
+    while((fgets(txt,1000,fp))!=NULL){
+        strcat(str,txt);
+    }
+    fclose(fp);
+    return str;
+}
+ 
+/************************************
+@ Brief:        write file
+@ Author:       woniu201 
+@ Created:      2017/09/06
+@ Return:           
+************************************/
+int writefileAll(char* fname,const char* data)
+{
+    FILE *fp;
+    if ((fp=fopen(fname, &quot;w&quot;)) == NULL)
+    {
+        printf(&quot;open file %s fail \n&quot;, fname);
+        return 1;
+    }
+    
+    fprintf(fp, &quot;%s&quot;, data);
+    fclose(fp);
+    
+    return 0;
+}
+ 
+/************************************
+@ Brief:        parse json data
+@ Author:       woniu201 
+@ Created:      2017/09/06
+@ Return:           
+************************************/
+int parseJSON(const char* jsonstr)
+{
+    Json::Reader reader;
+    Json::Value  resp;
+ 
+    if (!reader.parse(jsonstr, resp, false))
+    {
+        printf(&quot;bad json format!\n&quot;);
+        return 1;
+    }
+    int result = resp[&quot;Result&quot;].asInt();
+    string resultMessage = resp[&quot;ResultMessage&quot;].asString();
+    printf(&quot;Result=%d; ResultMessage=%s\n&quot;, result, resultMessage.c_str());
+ 
+    Json::Value &amp; resultValue = resp[&quot;ResultValue&quot;];
+    for (int i=0; i&lt;resultValue.size(); i++)
+    {
+        Json::Value subJson = resultValue[i];
+        string cpuRatio = subJson[&quot;cpuRatio&quot;].asString();
+        string serverIp = subJson[&quot;serverIp&quot;].asString();
+        string conNum = subJson[&quot;conNum&quot;].asString();
+        string websocketPort = subJson[&quot;websocketPort&quot;].asString();
+        string mqttPort = subJson[&quot;mqttPort&quot;].asString();
+        string ts = subJson[&quot;TS&quot;].asString();
+ 
+        printf(&quot;cpuRatio=%s; serverIp=%s; conNum=%s; websocketPort=%s; mqttPort=%s; ts=%s\n&quot;,cpuRatio.c_str(), serverIp.c_str(),
+            conNum.c_str(), websocketPort.c_str(), mqttPort.c_str(), ts.c_str());
+    }
+    return 0;
+}
+ 
+/************************************
+@ Brief:        create json data
+@ Author:       woniu201 
+@ Created:      2017/09/06
+@ Return:           
+************************************/
+int createJSON()
+{
+    Json::Value req;
+    req[&quot;Result&quot;] = 1;
+    req[&quot;ResultMessage&quot;] = &quot;200&quot;;
+ 
+    Json::Value object1;
+    object1[&quot;cpuRatio&quot;] = &quot;4.04&quot;;
+    object1[&quot;serverIp&quot;] = &quot;42.159.116.104&quot;;
+    object1[&quot;conNum&quot;] = &quot;1&quot;;
+    object1[&quot;websocketPort&quot;] = &quot;0&quot;;
+    object1[&quot;mqttPort&quot;] = &quot;8883&quot;;
+    object1[&quot;TS&quot;] = &quot;1504665880572&quot;;
+    Json::Value object2;
+    object2[&quot;cpuRatio&quot;] = &quot;2.04&quot;;
+    object2[&quot;serverIp&quot;] = &quot;42.159.122.251&quot;;
+    object2[&quot;conNum&quot;] = &quot;2&quot;;
+    object2[&quot;websocketPort&quot;] = &quot;0&quot;;
+    object2[&quot;mqttPort&quot;] = &quot;8883&quot;;
+    object2[&quot;TS&quot;] = &quot;1504665896981&quot;;
+ 
+    Json::Value jarray;
+    jarray.append(object1);
+    jarray.append(object2);
+ 
+    req[&quot;ResultValue&quot;] = jarray;
+ 
+    Json::FastWriter writer;
+    string jsonstr = writer.write(req);
+ 
+    printf(&quot;%s\n&quot;, jsonstr.c_str());
+ 
+    writefileAll(&quot;createJson.json&quot;, jsonstr.c_str());
+    return 0;
+}
+ 
+int main()
+{
+    char* json = getfileAll(&quot;parseJson.json&quot;);
+    parseJSON(json);
+    printf(&quot;===============================\n&quot;);
+    createJSON();
+ 
+    getchar();
+    return 1;
+}</code></pre>
+<p><font color=red size=3 face="宋体">关注下面公众号，回复&quot;104&quot;获取源码</font><br />
+<img src="./images/C++构造和解析JSON1.png" alt="file" /></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

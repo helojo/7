@@ -1,0 +1,151 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang之defer' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang之defer</center></div><div class='banquan'>原文出处:本文由博客园博主FishSalter提供。<br/>
+原文连接:https://www.cnblogs.com/chyuwei/p/11082225.html</div><br>
+    <div><span style="font-size: 18pt;">概述</span></div>
+<div><span style="font-size: 15px;">对于资源释放，有很多不同的实现方式，不同语言也有不同的惯用方法。</span></div>
+<ul>
+<li><span style="font-size: 15px;">C语言 ：手动管理</span></li>
+<li><span style="font-size: 15px;">Golang ：defer</span></li>
+<li><span style="font-size: 15px;">Python ：上下文管理器contexManager</span></li>
+<li><span style="font-size: 15px;">C++ ： 作用域和析构函数</span></li>
+<li><span style="font-size: 15px;">Rust ：所有权和drop trait</span></li>
+</ul>
+<div><span style="font-size: 15px;">如果了解上面几种语言的童鞋应该知道，</span></div>
+<div><span style="font-size: 15px;">C语言资源管理是比较麻烦的，一旦资源使用过程中出错，就可能造成资源泄漏。</span></div>
+<div><span style="font-size: 15px;">Golang通过defer，即使过程中panic，也可以释放资源。</span></div>
+<div><span style="font-size: 15px;">Python通过上下文管理器，主要是两个magic function`<strong>__enter__</strong>`, `<strong>__exit__</strong>`来保证资源的释放。</span></div>
+<div><span style="font-size: 15px;">C++和Rust相似，都是在某种语义下自动调用释放函数。但是Rust有所有权检查，可以防止写代码犯傻 (比如C++不小心拷贝了一下。)</span></div>
+<div>&nbsp;</div>
+<div>&nbsp;</div>
+<div><span style="font-size: 15px;">以上来看，C++和Rust的必须要在编程时注意释放的时机，也就是需要程序员更多的思考。但是Rust编译器会帮你一下，而C++并不会。</span></div>
+<div><span style="font-size: 15px;">其次Python和Golang都使用了显式管理，一定不能忘了做，不过做了问题就不大了。</span></div>
+<div>&nbsp;</div>
+<div><span style="font-size: 18pt;">defer</span></div>
+<div><span style="font-size: 15px;">不过这是一篇关于derfer的文章，写一下defer需要注意的重点(就是读Effective Go的一点笔记)。</span></div>
+<div>&nbsp;</div>
+<div><span style="font-size: 18px;">基本使用</span></div>
+<div><span style="font-size: 15px;">`<span style="text-decoration: underline;"><strong>defer语句将函数调用安排在当前函数结束前执行。也就是defer 语句中的函数调用是当前函数最后执行的东西</strong></span>`</span></div>
+<div><span style="font-size: 15px;">- 一个经典的例子</span></div>
+<div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Contents returns the file's contents as a string.</span>
+<span style="color: #008080;"> 2</span> func Contents(filename <span style="color: #0000ff;">string</span>) (<span style="color: #0000ff;">string</span><span style="color: #000000;">, error) {
+</span><span style="color: #008080;"> 3</span>     f, err :=<span style="color: #000000;"> os.Open(filename)
+</span><span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+</span><span style="color: #008080;"> 5</span>         <span style="color: #0000ff;">return</span> <span style="color: #800000;">""</span><span style="color: #000000;">, err
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 7</span>     defer f.Close()  <span style="color: #008000;">//</span><span style="color: #008000;"> f.Close will run when we're finished.</span>
+<span style="color: #008080;"> 8</span> 
+<span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">var</span> result []<span style="color: #0000ff;">byte</span>
+<span style="color: #008080;">10</span>     buf := make([]<span style="color: #0000ff;">byte</span>, <span style="color: #800080;">100</span><span style="color: #000000;">)
+</span><span style="color: #008080;">11</span>     <span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+</span><span style="color: #008080;">12</span>         n, err := f.Read(buf[<span style="color: #800080;">0</span><span style="color: #000000;">:])
+</span><span style="color: #008080;">13</span>         result = append(result, buf[<span style="color: #800080;">0</span>:n]...) <span style="color: #008000;">//</span><span style="color: #008000;"> append is discussed later.</span>
+<span style="color: #008080;">14</span>         <span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+</span><span style="color: #008080;">15</span>             <span style="color: #0000ff;">if</span> err ==<span style="color: #000000;"> io.EOF {
+</span><span style="color: #008080;">16</span>                 <span style="color: #0000ff;">break</span>
+<span style="color: #008080;">17</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">18</span>             <span style="color: #0000ff;">return</span> <span style="color: #800000;">""</span>, err  <span style="color: #008000;">//</span><span style="color: #008000;"> f will be closed if we return here.</span>
+<span style="color: #008080;">19</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">21</span>     <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">string</span>(result), nil <span style="color: #008000;">//</span><span style="color: #008000;"> f will be closed if we return here.</span>
+<span style="color: #008080;">22</span> }</pre>
+</div>
+</div>
+<div>&nbsp;</div>
+<div><span style="font-size: 15px;">用上面的话翻译代码中的`<strong>defer f.Close()</strong>`就是&ldquo;将<strong>f.Close()</strong>放在Contents函数的最后执行&rdquo;</span></div>
+<div><span style="font-size: 15px;">将`<strong>f.Close()</strong>`放在defer后面有两个好处：保证资源释放、离`Open`比较近不会忘了做。</span></div>
+<div><span style="font-size: 15px;">这没什么好说的，golang必须显式释放资源。</span></div>
+<div>&nbsp;</div>
+<div><span style="font-size: 14pt;">细节</span></div>
+<div><span style="font-size: 15px;">首先明确两个概念</span></div>
+<div><span style="font-size: 15px;">- defer语句执行</span></div>
+<div><span style="font-size: 15px;">&nbsp; &nbsp; 将defer语句中函数调用安排在了当前函数结束前执行</span></div>
+<div><span style="font-size: 15px;">- 函数调用执行</span></div>
+<div><span style="font-size: 15px;">&nbsp; &nbsp; 运行defer语句中的函数调用</span></div>
+<div>&nbsp;</div>
+<div><span style="font-size: 18px;">参数求值</span></div>
+<div><span style="font-size: 15px;">这里的参数求值指的是defer语句中函数调用的参数。</span></div>
+<div><span style="font-size: 15px;">参数在defer语句执行求值，而不是在函数调用执行时求值。</span></div>
+<div><span style="font-size: 15px;">- 又一个例子</span></div>
+<div>
+<div class="cnblogs_code">
+<pre><code>func trace(s <span style="color: #0000ff;">string</span>) <span style="color: #0000ff;">string</span><span style="color: #000000;"> {
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">entering:</span><span style="color: #800000;">"</span><span style="color: #000000;">, s)
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> s
+}
+
+func un(s </span><span style="color: #0000ff;">string</span><span style="color: #000000;">) {
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">leaving:</span><span style="color: #800000;">"</span><span style="color: #000000;">, s)
+}
+
+func a() {
+    defer un(trace(</span><span style="color: #800000;">"</span><span style="color: #800000;">a</span><span style="color: #800000;">"</span><span style="color: #000000;">))
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">in a</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+}
+
+func b() {
+    defer un(trace(</span><span style="color: #800000;">"</span><span style="color: #800000;">b</span><span style="color: #800000;">"</span><span style="color: #000000;">))
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">in b</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    a()
+}
+
+func main() {
+    b()
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+<div><span style="font-size: 15px;">首先看函数b，因为参数是在defer语句执行时求值的，所以`trace("b")`要先被求值[先打印"b",再返回"b"]，然后再往下执行，在函数b结束之前会调用`un("b")`.</span></div>
+<div><span style="font-size: 15px;">同理如函数a。现在猜一下执行结果。</span></div>
+<div><span style="font-size: 15px;">&nbsp;</span></div>
+<div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">entering: b
+</span><span style="color: #0000ff;">in</span><span style="color: #000000;"> b
+entering: a
+</span><span style="color: #0000ff;">in</span><span style="color: #000000;"> a
+leaving: a
+leaving: b</span></pre>
+</div>
+</div>
+<div>&nbsp;</div>
+<div><span style="font-size: 18px;">执行顺序</span></div>
+<div><span style="font-size: 15px;">当有多个defer语句的时候，到底是谁的函数调用先执行呢？</span></div>
+<div>&nbsp;</div>
+<div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">1</span> <span style="color: #0000ff;">for</span> i := <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">5</span>; i++<span style="color: #000000;"> {
+</span><span style="color: #008080;">2</span>     defer fmt.Printf(<span style="color: #800000;">"</span><span style="color: #800000;">%d </span><span style="color: #800000;">"</span><span style="color: #000000;">, i)
+</span><span style="color: #008080;">3</span> }</pre>
+</div>
+<p><span style="font-size: 15px;">&nbsp;defer的函数调用按着后进先出(LIFO)的方式执行。大概猜一猜，每次defer都会将函数调用压入栈中，最后依次出栈执行。</span></p>
+</div>
+<div>&nbsp;</div>
+<div><span style="font-size: 18pt;">最后</span></div>
+<div><span style="font-size: 15px;">golang中defer也就主要用在资源管理上了。明确以上几点问题，应该问题不大了(吹牛ing)。</span></div>
+<div><br class="Apple-interchange-newline" /><br /></div>
+<div>&nbsp;</div>
+<div>&nbsp;</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

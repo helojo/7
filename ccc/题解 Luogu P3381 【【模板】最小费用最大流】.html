@@ -1,0 +1,137 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修题解 Luogu P3381 【【模板】最小费用最大流】' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>题解 Luogu P3381 【【模板】最小费用最大流】</center></div><div class='banquan'>原文出处:本文由博客园博主一叶知秋`提供。<br/>
+原文连接:https://www.cnblogs.com/wyzwyz/p/10859041.html</div><br>
+    <p data-line="0">发了网络流，再来一发费用流</p>
+<p data-line="2">能做费用流的，网络流自然做得来，但在这还是<s>不要脸的</s>安利一下自己的博客（里面也有网络流的题解）：</p>
+<p data-line="4"><a href="https://www.luogu.org/blog/71403/">点我</a></p>
+<p data-line="6">扯远了...</p>
+<p data-line="8">费用流，就是在不炸水管的情况下求源点到汇点的最小费用。</p>
+<p data-line="10">有没有想起什么？</p>
+<p data-line="12">思考一下......</p>
+<p data-line="14">对，最短路径！</p>
+<p data-line="16">所以我们完全可以用已死的SPFA求出不炸水管的最短路径（当然，实在有心理阴影的可以用dijkstra）。</p>
+<p data-line="18">如果你最短路径都不会，还是去&nbsp;<a href="https://www.luogu.org/problemnew/show/P3371">这儿</a>&nbsp;和&nbsp;<a href="https://www.luogu.org/problemnew/show/P4779">这儿</a></p>
+<p data-line="21">然后再一把增广路求出最大流与最小费用就好了（我觉得很OK）</p>
+<p data-line="23">献上本蒟蒻的代码：</p>
+<div class="cnblogs_code">
+<pre>#include&lt;cstdio&gt;
+<span style="color: #0000ff;">#define</span> maxn 5050
+<span style="color: #0000ff;">#define</span> maxm 50005
+<span style="color: #0000ff;">#define</span> INF 0x3f3f3f3f<span style="color: #000000;">
+inline </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> read(){
+    </span><span style="color: #0000ff;">int</span> r=<span style="color: #800080;">0</span>,f=<span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">char</span> c=<span style="color: #000000;">getchar();
+    </span><span style="color: #0000ff;">while</span>(c&lt;<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>||c&gt;<span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span>){<span style="color: #0000ff;">if</span>(c==<span style="color: #800000;">'</span><span style="color: #800000;">-</span><span style="color: #800000;">'</span>)f=-<span style="color: #800080;">1</span>;c=<span style="color: #000000;">getchar();}
+    </span><span style="color: #0000ff;">while</span>(c&gt;=<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>&amp;&amp;c&lt;=<span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span>){r=(r&lt;&lt;<span style="color: #800080;">3</span>)+(r&lt;&lt;<span style="color: #800080;">1</span>)+c-<span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>;c=<span style="color: #000000;">getchar();}
+    </span><span style="color: #0000ff;">return</span> r*<span style="color: #000000;">f;
+}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> s,t,n,m,head[maxn],pre[maxn],dis[maxn],q[maxn];
+</span><span style="color: #0000ff;">bool</span><span style="color: #000000;"> vis[maxn];
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> s_e;
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> E{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> v,c,w,nxt;
+}e[maxm</span>*<span style="color: #800080;">2</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">struct</span> Max_fei{<span style="color: #008000;">//</span><span style="color: #008000;">本人喜欢结构体</span>
+    inline <span style="color: #0000ff;">void</span> a_e(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span> v,<span style="color: #0000ff;">int</span> c,<span style="color: #0000ff;">int</span><span style="color: #000000;"> w){
+        e[s_e]</span>=<span style="color: #000000;">(E){v,c,w,head[u]};
+        head[u]</span>=s_e++<span style="color: #000000;">;
+    }
+    inline </span><span style="color: #0000ff;">void</span> add(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span> v,<span style="color: #0000ff;">int</span> c,<span style="color: #0000ff;">int</span><span style="color: #000000;"> w){
+        a_e(u,v,c,w);
+        a_e(v,u,</span><span style="color: #800080;">0</span>,-<span style="color: #000000;">w);
+    }
+    inline </span><span style="color: #0000ff;">bool</span><span style="color: #000000;"> spfa(){
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">){
+            dis[i]</span>=<span style="color: #000000;">INF;
+            vis[i]</span>=<span style="color: #0000ff;">false</span><span style="color: #000000;">;
+        }
+        dis[s]</span>=<span style="color: #800080;">0</span><span style="color: #000000;">;
+        vis[s]</span>=<span style="color: #0000ff;">true</span><span style="color: #000000;">;
+        q[</span><span style="color: #800080;">0</span>]=<span style="color: #000000;">s;
+        </span><span style="color: #0000ff;">int</span> hd=<span style="color: #800080;">0</span>,tl=<span style="color: #800080;">1</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">while</span>(hd^<span style="color: #000000;">tl){
+            </span><span style="color: #0000ff;">int</span> u=q[hd++];<span style="color: #008000;">//</span><span style="color: #008000;">循环队列</span>
+            hd%=<span style="color: #000000;">maxn;
+            </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=head[u];i!=-<span style="color: #800080;">1</span>;i=<span style="color: #000000;">e[i].nxt){
+                </span><span style="color: #0000ff;">int</span> v=<span style="color: #000000;">e[i].v;
+                </span><span style="color: #0000ff;">if</span>(dis[v]&gt;dis[u]+e[i].w&amp;&amp;e[i].c){<span style="color: #008000;">//</span><span style="color: #008000;">判断水管还能运水吗</span>
+                    dis[v]=dis[u]+e[i].w;<span style="color: #008000;">//</span><span style="color: #008000;">更新</span>
+                    pre[v]=i;<span style="color: #008000;">//</span><span style="color: #008000;">记录位置</span>
+                    <span style="color: #0000ff;">if</span>(vis[v])<span style="color: #0000ff;">continue</span>;<span style="color: #008000;">//</span><span style="color: #008000;">如果在队里，那就不进队</span>
+                    vis[v]=<span style="color: #0000ff;">true</span><span style="color: #000000;">;
+                    q[tl</span>++]=<span style="color: #000000;">v;
+                    tl</span>%=<span style="color: #000000;">maxn;
+                }
+            }
+            vis[u]</span>=<span style="color: #0000ff;">false</span><span style="color: #000000;">;
+        }
+        </span><span style="color: #0000ff;">if</span>(dis[t]==INF)<span style="color: #0000ff;">return</span> <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+    }
+    inline </span><span style="color: #0000ff;">int</span> min(<span style="color: #0000ff;">int</span> a,<span style="color: #0000ff;">int</span> b){<span style="color: #008000;">//</span><span style="color: #008000;">原谅我的手写min</span>
+        <span style="color: #0000ff;">return</span> a&lt;b?<span style="color: #000000;">a:b;
+    }
+    inline </span><span style="color: #0000ff;">int</span> end(<span style="color: #0000ff;">int</span> &amp;flow){<span style="color: #008000;">//</span><span style="color: #008000;">flow求最大流</span>
+        <span style="color: #0000ff;">int</span> p,u,Min=1e9,ans=<span style="color: #800080;">0</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">for</span>(u=t;u!=s;u=e[p^<span style="color: #800080;">1</span>].v){<span style="color: #008000;">//</span><span style="color: #008000;">因为开始值为0，可以用xor来找反边</span>
+            p=pre[u];<span style="color: #008000;">//</span><span style="color: #008000;">往前找</span>
+            Min=min(Min,e[p].c);<span style="color: #008000;">//</span><span style="color: #008000;">找全部经过水管都能流过的最大流</span>
+<span style="color: #000000;">            
+        }
+        </span><span style="color: #0000ff;">for</span>(u=t;u!=s;u=e[p^<span style="color: #800080;">1</span><span style="color: #000000;">].v){
+            p</span>=<span style="color: #000000;">pre[u];
+            e[p].c</span>-=<span style="color: #000000;">Min;
+            e[p</span>^<span style="color: #800080;">1</span>].c+=<span style="color: #000000;">Min;
+            ans</span>+=e[p].w*Min;<span style="color: #008000;">//</span><span style="color: #008000;">加费用</span>
+<span style="color: #000000;">        }
+        flow</span>+=Min;<span style="color: #008000;">//</span><span style="color: #008000;">加最大流</span>
+        <span style="color: #0000ff;">return</span><span style="color: #000000;"> ans;
+    }
+    inline </span><span style="color: #0000ff;">int</span> solve(<span style="color: #0000ff;">int</span> &amp;<span style="color: #000000;">flow){
+        </span><span style="color: #0000ff;">int</span> ans=<span style="color: #800080;">0</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">while</span><span style="color: #000000;">(spfa()){
+            ans</span>+=<span style="color: #000000;">end(flow);
+        }
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> ans;
+    }
+}Flow;
+inline </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> work(){
+    n</span>=read();m=<span style="color: #000000;">read();
+    s</span>=read();t=<span style="color: #000000;">read();
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++)head[i]=-<span style="color: #800080;">1</span>;<span style="color: #008000;">//</span><span style="color: #008000;">初始值为-1，方便xor</span>
+    <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=m;i++<span style="color: #000000;">){
+        </span><span style="color: #0000ff;">int</span> u=read(),v=read(),c=read(),w=<span style="color: #000000;">read();
+        Flow.add(u,v,c,w);
+    }
+    </span><span style="color: #0000ff;">int</span> flow=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">int</span> ans=<span style="color: #000000;">Flow.solve(flow);
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d %d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,flow,ans);
+}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+    work();
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

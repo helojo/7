@@ -1,0 +1,114 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修P2057 [SHOI2007]善意的投票 (最大流)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>P2057 [SHOI2007]善意的投票 (最大流)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/10799127.html</div><br>
+    <h2 id="题目">题目</h2>
+<p><a href="https://www.luogu.org/problemnew/show/P2057">P2057 [SHOI2007]善意的投票</a></p>
+<h2 id="解析">解析</h2>
+<p>网络流的建模都如此巧妙。</p>
+<p>我们把同意的意见看做源点<span class="math inline">\(s\)</span>，不同意的意见看做汇点<span class="math inline">\(t\)</span>。</p>
+<p>那我们<span class="math inline">\(s\)</span>连向所有同意的人，<span class="math inline">\(t\)</span>连向所有反对的人，流量为1，表示了与其原方案直接冲突的代价，好友之间连<strong>双向边</strong>（双向边使因为可以从同意变为不同意，也可以从不同意变为同意），流量为1，表示改变意见要付出的代价，因为这个人改变意见后，原来与其意见冲突的朋友与他意见就不冲突了，所以代价为1。</p>
+<p>我们要让所有人意见统一，就是让源点和汇点之间没有不同的意见，也就是没有连边，所以是求最小割，根据最小割最大流定理，也就是求最大流。</p>
+<p>题目中建完图就是这样</p>
+<p><img src="./images/P2057 [SHOI2007]善意的投票 (最大流)0.png" alt="graph.png" /></p>
+<h2 id="代码">代码</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N = 1e6 + 10;
+const int INF = 0x3f3f3f3f;
+int n, m, s, t, num = 1;
+int head[N], cur[N], dep[N];
+class node {
+    public :
+        int v, nx, w;
+} e[N];
+
+template&lt;class T&gt;inline void read(T &amp;x) {
+    x = 0; int f = 0; char ch = getchar();
+    while (!isdigit(ch)) f |= (ch == &#39;-&#39;), ch = getchar();
+    while (isdigit(ch)) x = x * 10 + ch - &#39;0&#39;, ch = getchar();
+    x = f ? -x : x;
+    return ;
+}
+
+inline void add(int u, int v, int w) {
+    e[++num].nx = head[u], e[num].v = v, e[num].w = w, head[u] = num;
+    e[++num].nx = head[v], e[num].v = u, e[num].w = 0, head[v] = num;
+}
+
+queue&lt;int&gt;q;
+bool bfs() {
+    memset(dep, 0, sizeof dep);
+    memcpy(cur, head, sizeof cur);
+    dep[s] = 1;
+    q.push(s);
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        for (int i = head[u]; ~i; i = e[i].nx) {
+            int v = e[i].v;
+            if (e[i].w &amp;&amp; !dep[v]) dep[v] = dep[u] + 1, q.push(v);
+        }
+    }
+    return dep[t];
+}
+
+int dfs(int u, int flow) {
+    if (u == t) return flow;
+    int use = 0;
+    for (int &amp;i = cur[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (e[i].w &amp;&amp; dep[v] == dep[u] + 1) {
+            int di = dfs(v, min(flow, e[i].w));
+            e[i].w -= di, e[i ^ 1].w += di;
+            use += di, flow -= di;
+            if (flow &lt;= 0) break;
+        }
+    }
+    return use;
+}
+
+int dinic() {
+    int ans = 0;
+    while (bfs()) ans += dfs(s, INF);
+    return ans;
+}
+
+int main() {
+    memset(head, -1, sizeof head);
+    read(n), read(m);
+    s = n + 1, t = s + 1;
+    for (int i = 1, x; i &lt;= n; ++i) {
+        read(x);
+        if (x) add(s, i, 1);
+        else add(i, t, 1);
+    }
+    for (int i = 1, x, y; i &lt;= m; ++i) {
+        read(x), read(y);
+        add(x, y, 1);
+        add(y, x, 1);
+    }
+    printf(&quot;%d\n&quot;, dinic());
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,464 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++实现2048小游戏' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++实现2048小游戏</center></div><div class='banquan'>原文出处:本文由博客园博主hi星尘提供。<br/>
+原文连接:https://www.cnblogs.com/hixingchen/p/11463268.html</div><br>
+    <h2>代码如下：</h2>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> <span style="color: #0000ff;">#define</span> _CRT_SECURE_NO_WARNINGS<span style="color: #008000;">//</span><span style="color: #008000;">去掉编译器内部扩增问题</span>
+<span style="color: #008080;">  2</span> #include&lt;stdio.h&gt;
+<span style="color: #008080;">  3</span> #include&lt;stdlib.h&gt;
+<span style="color: #008080;">  4</span> #include&lt;math.h&gt;
+<span style="color: #008080;">  5</span> #include&lt;graphics.h&gt;<span style="color: #008000;">//</span><span style="color: #008000;">需要下载图形库</span>
+<span style="color: #008080;">  6</span> #include&lt;conio.h&gt;
+<span style="color: #008080;">  7</span> #include&lt;time.h&gt;
+<span style="color: #008080;">  8</span> #include&lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;">  9</span> #include&lt;fstream&gt;
+<span style="color: #008080;"> 10</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 11</span> #include&lt;sstream&gt;
+<span style="color: #008080;"> 12</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 13</span> 
+<span style="color: #008080;"> 14</span> <span style="color: #0000ff;">namespace</span>
+<span style="color: #008080;"> 15</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 16</span> IMAGE image[<span style="color: #800080;">12</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 17</span> <span style="color: #0000ff;">int</span> imageIndex[<span style="color: #800080;">12</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 18</span> <span style="color: #0000ff;">int</span> map[<span style="color: #800080;">4</span>][<span style="color: #800080;">4</span>] = { <span style="color: #800080;">2</span><span style="color: #000000;"> };
+</span><span style="color: #008080;"> 19</span> <span style="color: #0000ff;">bool</span> isOver = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 20</span> <span style="color: #0000ff;">bool</span> gameOver = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 21</span> <span style="color: #0000ff;">enum</span><span style="color: #000000;"> direction
+</span><span style="color: #008080;"> 22</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 23</span> <span style="color: #000000;">Up, Down, Left, Right
+</span><span style="color: #008080;"> 24</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 25</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 26</span> 
+<span style="color: #008080;"> 27</span> <span style="color: #0000ff;">void</span> SetImageIndex();<span style="color: #008000;">//</span><span style="color: #008000;">设置图片编号</span>
+<span style="color: #008080;"> 28</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> loadResource();
+</span><span style="color: #008080;"> 29</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> drawMap();
+</span><span style="color: #008080;"> 30</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> randIntNum();
+</span><span style="color: #008080;"> 31</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> keyDownAndDraw();
+</span><span style="color: #008080;"> 32</span> <span style="color: #0000ff;">bool</span> TurnLeft(<span style="color: #0000ff;">int</span> s[<span style="color: #800080;">4</span>][<span style="color: #800080;">4</span><span style="color: #000000;">]);
+</span><span style="color: #008080;"> 33</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> ChangeOnKeyDown(direction Direction);
+</span><span style="color: #008080;"> 34</span> 
+<span style="color: #008080;"> 35</span>  
+<span style="color: #008080;"> 36</span> 
+<span style="color: #008080;"> 37</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;"> 38</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 39</span> <span style="color: #000000;">SetImageIndex();
+</span><span style="color: #008080;"> 40</span> <span style="color: #000000;">loadResource();
+</span><span style="color: #008080;"> 41</span> initgraph(<span style="color: #800080;">60</span>*<span style="color: #800080;">4</span>,<span style="color: #800080;">60</span>*<span style="color: #800080;">4</span>+<span style="color: #800080;">120</span>);<span style="color: #008000;">//</span><span style="color: #008000;">游戏界面大小</span>
+<span style="color: #008080;"> 42</span> <span style="color: #000000;">drawMap();
+</span><span style="color: #008080;"> 43</span> <span style="color: #000000;">keyDownAndDraw();
+</span><span style="color: #008080;"> 44</span> system(<span style="color: #800000;">"</span><span style="color: #800000;">pause</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">防止闪屏
+</span><span style="color: #008080;"> 45</span> <span style="color: #008000;">//</span><span style="color: #008000;">closegraph();
+</span><span style="color: #008080;"> 46</span> <span style="color: #008000;">//</span><span style="color: #008000;">system("pause");</span>
+<span style="color: #008080;"> 47</span> <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 48</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 49</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> SetImageIndex()
+</span><span style="color: #008080;"> 50</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 51</span> imageIndex[<span style="color: #800080;">0</span>] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 52</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">1</span>; i &lt; <span style="color: #800080;">12</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 53</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 54</span> imageIndex[i] = <span style="color: #0000ff;">int</span>(pow(<span style="color: #800080;">2</span><span style="color: #000000;">, i));
+</span><span style="color: #008080;"> 55</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 56</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 57</span> <span style="color: #0000ff;">void</span> loadResource()<span style="color: #008000;">//</span><span style="color: #008000;">加载图片</span>
+<span style="color: #008080;"> 58</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 59</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">12</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 60</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 61</span> <span style="color: #0000ff;">char</span> fileName[<span style="color: #800080;">20</span>] = <span style="color: #800000;">""</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 62</span> sprintf(fileName, <span style="color: #800000;">"</span><span style="color: #800000;">%d.bmp</span><span style="color: #800000;">"</span>, imageIndex[i]);<span style="color: #008000;">//</span><span style="color: #008000;">拼接</span>
+<span style="color: #008080;"> 63</span> loadimage(image + i, fileName,<span style="color: #800080;">60</span>,<span style="color: #800080;">60</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 64</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 65</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 66</span> 
+<span style="color: #008080;"> 67</span> <span style="color: #008000;">//</span><span style="color: #008000;">画地图</span>
+<span style="color: #008080;"> 68</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> drawMap()
+</span><span style="color: #008080;"> 69</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 70</span> <span style="color: #0000ff;">string</span> <span style="color: #0000ff;">out</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 71</span> <span style="color: #0000ff;">int</span> HistryHighlyScore = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 72</span> ifstream IScore(<span style="color: #800000;">"</span><span style="color: #800000;">Score.txt</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">创建文件读取历史最高分</span>
+<span style="color: #008080;"> 73</span> <span style="color: #0000ff;">if</span> (!<span style="color: #000000;">IScore)
+</span><span style="color: #008080;"> 74</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 75</span> ofstream OScore(<span style="color: #800000;">"</span><span style="color: #800000;">Score.txt</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 76</span> IScore.open(<span style="color: #800000;">"</span><span style="color: #800000;">Score.txt</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 77</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 78</span> getline(IScore, <span style="color: #0000ff;">out</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 79</span> <span style="color: #0000ff;">char</span> Score[<span style="color: #800080;">10</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 80</span> <span style="color: #0000ff;">char</span> HighlyScore[<span style="color: #800080;">100</span><span style="color: #000000;">];
+</span><span style="color: #008080;"> 81</span> <span style="color: #0000ff;">int</span> Sum=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 82</span> setbkcolor(RGB(<span style="color: #800080;">244</span>, <span style="color: #800080;">215</span>, <span style="color: #800080;">215</span><span style="color: #000000;">));
+</span><span style="color: #008080;"> 83</span> <span style="color: #000000;">cleardevice();
+</span><span style="color: #008080;"> 84</span> settextcolor(WHITE);<span style="color: #008000;">//</span><span style="color: #008000;">设置文字颜色</span>
+<span style="color: #008080;"> 85</span> settextstyle(<span style="color: #800080;">35</span>, <span style="color: #800080;">0</span>, <span style="color: #800000;">"</span><span style="color: #800000;">楷体</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">设置文字格式</span>
+<span style="color: #008080;"> 86</span> outtextxy(<span style="color: #800080;">50</span>, <span style="color: #800080;">10</span>, <span style="color: #800000;">"</span><span style="color: #800000;">2048游戏</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 87</span> settextcolor(YELLOW);<span style="color: #008000;">//</span><span style="color: #008000;">设置文字颜色</span>
+<span style="color: #008080;"> 88</span> settextstyle(<span style="color: #800080;">25</span>, <span style="color: #800080;">0</span>, <span style="color: #800000;">"</span><span style="color: #800000;">楷体</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">设置文字格式</span>
+<span style="color: #008080;"> 89</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++)<span style="color: #008000;">//</span><span style="color: #008000;">计算分数</span>
+<span style="color: #008080;"> 90</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 91</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;"> 92</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 93</span> <span style="color: #0000ff;">if</span> (map[i][j]&gt;<span style="color: #800080;">4</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 94</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 95</span> Sum += map[i][j] *<span style="color: #000000;"> sqrt(map[i][j]);
+</span><span style="color: #008080;"> 96</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 97</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 98</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 99</span> sprintf(Score, <span style="color: #800000;">"</span><span style="color: #800000;">分数:%d</span><span style="color: #800000;">"</span><span style="color: #000000;">, Sum);
+</span><span style="color: #008080;">100</span> outtextxy(<span style="color: #800080;">10</span>, <span style="color: #800080;">300</span><span style="color: #000000;">,Score);
+</span><span style="color: #008080;">101</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #0000ff;">out</span>.length(); i++<span style="color: #000000;">)
+</span><span style="color: #008080;">102</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">103</span> HighlyScore[i] = <span style="color: #0000ff;">out</span><span style="color: #000000;">[i];
+</span><span style="color: #008080;">104</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">105</span> <span style="color: #000000;">stringstream mid;
+</span><span style="color: #008080;">106</span> mid &lt;&lt; <span style="color: #0000ff;">out</span><span style="color: #000000;">;
+</span><span style="color: #008080;">107</span> mid &gt;&gt;<span style="color: #000000;"> HistryHighlyScore;
+</span><span style="color: #008080;">108</span> <span style="color: #0000ff;">if</span> (HistryHighlyScore&gt;<span style="color: #000000;">Sum)
+</span><span style="color: #008080;">109</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">110</span> HighlyScore[<span style="color: #0000ff;">out</span>.length()] = <span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">;
+</span><span style="color: #008080;">111</span> settextcolor(RED);<span style="color: #008000;">//</span><span style="color: #008000;">设置文字颜色</span>
+<span style="color: #008080;">112</span> settextstyle(<span style="color: #800080;">25</span>, <span style="color: #800080;">0</span>, <span style="color: #800000;">"</span><span style="color: #800000;">楷体</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">设置文字格式</span>
+<span style="color: #008080;">113</span> outtextxy(<span style="color: #800080;">10</span>, <span style="color: #800080;">330</span>, <span style="color: #800000;">"</span><span style="color: #800000;">历史最高:</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">114</span> outtextxy(<span style="color: #800080;">130</span>, <span style="color: #800080;">330</span><span style="color: #000000;">, HighlyScore);
+</span><span style="color: #008080;">115</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">116</span> <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">117</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">118</span> <span style="color: #0000ff;">char</span> Score1[<span style="color: #800080;">20</span><span style="color: #000000;">];
+</span><span style="color: #008080;">119</span> settextcolor(RED);<span style="color: #008000;">//</span><span style="color: #008000;">设置文字颜色</span>
+<span style="color: #008080;">120</span> settextstyle(<span style="color: #800080;">25</span>, <span style="color: #800080;">0</span>, <span style="color: #800000;">"</span><span style="color: #800000;">楷体</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">设置文字格式</span>
+<span style="color: #008080;">121</span> sprintf(Score1, <span style="color: #800000;">"</span><span style="color: #800000;">历史最高:%d</span><span style="color: #800000;">"</span><span style="color: #000000;">, Sum);
+</span><span style="color: #008080;">122</span> outtextxy(<span style="color: #800080;">10</span>, <span style="color: #800080;">330</span><span style="color: #000000;">,Score1);
+</span><span style="color: #008080;">123</span> <span style="color: #000000;">ofstream OScore1;
+</span><span style="color: #008080;">124</span> OScore1.open(<span style="color: #800000;">"</span><span style="color: #800000;">Score.txt</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">125</span> OScore1&lt;&lt;<span style="color: #000000;">Sum;
+</span><span style="color: #008080;">126</span> <span style="color: #000000;">OScore1.close();
+</span><span style="color: #008080;">127</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">128</span> <span style="color: #000000;">IScore.close();
+</span><span style="color: #008080;">129</span> <span style="color: #008000;">//</span><span style="color: #008000;">根据二维数组去画图</span>
+<span style="color: #008080;">130</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> x, y, k;
+</span><span style="color: #008080;">131</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">132</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">133</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">134</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">135</span> x = <span style="color: #800080;">60</span> *<span style="color: #000000;"> j;
+</span><span style="color: #008080;">136</span> y = <span style="color: #800080;">60</span> * i + <span style="color: #800080;">55</span><span style="color: #000000;">;
+</span><span style="color: #008080;">137</span> <span style="color: #0000ff;">for</span> ( k = <span style="color: #800080;">0</span>; k &lt; <span style="color: #800080;">12</span>; k++<span style="color: #000000;">)
+</span><span style="color: #008080;">138</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">139</span> <span style="color: #0000ff;">if</span> (imageIndex[k] ==<span style="color: #000000;"> map[i][j])
+</span><span style="color: #008080;">140</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">141</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">142</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">143</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">144</span> putimage(x,y,image+<span style="color: #000000;">k);
+</span><span style="color: #008080;">145</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">146</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">147</span> isOver = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;">148</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">149</span> 
+<span style="color: #008080;">150</span> <span style="color: #008000;">//</span><span style="color: #008000;">随机产生2或者4;</span>
+<span style="color: #008080;">151</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> randIntNum()
+</span><span style="color: #008080;">152</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">153</span> <span style="color: #0000ff;">bool</span> haszero = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">154</span> <span style="color: #0000ff;">bool</span> isOk=<span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">155</span> srand((unsigned)time(NULL)); <span style="color: #008000;">//</span><span style="color: #008000;">随机函数种子</span>
+<span style="color: #008080;">156</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">157</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">158</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">159</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">160</span> <span style="color: #0000ff;">if</span> (map[i][j] == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">161</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">162</span> haszero = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;">163</span> map[i][j] = (rand() % <span style="color: #800080;">3</span>) * <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">164</span> <span style="color: #0000ff;">if</span> (map[i][j] == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">165</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">166</span> <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+</span><span style="color: #008080;">167</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">168</span> isOk = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;">169</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">170</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">171</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">172</span> <span style="color: #0000ff;">if</span><span style="color: #000000;"> (isOk)
+</span><span style="color: #008080;">173</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">174</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">175</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">176</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">177</span> <span style="color: #0000ff;">if</span> (!<span style="color: #000000;">isOk)
+</span><span style="color: #008080;">178</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">179</span> isOk = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">180</span> <span style="color: #0000ff;">if</span><span style="color: #000000;"> (haszero)
+</span><span style="color: #008080;">181</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">182</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">183</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">184</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">185</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">186</span> <span style="color: #0000ff;">if</span> (map[i][j] == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">187</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">188</span> map[i][j] = <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">189</span> isOk = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;">190</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">191</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">192</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">193</span> <span style="color: #0000ff;">if</span><span style="color: #000000;"> (isOk)
+</span><span style="color: #008080;">194</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">195</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">196</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">197</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">198</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">199</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">200</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++)<span style="color: #008000;">//</span><span style="color: #008000;">检测最后一步是否留有空位，若全满游戏结束</span>
+<span style="color: #008080;">201</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">202</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">203</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">204</span> <span style="color: #0000ff;">if</span> (map[i][j] == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">205</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">206</span> <span style="color: #000000;">drawMap();
+</span><span style="color: #008080;">207</span> <span style="color: #0000ff;">return</span><span style="color: #000000;">;
+</span><span style="color: #008080;">208</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">209</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">210</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">211</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++)<span style="color: #008000;">//</span><span style="color: #008000;">游戏失败则重置</span>
+<span style="color: #008080;">212</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">213</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">214</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">215</span> <span style="color: #0000ff;">if</span> (i==<span style="color: #800080;">0</span>&amp;&amp;j==<span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">216</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">217</span> map[i][j] = <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">218</span> <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+</span><span style="color: #008080;">219</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">220</span> map[i][j] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">221</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">222</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">223</span> <span style="color: #000000;">drawMap();
+</span><span style="color: #008080;">224</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">225</span> 
+<span style="color: #008080;">226</span> <span style="color: #008000;">//</span><span style="color: #008000;">按键响应</span>
+<span style="color: #008080;">227</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> keyDownAndDraw()
+</span><span style="color: #008080;">228</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">229</span> <span style="color: #0000ff;">while</span> (<span style="color: #0000ff;">true</span><span style="color: #000000;">)
+</span><span style="color: #008080;">230</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">231</span> <span style="color: #0000ff;">char</span> key = _getch();<span style="color: #008000;">//</span><span style="color: #008000;">接收用户按键</span>
+<span style="color: #008080;">232</span> <span style="color: #0000ff;">if</span><span style="color: #000000;"> (isOver)
+</span><span style="color: #008080;">233</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">234</span> isOver = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">235</span> <span style="color: #0000ff;">switch</span><span style="color: #000000;"> (key)
+</span><span style="color: #008080;">236</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">237</span> <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">W</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">238</span> <span style="color: #0000ff;">case</span><span style="color: #800000;">'</span><span style="color: #800000;">w</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">239</span> <span style="color: #0000ff;">case</span> <span style="color: #800080;">72</span><span style="color: #000000;">:
+</span><span style="color: #008080;">240</span> <span style="color: #000000;">ChangeOnKeyDown(Up);
+</span><span style="color: #008080;">241</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">242</span> <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">S</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">243</span> <span style="color: #0000ff;">case</span><span style="color: #800000;">'</span><span style="color: #800000;">s</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">244</span> <span style="color: #0000ff;">case</span> <span style="color: #800080;">80</span><span style="color: #000000;">:
+</span><span style="color: #008080;">245</span> <span style="color: #000000;">ChangeOnKeyDown(Down);
+</span><span style="color: #008080;">246</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">247</span> <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">a</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">248</span> <span style="color: #0000ff;">case</span><span style="color: #800000;">'</span><span style="color: #800000;">A</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">249</span> <span style="color: #0000ff;">case</span> <span style="color: #800080;">75</span><span style="color: #000000;">:
+</span><span style="color: #008080;">250</span> <span style="color: #000000;">ChangeOnKeyDown(Left);
+</span><span style="color: #008080;">251</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">252</span> <span style="color: #0000ff;">case</span> <span style="color: #800000;">'</span><span style="color: #800000;">D</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">253</span> <span style="color: #0000ff;">case</span><span style="color: #800000;">'</span><span style="color: #800000;">d</span><span style="color: #800000;">'</span><span style="color: #000000;">:
+</span><span style="color: #008080;">254</span> <span style="color: #0000ff;">case</span> <span style="color: #800080;">77</span><span style="color: #000000;">:
+</span><span style="color: #008080;">255</span> <span style="color: #000000;">ChangeOnKeyDown(Right);
+</span><span style="color: #008080;">256</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">257</span> <span style="color: #0000ff;">default</span><span style="color: #000000;">:
+</span><span style="color: #008080;">258</span> isOver = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;">259</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">260</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">261</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">262</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">263</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">264</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> ChangeOnKeyDown(direction Direction)
+</span><span style="color: #008080;">265</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">266</span> <span style="color: #0000ff;">int</span> Map[<span style="color: #800080;">4</span>][<span style="color: #800080;">4</span>] = { <span style="color: #800080;">0</span><span style="color: #000000;"> };
+</span><span style="color: #008080;">267</span> <span style="color: #0000ff;">bool</span><span style="color: #000000;"> CanMove;
+</span><span style="color: #008080;">268</span> <span style="color: #0000ff;">switch</span> (Direction)<span style="color: #008000;">//</span><span style="color: #008000;">将所有方向改为向左方向，并利用向左算法计算各个方向</span>
+<span style="color: #008080;">269</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">270</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> Up:
+</span><span style="color: #008080;">271</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">272</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">273</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">274</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">275</span> Map[j][i] =<span style="color: #000000;"> map[i][j];
+</span><span style="color: #008080;">276</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">277</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">278</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">279</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> Down:
+</span><span style="color: #008080;">280</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">281</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">282</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">283</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">284</span> Map[j][<span style="color: #800080;">3</span>-i] =<span style="color: #000000;"> map[i][j];
+</span><span style="color: #008080;">285</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">286</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">287</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">288</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> Left:
+</span><span style="color: #008080;">289</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">290</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">291</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">292</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">293</span> Map[i][j] =<span style="color: #000000;"> map[i][j];
+</span><span style="color: #008080;">294</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">295</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">296</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">297</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> Right:
+</span><span style="color: #008080;">298</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">299</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">300</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">301</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">302</span> Map[i][<span style="color: #800080;">3</span>-j] =<span style="color: #000000;"> map[i][j];
+</span><span style="color: #008080;">303</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">304</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">305</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">306</span> <span style="color: #0000ff;">default</span><span style="color: #000000;">:
+</span><span style="color: #008080;">307</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">308</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">309</span> <span style="color: #008000;">//</span><span style="color: #008000;">向左算法</span>
+<span style="color: #008080;">310</span> CanMove=<span style="color: #000000;">TurnLeft(Map);
+</span><span style="color: #008080;">311</span> <span style="color: #008000;">//</span><span style="color: #008000;">将向左改回各自方向</span>
+<span style="color: #008080;">312</span> <span style="color: #0000ff;">switch</span><span style="color: #000000;"> (Direction)
+</span><span style="color: #008080;">313</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">314</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> Up:
+</span><span style="color: #008080;">315</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">316</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">317</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">318</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">319</span> map[j][i] =<span style="color: #000000;">Map[i][j];
+</span><span style="color: #008080;">320</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">321</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">322</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">323</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> Down:
+</span><span style="color: #008080;">324</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">325</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">326</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">327</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">328</span> map[<span style="color: #800080;">3</span>-j][i] =<span style="color: #000000;"> Map[i][j];
+</span><span style="color: #008080;">329</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">330</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">331</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">332</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> Left:
+</span><span style="color: #008080;">333</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">334</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">335</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">336</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">337</span> map[i][j] =<span style="color: #000000;"> Map[i][j];
+</span><span style="color: #008080;">338</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">339</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">340</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">341</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> Right:
+</span><span style="color: #008080;">342</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">343</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">344</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">345</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">346</span> map[i][<span style="color: #800080;">3</span>-j] =<span style="color: #000000;"> Map[i][j];
+</span><span style="color: #008080;">347</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">348</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">349</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">350</span> <span style="color: #0000ff;">default</span><span style="color: #000000;">:
+</span><span style="color: #008080;">351</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">352</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">353</span> <span style="color: #0000ff;">if</span><span style="color: #000000;"> (CanMove)
+</span><span style="color: #008080;">354</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">355</span> <span style="color: #000000;">randIntNum();
+</span><span style="color: #008080;">356</span> <span style="color: #000000;">drawMap();
+</span><span style="color: #008080;">357</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">358</span> <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">359</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">360</span> isOver = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;">361</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">362</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">363</span> <span style="color: #008000;">//</span><span style="color: #008000;">算法</span>
+<span style="color: #008080;">364</span> <span style="color: #0000ff;">bool</span> TurnLeft(<span style="color: #0000ff;">int</span> Map[<span style="color: #800080;">4</span>][<span style="color: #800080;">4</span>])<span style="color: #008000;">//</span><span style="color: #008000;">按向左键进行合并</span>
+<span style="color: #008080;">365</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">366</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> k;
+</span><span style="color: #008080;">367</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> len;
+</span><span style="color: #008080;">368</span> <span style="color: #0000ff;">int</span> Save[<span style="color: #800080;">4</span><span style="color: #000000;">];
+</span><span style="color: #008080;">369</span> <span style="color: #0000ff;">int</span> Move[<span style="color: #800080;">4</span>][<span style="color: #800080;">4</span><span style="color: #000000;">];
+</span><span style="color: #008080;">370</span> <span style="color: #0000ff;">bool</span> CanMove = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">371</span> 
+<span style="color: #008080;">372</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">373</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">374</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">375</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">376</span> Move[i][j] =<span style="color: #000000;"> Map[i][j];
+</span><span style="color: #008080;">377</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">378</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">379</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">380</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">381</span> k = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">382</span> len = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">383</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">384</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">385</span> <span style="color: #0000ff;">if</span> (Map[i][j]==<span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">386</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">387</span> <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+</span><span style="color: #008080;">388</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">389</span> <span style="color: #0000ff;">for</span> (k = j+<span style="color: #800080;">1</span>; k &lt; <span style="color: #800080;">4</span>; k++<span style="color: #000000;">)
+</span><span style="color: #008080;">390</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">391</span> <span style="color: #0000ff;">if</span> (Map[i][k] != <span style="color: #800080;">0</span><span style="color: #000000;"> )
+</span><span style="color: #008080;">392</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">393</span> <span style="color: #0000ff;">if</span> (Map[i][j] ==<span style="color: #000000;"> Map[i][k])
+</span><span style="color: #008080;">394</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">395</span> Map[i][j] *= <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">396</span> Map[i][k] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">397</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">398</span> <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">399</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">400</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">401</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">402</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">403</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">404</span> <span style="color: #0000ff;">if</span> (Map[i][j]!=<span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">405</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">406</span> Save[len]=<span style="color: #000000;">Map[i][j];
+</span><span style="color: #008080;">407</span> len++<span style="color: #000000;">;
+</span><span style="color: #008080;">408</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">409</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">410</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">411</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">412</span> <span style="color: #0000ff;">if</span> (j&lt;<span style="color: #000000;">len)
+</span><span style="color: #008080;">413</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">414</span> Map[i][j] =<span style="color: #000000;"> Save[j];
+</span><span style="color: #008080;">415</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">416</span> <span style="color: #0000ff;">else</span>
+<span style="color: #008080;">417</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">418</span> Map[i][j] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">419</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">420</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">421</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">422</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">4</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">423</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">424</span> <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> j = <span style="color: #800080;">0</span>; j &lt; <span style="color: #800080;">4</span>; j++<span style="color: #000000;">)
+</span><span style="color: #008080;">425</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">426</span> <span style="color: #0000ff;">if</span> (Move[i][j] !=<span style="color: #000000;"> Map[i][j])
+</span><span style="color: #008080;">427</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">428</span> CanMove = <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;">429</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">430</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">431</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">432</span> <span style="color: #0000ff;">return</span><span style="color: #000000;"> CanMove;
+</span><span style="color: #008080;">433</span> }</pre>
+</div>
+<p>&nbsp;</p>
+<h3>图形库地址：</h3>
+<p><a href="https://easyx.cn/downloads/" target="_blank">https://easyx.cn/downloads/</a></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

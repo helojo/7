@@ -1,0 +1,244 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修ffmpeg AVPacket结构体及其相关函数' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>ffmpeg AVPacket结构体及其相关函数</center></div><div class='banquan'>原文出处:本文由博客园博主丁方提供。<br/>
+原文连接:https://www.cnblogs.com/changdingfang/p/11283593.html</div><br>
+    <h3><span style="font-family: 'Microsoft YaHei'; font-size: 18px;">0. 简介</span></h3>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">AVPacket结构体并不是很复杂, 但是在ffmpeg中用的非常多. 与其相关的函数也是比较多.</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">AVPacket保存了解复用之后, 解码之前的数据, 和这些数据相关的一些附加信息.</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">对于视频来说, AVPacket通常包含一个压缩的frame; 而音频可能包含多个压缩的frame. 一个packet也可能是空的, 不包含任何压缩数据data, 而只包含附加数据side data(容器提供的关于packet的一些附加信息, 例如: 在编码结束的时候更新一些流的参数)</span></p>
+<p style="margin-left: 30px;">&nbsp;</p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">AVPacket是FFmpeg中为数不多的结构之一, 其大小是公共abi的一部分, 因此它可以在堆栈上分配, 如果libavcodec和libavformat没有很大的改动, 就不会向其中添加任何新字段.<br /></span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">官方文档:&nbsp;</span></p>
+<blockquote>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">AVPacket is one of the few structs in FFmpeg,whose size is a part of public ABI.Thus it may be allocated on stack and no new fields can be added to it without libavcodec and libavformat major bump.</span></p>
+
+
+
+
+</blockquote>
+<p style="margin-left: 30px;">&nbsp;</p>
+<h3><span style="font-family: 'Microsoft YaHei'; font-size: 18px;">1. AVPacket数据结构定义</span></h3>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">ffmpeg 版本3.4.1, struct AVPacket定义于&lt;libavcodec/avcodec.h&gt;</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">struct AVPacket结构体源码:&nbsp;</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> typedef <span style="color: #0000ff;">struct</span><span style="color: #000000;"> AVPacket {
+</span><span style="color: #008080;"> 2</span>     <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;"> 3</span> <span style="color: #008000;">     * A reference to the reference-counted buffer where the packet data is
+</span><span style="color: #008080;"> 4</span> <span style="color: #008000;">     * stored.
+</span><span style="color: #008080;"> 5</span> <span style="color: #008000;">     * May be NULL, then the packet data is not reference-counted.
+</span><span style="color: #008080;"> 6</span>      <span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 7</span>     AVBufferRef *<span style="color: #000000;">buf;
+</span><span style="color: #008080;"> 8</span>     <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;"> 9</span> <span style="color: #008000;">     * Presentation timestamp in AVStream-&gt;time_base units; the time at which
+</span><span style="color: #008080;">10</span> <span style="color: #008000;">     * the decompressed packet will be presented to the user.
+</span><span style="color: #008080;">11</span> <span style="color: #008000;">     * Can be AV_NOPTS_VALUE if it is not stored in the file.
+</span><span style="color: #008080;">12</span> <span style="color: #008000;">     * pts MUST be larger or equal to dts as presentation cannot happen before
+</span><span style="color: #008080;">13</span> <span style="color: #008000;">     * decompression, unless one wants to view hex dumps. Some formats misuse
+</span><span style="color: #008080;">14</span> <span style="color: #008000;">     * the terms dts and pts/cts to mean something different. Such timestamps
+</span><span style="color: #008080;">15</span> <span style="color: #008000;">     * must be converted to true pts/dts before they are stored in AVPacket.
+</span><span style="color: #008080;">16</span>      <span style="color: #008000;">*/</span>
+<span style="color: #008080;">17</span> <span style="color: #000000;">    int64_t pts;
+</span><span style="color: #008080;">18</span>     <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">19</span> <span style="color: #008000;">     * Decompression timestamp in AVStream-&gt;time_base units; the time at which
+</span><span style="color: #008080;">20</span> <span style="color: #008000;">     * the packet is decompressed.
+</span><span style="color: #008080;">21</span> <span style="color: #008000;">     * Can be AV_NOPTS_VALUE if it is not stored in the file.
+</span><span style="color: #008080;">22</span>      <span style="color: #008000;">*/</span>
+<span style="color: #008080;">23</span> <span style="color: #000000;">    int64_t dts;
+</span><span style="color: #008080;">24</span>     uint8_t *<span style="color: #000000;">data;
+</span><span style="color: #008080;">25</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;">   size;
+</span><span style="color: #008080;">26</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;">   stream_index;
+</span><span style="color: #008080;">27</span>     <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">28</span> <span style="color: #008000;">     * A combination of AV_PKT_FLAG values
+</span><span style="color: #008080;">29</span>      <span style="color: #008000;">*/</span>
+<span style="color: #008080;">30</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;">   flags;
+</span><span style="color: #008080;">31</span>     <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">32</span> <span style="color: #008000;">     * Additional packet data that can be provided by the container.
+</span><span style="color: #008080;">33</span> <span style="color: #008000;">     * Packet can contain several types of side information.
+</span><span style="color: #008080;">34</span>      <span style="color: #008000;">*/</span>
+<span style="color: #008080;">35</span>     AVPacketSideData *<span style="color: #000000;">side_data;
+</span><span style="color: #008080;">36</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> side_data_elems;
+</span><span style="color: #008080;">37</span> 
+<span style="color: #008080;">38</span>     <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">39</span> <span style="color: #008000;">     * Duration of this packet in AVStream-&gt;time_base units, 0 if unknown.
+</span><span style="color: #008080;">40</span> <span style="color: #008000;">     * Equals next_pts - this_pts in presentation order.
+</span><span style="color: #008080;">41</span>      <span style="color: #008000;">*/</span>
+<span style="color: #008080;">42</span> <span style="color: #000000;">    int64_t duration;
+</span><span style="color: #008080;">43</span> 
+<span style="color: #008080;">44</span>     int64_t pos;                            <span style="color: #808080;">///</span><span style="color: #808080;">&lt; byte position in stream, -1 if unknown
+</span><span style="color: #008080;">45</span> 
+<span style="color: #008080;">46</span> <span style="color: #0000ff;">#if</span> FF_API_CONVERGENCE_DURATION
+<span style="color: #008080;">47</span>     <span style="color: #008000;">/*</span><span style="color: #008000;">*
+</span><span style="color: #008080;">48</span> <span style="color: #008000;">     * @deprecated Same as the duration field, but as int64_t. This was required
+</span><span style="color: #008080;">49</span> <span style="color: #008000;">     * for Matroska subtitles, whose duration values could overflow when the
+</span><span style="color: #008080;">50</span> <span style="color: #008000;">     * duration field was still an int.
+</span><span style="color: #008080;">51</span>      <span style="color: #008000;">*/</span>
+<span style="color: #008080;">52</span> <span style="color: #000000;">    attribute_deprecated
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">    int64_t convergence_duration;
+</span><span style="color: #008080;">54</span> <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;">55</span> } AVPacket;</pre>
+</div>
+<p>&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">AVBufferRef *buf;</span></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">用来管理data指针引用的数据缓存.</span></p>
+<p style="margin-left: 30px;">&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int64_t pts;</span></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">显示时间, 比较关键的数据, 在做seek和播放进度的时候都要用到它, pts只是一个数量, 对应于AVStream-&gt;time_base, 要根据time_base才能转换为具体的时间, 音频和视频一般有不同的time_base, 所以在做音视频同步一定要做转换, 不能直接拿pts做.</span></p>
+<p style="margin-left: 30px;">&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int64_t dts;</span></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">基本属性等同于pts, 区别就是dts对应的是解码时间.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">uint8_t *data;</span></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">保存指向未解码数据的指针.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int size;</span></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">data的大小..</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int stream_index;</span></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">帧数据所属流的索引, 用来区分音频, 视频, 字幕等数据.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int flags;</span></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">标志,&nbsp; 比如包含AV_PKT_FLAG_KEY值表示是关键帧.</span></p>
+<p style="margin-left: 30px;">#define AV_PKT_FLAG_KEY 0x0001<br />#define AV_PKT_FLAG_CORRUPT 0x0002<br />#define AV_PKT_FLAG_DISCARD   0x0004<br />#define AV_PKT_FLAG_TRUSTED   0x0008</p>
+<p>&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">AVPacketSideData *side_data;</span></li>
+
+
+
+
+
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">容器提供的一些附加数据</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int side_data_elems;</span></li>
+
+
+
+
+
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">附加数据元素个数.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int64_t duration;</span></li>
+
+
+
+
+
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">数据的时长, 以所属媒体流的时间基准为单位, 未知则默认值0</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><span style="font-family: 'Microsoft YaHei'; font-size: 16px;"> int64_t pos;</span></li>
+
+
+
+
+
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei';"><span style="font-size: 16px;">数据在媒体流中的位置, 未知则默认值-1</span></span></p>
+<p>&nbsp;</p>
+<h3><span style="font-family: 'Microsoft YaHei'; font-size: 18px;"><strong>2. AVPacket相关函数<br /></strong></span></h3>
+<p style="margin-left: 30px;"><span style="font-size: 16px; font-family: 'Microsoft YaHei';">函数主要分为:</span></p>
+<ul>
+<li>AVPacket初始化</li>
+<li>AVPacket中data数据管理</li>
+<li>AVPacket中side_data数据管理</li>
+</ul>
+<pre><code><span style="font-family: 'Microsoft YaHei'; font-size: 18px;">&nbsp;</span></pre>
+<ul>
+<li>
+<p><strong><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">void av_init_packet(AVPacket *pkt);</span></strong></p>
+</li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">初始化packet的值为默认值, 该函数不会影响data应用的数据缓存空间和size.</span></p>
+<p style="margin-left: 30px;">&nbsp;</p>
+<ul>
+<li><strong><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int av_new_packet(AVPacket *pkt, int size);</span></strong></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">内部调用了av_init_packet(pkt); 而且会为data分配空间.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><strong><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">AVPacket *av_packet_alloc(void);</span></strong></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">创建一个AVPacket, 将其字段设置为默认值, 没有给data分配空间.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><strong><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int av_packet_ref(AVPacket *dst, const AVPacket *src);</span></strong></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">增加src-&gt;data引用计数. </span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">如果src已经设置了引用计数, 则直接将引用计数+1;</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">如果src没有设置引用计数, 则创建一个新的引用计数buf, 并复制src-&gt;data到buf-&gt;buffer中.</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">最后复制src其它字段到dst中.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><strong><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">void av_packet_unref(AVPacket *pkt);</span></strong></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">将缓存空间的引用计数-1;</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">并将packet中的其它字段设置为初始值.</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">如果引用计数为0, 则释放缓存空间.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><strong><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">void av_packet_free(AVPacket **pkt);</span></strong></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">释放使用av_packet_alloc 创建的AVPacket,&nbsp; 该函数会调用av_packet_unref.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><strong><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">AVPacket *av_packet_clone(const AVPacket *src);</span></strong></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">函数内部调用了av_packet_alloc和av_packet_ref.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><strong><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int av_copy_packet(AVPacket *dst, const AVPacket *src);</span></strong></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">复制一个新的packet, 包括数据缓存.</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int av_copy_packet_side_data(AVPacket *pkt, const AVPacket *src);</span></p>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">复制src的附加数据到pkt.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><strong><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">int av_grow_packet(AVPacket *pkt, int grow_by);</span></strong></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">增大pkt-&gt;data指向的数据缓存.</span></p>
+<p>&nbsp;</p>
+<ul>
+<li><strong><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">void av_shrink_packet(AVPacket *pkt, int size)</span></strong></li>
+</ul>
+<p style="margin-left: 30px;"><span style="font-family: 'Microsoft YaHei'; font-size: 16px;">减小pkt-&gt;data指向的数据缓存.</span></p>
+<p style="margin-left: 30px;">&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

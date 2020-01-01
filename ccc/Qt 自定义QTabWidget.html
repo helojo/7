@@ -1,0 +1,221 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Qt 自定义QTabWidget' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Qt 自定义QTabWidget</center></div><div class='banquan'>原文出处:本文由博客园博主远方是什么样子提供。<br/>
+原文连接:https://www.cnblogs.com/tingtaishou/p/11547013.html</div><br>
+    <p>思路：</p>
+<p>QTabWidget的特点：点击不同的选项卡显示不同的窗口。可以将QTabWidget分成两部分：</p>
+<p>　　(1).选项卡：点击时要知道点击的是哪个选项。则需要将选项卡和窗口的信息存起来，点击时去这个信息中判断；</p>
+<p>　　(2).窗口：点击某个选项卡时，相应的窗口显示，其他窗口隐藏，可以将这些窗口全部放到一个布局中。</p>
+<p>&nbsp;</p>
+<p>（1）创建一个结构体，包含选项卡和窗口的信息：</p>
+<div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">struct</span><span style="color: #000000;"> TabWidgetItem {
+　　QString id;           </span><span style="color: #008000;">//</span><span style="color: #008000;"><span style="font-family: Microsoft YaHei;">每项的</span>id</span>
+　　QWidget* window;      <span style="color: #008000;">//</span><span style="color: #008000; font-family: Microsoft YaHei;">窗口</span>
+　　IconButton* icon;     <span style="color: #008000;">//</span><span style="color: #008000; font-family: Microsoft YaHei;">选项卡</span>
+　　<span style="color: #0000ff;">int</span> status;           <span style="color: #008000;">//</span><span style="color: #008000;">0<span style="font-family: Microsoft YaHei;">选中</span>; 1<span style="font-family: Microsoft YaHei;">选中</span></span>
+<span style="color: #000000;">};
+ 
+QList</span>&lt;TabWidgetItem*&gt; m_pTabWidgetList;   <span style="color: #008000;">//</span><span style="color: #008000; font-family: Microsoft YaHei;">存放整个<span style="font-family: courier new,courier;">TabWidget</span>（选项卡和窗口所有信息）信息的<span style="font-family: courier new,courier;">list</span>列表</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+<div>&nbsp;</div>
+<div>
+<p><span style="font-family: Microsoft YaHei;">（2）初始化布局和结构体</span></p>
+</div>
+<div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span><span style="color: #000000;"> TabWidget::initLayout()
+{
+　　QHBoxLayout</span>* pMainLayout = <span style="color: #0000ff;">new</span> QHBoxLayout(<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+　　pMainLayout</span>-&gt;setMargin(<span style="color: #800080;">1</span><span style="color: #000000;">);
+　　pMainLayout</span>-&gt;setSpacing(<span style="color: #800080;">10</span><span style="color: #000000;">);
+
+　　QVBoxLayout</span>* pIconLayout = <span style="color: #0000ff;">new</span><span style="color: #000000;"> QVBoxLayout();
+　　QVBoxLayout</span>* pWindowLayout = <span style="color: #0000ff;">new</span><span style="color: #000000;"> QVBoxLayout();
+ 
+　　pMainLayout</span>-&gt;<span style="color: #000000;">addLayout(pWindowLayout);
+　　pMainLayout</span>-&gt;<span style="color: #000000;">addLayout(pIconLayout);
+}
+ 
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> TabWidget::initTabWidgetItemData()
+{
+　　{
+　　　　TabWidgetItem</span>* pItem = <span style="color: #0000ff;">new</span><span style="color: #000000;"> TabWidgetItem;
+　　　　pItem</span>-&gt;id = <span style="color: #800000;">"</span><span style="color: #800000;">real</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+ 
+　　　　QWidget</span>* pBaseWidget = <span style="color: #0000ff;">new</span> QWidget(<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+　　　　pItem</span>-&gt;window =<span style="color: #000000;"> pBaseWidget;
+　　　　pItem</span>-&gt;window-&gt;setVisible(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+　　　　pWindowLayout</span>-&gt;addWidget(pItem-&gt;<span style="color: #000000;">window);
+
+       pItem</span>-&gt;icon = <span style="color: #0000ff;">new</span> IconButton(<span style="color: #800000;">"</span><span style="color: #800000; font-family: Microsoft YaHei;">实时视频</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">this</span><span style="color: #000000;">);
+       pIconLayout</span>-&gt;addWidget(pItem-&gt;<span style="color: #000000;">icon);
+       connect(pItem</span>-&gt;icon, SIGNAL(clicked(IconButton*)), <span style="color: #0000ff;">this</span>, SLOT(sltMenuClicked(IconButton*<span style="color: #000000;">)));
+ 
+       pItem</span>-&gt;status = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+       m_pTabWidgetList.append(pItem);
+ 　　}
+ 
+　　{
+　　　　TabWidgetItem</span>* pItem = <span style="color: #0000ff;">new</span><span style="color: #000000;"> TabWidgetItem;
+　　　　pItem</span>-&gt;id = <span style="color: #800000;">"</span><span style="color: #800000;">local</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+ 
+　　　　QWidget</span>* pBaseWidget = <span style="color: #0000ff;">new</span> QWidget(<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+　　　　pItem</span>-&gt;window =<span style="color: #000000;"> pBaseWidget;
+　　　　pItem</span>-&gt;window-&gt;setVisible(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+　　　　pWindowLayout</span>-&gt;addWidget(pItem-&gt;<span style="color: #000000;">window);
+
+       pItem</span>-&gt;icon = <span style="color: #0000ff;">new</span> IconButton(<span style="color: #800000;">"</span><span style="color: #800000; font-family: Microsoft YaHei;">本地回放</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">this</span><span style="color: #000000;">);
+       pIconLayout</span>-&gt;addWidget(pItem-&gt;<span style="color: #000000;">icon);
+       connect(pItem</span>-&gt;icon, SIGNAL(clicked(IconButton*)), <span style="color: #0000ff;">this</span>, SLOT(sltMenuClicked(IconButton*<span style="color: #000000;">)));
+ 
+       pItem</span>-&gt;status = <span style="color: #0000ff;">false</span><span style="color: #000000;">;
+       m_pTabWidgetList.append(pItem);
+ 　　}
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+<div><span style="font-family: Microsoft YaHei;">（3）自定义选项卡<span style="font-family: courier new,courier;">IconButton<span style="font-family: Microsoft YaHei;">类</span></span></span></div>
+<div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">IconButton.h<span style="font-family: Microsoft YaHei;">文件
+ 
+</span></span><span style="color: #0000ff;">#pragma</span> once<span style="color: #000000;">
+ 
+#include </span>&lt;QWidget&gt;
+ 
+<span style="color: #0000ff;">class</span> IconButton: <span style="color: #0000ff;">public</span><span style="color: #000000;"> QWidget
+{
+    Q_OBJECT
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">explicit</span> IconButton(QString title, QWidget *parent = <span style="color: #800080;">0</span><span style="color: #000000;">);
+    </span>~<span style="color: #000000;">IconButton();
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    QLabel</span>*<span style="color: #000000;"> m_pTitle;
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> initLayout();
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> setTitle(QString title);
+</span><span style="color: #0000ff;">protected</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">void</span> mouseReleaseEvent(QMouseEvent *<span style="color: #0000ff;">event</span><span style="color: #000000;">);
+signals:
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> clicked();
+signals:
+    </span><span style="color: #0000ff;">void</span> clicked(IconButton*<span style="color: #000000;">);
+}
+ 
+IconButton.cpp<span style="font-family: Microsoft YaHei;">文件</span>
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">IconButton.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+IconButton::IconButton(QString title, QWidget </span>*<span style="color: #000000;">parent)
+    : QWidget(parent)
+{
+    initLayout();
+    setTitle(title);
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> IconButton::initLayout()
+{
+    m_pMainLayout </span>= <span style="color: #0000ff;">new</span> QHBoxLayout(<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+ 
+    m_pTitle </span>= <span style="color: #0000ff;">new</span> QLabel(<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+    m_pTitle</span>-&gt;setStyleSheet(<span style="color: #800000;">"</span><span style="color: #800000;">QLabel{font-size:15px;font-weight:100;color:white;}</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    m_pMainLayout</span>-&gt;addWidget(m_pTitle, <span style="color: #800080;">0</span><span style="color: #000000;">, Qt::AlignLeft);
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> IconButton::setTitle(QString title)
+{
+    m_pTitle</span>-&gt;<span style="color: #000000;">setText(title);
+}
+
+</span><span style="color: #0000ff;">void</span> IconButton::mouseReleaseEvent(QMouseEvent *<span style="color: #0000ff;">event</span><span style="color: #000000;">)
+{
+    </span><span style="color: #0000ff;">if</span> (Qt::LeftButton == <span style="color: #0000ff;">event</span>-&gt;<span style="color: #000000;">button())
+    {
+        </span><span style="color: #008000;">/*</span><span style="color: #008000;"><span style="font-family: Microsoft YaHei;"> 只处理鼠标在按钮区域弹起</span> </span><span style="color: #008000;">*/</span>
+        <span style="color: #0000ff;">if</span> (<span style="color: #0000ff;">this</span>-&gt;rect().contains(<span style="color: #0000ff;">event</span>-&gt;<span style="color: #000000;">pos()))
+        {
+            </span><span style="color: #008000;">/*</span><span style="color: #008000; font-family: Microsoft YaHei;"> 单击 </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+            emit clicked();
+            emit clicked(</span><span style="color: #0000ff;">this</span>);   <span style="color: #008000;">//</span><span style="color: #008000; font-family: Microsoft YaHei;">关键：单击返回<span style="font-family: courier new,courier;">this</span>指针</span>
+<span style="color: #000000;">        }
+    }
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+<div>
+<p>（4）设置切换函数</p>
+<div>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span><span style="color: #000000;"> TabWidget::setTabWidgetActivePage(QString id)
+{
+    QWidget</span>* pNextwindow =<span style="color: #000000;"> NULL;
+    </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; m_pTabWidgetList.size(); i++) {   <span style="color: #008000;">//</span><span style="color: #008000; font-family: Microsoft YaHei;">先将所有窗口隐藏</span>
+        TabWidgetItem* item =<span style="color: #000000;"> m_pTabWidgetList.at(i);
+        item</span>-&gt;status = <span style="color: #800080;">0</span><span style="color: #000000;">;
+        item</span>-&gt;icon-&gt;setChekced(<span style="color: #0000ff;">false</span><span style="color: #000000;">);
+        item</span>-&gt;window-&gt;<span style="color: #000000;">hide();
+        </span><span style="color: #0000ff;">if</span> (item-&gt;id ==<span style="color: #000000;"> id) {
+            item</span>-&gt;status = <span style="color: #800080;">1</span><span style="color: #000000;">;
+            item</span>-&gt;icon-&gt;setChekced(<span style="color: #0000ff;">true</span><span style="color: #000000;">);
+            pNextwindow </span>= item-&gt;<span style="color: #000000;">window;
+        }
+    }
+    </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (pNextwindow) {
+        pNextwindow</span>-&gt;show();   <span style="color: #008000;">//</span><span style="color: #008000; font-family: Microsoft YaHei;">再显示选择的窗口</span>
+<span style="color: #000000;">    }
+}
+
+</span><span style="color: #0000ff;">void</span> TabWidget::sltMenuClicked(IconButton *<span style="color: #000000;"> btn)
+{
+    </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; m_pTabWidgetList.size(); i++<span style="color: #000000;">) {
+        TabWidgetItem</span>* item =<span style="color: #000000;"> m_pTabWidgetList.at(i);
+        </span><span style="color: #0000ff;">if</span> (item-&gt;icon ==<span style="color: #000000;"> btn) {
+            setTabWidgetActivePage(item</span>-&gt;<span style="color: #000000;">id);
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        }
+    }
+}
+ 
+TabWidget::TabWidget(QWidget </span>*<span style="color: #000000;">parent)
+{
+    initTabWidgetData();
+    setTabWidgetActivePage(</span><span style="color: #800000;">"</span><span style="color: #800000;">real</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div>
+<div>&nbsp;</div>
+<div><span style="font-family: courier new,courier;">（5）<span style="font-family: Microsoft YaHei;">大功告成</span></span></div>
+<div>&nbsp;</div>
+<div><span style="font-family: courier new,courier;"><span style="font-family: Microsoft YaHei;">我只是把核心代码写下来了，别的花里胡哨的添加自己写...</span></span></div>
+<div>&nbsp;</div>
+<div>&nbsp;</div>
+<div>&nbsp;</div>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

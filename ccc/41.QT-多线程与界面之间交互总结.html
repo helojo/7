@@ -1,0 +1,84 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修41.QT-多线程与界面之间交互总结' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>41.QT-多线程与界面之间交互总结</center></div><div class='banquan'>原文出处:本文由博客园博主NQian提供。<br/>
+原文连接:https://www.cnblogs.com/lifexy/p/10907901.html</div><br>
+    <p><strong><span style="font-size: 18px; color: #008000; background-color: #ffff99;">1. 线程与界面组件需要注意的地方</span></strong></p>
+<ul>
+<li><span style="font-size: 15px;">在QThread线程中<span style="color: #ff0000;">不能直接创建</span>QWidget之类的<span style="color: #ff0000;">界面组件</span>.</span></li>
+<li><span style="font-size: 15px;">因为在QT中,所有界面组件相关的操作都必须在主线程中<span style="color: #ff0000;">(也就是GUI thread)</span></span></li>
+<li><span style="font-size: 15px;">所以, QThread线程不能直接操作界面组件.</span></li>
+</ul>
+<p><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>2.QThread线程如何操作界面组件-方法1</strong></span></p>
+<ul>
+<li><span style="font-size: 15px;">将多线程类对象封装为GUI界面类的类成员</span></li>
+<li><span style="font-size: 15px;">然后在子线程定义信号函数,通过信号槽机制,向界面组件emit发射信号,从而实现间接操作.</span></li>
+</ul>
+<p>&nbsp;</p>
+<p><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>3.QThread线程如何操作界面组件-方法2</strong></span></p>
+<ul>
+<li><span style="font-size: 15px;">使用<span style="color: #ff0000;">QApplication::postEvent()</span>实现向界面发送事件,从而能够封装一个自定义类</span></li>
+</ul>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>4.使用Invokes()函数来调用界面组件的信号槽-方法3</strong></span></p>
+<p><span style="font-size: 15px;">一般使用该函数(用来调用对方的私有信号或槽):</span></p>
+<p><span style="font-size: 15px;"><img src="./images/41.QT-多线程与界面之间交互总结0.png" alt="" width="821" height="133" /></span></p>
+<p><span style="font-size: 15px;">该函数的连接方式默认使用的是<span style="color: #ff0000;">Qt::AutoConnection</span></span></p>
+<ul>
+<li><span style="font-size: 15px;">表示如果接收者和发送者在同一个线程，则自动使用<span style="color: #ff0000;">Qt::DirectConnection</span>类型。如果接收者和发送者不在一个线程，则自动使用<span style="color: #ff0000;">Qt::QueuedConnection</span>类型。</span></li>
+</ul>
+<p><span style="font-size: 15px; color: #800000;">&nbsp;</span></p>
+<p><span style="font-size: 15px;">比如,当我们想调用一个obj下的compute(QString, int, double)槽函数时:</span></p>
+<p><span style="font-size: 15px;">则只需要写入:</span></p>
+<div class="cnblogs_code">
+<pre>QMetaObject::invokeMethod(obj, <span style="color: #800000;">"</span><span style="color: #800000;">compute</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+                            Q_ARG(QString, </span><span style="color: #800000;">"</span><span style="color: #800000;">sqrt</span><span style="color: #800000;">"</span><span style="color: #000000;">),                        
+                            Q_ARG(</span><span style="color: #0000ff;">int</span>, <span style="color: #800080;">42</span><span style="color: #000000;">),
+                            Q_ARG(</span><span style="color: #0000ff;">double</span>, <span style="color: #800080;">9.7</span>));</pre>
+</div>
+<p><span style="color: #800000;"><strong><span style="font-size: 15px;">示例如下所示:</span></strong></span></p>
+<p><span style="font-size: 15px;">在Testtherd线程类里通过invokeMethod向父界面类的paintMsg槽函数发送信息</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span><span style="color: #000000;"> Testtherd::run()
+{<br />    </span><span style="color: #0000ff;">int</span> count=<span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">while</span>(<span style="color: #800080;">1</span><span style="color: #000000;">)
+    {
+        QString str</span>=<span style="color: #800000;">"</span><span style="color: #800000;">请稍等,正在验证用户,登录中</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i =<span style="color: #800080;">0</span>;i&lt;count;i++<span style="color: #000000;">)
+           str.append(</span><span style="color: #800000;">'</span><span style="color: #800000;">.</span><span style="color: #800000;">'</span>);                   <span style="color: #008000;">//</span><span style="color: #008000;">循环添加小数点</span><span style="color: #000000;">
+        count</span>=(count+<span style="color: #800080;">1</span>)%<span style="color: #800080;">7</span><span style="color: #000000;">;
+        QMetaObject::invokeMethod(</span><span style="color: #0000ff;">this</span>-&gt;parent(), <span style="color: #800000;">"</span><span style="color: #800000;">paintMsg</span><span style="color: #800000;">"</span><span style="color: #000000;">,
+                                            Q_ARG(QString, str));
+
+        msleep(</span><span style="color: #800080;">500</span><span style="color: #000000;">);
+    }
+}</span></pre>
+</div>
+<p><span style="font-size: 15px;">父界面类的paintMsg槽函数如下所示:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span><span style="color: #000000;"> loginwindow:: paintMsg(QString msg) {
+</span><span style="color: #0000ff;">this</span>-&gt;LineHint-&gt;<span style="color: #000000;">setText(msg);
+}</span></pre>
+</div>
+<p><span style="font-size: 15px;">运行效果如下:</span></p>
+<p align="left"><span style="font-size: 15px;">&nbsp;<img src="./images/41.QT-多线程与界面之间交互总结1.png" alt="" width="393" height="286" /></span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

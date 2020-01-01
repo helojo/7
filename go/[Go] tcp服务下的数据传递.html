@@ -1,0 +1,73 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[Go] tcp服务下的数据传递' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[Go] tcp服务下的数据传递</center></div><div class='banquan'>原文出处:本文由博客园博主陶士涵提供。<br/>
+原文连接:https://www.cnblogs.com/taoshihan/p/11879335.html</div><br>
+    <p><br />go中实现一个tcp服务，首先是要监听端口，接收请求，这个地方会被阻塞等待<br />当客户端连接过来，会开一个grountine去处理这条客户端的tcp连接，因此可以同时处理多条连接</p>
+<p>在连接中，要循环的去读取客户端传递过来的数据，这样就可以不停的处理客户端的请求数据<br />在读取数据的时候，每次我只读一个字节，这样方便查看接收到什么数据，因此读取数据的时候也要循环，拼接收到的数据，在这个循环中如果读取大小为0或者读取的这个字节为\n时，我就退出循环。</p>
+<p>因为\n的ascii编码为10，所以我收到的这一个字节切片的数据tmpByte[0]为10的时候就断掉</p>
+<p>可以通过下面代码的运行看一下收取到的数据，客户端传递一个英文字符，和传递一个中文字符所收取到的具体数据，参照ascii对照表</p>
+<p>客户端传递：a<br />服务端收到：<br />1 [97] 一个字节，ascii编码为97，对应 a<br />1 [13] 一个字节，ascii编码为13，对应 控制字符CR，归位键<br />1 [10] 一个字节，ascii编码为10，对应 控制字符LF，换行键</p>
+<p>客户端传递：你<br />服务端收到：<br />1 [228] 三个字节<br />1 [189]<br />1 [160]<br />1 [13]  下面这俩和上面的意思一样<br />1 [10]</p>
+<p>ascii编码下，一个英文字符一个字节，utf8编码下，一个中文字符三个字节</p>
+<p>完整代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">net</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func main() {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">监听端口</span>
+    listener, _ := net.Listen(<span style="color: #800000;">"</span><span style="color: #800000;">tcp</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">0.0.0.0:5921</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">循环阻塞接收,并发处理同时处理多个连接</span>
+    <span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+        conn, _ :</span>=<span style="color: #000000;"> listener.Accept()
+        go handleConn(conn)
+    }
+}
+func handleConn(conn net.Conn) {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">循环不停的去处理数据</span>
+    <span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+        tmpByte :</span>= <span style="color: #0000ff;">make</span>([]<span style="color: #0000ff;">byte</span>, <span style="color: #800080;">1</span><span style="color: #000000;">)
+        var resData []</span><span style="color: #0000ff;">byte</span>
+        <span style="color: #008000;">//</span><span style="color: #008000;">循环去读取数据</span>
+        <span style="color: #0000ff;">for</span><span style="color: #000000;"> {
+            len, _ :</span>=<span style="color: #000000;"> conn.Read(tmpByte)
+            </span><span style="color: #0000ff;">fmt</span><span style="color: #000000;">.Println(len, tmpByte)
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">读到的长度为0，或者读取到换行就断掉</span>
+            <span style="color: #0000ff;">if</span> len == <span style="color: #800080;">0</span> || tmpByte[<span style="color: #800080;">0</span>] == <span style="color: #800080;">10</span><span style="color: #000000;"> {
+                break
+            }
+            </span><span style="color: #008000;">//</span><span style="color: #008000;">拼接读到的数据</span>
+            resData =<span style="color: #000000;"> append(resData, tmpByte...)
+
+        }
+        str :</span>= <span style="color: #0000ff;">fmt</span>.Sprintf(<span style="color: #800000;">"</span><span style="color: #800000;">收到：%s\n</span><span style="color: #800000;">"</span>, <span style="color: #0000ff;">string</span><span style="color: #000000;">(resData))
+        conn.Write([]</span><span style="color: #0000ff;">byte</span><span style="color: #000000;">(str))
+    }
+}</span></pre>
+</div>
+<p>&nbsp;<img src="./images/[Go] tcp服务下的数据传递0.png" alt="" /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

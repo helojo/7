@@ -1,0 +1,28 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修一个proc预编译代码时coredump的问题分析' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>一个proc预编译代码时coredump的问题分析</center></div><div class='banquan'>原文出处:本文由博客园博主皇家救星提供。<br/>
+原文连接:https://www.cnblogs.com/kingstarer/p/12079989.html</div><br>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;最近有同事在搞编译环境迁移，碰上一个问题让我帮他看一下。<br />&nbsp;&nbsp;&nbsp;&nbsp;他建了一个新目录，然后把现在的代码拷过去，编译的时候发现有一个文件编译不了一执行就出现core，不知道啥情况。<br />&nbsp;&nbsp;&nbsp;&nbsp;我进到他的编译环境，执行make，果然出现了core文件。<br />&nbsp;&nbsp;&nbsp;&nbsp;使用file命令分析，发现是proc程序的core。于是使用gdb，想进去看看在哪里core了。<br />&nbsp;&nbsp;&nbsp;&nbsp;但打开后使用where命令，发现输出的函数名称全是问号。根据经验，这种一般是由于内存越界导致函数堆栈信息被破坏。<br />&nbsp;&nbsp;&nbsp;&nbsp;于是想试试在gdb里面执行程序，看能不能抓到core现场。<br />&nbsp;&nbsp;&nbsp;&nbsp;使用make -n，输出实际编译的命令。再使用gdb运行porc，设置好运行参数，运行程序。<br />&nbsp;&nbsp;&nbsp;&nbsp;运行后很快出现sigsegv错误，这时使用where命令，发现函数堆栈信息还在。<br />&nbsp;&nbsp;&nbsp;&nbsp;但函数名称很陌生，不是库函数，又没源码，从函数名称也判断不出具体出错原因。于是断了使用gdb找原因的想法。<br />&nbsp;&nbsp;&nbsp;&nbsp;然后我又想，有一些文件编译成功，但有一些文件编译失败。会不会是这个.pc文件里面有什么代码触发了proc的bug呢？<br />于是我把文件里面的代码进行删减，再编译。<br />&nbsp;&nbsp;&nbsp;&nbsp;但无论我怎么删，运行proc预编译都会coredump。说明应该不是代码问题。<br />&nbsp;&nbsp;&nbsp;&nbsp;难道是文件名字导致的？<br />&nbsp;&nbsp;&nbsp;&nbsp;于是我把出错的代码恢复，并将其改名成另一个可以编译过的代码文件的名称。再编译一试，发现可以正常运行。<br />接着我再找了一个能成功编译的代码，使用mv命令把它改名成失败的代码名称，发现预编译出现core。<br />&nbsp;&nbsp;&nbsp;&nbsp;经过这两个试验，可以确定是文件名称导致了proc出现coredump。观察成功和失败的代码文件名称，发现长度相差比较大。<br />会不会是文件名长度造成的呢？<br />&nbsp;&nbsp;&nbsp;&nbsp;于是我通过逐步加大文件名试验，慢慢定位，终于发现proc在iname参数超过100个字符的时候会出现异常。<br />&nbsp;&nbsp;&nbsp;&nbsp;因为我这个同事新建的目录路径太长，导致路径名+文件名超过了100个字符，之前旧编译环境目录路径比较短，所以没有发现这个问题.</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;由于没有保留现场，相应的操作截图无法展示。这篇文章主要是想介绍一个常用的定位程序问题思路：<br />1 直接从结果分析，看core文件，错误日志，是否有明确提示问题所在<br />2 如果1不行，则需要梳理出程序运行步骤，猜测在那一步出现问题。简化或者跳过该步骤看问题是否能重现。如果可以说明猜测正确，如不行则继续其它猜测。</p>
+<p>&nbsp;</p>
+</div>
+</div></div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

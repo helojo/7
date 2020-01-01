@@ -1,0 +1,128 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修一个commit引发的思考' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>一个commit引发的思考</center></div><div class='banquan'>原文出处:本文由博客园博主apocelipes提供。<br/>
+原文连接:https://www.cnblogs.com/apocelipes/p/11143899.html</div><br>
+    <p>这几天我翻了翻golang的提交记录，发现了一条很有意思的提交：<a href="https://github.com/golang/go/commit/bc593eac2dc63d979a575eccb16c7369a5ff81e0">bc593ea</a>，这个提交看似简单，但是引人深思。</p>
+<h2 id="commit讲了什么">commit讲了什么</h2>
+<p>commit的标题是“sync: document implementation of Once.Do”，显然是对文档做些补充，然而奇怪的是为什么要对某个功能的实现做文档说明呢，难道不是配合代码+注释就能理解的吗？</p>
+<p>根据commit的描述我们得知，Once.Do的实现问题在过去几个月内被问了至少两次，所以官方决定澄清：</p>
+<blockquote>
+<p>It's not correct to use atomic.CompareAndSwap to implement Once.Do,<br />
+and we don't, but why we don't is a question that has come up<br />
+twice on golang-dev in the past few months.<br />
+Add a comment to help others with the same question.</p>
+</blockquote>
+<p>不过这不是这个commit的精髓，真正有趣的部分是添加的那几行注释。</p>
+<h2 id="有趣的疑问">有趣的疑问</h2>
+<p>commit添加的内容如下：</p>
+<p><img src="./images/一个commit引发的思考0.png" /></p>
+<p>乍一看可能平平无奇，然而仔细思考过后，我们就会发现问题了。</p>
+<p>众所周知，<code>sync.Once</code>用于保证某个操作只会执行一次，因此我们首先考虑到的就是为了并发安全加mutex，但是once对性能有一定要求，所以我们选用原子操作。</p>
+<p>这时候<code>atomic.CompareAndSwapUint32</code>很自然的就会浮现在脑海里，而下面的结构也很自然的就给出了：</p>
+<pre><code><code>func (o *Once) Do(f func()) {
+    if atomic.CompareAndSwapUint32(&amp;o.done, 0, 1) {
+        f()
+    }
+}</code></pre>
+<p>然而正是这种自然联想的方案却是官方否定的，为什么？</p>
+<p>原因很简单，举个例子，我们有一个模块，使用模块里的方法前需要初始化，否则会报错：</p>
+<p>module.go:</p>
+<pre><code><code>package module
+
+var flag = true
+
+func InitModule() {
+    // 这个初始化模块的方法不可以调用两次以上，以便于结合sync.Once使用
+    if !flag {
+        panic(&quot;call InitModule twice&quot;)
+    }
+
+    flag = false
+}
+
+func F() {
+    if flag {
+        panic(&quot;call F without InitModule&quot;)
+    }
+}</code></pre>
+<p>main.go:</p>
+<pre><code><code>package main
+
+import (
+    &quot;module&quot;
+    &quot;sync&quot;
+    &quot;time&quot;
+)
+
+var o = &amp;sync.Once{}
+
+func DoSomeWork() {
+    o.Do(module.InitModule()) // 不能多次初始化，所以要用once
+    module.F()
+}
+
+func main() {
+    go DoSomeWork() // goroutine1
+    go DoSomeWork() // goroutine2
+    time.Sleep(time.Second * 10)
+}</code></pre>
+<p>现在不管goroutine1还是goroutine2后运行，<code>module</code>都能被正确初始化，对于<code>F</code>的调用也不会panic，但我们不能忽略一种更常见的情况：两个goroutine同时运行会发生什么？</p>
+<p>我们列举其中一种情况：</p>
+<ol>
+<li>goroutine1先运行，这时如果按我们所想的once实现，CAS操作成功，<code>InitModule</code>开始执行</li>
+<li>这时goroutine2也在运行，但CAS因为别的routine操作成功，这里返回失败，<code>InitModule</code>执行被跳过</li>
+<li>Once.Do返回就意味着我们需要的操作已经被执行，这时goroutine2开始执行<code>F()</code></li>
+<li>但是我们的<code>InitModule</code>在goroutine1中因为某些原因没执行完，所以我们不能调用<code>F</code></li>
+<li>于是问题发生了</li>
+</ol>
+<p>你可能已经看出问题了，我们没有等到被调用函数执行完就返回了，导致了其他goroutine获得了一个不完整的初始化状态。</p>
+<p>解决起来也很简单：</p>
+<ol>
+<li>我们先判断执行标志，如果已经执行过就直接返回</li>
+<li>因为是判断执行标志而不修改，就会有多个routine同时判断位true的情况，我们用mutex原子化对被调用函数<code>f</code>的操作</li>
+<li>获得mutex之后先检查执行标志，以免重复执行</li>
+<li>接着调用<code>f</code></li>
+<li>然后我们把执行标志设置为1</li>
+<li>最后解除mutex，当其他进入判断的routine重复上述过程时就能保证<code>f</code>只会被调用一次了</li>
+</ol>
+<p>这是代码：</p>
+<pre><code><code>func (o *Once) Do(f func()) {
+    if atomic.LoadUint32(&amp;o.done) == 0 {
+        // Outlined slow-path to allow inlining of the fast-path.
+        o.doSlow(f)
+    }
+}
+
+func (o *Once) doSlow(f func()) {
+    o.m.Lock()
+    defer o.m.Unlock()
+    if o.done == 0 {
+        defer atomic.StoreUint32(&amp;o.done, 1)
+        f()
+    }
+}</code></pre>
+<h2 id="结束语">结束语</h2>
+<p>从这个问题我们可以看到，并发编程其实并不难，我们给出的解决方案是相当简单的，然而难的在于如何全面的思考并发中会遇到的问题从而编写并发安全的代码。</p>
+<p>golang的这个commit给了我们一个很好的例子，同时也是一个很好的启发。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

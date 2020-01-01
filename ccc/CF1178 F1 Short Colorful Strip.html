@@ -1,0 +1,90 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修CF1178 F1 Short Colorful Strip' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>CF1178 F1 Short Colorful Strip</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/CF1178F1.html</div><br>
+    <p><a href="http://codeforces.com/contest/1178/problem/F1">题目链接</a></p>
+<h2 id="题意">题意</h2>
+<p>有个长度为<span class="math inline">\(m\)</span>公分的布，要在上面每公分都染上颜色，整块布染恰好<span class="math inline">\(n(n=m)\)</span>种颜色。颜色标号从<span class="math inline">\(1\)</span>到<span class="math inline">\(n\)</span>。染色需遵循:</p>
+<blockquote>
+<p>1.从颜色<span class="math inline">\(1\)</span>到颜色<span class="math inline">\(n\)</span>依次，即必须先染标号小的颜色<br />
+2.每次可以染任意一个区间，但必须满足这个区间之前的颜色是相同的。</p>
+</blockquote>
+<p>询问将这块布染成所给颜色的方案数。</p>
+<h2 id="solution">solution</h2>
+<p>区间<span class="math inline">\(dp\)</span>。</p>
+<p><span class="math inline">\(f[l][r]\)</span>表示染好<span class="math inline">\([l,r]\)</span>这个区间的方案数。<span class="math inline">\(g[l][r]\)</span>表示最小的颜色最后单独染的方案数。</p>
+<p>所以就有<span class="math inline">\(g[l][r] = f[l][t-1] \times f[t+1][r]\)</span>,(<span class="math inline">\(a[t]\)</span>为区间<span class="math inline">\([l,r]\)</span>中的最小值)</p>
+<p>然后枚举一个<span class="math inline">\(k\)</span>表示<span class="math inline">\([l,k]\)</span>全染成最小颜色值的方案数。</p>
+<p>那么就有<span class="math inline">\(f[i][j]=\sum\limits_{k=l}^{r-1}g[l][k]\times f[k+1][r]\)</span></p>
+<p>最后<span class="math inline">\(f[1][n]\)</span>即为答案。</p>
+<h2 id="code">code</h2>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-07-21 09:01:13
+* @Last Modified time: 2019-07-21 10:48:02
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 510,mod = 998244353;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+int a[N],f[N][N],g[N][N];
+int main() {
+    int n = read(),m = read();
+    for(int i = 1;i &lt;= n;++i) a[i] = read();
+    a[0] = 1e9;
+    for(int i = 1;i &lt;= n + 1;++i) g[i][i] = f[i][i] = f[i][i - 1] = g[i][i - 1] = 1;
+    for(int len = 2;len &lt;= n;++len) {
+        for(int l = 1;l + len - 1 &lt;= n;++l) {
+            int r = l + len - 1,t = 0;
+            for(int k = l;k &lt;= r;++k) if(a[k] &lt; a[t]) t = k;
+            f[l][r] = g[l][r] = 1ll * f[l][t - 1] * f[t + 1][r] % mod;
+
+            for(int k = l;k &lt; r;++k) {
+                f[l][r] = (f[l][r] + 1ll * g[l][k] * f[k + 1][r] % mod) % mod;
+            }
+        }
+    }
+    cout&lt;&lt;f[1][n];
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

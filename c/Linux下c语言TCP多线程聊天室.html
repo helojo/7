@@ -1,0 +1,314 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Linux下c语言TCP多线程聊天室' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Linux下c语言TCP多线程聊天室</center></div><div class='banquan'>原文出处:本文由博客园博主Love丶伊卡洛斯提供。<br/>
+原文连接:https://www.cnblogs.com/ikaros-521/p/11389425.html</div><br>
+    <p>开发环境：Linux，GCC</p>
+<p>相关知识：TCP（博客：<a href="https://blog.csdn.net/Ikaros_521/article/details/98939373" data-cke-saved-href="https://blog.csdn.net/Ikaros_521/article/details/98939373">传送门</a>），线程</p>
+<p>附加：项目可能还有写不足之处，有些bug没调出来（如：对在线人数的控制），希望大佬赐教。</p>
+<p>那么话不多说，放码过来：</p>
+<p>码云：<a href="https://gitee.com/ikaros-521/c_project/tree/master/Linux%E4%B8%8Bc%E8%AF%AD%E8%A8%80TCP%E5%A4%9A%E7%BA%BF%E7%A8%8B%E8%81%8A%E5%A4%A9%E5%AE%A4" data-cke-saved-href="https://gitee.com/ikaros-521/c_project/tree/master/Linux%E4%B8%8Bc%E8%AF%AD%E8%A8%80TCP%E5%A4%9A%E7%BA%BF%E7%A8%8B%E8%81%8A%E5%A4%A9%E5%AE%A4">传送门</a>，GitHub：<a href="https://github.com/Ikaros-521/Linux-c-TCP-" data-cke-saved-href="https://github.com/Ikaros-521/Linux-c-TCP-">传送门</a></p>
+<p>服务端：server.c</p>
+<div class="cke_widget_wrapper cke_widget_block cke_widget_codeSnippet cke_widget_wrapper_has cke_widget_selected" data-cke-widget-wrapper="1" data-cke-filter="off" data-cke-display-name="代码段" data-cke-widget-id="1">
+<div class="cnblogs_code">
+<pre><code>#include &lt;stdio.h&gt;<span style="color: #000000;">
+#include </span>&lt;unistd.h&gt;<span style="color: #000000;">
+#include </span>&lt;sys/socket.h&gt;<span style="color: #000000;">
+#include </span>&lt;netinet/<span style="color: #0000ff;">in</span>.h&gt;<span style="color: #000000;">
+#include </span>&lt;arpa/inet.h&gt;<span style="color: #000000;">
+#include </span>&lt;<span style="color: #0000ff;">string</span>.h&gt;<span style="color: #000000;">
+#include </span>&lt;pthread.h&gt;
+
+<span style="color: #0000ff;">struct</span> sockaddr_in addr =<span style="color: #000000;"> {};
+</span><span style="color: #0000ff;">int</span> clifd_index = <span style="color: #800080;">0</span>; <span style="color: #008000;">//</span><span style="color: #008000;"> clifd的下标</span>
+<span style="color: #0000ff;">char</span> buf[<span style="color: #800080;">1024</span>] = {}; <span style="color: #008000;">//</span><span style="color: #008000;"> 存储客户端发来的字符串</span>
+<span style="color: #0000ff;">char</span> str[<span style="color: #800080;">1024</span>] = {}; <span style="color: #008000;">//</span><span style="color: #008000;"> 存储带clifd的回传信息</span>
+<span style="color: #0000ff;">int</span> clifd[<span style="color: #800080;">30</span>] = {}; <span style="color: #008000;">//</span><span style="color: #008000;"> 存储clifd</span>
+<span style="color: #0000ff;">int</span> online_num = <span style="color: #800080;">0</span>;    <span style="color: #008000;">//</span><span style="color: #008000;"> 连接人数</span>
+<span style="color: #0000ff;">int</span> max_num = <span style="color: #800080;">10</span>; <span style="color: #008000;">//</span><span style="color: #008000;"> 最大人数
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> 项目有bug，连接人数的限制控制不住，有待改进</span>
+
+<span style="color: #0000ff;">void</span>* start_read(<span style="color: #0000ff;">void</span> *arg) <span style="color: #008000;">//</span><span style="color: #008000;"> 读取信息的子线程</span>
+<span style="color: #000000;">{
+</span><span style="color: #008000;">//</span><span style="color: #008000;">    printf("arg:%d\n",*(int*)arg);</span>
+    <span style="color: #0000ff;">int</span> clifd1 = *(<span style="color: #0000ff;">int</span>*<span style="color: #000000;">)arg;
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">run_clifd:%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,clifd1);
+
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;">(;;)
+    {
+</span><span style="color: #008000;">//</span><span style="color: #008000;">        printf("before read\n");</span>
+
+        <span style="color: #0000ff;">int</span> ret = read(clifd1,buf,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(buf));
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">\nip:%s,port:%hu,size:%d\n</span><span style="color: #800000;">"</span>,inet_ntoa(addr.sin_addr),ntohs(addr.sin_port),ret); <span style="color: #008000;">//</span><span style="color: #008000;"> 获取相关信息</span>
+        printf(<span style="color: #800000;">"</span><span style="color: #800000;">say:%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,buf);
+        
+        </span><span style="color: #0000ff;">char</span> id[<span style="color: #800080;">10</span>] =<span style="color: #000000;"> {};
+        sprintf(id,</span><span style="color: #800000;">"</span><span style="color: #800000;">%d说:</span><span style="color: #800000;">"</span><span style="color: #000000;">,clifd1);
+
+        </span><span style="color: #0000ff;">if</span>(strlen(buf) != <span style="color: #800080;">0</span><span style="color: #000000;">)
+        {
+            strcpy(str,id);
+            strcat(str,buf);
+        } </span><span style="color: #008000;">//</span><span style="color: #008000;"> 存入str中</span>
+
+        <span style="color: #0000ff;">if</span>(<span style="color: #800080;">0</span> == strcmp(<span style="color: #800000;">"</span><span style="color: #800000;">quit</span><span style="color: #800000;">"</span>,buf)) <span style="color: #008000;">//</span><span style="color: #008000;"> 如果收到quit</span>
+<span style="color: #000000;">        {
+            online_num</span>--; <span style="color: #008000;">//</span><span style="color: #008000;"> 在线人数-1</span>
+            <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;clifd_index; i++<span style="color: #000000;">)
+            {
+                </span><span style="color: #0000ff;">if</span>(clifd1 ==<span style="color: #000000;"> clifd[i])
+                {
+                    </span><span style="color: #0000ff;">int</span> *die = &amp;<span style="color: #000000;">clifd1;
+                    clifd[i] </span>= <span style="color: #800080;">0</span><span style="color: #000000;">;
+                    pthread_exit(die); </span><span style="color: #008000;">//</span><span style="color: #008000;"> 终止线程</span>
+                    <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                }
+            }
+        }
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">usleep(1000);</span>
+<span style="color: #000000;">    }
+}
+
+</span><span style="color: #0000ff;">void</span>* start_write(<span style="color: #0000ff;">void</span> *arg) <span style="color: #008000;">//</span><span style="color: #008000;"> 写回的子线程</span>
+<span style="color: #000000;">{
+</span><span style="color: #008000;">//</span><span style="color: #008000;">    printf("arg:%d\n",*(int*)arg);
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">    usleep(500);</span>
+
+    <span style="color: #0000ff;">int</span> clifd1 = *(<span style="color: #0000ff;">int</span>*<span style="color: #000000;">)arg;
+
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">run_clifd:%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,clifd1);
+
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;">(;;)
+    {
+        </span><span style="color: #0000ff;">int</span> flag = <span style="color: #800080;">0</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;clifd_index; i++) <span style="color: #008000;">//</span><span style="color: #008000;"> 因为读到quit的原因，clifd被置0</span>
+<span style="color: #000000;">        {
+            </span><span style="color: #0000ff;">if</span>(clifd1 ==<span style="color: #000000;"> clifd[i])
+            {
+                </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+            }
+            </span><span style="color: #0000ff;">if</span>(i == clifd_index-<span style="color: #800080;">1</span><span style="color: #000000;">)
+            {
+                </span><span style="color: #0000ff;">int</span> *die = &amp;<span style="color: #000000;">clifd1;
+                flag </span>= <span style="color: #800080;">1</span><span style="color: #000000;">;
+                pthread_exit(die); </span><span style="color: #008000;">//</span><span style="color: #008000;"> 终止此写回的子线程</span>
+<span style="color: #000000;">            }
+        }
+        </span><span style="color: #0000ff;">if</span>(flag == <span style="color: #800080;">1</span><span style="color: #000000;">)
+        {
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        }
+
+        </span><span style="color: #0000ff;">if</span>(strlen(str) == <span style="color: #800080;">0</span>) <span style="color: #008000;">//</span><span style="color: #008000;"> 空消息不写入</span>
+            <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">before write\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">str:%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,str);
+        write(clifd1,str,strlen(str)</span>+<span style="color: #800080;">1</span><span style="color: #000000;">);
+        usleep(</span><span style="color: #800080;">50000</span>); <span style="color: #008000;">//</span><span style="color: #008000;"> 最快的子线程等待其他子线程</span>
+        memset(str,<span style="color: #800080;">0</span>,<span style="color: #800080;">1024</span>); <span style="color: #008000;">//</span><span style="color: #008000;"> 清空str</span>
+<span style="color: #000000;">    }
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">服务器创建socket...\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">int</span> sockfd = socket(AF_INET,SOCK_STREAM,<span style="color: #800080;">0</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">if</span>(<span style="color: #800080;">0</span> &gt;<span style="color: #000000;"> sockfd)
+    {
+        perror(</span><span style="color: #800000;">"</span><span style="color: #800000;">socket</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">准备地址...\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    
+    addr.sin_family </span>=<span style="color: #000000;"> AF_INET;
+    addr.sin_port </span>= htons(<span style="color: #800080;">6008</span>);<span style="color: #008000;">//</span><span style="color: #008000;">端口号</span>
+    addr.sin_addr.s_addr = inet_addr(<span style="color: #800000;">"</span><span style="color: #800000;">10.0.2.15</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">你的ip地址（或服务器的私网ip）</span>
+    socklen_t len = <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(addr);
+
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">绑定socket与地址...\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">if</span>(bind(sockfd,(<span style="color: #0000ff;">struct</span> sockaddr*)&amp;<span style="color: #000000;">addr,len))
+    {
+        perror(</span><span style="color: #800000;">"</span><span style="color: #800000;">bind</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">设置监听...\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">if</span>(listen(sockfd,<span style="color: #800080;">2</span><span style="color: #000000;">))
+    {
+        perror(</span><span style="color: #800000;">"</span><span style="color: #800000;">listen</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">等待客户端连接...\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;">(;;)
+    {
+        </span><span style="color: #0000ff;">if</span>(online_num &lt;<span style="color: #000000;"> max_num)
+        {
+            </span><span style="color: #0000ff;">struct</span> sockaddr_in addrcli =<span style="color: #000000;"> {};
+            clifd[clifd_index] </span>= accept(sockfd,(<span style="color: #0000ff;">struct</span> sockaddr*)&amp;addrcli,&amp;<span style="color: #000000;">len);
+        
+            </span><span style="color: #0000ff;">int</span> flag = <span style="color: #800080;">0</span><span style="color: #000000;">;
+            </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;clifd_index; i++<span style="color: #000000;">)
+            {
+                </span><span style="color: #0000ff;">if</span>(clifd[clifd_index] ==<span style="color: #000000;"> clifd[i])
+                {
+                    flag </span>= <span style="color: #800080;">1</span><span style="color: #000000;">;
+                    </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+                }
+            }
+
+            </span><span style="color: #0000ff;">if</span>(flag == <span style="color: #800080;">1</span><span style="color: #000000;">)
+            {
+                clifd_index</span>--<span style="color: #000000;">;
+                </span><span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+            }
+            </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+            {
+                </span><span style="color: #0000ff;">char</span> link[<span style="color: #800080;">50</span>] =<span style="color: #000000;"> {};
+                </span><span style="color: #0000ff;">char</span> link1[<span style="color: #800080;">40</span>] = <span style="color: #800000;">"</span><span style="color: #800000;">您已经成功连接</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+                sprintf(link,</span><span style="color: #800000;">"</span><span style="color: #800000;">您的id是:%d,</span><span style="color: #800000;">"</span><span style="color: #000000;">,clifd[clifd_index]);
+                strcat(link,link1);
+                write(clifd[clifd_index],link,strlen(link)</span>+<span style="color: #800080;">1</span><span style="color: #000000;">);
+                online_num</span>++<span style="color: #000000;">;
+            }
+        }
+        </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+        {
+            </span><span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+        }
+
+
+        </span><span style="color: #0000ff;">if</span>(<span style="color: #800080;">0</span> &gt;<span style="color: #000000;"> clifd[clifd_index])
+        {
+            perror(</span><span style="color: #800000;">"</span><span style="color: #800000;">accept</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+            </span><span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+        }
+
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">clifd:%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,clifd[clifd_index]);
+
+        </span><span style="color: #008000;">//</span><span style="color: #008000;"> 创建子线程</span>
+<span style="color: #000000;">        pthread_t pid1,pid2;
+        pthread_create(</span>&amp;pid1,NULL,start_read,&amp;<span style="color: #000000;">clifd[clifd_index]);
+        pthread_create(</span>&amp;pid2,NULL,start_write,&amp;<span style="color: #000000;">clifd[clifd_index]);
+
+        usleep(</span><span style="color: #800080;">1000</span><span style="color: #000000;">);
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">        printf("clifd:%d\n",clifd[index]);</span>
+<span style="color: #000000;">
+        clifd_index</span>++; <span style="color: #008000;">//</span><span style="color: #008000;"> 下标逐渐+1，这样写不是很合适</span>
+<span style="color: #000000;">
+    }
+    </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+}</span></code></pre>
+
+<p>&nbsp;</p>
+<span class="cke_reset cke_widget_drag_handler_container"><img class="cke_reset cke_widget_drag_handler" title="点击并拖拽以移动" src="data:image/gif;base64,R0lGODlhAQABAPABAP///wAAACH5BAEKAAAALAAAAAABAAEAAAICRAEAOw==" alt="" width="15" height="15" data-cke-widget-drag-handler="1" /></span>
+<p>客户端：client.c</p>
+<div class="cke_widget_wrapper cke_widget_block cke_widget_codeSnippet cke_widget_wrapper_has cke_widget_selected" data-cke-widget-wrapper="1" data-cke-filter="off" data-cke-display-name="代码段" data-cke-widget-id="0">
+<div class="cnblogs_code">
+<pre><code>#include &lt;stdio.h&gt;<span style="color: #000000;">
+#include </span>&lt;unistd.h&gt;<span style="color: #000000;">
+#include </span>&lt;arpa/inet.h&gt;<span style="color: #000000;">
+#include </span>&lt;<span style="color: #0000ff;">string</span>.h&gt;<span style="color: #000000;">
+#include </span>&lt;pthread.h&gt;
+
+<span style="color: #0000ff;">void</span>* start_read(<span style="color: #0000ff;">void</span>* arg) <span style="color: #008000;">//</span><span style="color: #008000;"> 读取信息</span>
+<span style="color: #000000;">{
+    </span><span style="color: #0000ff;">int</span> sockfd = *(<span style="color: #0000ff;">int</span>*<span style="color: #000000;">)arg;
+    </span><span style="color: #0000ff;">char</span> buf[<span style="color: #800080;">1024</span>] =<span style="color: #000000;"> {};
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;">(;;)
+    {
+        read(sockfd,buf,</span><span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(buf));
+        </span><span style="color: #0000ff;">if</span>(strlen(buf) != <span style="color: #800080;">0</span><span style="color: #000000;">)
+        {
+            printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">\n&gt;%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,buf);
+        }
+    }
+}
+
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+{
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">服务器创建socket...\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">int</span> sockfd = socket(AF_INET,SOCK_STREAM,<span style="color: #800080;">0</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">if</span>(<span style="color: #800080;">0</span> &gt;<span style="color: #000000;"> sockfd)
+    {
+        perror(</span><span style="color: #800000;">"</span><span style="color: #800000;">socket</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">准备地址...\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">struct</span> sockaddr_in addr =<span style="color: #000000;"> {};
+    addr.sin_family </span>=<span style="color: #000000;"> AF_INET;
+    addr.sin_port </span>= htons(<span style="color: #800080;">6008</span>);<span style="color: #008000;">//</span><span style="color: #008000;">设置的端口号</span>
+    addr.sin_addr.s_addr = inet_addr(<span style="color: #800000;">"</span><span style="color: #800000;">10.0.2.15</span><span style="color: #800000;">"</span>);<span style="color: #008000;">//</span><span style="color: #008000;">你的ip地址（或服务器的公网ip）</span>
+    socklen_t len = <span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(addr);
+
+    printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">绑定连接服务器...\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">if</span>(connect(sockfd,(<span style="color: #0000ff;">struct</span> sockaddr*)&amp;<span style="color: #000000;">addr,len))
+    {
+        perror(</span><span style="color: #800000;">"</span><span style="color: #800000;">connect</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+    }
+
+    
+    </span><span style="color: #0000ff;">char</span> link[<span style="color: #800080;">50</span>] =<span style="color: #000000;"> {};
+    read(sockfd,link,</span><span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(link));
+</span><span style="color: #008000;">//</span><span style="color: #008000;">    printf("link:%s\n",link);</span>
+    <span style="color: #0000ff;">if</span>(strstr(link,<span style="color: #800000;">"</span><span style="color: #800000;">您已经成功连接</span><span style="color: #800000;">"</span>)==<span style="color: #000000;">NULL)
+    {
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">连接人数已满，请稍后重试\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+    }
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+    {
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">link:%s\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,link);
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 创建读取子线程</span>
+<span style="color: #000000;">    pthread_t pid;
+    pthread_create(</span>&amp;pid,NULL,start_read,&amp;<span style="color: #000000;">sockfd);
+
+    </span><span style="color: #0000ff;">for</span><span style="color: #000000;">(;;)
+    {
+        </span><span style="color: #0000ff;">char</span> buf[<span style="color: #800080;">1024</span>] =<span style="color: #000000;"> {};
+        usleep(</span><span style="color: #800080;">1000</span><span style="color: #000000;">);
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">printf("&gt;我说：");</span>
+<span style="color: #000000;">        gets(buf);
+        write(sockfd,buf,strlen(buf)</span>+<span style="color: #800080;">1</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">if</span>(<span style="color: #800080;">0</span> == strcmp(<span style="color: #800000;">"</span><span style="color: #800000;">quit</span><span style="color: #800000;">"</span><span style="color: #000000;">,buf))
+        {
+            printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">通信结束!\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+            </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+        }
+    }
+    
+    close(sockfd);
+}</span></code></pre>
+
+<p>&nbsp;</p>
+<pre class="has cke_widget_element" data-cke-widget-data="{&amp;quot;code&amp;quot;:&amp;quot;#include &amp;lt;stdio.h&amp;gt;\n#include &amp;lt;unistd.h&amp;gt;\n#include &amp;lt;arpa/inet.h&amp;gt;\n#include &amp;lt;string.h&amp;gt;\n#include &amp;lt;pthread.h&amp;gt;\n\nvoid* start_read(void* arg) // 读取信息\n{\n\tint sockfd = *(int*)arg;\n\tchar buf[1024] = {};\n\tfor(;;)\n\t{\n\t\tread(sockfd,buf,sizeof(buf));\n\t\tif(strlen(buf) != 0)\n\t\t{\n\t\t\tprintf(\&amp;quot;\\n&amp;gt;%s\\n\&amp;quot;,buf);\n\t\t}\n\t}\n}\n\nint main()\n{\n\tprintf(\&amp;quot;服务器创建socket...\\n\&amp;quot;);\n\tint sockfd = socket(AF_INET,SOCK_STREAM,0);\n\tif(0 &amp;gt; sockfd)\n\t{\n\t\tperror(\&amp;quot;socket\&amp;quot;);\n\t\treturn -1;\n\t}\n\n\tprintf(\&amp;quot;准备地址...\\n\&amp;quot;);\n\tstruct sockaddr_in addr = {};\n\taddr.sin_family = AF_INET;\n\taddr.sin_port = htons(6008);//设置的端口号\n\taddr.sin_addr.s_addr = inet_addr(\&amp;quot;10.0.2.15\&amp;quot;);//你的ip地址（或服务器的公网ip）\n\tsocklen_t len = sizeof(addr);\n\n\tprintf(\&amp;quot;绑定连接服务器...\\n\&amp;quot;);\n\tif(connect(sockfd,(struct sockaddr*)&amp;amp;addr,len))\n\t{\n\t\tperror(\&amp;quot;connect\&amp;quot;);\n\t\treturn -1;\n\t}\n\n\t\n\tchar link[50] = {};\n\tread(sockfd,link,sizeof(link));\n//\tprintf(\&amp;quot;link:%s\\n\&amp;quot;,link);\n\tif(strstr(link,\&amp;quot;您已经成功连接\&amp;quot;)==NULL)\n\t{\n\t\tprintf(\&amp;quot;连接人数已满，请稍后重试\\n\&amp;quot;);\n\t\treturn 0;\n\t}\n\telse\n\t{\n\t\tprintf(\&amp;quot;link:%s\\n\&amp;quot;,link);\n\t}\n\n\t// 创建读取子线程\n\tpthread_t pid;\n\tpthread_create(&amp;amp;pid,NULL,start_read,&amp;amp;sockfd);\n\n\tfor(;;)\n\t{\n\t\tchar buf[1024] = {};\n\t\tusleep(1000);\n\t\t//printf(\&amp;quot;&amp;gt;我说：\&amp;quot;);\n\t\tgets(buf);\n\t\twrite(sockfd,buf,strlen(buf)+1);\n\t\tif(0 == strcmp(\&amp;quot;quit\&amp;quot;,buf))\n\t\t{\n\t\t\tprintf(\&amp;quot;通信结束!\\n\&amp;quot;);\n\t\t\tbreak;\n\t\t}\n\t}\n\t\n\tclose(sockfd);\n}\n&amp;quot;,&amp;quot;classes&amp;quot;:{&amp;quot;has&amp;quot;:1}}" data-cke-widget-upcasted="1" data-cke-widget-keep-attr="0" data-widget="codeSnippet"><code class="hljs">&nbsp;</code></code></pre>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

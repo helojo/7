@@ -1,0 +1,188 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++ 多态的内幕' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++ 多态的内幕</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11365102.html</div><br>
+    <h3 id="c-多态就是利用了一个二级指针指针数组数组里的每个元素都指向了用virtual修饰的成员函数">c++ 多态，就是利用了一个二级指针（指针数组），数组里的每个元素都指向了，用virtual修饰的成员函数。</h3>
+<h4 id="既然提到了指针那就让我们用内存地址来证明一下吧">既然提到了指针，那就让我们用内存地址来证明一下吧。</h4>
+<p>为了证明，我们必须要取到成员函数的首地址。利用下面的函数取得成员函数的地址</p>
+<pre><code>template&lt;typename dst_type,typename src_type&gt;
+dst_type pointer_cast(src_type src)
+{
+    return *static_cast&lt;dst_type*&gt;(static_cast&lt;void*&gt;(&amp;src));
+}</code></pre>
+<p>调用上面函数的方法：</p>
+<pre><code>void* p1 = pointer_cast&lt;void*&gt;(&amp;类名::成员方法名);</code></pre>
+<h3 id="首先我们先看看非多态的成员方法的内存布局通过下面的证明代码">1，首先我们先看看非多态的成员方法的内存布局，通过下面的证明代码：</h3>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;string.h&quot;
+#include &lt;iostream&gt;
+
+template&lt;typename dst_type,typename src_type&gt;
+dst_type pointer_cast(src_type src)
+{
+    return *static_cast&lt;dst_type*&gt;(static_cast&lt;void*&gt;(&amp;src));
+}
+
+class A
+{
+    private:
+        int a;
+        char b;
+        short c;
+    public:
+        A(int m,char n,short t)
+        {
+            a = m;b = n;c = t;
+        }
+   void funca(){
+     std::cout &lt;&lt; &quot;A::func()&quot; &lt;&lt; std::endl;
+   }
+};
+class B:public A
+{
+    private:
+        char d;
+    public:
+        B(int m,char n,short t,char q):A(m,n,t)
+        {
+            d = q;
+        }
+  void funcb(){
+     std::cout &lt;&lt; &quot;B::func()&quot; &lt;&lt; std::endl;
+   }
+};
+
+int main()
+{
+    A x(1,2,3);
+    B y(1,2,3,4);
+
+    A* m = new B(1,2,3,4);
+    void* p1 = pointer_cast&lt;void*&gt;(&amp;A::funca);
+    void* p2 = pointer_cast&lt;void*&gt;(&amp;B::funcb);
+    void(*a)() = (void(*)())p1;
+    a();
+    return 0;
+}
+</code></pre>
+<p>实验环境：gcc version 7.3.0。ubuntu18.04</p>
+<h2 id="下图是gdb的调试截图">下图是GDB的调试截图</h2>
+<p>gdb里的操作步骤1，先用【info line 22】命令去得到A类的成员函数funca的地址，22是成员函数funca所在的行号。</p>
+<p>gdb里的操作步骤2，因为p1是指向A类的成员函数funca的指针，所以【p p1】的结果就是A类的成员函数funca的地址。</p>
+<p>结论：通过步骤1和步骤2的结果来看，得出的两个地址是相同的。</p>
+<h2 id="说明了什么呢说明了非多态的成员函数的地址偏移量是在编译阶段就固定好了的">说明了什么呢？说明了非多态的成员函数的地址偏移量，是在编译阶段，就固定好了的。</h2>
+<p>地址偏移量是啥？</p>
+<p>当运行程序时，先从硬盘把程序载入到内存中，这个程序就成为了一个运行中的进程，操作系统会给进程分配虚拟内存空间，为了能够调用到函数，必须知道函数在的虚拟内存空间的地址。这个地址调用侧怎么知道的呢，在编译阶段，编译器自动把被调用函数相对于进程首地址的<font color=red>偏移量</font>算出来了，告诉了调用测，所以调用侧才能找到被调用函数的地址。</p>
+<p><img src="./images/c++ 多态的内幕0.png" /></p>
+<h3 id="我们再来看看多态的成员方法的内存布局通过下面的证明代码">2，我们再来看看多态的成员方法的内存布局，通过下面的证明代码：</h3>
+<pre><code>#include &quot;stdio.h&quot;
+#include &quot;string.h&quot;
+#include &lt;iostream&gt;
+
+template&lt;typename dst_type,typename src_type&gt;
+dst_type pointer_cast(src_type src)
+{
+    return *static_cast&lt;dst_type*&gt;(static_cast&lt;void*&gt;(&amp;src));
+}
+
+class A
+{
+    private:
+        int a;
+        char b;
+        short c;
+    public:
+        A(int m,char n,short t)
+        {
+            a = m;b = n;c = t;
+        }
+   virtual void func(){
+     std::cout &lt;&lt; &quot;A::func()&quot; &lt;&lt; std::endl;
+   }
+   virtual void func1(){
+     std::cout &lt;&lt; &quot;A::func1()&quot; &lt;&lt; std::endl;
+   }
+};
+class B:public A
+{
+    private:
+        char d;
+    public:
+        B(int m,char n,short t,char q):A(m,n,t)
+        {
+            d = q;
+        }
+  virtual void func(){
+     std::cout &lt;&lt; &quot;B::func()&quot; &lt;&lt; std::endl;
+   }
+   virtual void func1(){
+     std::cout &lt;&lt; &quot;B::func1()&quot; &lt;&lt; std::endl;
+   }
+};
+
+int main()
+{
+    A x(1,2,3);
+    B y(1,2,3,4);
+
+    A* m = new B(1,2,3,4);
+    void* p1 = pointer_cast&lt;void*&gt;(&amp;A::func);
+    void* p2 = pointer_cast&lt;void*&gt;(&amp;B::func);
+    m-&gt;func();//调用的是B的func
+    m-&gt;func1();//调用的是B的func1
+    //void(*a)() = (void(*)())p1;
+    //a();
+    return 0;
+}</code></pre>
+<h2 id="下图是gdb的调试截图-1">下图是GDB的调试截图</h2>
+<p>指针p1指向的类A的func成员函数；</p>
+<p>指针p2指向的类B的func成员函数；</p>
+<p>但是从gdb的结果来看，他们指向的地址都是0x1，也就说明他们没有正确的指向类的成员函数。</p>
+<p><img src="./images/c++ 多态的内幕1.png" /></p>
+<p>那么类的成员函数的地址在哪里呢？看下面的gdb截图</p>
+<p>通过【p x】查看对象x，<font color=red>发现x里面多了个_vptr的东西。</font>这个东西就是最开始说的二级指针（指针数组）。</p>
+<p>步骤1：先用【info line 22】命令去得到A类的成员函数func的地址.</p>
+<p>步骤2：【p *(void**)0x555555755d48】，先把_vptr指针转成void型的二级指针，然后再用【*】取得地址里的内容，发现地址类存放的就是类A的成员函数func的地址0x555555554cc4。</p>
+<h2 id="结论_vptr指向的就是所有虚函数中的第一个虚函数的地址"><font color=red>结论：_vptr指向的就是所有虚函数中的第一个虚函数的地址。</font></h2>
+<p>问题来了，如何得到第二个呢？因为64位系统指针所占8个字节，所以（_vptr + 8）就是第二个虚函数的地址。</p>
+<p><img src="./images/c++ 多态的内幕2.png" /></p>
+<h2 id="下面就让多态的真相浮出水面">下面就让多态的真相浮出水面</h2>
+<p>当有如下代码：用父类的指针指向子类的对象（多态的最终目的：面对抽象类编程），然后调用子类和父类完全相同的函数（必须是虚函数）。让人迷惑，到底调用的是哪个。</p>
+<pre><code>A* m = new B(1,2,3,4);//B是A的子类
+m-&gt;func();
+m-&gt;func1();</code></pre>
+<p>用父类的指针调用虚函数时，先去它指向的内存中（子类所占用的内存）找_vptr,然后从_vptr里找函数的地址。非虚函数的地址不在_vptr里。</p>
+<p>步骤1：【p *m】，发现m是类A的对象</p>
+<p>步骤2：【set print object on】，含义是显示对象真正的类型</p>
+<p>步骤3：【p *m】，发现m原来不是类A的对象，而是类B的对象。</p>
+<p>步骤4：查看_vptr里第一个指针，发现指向的是B的func；加8后得到第二个指针，发现发现指向的是B的func1.</p>
+<p><img src="./images/c++ 多态的内幕3.png" /></p>
+<h3 id="让虚函数们的地址存入_vptr里面的代码肯定是由编译器给我们加上的这些代码加到哪里了呢">让虚函数们的地址存入_vptr里面的代码肯定是由编译器给我们加上的，这些代码加到哪里了呢？</h3>
+<h2 id="加到了构造函数里"><font color=red>加到了构造函数里</red></h2>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/c++ 多态的内幕4.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

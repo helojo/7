@@ -1,0 +1,260 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修简单而粗暴的方法画任意阶数Bezier曲线' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>简单而粗暴的方法画任意阶数Bezier曲线</center></div><div class='banquan'>原文出处:本文由博客园博主leexin提供。<br/>
+原文连接:https://www.cnblogs.com/leexin/p/10955241.html</div><br>
+    <h1 id="简单而粗暴的方法画任意阶数bezier曲线">简单而粗暴的方法画任意阶数Bezier曲线</h1>
+<p><code>虽然说是任意阶数，但是嘞，算法原理是可以到任意阶数，计算机大概到100多阶就会溢出了</code></p>
+<p><a href="%5Bhttps://baike.baidu.com/item/%E8%B4%9D%E5%A1%9E%E5%B0%94%E6%9B%B2%E7%BA%BF%5D【(https://baike.baidu.com/item/贝塞尔曲线)">Bezier曲线介绍</a>】</p>
+<p>【<a href="https://github.com/leex404/Bezier2D"><strong>本文代码</strong></a>】</p>
+<h2 id="背景">背景</h2>
+<p>在windows的<code>OpenGL</code>环境中，使用鼠标在屏幕上选点，并以点为基础画出Bezier曲线</p>
+<ul>
+<li>初始化</li>
+<li>鼠标操作</li>
+<li>3阶以内Bezier曲线</li>
+<li>n阶Bezier曲线</li>
+</ul>
+<h2 id="初始化">初始化</h2>
+<p>创建窗口，初始化大小、显示模式、添加显示和鼠标等回调函数，设置背景颜色等。</p>
+<p>完成之后，定义两个全局的<code>int</code>类型的<code>vector</code> 用于存储鼠标在窗口中选择的点。同时定义窗口的高度和宽度。</p>
+<pre><code>vector&lt;int&gt; x_loc = {};
+vector&lt;int&gt; y_loc = {};
+int height = 600;
+int width  = 600;</code></pre>
+<ul>
+<li>定义画点函数</li>
+</ul>
+<pre><code>void drawPixel(double x, double y, int point_size)
+{
+    glViewport(0, 0, (GLsizei)width, (GLsizei)height);
+    glEnable(GL_POINT_SMOOTH);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glPointSize(point_size);
+    glBegin(GL_POINTS);
+    glVertex2d(x, y);
+    glEnd();
+}</code></pre>
+<p>其中<code>point_size</code>为点的大小。</p>
+<h2 id="鼠标操作">鼠标操作</h2>
+<p><code>OpenGL</code>中存在鼠标点击、拖动等操作的回调函数，使用十分方便，调用即可。</p>
+<p>我们定义在鼠标<code>左键</code>按下抬起后为一次屏幕选点，并将所选的点的坐标压入存储存储点的坐标的容器中。</p>
+<pre><code>void Mouse_hit(int button, int state, int x, int y)
+{
+    /// state == 1 mean button up
+    /// state == 0 mean button down
+    /// button == 0 mean left button
+    /// button == 1 mean middle button
+    /// button == 2 mean right button
+    /// [x, y] is the location of mouse pointer
+    if (button == 0 &amp;&amp; state == 1)
+    {
+        x_loc.push_back(x);
+        y_loc.push_back(y);
+        cout &lt;&lt; &quot;point location: &quot; &lt;&lt; x_loc[x_loc.size() - 1] &lt;&lt; &quot; &quot; &lt;&lt; y_loc[y_loc.size() - 1] &lt;&lt; endl;
+    }
+if (button == 2 &amp;&amp; state == 1){
+       x_loc.clear();
+      y_loc.clear();
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glutSwapBuffers(); 
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      glutSwapBuffers(); 
+      glutPostRedisplay();
+      cout&lt;&lt;&quot; Clear Screen!&quot;&lt;&lt;endl;
+    }
+    glutSwapBuffers(); 
+      glutPostRedisplay();
+}</code></pre>
+<ul>
+<li><p>回调函数使用为</p>
+<pre><code>glutMouseFunc(Mouse_hit);</code></pre></li>
+<li><p><code>Mouse_hit</code>函数中<strong>state</strong>代表当前鼠标的状态是<strong>按下</strong>还是<strong>抬起</strong></p></li>
+<li><p><strong>button</strong>为按下的是左、中、右三键中的哪一个</p></li>
+<li><p>[x, y]为当前鼠标指针的坐标。<strong>次坐标不是世界坐标系，使用时得进行转换，看后面</strong></p></li>
+</ul>
+<h3 id="坐标转换">坐标转换</h3>
+<p>拿一张图简单说明一下。由于鼠标获取的是<strong>世界坐标系</strong>下的位置，而在屏幕上绘制点与线是使用的是<strong>当前绘图坐标系</strong>，所以要进行简单的坐标变换。</p>
+<p><img src="./images/简单而粗暴的方法画任意阶数Bezier曲线0.png" /></p>
+<p>可在显示回调函数中使用如下代码重设OpenGL窗口。</p>
+<pre><code>    glViewport(0, 0, (GLsizei)width, (GLsizei)height);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, width, height, 0);</code></pre>
+<p>好了，设置一下前景色和点的大小形状等，来看看画点的效果。</p>
+<p><img src="./images/简单而粗暴的方法画任意阶数Bezier曲线1.png" /></p>
+<h2 id="阶以内的bezier曲线">3阶以内的Bezier曲线</h2>
+<p>对于3阶以内的Bezier曲线，直接将Bezier曲线的定义公式展开，求解系数即可。</p>
+<pre><code>void drawBezier_1(vector&lt;int&gt; x, vector&lt;int&gt; y, int num_of_points)
+{
+    float ax, bx;
+    float ay, by;
+    int temp_loc = x.size() - 2;
+
+    glColor3f(0.0f, 0.0f, 1.0f);
+    drawPixel(x[temp_loc + 0], y[temp_loc + 0], 7);
+    drawPixel(x[temp_loc + 1], y[temp_loc + 1], 7);
+    ax = x[temp_loc + 0];
+    ay = y[temp_loc + 0];
+    bx = x[temp_loc + 1];
+    by = y[temp_loc + 1];
+
+    float t;
+    t = 0.0;
+    float dt = 0.002;
+    while (t &lt;= 1)
+    {
+        float x_temp = (1 - t) * ax + t * bx;
+        float y_temp = (1 - t) * ay + t * by;
+        drawPixel(x_temp, y_temp, 1);
+        t += dt;
+    }
+}
+
+void drawBezier_2(vector&lt;int&gt; x, vector&lt;int&gt; y, int num_of_points)
+{
+    float ax, bx;
+    float ay, by;
+    float tSquared;
+    int temp_loc = x.size() - 3;
+
+    ax = x[temp_loc + 0] - 2 * x[temp_loc + 1] + x[temp_loc + 2];
+    ay = y[temp_loc + 0] - 2 * y[temp_loc + 1] + y[temp_loc + 2];
+    bx = x[temp_loc + 0] * (-2) + x[temp_loc + 1] * 2;
+    by = y[temp_loc + 0] * (-2) + y[temp_loc + 1] * 2;
+
+    glColor3f(0.0f, 0.0f, 1.0f);
+    drawPixel(x[temp_loc + 0], y[temp_loc + 0], 7);
+    drawPixel(x[temp_loc + 1], y[temp_loc + 1], 7);
+    drawPixel(x[temp_loc + 2], y[temp_loc + 2], 7);
+
+    float t;
+    t = 0.0;
+    float dt = 0.002;
+    while (t &lt;= 1)
+    {
+        tSquared = t * t;
+        float x_temp = ax * tSquared + bx * t + x[temp_loc + 0];
+        float y_temp = ay * tSquared + by * t + y[temp_loc + 0];
+        drawPixel(x_temp, y_temp, 1);
+        t += dt;
+    }
+}
+
+void drawBezier_3(vector&lt;int&gt; x, vector&lt;int&gt; y, int num_of_points)
+{
+    float ax, bx, cx;
+    float ay, by, cy;
+    float tSquared, tCubed;
+    int temp_loc = x.size() - 4;
+
+    cx = 3.0 * (x[temp_loc + 1] - x[temp_loc + 0]);
+    bx = 3.0 * (x[temp_loc + 2] - x[temp_loc + 1]) - cx;
+    ax = x[temp_loc + 3] - x[temp_loc + 0] - cx - bx;
+
+    cy = 3.0 * (y[temp_loc + 1] - y[temp_loc + 0]);
+    by = 3.0 * (y[temp_loc + 2] - y[temp_loc + 1]) - cy;
+    ay = y[temp_loc + 3] - y[temp_loc + 0] - cy - by;
+
+    glColor3f(0.0f, 0.0f, 1.0f);
+    drawPixel(x[temp_loc + 0], y[temp_loc + 0], 7);
+    drawPixel(x[temp_loc + 1], y[temp_loc + 1], 7);
+    drawPixel(x[temp_loc + 2], y[temp_loc + 2], 7);
+    drawPixel(x[temp_loc + 3], y[temp_loc + 3], 7);
+
+    float t;
+    t = 0.0;
+    float dt = 0.002;
+    while (t &lt;= 1)
+    {
+        tSquared = t * t;
+        tCubed = tSquared * t;
+        float x_temp = (ax * tCubed) + (bx * tSquared) + (cx * t) + x[temp_loc + 0];
+        float y_temp = (ay * tCubed) + (by * tSquared) + (cy * t) + y[temp_loc + 0];
+        drawPixel(x_temp, y_temp, 1);
+        t += dt;
+    }
+}
+</code></pre>
+<ul>
+<li>对应阶数的函数都可实现，每过<code>阶数+1</code>个点画一次曲线。</li>
+</ul>
+<h2 id="n阶bezier曲线">n阶Bezier曲线</h2>
+<p>由Bezier的定义公式我们可以发现，画Bezier曲线需要求<strong>组合数</strong> ，求<strong>组合数</strong>需要求<strong>阶乘</strong>，然后还需要求<strong>幂</strong>。因为<code>c++</code>中有求幂的函数,所以实现<strong>阶乘</strong>和<strong>组合数</strong>即可。</p>
+<ul>
+<li><p>阶乘</p>
+<pre class="c++"><code>double fac(int n)  
+{
+  double result = 1;
+  if (n == 0)
+      return result;
+  for (int i = 1; i &lt;= n; i++){
+      result *= i;
+  }
+  return result;
+}</code></pre>
+<p>为了扩大计算范围，使用了<code>double</code>类型</p></li>
+<li><p>组合数</p>
+<pre><code>double combinate(int n, int k) 
+{
+  if (k == 0)
+      return 1;
+  double result = 0;
+  result = fac(n) / (fac(k)*(fac(n - k)));
+  return result;
+}</code></pre>
+<p>为了扩大计算范围，也使用了<code>double</code>类型，其中<code>k &lt;= n</code></p></li>
+<li><p>n阶Bezier曲线</p>
+<pre><code>void drawBezier(vector&lt;int&gt; x, vector&lt;int&gt; y, int num_of_points) {
+
+  float px = 0.0, py = 0.0; //point current should draw
+  int n;        //number of points -1
+  float t = 0.0, dt = 0.0005; //t in [0, 1], dt is changes each time in t
+  n = x.size() - 1;
+  while (t &lt;= 1) {
+      for (int i = 0; i &lt;= n; i++) {
+          double temp = combinate(n, i)*powf(t, i)*powf(1 - t, n - i);
+          px += temp * x[i];
+          py += temp * y[i];
+      }
+      drawPixel(px, py, 1);
+      t += dt;
+      px = 0.0;
+      py = 0.0;
+  }
+}</code></pre></li>
+</ul>
+<h2 id="效果">效果</h2>
+<ul>
+<li><p>1阶</p>
+<p><img src="./images/简单而粗暴的方法画任意阶数Bezier曲线2.png" /></p></li>
+<li><p>2阶</p>
+<p><img src="./images/简单而粗暴的方法画任意阶数Bezier曲线3.png" /></p></li>
+<li><p>3阶</p>
+<p><img src="./images/简单而粗暴的方法画任意阶数Bezier曲线4.png" /></p></li>
+<li><p>n阶曲线画的❤</p>
+<p><img src="./images/简单而粗暴的方法画任意阶数Bezier曲线5.png" /></p></li>
+</ul>
+<p>简单而粗暴。。。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

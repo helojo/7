@@ -1,0 +1,408 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修SDL2：封装媒体显示播放Csdl2' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>SDL2：封装媒体显示播放Csdl2</center></div><div class='banquan'>原文出处:本文由博客园博主gongluck提供。<br/>
+原文连接:https://www.cnblogs.com/gongluck/p/11066398.html</div><br>
+    <h2 id="github">Github</h2>
+<p><a href="https://github.com/gongluck/SDL2-study/tree/master/Csdl2" class="uri">https://github.com/gongluck/SDL2-study/tree/master/Csdl2</a></p>
+<h2 id="csdl2.h">Csdl2.h</h2>
+<pre><code>#ifndef __CSDL2_H__
+#define __CSDL2_H__
+
+#include &lt;SDL.h&gt;
+#include &lt;string&gt;
+#include &lt;mutex&gt;
+
+class Csdl2
+{
+public:
+    // 状态
+    enum STATUS { STOP = 0b00, LOCKEDV = 0b01, LOCKEDA = 0b10, LOCKEDBOTH = 0b11 };
+
+    // 全局的初始化
+    bool global_init(Uint32 flags, std::string&amp; err);
+    // 全局的反初始化
+    bool global_uninit(std::string&amp; err);
+
+    // 设置(windows)窗口
+    bool set_window(const void* hwnd, std::string&amp; err);
+    // 设置图像格式(SDL_PIXELFORMAT_???)
+    bool set_pix_fmt(Uint32 fmt, int w, int h, std::string&amp; err);
+    // 渲染数据，pitch是图像一行的字节大小，rect是渲染目标矩形，angle旋转角度，center旋转中心(在rect，{0,0}为左上)，flip翻转
+    bool render(const void* data, int pitch, const SDL_Rect* rect, 
+        const double angle, const SDL_Point* center, const SDL_RendererFlip flip, std::string&amp; err);
+    // 清理图像格式资源
+    bool clear_pix_fmt(std::string&amp; err);
+    // 销毁关联资源
+    bool detach_window(std::string&amp; err);
+
+    // 设置音频格式和处理回调
+    bool set_audio_fmt(int freq, SDL_AudioFormat fmt, Uint8 channels, Uint16 samples, SDL_AudioCallback callback, void* userdata, std::string&amp; err);
+    // 开始音频播放
+    bool start_audio(std::string&amp; err);
+    // 停止音频播放
+    bool stop_audio(std::string&amp; err);
+
+private:
+    STATUS status_ = STOP;
+    std::recursive_mutex mutex_;
+
+    SDL_Window* win_ = nullptr;
+    SDL_Renderer* renderer_ = nullptr;
+    SDL_Texture* texture_ = nullptr;
+
+    SDL_AudioSpec reqspec_ = { 0 };
+    SDL_AudioSpec recspec_ = { 0 };
+};
+
+#endif//__CSDL2_H__</code></pre>
+<h2 id="csdl2.cpp">Csdl2.cpp</h2>
+<pre><code>#include &quot;Csdl2.h&quot;
+
+// 递归锁
+#define LOCKCSDL2() std::lock_guard&lt;std::recursive_mutex&gt; _lock(this-&gt;mutex_)
+
+// 检查停止状态
+#define CHECKCSDL2STOP(err) \
+if(this-&gt;status_ != STOP)\
+{\
+    err = &quot;status is not stop.&quot;;\
+    return false;\
+}
+// 检查视频停止
+#define CHECKCSDL2STOPV(err) \
+if(this-&gt;status_ &amp; 1 != 0)\
+{\
+    err = &quot;statusv is not stop.&quot;;\
+    return false;\
+}
+// 检查音频停止
+#define CHECKCSDL2STOPA(err) \
+if((this-&gt;status_ &gt;&gt; 1) &amp; 1 != 0)\
+{\
+    err = &quot;statusa is not stop.&quot;;\
+    return false;\
+}
+// 检查视频未停止
+#define CHECKCSDL2NSTOPV(err) \
+if(this-&gt;status_ &amp; 1 == 0)\
+{\
+    err = &quot;statusv is stop.&quot;;\
+    return false;\
+}
+// 检查音频未停止
+#define CHECKCSDL2NSTOPA(err) \
+if((this-&gt;status_ &gt;&gt; 1) &amp; 1 == 0)\
+{\
+    err = &quot;statusa is stop.&quot;;\
+    return false;\
+}
+
+// 返回成功
+#define OPTSUCCEED()\
+{\
+    err = &quot;opt succeed.&quot;;\
+    return true;\
+}
+
+// 返回失败
+#define OPTFAILED()\
+{\
+    err = SDL_GetError();\
+    return false;\
+ }
+
+// 判断结果，并返回(必定退出函数!!!)
+#define CHECKSDLRET(ret)\
+if(ret == 0)\
+{\
+    OPTSUCCEED();\
+}\
+else\
+{\
+    OPTFAILED();\
+}
+
+bool Csdl2::global_init(Uint32 flags, std::string&amp; err)
+{
+    LOCKCSDL2();
+    CHECKCSDL2STOP(err);
+    if (SDL_Init(flags) &lt; 0)
+    {
+        OPTFAILED();
+    }
+    else
+    {
+        OPTSUCCEED();
+    }
+}
+
+bool Csdl2::global_uninit(std::string&amp; err)
+{
+    LOCKCSDL2();
+    CHECKCSDL2STOP(err);
+    SDL_Quit();
+    OPTSUCCEED();
+}
+
+bool Csdl2::set_window(const void* hwnd, std::string&amp; err)
+{
+    LOCKCSDL2();
+    CHECKCSDL2STOPV(err);
+    detach_window(err);
+    win_ = SDL_CreateWindowFrom(hwnd);
+    if (win_ != nullptr)
+    {
+        renderer_ = SDL_CreateRenderer(win_, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+        if (renderer_ != nullptr)
+        {
+            OPTSUCCEED();
+        }
+        else
+        {
+            std::string e;
+            detach_window(e);
+            OPTFAILED();
+        }
+    }
+    else
+    {
+        OPTFAILED();
+    }
+}
+
+bool Csdl2::set_pix_fmt(Uint32 fmt, int w, int h, std::string&amp; err)
+{
+    LOCKCSDL2();
+    CHECKCSDL2STOPV(err);
+    clear_pix_fmt(err);
+    if (renderer_ == nullptr)
+    {
+        err = &quot;renderer is nullptr.&quot;;
+        return false;
+    }
+    texture_ = SDL_CreateTexture(renderer_, fmt, SDL_TEXTUREACCESS_STREAMING, w, h);
+    if (texture_ != nullptr)
+    {
+        status_ = static_cast&lt;STATUS&gt;(static_cast&lt;unsigned int&gt;(status_) | LOCKEDV);
+        OPTSUCCEED();
+    }
+    else
+    {
+        OPTFAILED();
+    }
+}
+
+bool Csdl2::render(const void* data, int pitch, const SDL_Rect* rect, 
+    const double angle, const SDL_Point* center, const SDL_RendererFlip flip, 
+    std::string&amp; err)
+{
+    LOCKCSDL2();
+    CHECKCSDL2NSTOPV(err);
+    if (texture_ == nullptr || renderer_ == nullptr)
+    {
+        err = texture_ == nullptr ? &quot;texture is nullptr.&quot; : &quot;renderer is nullptr.&quot;;
+        return false;
+    }
+    if (SDL_UpdateTexture(texture_, nullptr, data, pitch) != 0)
+    {
+        OPTFAILED();
+    }
+    else
+    {
+        if (SDL_RenderClear(renderer_) != 0)
+        {
+            OPTFAILED();
+        }
+        else
+        {
+            if (SDL_RenderCopyEx(renderer_, texture_, nullptr, rect, angle, center, flip) != 0)
+            {
+                OPTFAILED();
+            }
+            else
+            {
+                SDL_RenderPresent(renderer_);
+                OPTSUCCEED();
+            }
+        }
+    }
+}
+
+bool Csdl2::clear_pix_fmt(std::string&amp; err)
+{
+    LOCKCSDL2();
+    if (texture_ != nullptr)
+    {
+        SDL_DestroyTexture(texture_);
+        texture_ = nullptr;
+    }
+    status_ = static_cast&lt;STATUS&gt;(static_cast&lt;unsigned int&gt;(status_) &amp; ~LOCKEDV);
+    OPTSUCCEED();
+}
+
+bool Csdl2::detach_window(std::string&amp; err)
+{
+    LOCKCSDL2();
+    CHECKCSDL2STOPV(err);
+    if (renderer_ != nullptr)
+    {
+        SDL_DestroyRenderer(renderer_);
+        renderer_ = nullptr;
+    }
+    if (win_ != nullptr)
+    {
+        SDL_DestroyWindow(win_);
+        win_ = nullptr;
+    }
+    OPTSUCCEED();
+}
+
+bool Csdl2::set_audio_fmt(int freq, SDL_AudioFormat fmt, Uint8 channels, Uint16 samples, SDL_AudioCallback callback, void* userdata, std::string&amp; err)
+{
+    LOCKCSDL2();
+    CHECKCSDL2STOPA(err);
+    reqspec_ = { 0 };
+    recspec_ = { 0 };
+    reqspec_.freq = freq;
+    reqspec_.format = fmt;
+    reqspec_.channels = channels;
+    reqspec_.samples = samples;
+    reqspec_.callback = callback;
+    reqspec_.userdata = userdata;
+    if (SDL_OpenAudio(&amp;reqspec_, &amp;recspec_) != 0)
+    {
+        OPTFAILED();
+    }
+    else
+    {
+        status_ = static_cast&lt;STATUS&gt;(static_cast&lt;unsigned int&gt;(status_) | LOCKEDA);
+        OPTSUCCEED();
+    }
+}
+
+bool Csdl2::start_audio(std::string&amp; err)
+{
+    LOCKCSDL2();
+    CHECKCSDL2NSTOPA(err);
+    SDL_PauseAudio(0);
+    OPTSUCCEED();
+}
+
+bool Csdl2::stop_audio(std::string&amp; err)
+{
+    LOCKCSDL2();
+    CHECKCSDL2NSTOPA(err);
+    SDL_PauseAudio(1);
+    status_ = static_cast&lt;STATUS&gt;(static_cast&lt;unsigned int&gt;(status_) &amp; ~LOCKEDA);
+    OPTSUCCEED();
+}</code></pre>
+<h2 id="测试">测试</h2>
+<pre><code>#include &quot;Csdl2.h&quot;
+#include &lt;iostream&gt;
+#include &lt;fstream&gt;
+#include &lt;Windows.h&gt;
+
+#define TESTCHECKRET(ret)\
+if(!ret)\
+{\
+    std::cerr &lt;&lt; err &lt;&lt; std::endl;\
+    std::cout &lt;&lt; &quot;input to end.&quot; &lt;&lt; std::endl;\
+    getchar();\
+    return SDL_Error(SDL_LASTERROR);\
+}
+
+Csdl2 g_test;
+void SDLCALL SDL_AudioCB(void* userdata, Uint8* stream, int len)
+{
+    static std::ifstream f(&quot;in.pcm&quot;, std::ios::binary);
+    SDL_memset(stream, 0, len);
+    void* buf = malloc(len);
+    f.read((char*)buf, len);
+    SDL_MixAudio(stream, (const Uint8*)buf, len, SDL_MIX_MAXVOLUME);
+    free(buf);
+    if (f.eof())
+    {
+        std::cout &lt;&lt; &quot;end&quot; &lt;&lt; std::endl;
+        f.close();
+        std::string err;
+        g_test.stop_audio(err);
+    }    
+}
+
+int main(int argc, char* argv[])
+{
+    std::string err;
+    RECT rect = { 0 };
+    SDL_Point p = { 0, 50 };
+    std::ifstream file(&quot;in.rgb&quot;, std::ios::binary);
+    if (!file.is_open())
+    {
+        std::cerr &lt;&lt; &quot;open file failed &quot; &lt;&lt; std::endl;
+        getchar();
+        return 0;
+    }
+    int size = 320 * 240 * 3;
+    void* buf = malloc(size);
+
+    file.read(static_cast&lt;char*&gt;(buf), size);
+
+    TESTCHECKRET(g_test.global_init(SDL_INIT_VIDEO | SDL_INIT_AUDIO, err));
+
+    HWND hwnd = CreateWindow(TEXT(&quot;static&quot;), TEXT(&quot;test csdl2&quot;), WS_VISIBLE,
+        CW_USEDEFAULT, CW_USEDEFAULT, 800, 500, nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
+    //SDL_Window* hwnd = SDL_CreateWindow(&quot;test csdl2&quot;, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 320, 240, SDL_WINDOW_SHOWN);
+    if (hwnd == nullptr)
+    {
+        std::cerr &lt;&lt; &quot;create window failed &quot; &lt;&lt; GetLastError() &lt;&lt; std::endl;
+        goto END;
+    }
+    TESTCHECKRET(g_test.set_window(hwnd, err));
+    TESTCHECKRET(g_test.set_pix_fmt(SDL_PIXELFORMAT_RGB24, 320, 240, err));
+    TESTCHECKRET(g_test.render(buf, size / 240, nullptr, 2, &amp;p, SDL_FLIP_NONE, err));
+    std::cout &lt;&lt; &quot;render succeed.&quot; &lt;&lt; std::endl;
+
+    TESTCHECKRET(g_test.set_audio_fmt(44100, AUDIO_F32, 2, 1024, SDL_AudioCB, nullptr, err));
+    TESTCHECKRET(g_test.start_audio(err));
+    std::cout &lt;&lt; &quot;open audio succeed.&quot; &lt;&lt; std::endl;
+
+END:
+    std::cout &lt;&lt; &quot;input to end.&quot; &lt;&lt; std::endl;
+    getchar();
+    TESTCHECKRET(g_test.clear_pix_fmt(err));
+    TESTCHECKRET(g_test.detach_window(err));
+    if (hwnd != nullptr)
+    {
+        DestroyWindow(hwnd);
+        hwnd = nullptr;
+    }
+    TESTCHECKRET(g_test.stop_audio(err));
+    TESTCHECKRET(g_test.global_uninit(err));
+    if (buf != nullptr)
+    {
+        free(buf);
+        buf = nullptr;
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

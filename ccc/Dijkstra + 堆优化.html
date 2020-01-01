@@ -1,0 +1,161 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Dijkstra + 堆优化' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Dijkstra + 堆优化</center></div><div class='banquan'>原文出处:本文由博客园博主冷蕴提供。<br/>
+原文连接:https://www.cnblogs.com/LengYun/p/11447713.html</div><br>
+    <h1 id="dijkstra-堆优化">Dijkstra + 堆优化</h1>
+<p>　　<span class="math inline">\(Dijkstra\)</span> 算法又称“迪杰斯特拉”或“迪克斯特拉”算法，是由荷兰计算机科学家 <span class="math inline">\(Edsger\)</span> <span class="math inline">\(Wybe\)</span> <span class="math inline">\(Dijkstra\)</span> 提出，通常用于求不含负权边的单源最短路径。</p>
+<h2 id="基本原理">基本原理</h2>
+<p>　　首先用<code>dis</code>数组记录起点到每个结点的最短路径，再用一个集合<code>T</code>保存已经找到最短路径的结点，然后从<code>dis</code>数组中选择最小值，则该值就是源点<code>s</code>到该值对应的结点 <code>u</code> 的最短路径，把该结点<code>u</code>加入到<code>T</code>中，并且用结点<code>u</code>当前的最短路径估计值对离开结点<code>u</code>所指向的结点<code>v</code>进行松弛操作，即判断是否有<code>dis[v]&gt;dis[u]+w</code>（<code>w</code> 是连接<code>u</code>与<code>v</code>的边的长度），若有，则更新<code>dis[v]</code>。这样不断从<code>dis</code>数组中选择最小值对应的结点来进行松弛操作，直至所有结点都在集合<code>T</code>中为止。<br />
+　　同时，我们发现在<code>dis</code>数组中选择最小值时，我们可以用一些数据结构来进行优化。相对于线段树和平衡数来说，而 <span class="math inline">\(STL\)</span> 里的堆有着常数小，码量小等优点，并且堆的一个妙妙的性质就是可以在 <span class="math inline">\(nlog_2n\)</span> 的时限内满足堆顶是堆内元素的最大（小）值，因此，我们可以选择使用堆来优化 <span class="math inline">\(Dijkstra\)</span> 算法。</p>
+<h2 id="效率分析">效率分析</h2>
+<p>　　相较于 <span class="math inline">\(Spfa\)</span> ， <span class="math inline">\(Dijkstra\)</span> 算法更为稳定而不易被卡。普通的 <span class="math inline">\(Dijkstra\)</span> 算法的期望时间复杂度为 <span class="math inline">\(O(V^2)\)</span> ，其中 <span class="math inline">\(V\)</span> 是结点数。而加了堆优化的 <span class="math inline">\(Dijkstra\)</span> 算法的复杂度可以降到 <span class="math inline">\(O((V＋E)log_2V)\)</span> ，在稠密图中表现得更为优秀。</p>
+<h2 id="核心代码">核心代码</h2>
+<pre><code>ll n,m,s,cnt,head[maxn],dis[maxn];
+bool vis[maxn];
+struct Edge{ll u,v,w,next;}edge[maxm];
+struct node
+{
+    ll w,now;
+    inline bool operator&lt;(const node &amp;x)const
+                                            /*重载运算符（大根堆）*/
+    {
+        return w&gt;x.w;
+    }
+};
+void add(ll u,ll v,ll w)                    /*链式前向星存图*/
+{
+    edge[++cnt].u=u;
+    edge[cnt].v=v;
+    edge[cnt].w=w;
+    edge[cnt].next=head[u];
+    head[u]=cnt;
+}
+void Dijkstra()
+{
+    priority_queue&lt;node&gt;q;                  /*优先队列优化*/
+    for(ll i=1;i&lt;=n;i++)
+        dis[i]=INF,vis[i]=0;                /*初始距离设为INF,访问标记置为0*/
+    dis[s]=0;
+    q.push((node){0,s});                    /*源点入队*/
+    while(!q.empty())
+    {
+        node x=q.top();                     /*队首元素出队*/
+        q.pop();
+        ll u=x.now;
+        if(vis[u])continue;                 /*如果已遍历过就跳过*/
+        vis[u]=1;
+        for(ll i=head[u];i;i=edge[i].next)  /*寻找与所有以队首结点 u 为起点的边*/
+        {
+            ll v=edge[i].v,w=edge[i].w;
+            if(dis[v]&gt;dis[u]+w)
+            {
+                dis[v]=dis[u]+w;            /*松弛操作*/
+                q.push((node){dis[v],v});   /*入队*/
+            }
+        }
+    }
+}</code></pre>
+<h2 id="例题解析">例题解析</h2>
+<h3 id="洛谷-p4779-模板单源最短路径标准版"><a href="https://www.luogu.org/problem/P4779">洛谷 P4779 【模板】单源最短路径（标准版）</a></h3>
+<p>　　给出一个有向图 <span class="math inline">\(G＝＜V,E＞\)</span> ，一个源点 <span class="math inline">\(S\)</span> ，求点 <span class="math inline">\(S\)</span> 到图中所有点的最短距离。</p>
+<pre><code>#include&lt;bits/stdc++.h&gt;
+using namespace std;
+typedef long long ll;
+#define maxn 100005
+#define maxm 200005
+#define INF 1234567890
+template&lt;class T&gt;inline bool read(T &amp;x)
+{
+    x=0;register char c=getchar();register bool f=0;
+    while(!isdigit(c)){if(c==EOF)return false;f^=c==&#39;-&#39;,c=getchar();}
+    while(isdigit(c))x=(x&lt;&lt;3)+(x&lt;&lt;1)+(c^48),c=getchar();
+    if(f)x=-x;
+    return true;
+}
+template&lt;class T&gt;inline void print(T x)
+{
+    if(x&lt;0)putchar(&#39;-&#39;),x=-x;
+    if(x&gt;9)print(x/10);
+    putchar(x%10^48);
+}
+template&lt;class T&gt;inline void print(T x,char c){print(x),putchar(c);}
+ll n,m,s,cnt,head[maxn],dis[maxn];
+bool vis[maxn];
+struct Edge{ll u,v,w,next;}edge[maxm];
+struct node
+{
+    ll w,now;
+    inline bool operator&lt;(const node &amp;x)const
+    {
+        return w&gt;x.w;
+    }
+};
+void add(ll u,ll v,ll w)
+{
+    edge[++cnt].u=u;
+    edge[cnt].v=v;
+    edge[cnt].w=w;
+    edge[cnt].next=head[u];
+    head[u]=cnt;
+}
+void Dijkstra()
+{
+    priority_queue&lt;node&gt;q;
+    for(ll i=1;i&lt;=n;i++)
+        dis[i]=INF,vis[i]=0;
+    dis[s]=0;
+    q.push((node){0,s});
+    while(!q.empty())
+    {
+        node x=q.top();
+        q.pop();
+        ll u=x.now;
+        if(vis[u])continue;
+        vis[u]=1;
+        for(ll i=head[u];i;i=edge[i].next)
+        {
+            ll v=edge[i].v,w=edge[i].w;
+            if(dis[v]&gt;dis[u]+w)
+            {
+                dis[v]=dis[u]+w;
+                q.push((node){dis[v],v});
+            }
+        }
+    }
+}
+int main()
+{
+    read(n),read(m),read(s);
+    ll u,v,w;
+    for(ll i=1;i&lt;=m;i++)
+    {
+        read(u),read(v),read(w);
+        add(u,v,w);
+    }
+    Dijkstra();
+    for(ll i=1;i&lt;n;i++)print(dis[i],&#39; &#39;);
+    print(dis[n],&#39;\n&#39;);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,160 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修超级实用的属性浏览器控件--QtTreePropertyBrowser' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>超级实用的属性浏览器控件--QtTreePropertyBrowser</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11117259.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一源码下载">一、源码下载</a></li>
+        <li><a href="#二代码编译">二、代码编译</a><ul>
+        <li><a href="#intersect函数替换为intersected">1、intersect函数替换为intersected</a></li>
+        <li><a href="#移除unicodeutf8">2、移除UnicodeUTF8</a></li>
+        <li><a href="#qtgui模块拆分">3、QtGui模块拆分</a></li>
+        <li><a href="#q_typename错误">4、Q_TYPENAME错误</a></li>
+        <li><a href="#qvariantvalue错误">5、qVariantValue错误</a></li>
+        <li><a href="#qfindchildren错误">6、qFindChildren错误</a></li>
+        <li><a href="#setmovable移除">7、setMovable移除</a></li>
+        <li><a href="#setmovable移除-1">8、setMovable移除</a></li>
+        <li><a href="#添加qtwidgets模块">9、添加QtWidgets模块</a></li>
+        </ul></li>
+        <li><a href="#三运行结果">三、运行结果</a></li>
+        <li><a href="#四参考文章">四、参考文章</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="一源码下载">一、源码下载</h2>
+<p>Qt库封装了很多控件，种类也比较多，其中容器控件包括：表格、树和列表。</p>
+<p>使用过QtDesigner的同学应该都知道，这个工具中有一个属性编辑器，是一个属性浏览器控件，就像vs中控件属性面板一样。</p>
+<p>今天我们就来介绍一款使用QTreeWidget封装的属性控件QtTreePropertyBrowser，这个控件现在还没有被Qt正式的收录。</p>
+<p>要想使用这个<a href="https://github.com/commontk/QtPropertyBrowser">QtTreePropertyBrowser</a>库，首先我们需要去github上去下载源码，然后自行编译。</p>
+<h2 id="二代码编译">二、代码编译</h2>
+<p>如下图所示，是github上的代码提交记录，仔细看提交时间，距离现在已经有9年过去了。</p>
+<html>
+<center>
+<div>
+    <img src="./images/超级实用的属性浏览器控件--QtTreePropertyBrowser0.png" />
+</div>
+</center>
+</html>
+<p>因此这个代码编译起来还是比较费劲的，如果觉着编译费劲，也可以直接下载别人已经<a href="http://download.csdn.net/detail/yizhou2010/9669754">编译好了的QtPropertyBrowser</a>库，或者留下邮箱我发送我编译好的demo。这里我自己也是想熟悉这个库，并且使用起来，因此自己决定对这个库中的语法错误进行解决，最后顺利到达效果。</p>
+<p>源码升级过程中主要参考了<a href="https://www.cnblogs.com/findumars/p/8626998.html">Qt5.4.2编译 qtpropertybrowser-2.51（从4修改到5的除错过程）</a>这篇文章，还有我自己处理的几个小问题</p>
+<p><strong>使用vs中的qt-addin插件直接打开pro文件，打开工程后，如下图所示。</strong></p>
+<html>
+<center>
+<div>
+    <img src="./images/超级实用的属性浏览器控件--QtTreePropertyBrowser1.png" />
+</div>
+</center>
+</html>
+<p>接下来是修改编译错误，大概有如下9个错误类型，大多都数都可以直接使用全局替换。</p>
+<h3 id="intersect函数替换为intersected">1、intersect函数替换为intersected</h3>
+<pre><code>//旧代码
+area.intersect(QRect(0, 0, width(), height()));
+//新代码
+area.intersected(QRect(0, 0, width(), height()));</code></pre>
+<h3 id="移除unicodeutf8">2、移除UnicodeUTF8</h3>
+<p>移除QApplication::UnicodeUTF8，别忘记移除这个参数之前的逗号，很重要，要不然编译不过。</p>
+<h3 id="qtgui模块拆分">3、QtGui模块拆分</h3>
+<p>Qt4到Qt5有一个很大的变化，就是很多QtGui模块中的东西被拆分到了QtWidgets模块中。</p>
+<p>这里我们使用vs打开工程后，编译时提示我们模块找不到的话，需要把很多的QtGui改成QtWidgets，就像下面这样</p>
+<pre><code>//旧代码
+#include &lt;QtGui/QWidget&gt;
+//新代码
+#include &lt;QtWidgets/QWidget&gt;</code></pre>
+<h3 id="q_typename错误">4、Q_TYPENAME错误</h3>
+<p>全局替换，直接把Q_TYPENAME替换成typename</p>
+<h3 id="qvariantvalue错误">5、qVariantValue错误</h3>
+<p>全局替换，直接把qVariantValue()替换成qvariant_cast()</p>
+<h3 id="qfindchildren错误">6、qFindChildren错误</h3>
+<p>Qt5时qFindChildren()被废除了，可以用findChildren()替代</p>
+<pre><code>//旧代码
+QList&lt;QtIntPropertyManager *&gt; intPropertyManagers = qFindChildren&lt;QtIntPropertyManager *&gt;(manager);  
+//新代码
+QList&lt;QtIntPropertyManager *&gt; intPropertyManagers = manager-&gt;findChildren&lt;QtIntPropertyManager *&gt;();  </code></pre>
+<h3 id="setmovable移除">7、setMovable移除</h3>
+<pre><code>//旧代码
+setMovable()
+//新代码
+setSectionsMovable()</code></pre>
+<h3 id="setmovable移除-1">8、setMovable移除</h3>
+<pre><code>//旧代码
+setResizeMode()
+//新代码
+setSectionResizeMode()</code></pre>
+<h3 id="添加qtwidgets模块">9、添加QtWidgets模块</h3>
+<p>一定要添加上QtWidgets模块，如下图所示，每个工程都需要这样设置</p>
+<html>
+<center>
+<div>
+    <img src="./images/超级实用的属性浏览器控件--QtTreePropertyBrowser2.png" />
+</div>
+</center>
+</html>
+<h2 id="三运行结果">三、运行结果</h2>
+<p>程序编译完成之后，会生成如下几个可执行程序。</p>
+<html>
+<center>
+<div>
+    <img src="./images/超级实用的属性浏览器控件--QtTreePropertyBrowser3.png" />
+</div>
+</center>
+</html>
+<p>尝试运行其中的simple.exe可执行程序，结果如下，看起来是不是还不错。</p>
+<html>
+<center>
+<div>
+    <img src="./images/超级实用的属性浏览器控件--QtTreePropertyBrowser4.png" />
+</div>
+</center>
+</html>
+<h2 id="四参考文章">四、参考文章</h2>
+<p><a href="https://blog.csdn.net/czyt1988/article/details/78140050">Qt-解锁QtPropertyBrowser控件</a></p>
+<p><a href="https://www.cnblogs.com/findumars/p/8626998.html">Qt5.4.2编译 qtpropertybrowser-2.51（从4修改到5的除错过程）</a></p>
+<p><br></p>
+<p><strong>以上的内容，基本上就是本篇文章的内容所有内容啦！表格树控件可以使用起来了。希望可以帮到大家。</strong></p>
+<p><br></p>
+<html>
+    <div style='font-weight:600;'>
+    如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！
+    </div>
+<center>
+    <div>
+        <table>
+        <tr>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td>
+        </tr>
+        </table>
+    </div>
+</center>
+</html>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

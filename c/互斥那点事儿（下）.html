@@ -1,0 +1,80 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修互斥那点事儿（下）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>互斥那点事儿（下）</center></div><div class='banquan'>原文出处:本文由博客园博主tobe的呓语提供。<br/>
+原文连接:https://www.cnblogs.com/tobe98/p/11718646.html</div><br>
+    <p>“我找到好办法了！”</p>
+<p>没有想到，说话的人竟然是磁盘！</p>
+<p>进程调度器瑟瑟的说：“你有方法？还是算了吧，我怕用你的方法操作系统要乱套了。”</p>
+<p>磁盘委屈的道：“不就是刚刚冤枉你了吗，这么小气干什么！再说了，这个方法不是我想出来的，是我从文件里找到的。”</p>
+<p>操作系统挑了挑眉毛：“哦？你找到什么文件了，让大家也瞅瞅？”</p>
+<p>磁盘嗡嗡的转起来，很快就把文件取出来了。</p>
+<p>“当当当当~ 这可是大师 <strong>Dijkstra</strong> 的论文，他引入了一个全新的变量类型——<strong>信号量</strong>（semaphore）。然后还为信号量设置了两种操作，<code>P</code>（proberen，检测） 和 <code>V</code>（verhogen，增量） 。”</p>
+<p>”说清楚点啊，信号量是怎么个用法啊？“进程急切的问道。</p>
+<p>“别急，让我接着看。。。Dijkstra 提出，<strong><code>P</code>操作是检测信号量是否为正值，如果不是，就阻塞调用进程。</strong> <strong><code>V</code>操作能唤醒一个阻塞进程，让他恢复执行</strong> 。具体点的话就是这样： “</p>
+<pre><code><code>// S 为信号量
+P(s):
+{
+S = S - 1
+if (S &lt; 0)
+    {
+        调用该 P 操作的进程阻塞，并插入相应的阻塞队列；
+    }
+}</code></code></pre>
+<pre><code><code>// S 为信号量
+V(s):
+{
+S = S + 1
+if (S &lt;= 0)
+    {
+        从等待信号量 S 的阻塞队列里唤醒一个进程；
+    }
+}</code></code></pre>
+<p>内存仔细看了代码，说：”这个实现也要求是<strong>原子操作</strong>诶，Dijkstra 这个方法很有趣啊。“</p>
+<p>进程蒙圈了：“我怎么完全看不懂啊？内存你给我讲讲呗。”</p>
+<p>“好，我就用最简单的一组线程举例子了：</p>
+<pre><code><code>// 线程 A，B，C , S = 1
+...
+P(S)        //S = S - 1  若 S &lt; 0 ,阻塞等待
+购票操作
+V(S)        //S = S + 1  若 S &lt;= 0, 表明有线程阻塞了，得唤醒其中一个 
+...</code></code></pre>
+<p>这里的 「购票操作」 就是我们要保护的临界区，我们要保证一次只能有一个线程进入。那我们就把 <code>S</code> 的初始值设为 <code>1</code> 。当线程 A 第一个调用 <code>P(S)</code> 后，<code>S</code> 的值就变成了 <code>0</code> ，A 成功进入临界区。在 A 出临界区之前，线程 B 如果调用 <code>P(S)</code>， S 就变成 <code>-1</code> ，满足 <code>S &lt; 0</code> 的判断条件，线程 B 就被阻塞了。等 A 调用 <code>V(S)</code> 后，<code>S</code> 的值又变成 <code>0</code> ，满足 <code>S &lt;= 0</code>，就会把线程 B 唤醒，B 就能进入临界区了。“</p>
+<p>进程恍然大悟：“原来是这样，看起来和<strong>二元锁</strong>差不多啊，但是不用<strong>忙等待</strong>了。”</p>
+<p>内存神秘一笑：“<strong>信号量能做的可不止这些</strong>，你想想看，要是我把 S 的初始值设为 2 ，会发生什么？”</p>
+<p>“一次能有两个线程访问临界区！”进程这次反应快多了：“也就是说 <strong>S 的初始值可以控制有多少个线程进入临界区</strong>，太厉害了！”</p>
+<p><em>tobe 注：从信号量的值能看出<strong>还有多少个进程能进入临界区</strong>，如果为负数，表明有 x 个进程因为调用 P(S) 而被<strong>阻塞</strong></em></p>
+<p>“没错，所以说信号量是一个很灵活的并发机制。而且信号量还有另一个厉害的用处：</p>
+<p><img src="./images/互斥那点事儿（下）0.png" /></p>
+<p>你看这两个进程有什么特别的地方？“</p>
+<p>“emmmm，这个嘛，进程 P2 的 <code>V</code> 操作居然放在 <code>P</code> 操作的前面，而且<strong>两个操作的信号量还不是同一个</strong>。”</p>
+<p>“没错，这样使用信号量，能让两个进程做到<strong>同步</strong>。你看，如果 P1 运行到 <code>P(S1)</code>，他是不是会阻塞？”</p>
+<p>进程认真一看，说：“没错诶，S1 初始值是 0，P1 肯定得停在这一句。让我再看看，，，如果 P1 想接着运行，就得等 P2 调用 <code>V(S1)</code> 把他<strong>唤醒</strong>。”</p>
+<p>“是的，这就是同步——运行快的 P1 必须在这里停下来等 P2 运行到指定位置。两个进程的执行顺序就是这样：</p>
+<p><img src="./images/互斥那点事儿（下）1.png" /></p>
+<p>也就是说 <code>x</code> 最终的值<strong>必然是 30</strong>，而不可能是 20。<strong>在信号量的帮助下，这两个进程达成了同步</strong>。“</p>
+<p>进程由衷的感叹：“信号量实在是太强大了！咱们以后就用信号量来解决互斥的问题吧！”</p>
+<hr />
+<p>tobe 注：在 Linux 里提供了<strong>信号量</strong>和<strong>互斥量</strong>（也就是二元锁）这两种主要机制实现互斥，不过 Linux 的信号量功能要比文章里讲得复杂得多，「UNIX 环境高级编程」这本书里写到「。。。三种特性造成了这种<strong>并非必要</strong>的复杂性」，对于一般的互斥操作，还是建议使用<strong>互斥锁</strong>（当然是<strong>阻塞</strong>而非忙等待）。稍微复杂点的锁还有「读写锁」，以后有机会再讲吧~</p>
+<p>觉得我写的还不错的话，就点个赞吧！</p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

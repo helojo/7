@@ -1,0 +1,313 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修对象的构造与析构（二）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>对象的构造与析构（二）</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11546138.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#析构函数">1. 析构函数</a></li>
+        <li><a href="#对象的构造与析构顺序">2. 对象的构造与析构顺序</a><ul>
+        <li><a href="#多个对象之间">多个对象之间</a></li>
+        <li><a href="#单个对象内部">单个对象内部</a></li>
+        </ul></li>
+        <li><a href="#const对象与const成员函数">3. const对象与const成员函数</a><ul>
+        <li><a href="#const对象">const对象</a></li>
+        <li><a href="#const成员函数">const成员函数</a></li>
+        </ul></li>
+        <li><a href="#成员函数成员变量与对象的关系">4. 成员函数、成员变量与对象的关系</a></li>
+        <li><a href="#代码实战数组类intarray">5. 代码实战——数组类IntArray</a><ul>
+        <li><a href="#intarray.h">IntArray.h</a></li>
+        <li><a href="#intarray.cpp">IntArray.cpp</a></li>
+        <li><a href="#intarray测试">IntArray测试</a></li>
+        </ul></li>
+        </ul>
+    </div>
+</div>
+<h1 id="析构函数">1. 析构函数</h1>
+<ul>
+<li>C++的类中可以定义一个特殊的清理函数，叫做析构函数，语法规则为<code>~ClassName()</code></li>
+<li>析构函数没有参数，也没有返回值类型声明</li>
+<li>析构函数在对象销毁时自动被调用</li>
+<li><font color=red>当类中自定义了构造函数，并且构造函数中使用了系统资源（如：堆空间、文件打开，等），则需要自定义析构函数</font></li>
+</ul>
+<h1 id="对象的构造与析构顺序">2. 对象的构造与析构顺序</h1>
+<h2 id="多个对象之间">多个对象之间</h2>
+<p>多个对象构造时：</p>
+<ul>
+<li>栈对象的构造顺序依赖于程序的执行流</li>
+<li>堆对象的构造顺序依赖于new的使用顺序</li>
+<li><font color=orange>全局对象的构造顺序是不确定的，</font>不同的编译器可能使用不同的规则</li>
+</ul>
+<p>多个对象析构时：</p>
+<ul>
+<li>栈对象和全局对象的析构顺序与构造顺序相反</li>
+<li>堆对象的析构发生取决于delete的使用顺序</li>
+</ul>
+<h2 id="单个对象内部">单个对象内部</h2>
+<p>单个对象创建时，对象内部构造函数的调用顺序为：</p>
+<ul>
+<li><font color=red>先调用父类的构造函数</font></li>
+<li><font color=magenta>再调用成员变量的构造函数，</font>调用顺序与声明顺序相同</li>
+<li><font color=blue>最后调用类自身的构造函数</font></li>
+</ul>
+<p>单个对象内部的析构顺序与构造顺序相反。</p>
+<h1 id="const对象与const成员函数">3. const对象与const成员函数</h1>
+<h2 id="const对象">const对象</h2>
+<ul>
+<li>由const关键字修饰的对象为只读对象</li>
+<li>只读对象的成员变量不允许被改变</li>
+<li>只读属性只在编译阶段有效，运行时无效</li>
+</ul>
+<h2 id="const成员函数">const成员函数</h2>
+<p>const成员函数的定义如下所示，需要注意的是，<font color=red>函数声明和函数定义都必须带const关键字。</font></p>
+<pre><code>Type ClassName :: func(Type para) const</code></pre>
+<p>关于const成员函数的使用，有下面几条规则：</p>
+<ul>
+<li><font color=red>const对象只能调用const成员函数</font></li>
+<li><font color=magenta>const成员函数只能调用const成员函数</font></li>
+<li><font color=blue>const成员函数不能直接修改成员变量的值</font></li>
+</ul>
+<pre><code>#include &lt;stdio.h&gt;
+
+class Test
+{
+    int mi;
+public:
+    Test(int i);
+    void setMi(int i) const;
+    int getMi() const;
+    void printMi();
+};
+
+Test::Test(int i)
+{
+    mi = i;
+}
+
+void Test::setMi(int i) const
+{
+    mi = i;  //Error，const成员函数中不能直接修改成员变量的值
+}
+
+int Test::getMi() const
+{
+    return mi;
+}
+
+void Test::printMi()
+{
+    printf(&quot;printMi(): mi = %d\n&quot;, mi);
+}
+
+int main()
+{
+    const Test t1(1);
+
+    t1.getMi();    //OK，const对象调用const成员函数
+    t1.printMi();  //Error，const对象调用普通成员函数
+
+    return 0;
+}</code></pre>
+<h1 id="成员函数成员变量与对象的关系">4. 成员函数、成员变量与对象的关系</h1>
+<p>从<font color=blue>面向对象</font>的角度，对象由<font color=red>属性（成员变量）</font>和<font color=magenta>方法（成员函数）</font>构成；<br />
+从<font color=blue>程序运行</font>的角度，对象由<font color=red>数据</font>和<font color=magenta>函数</font>构成，数据位于栈、堆或全局数据区，函数位于代码段。</p>
+<ul>
+<li><font color=red>每一个对象都拥有自己独立的属性（成员变量）</font></li>
+<li><font color=magenta>所有的对象共享类的方法（成员函数）</font></li>
+<li>方法能够直接访问对象的属性</li>
+<li>方法中的隐藏参数this指针用于值代当前对象</li>
+</ul>
+<pre><code>#include &lt;stdio.h&gt;
+
+class Test
+{
+    int mi;
+public:
+    int mj;
+    Test(int i);
+    Test(const Test &amp;t);
+    int getMi();
+    void print();
+};
+
+Test::Test(int i)
+{
+    mi = i;
+}
+
+Test::Test(const Test &amp;t)
+{
+    mi = t.mi;  //成员函数可以直接访问对应类对象的成员变量
+}
+
+int Test::getMi()
+{
+    return mi;
+}
+
+void Test::print()
+{
+    printf(&quot;this = %p\n&quot;, this);  //每个成员函数中隐藏了一个this指针，用于指向当前对象
+}
+
+int main()
+{
+    Test t1(1);
+    Test t2(2);
+    Test t3(3);
+
+    printf(&quot;t1.getMi() = %d\n&quot;, t1.getMi());
+    printf(&quot;&amp;t1 = %p\n&quot;, &amp;t1);
+    t1.print();
+
+    printf(&quot;t2.getMi() = %d\n&quot;, t2.getMi());
+    printf(&quot;&amp;t2 = %p\n&quot;, &amp;t2);
+    t2.print();
+
+    printf(&quot;t3.getMi() = %d\n&quot;, t3.getMi());
+    printf(&quot;&amp;t3 = %p\n&quot;, &amp;t3);
+    t3.print();
+
+    return 0;
+}</code></pre>
+<p><img src="./images/对象的构造与析构（二）0.png" /></p>
+<h1 id="代码实战数组类intarray">5. 代码实战——数组类IntArray</h1>
+<h2 id="intarray.h">IntArray.h</h2>
+<pre><code>#ifndef _INTARRAY_H_
+#define _INTARRAY_H_
+
+class IntArray
+{
+private:
+    int m_length;
+    int *m_pointer;
+public:
+    IntArray(int len);
+    IntArray(const IntArray &amp;obj);
+    int length();
+    bool get(int index, int &amp;value);
+    bool set(int index ,int value);
+    ~IntArray();
+};
+
+#endif</code></pre>
+<h2 id="intarray.cpp">IntArray.cpp</h2>
+<pre><code>#include &quot;IntArray.h&quot;
+
+IntArray::IntArray(int len)
+{
+    m_pointer = new int[len];
+
+    for(int i=0; i&lt;len; i++)
+    {
+        m_pointer[i] = 0;
+    }
+
+    m_length = len;
+}
+
+IntArray::IntArray(const IntArray &amp;obj)
+{
+    m_length = obj.m_length;
+
+    m_pointer = new int[obj.m_length];
+
+    for(int i = 0; i &lt; obj.m_length; i++)
+    {
+        m_pointer[i] = obj.m_pointer[i];
+    }
+}
+
+int IntArray::length()
+{
+    return m_length;
+}
+
+bool IntArray::get(int index, int &amp;value)
+{
+    bool ret = (0 &lt;= index) &amp;&amp; (index &lt; length());
+
+    if( ret )
+    {
+        value = m_pointer[index];
+    }
+
+    return ret;
+}
+
+bool IntArray::set(int index, int value)
+{
+    bool ret = (0 &lt;= index) &amp;&amp; (index &lt; length());
+
+    if( ret )
+    {
+        m_pointer[index] = value;
+    }
+
+    return ret;
+}
+
+IntArray::~IntArray()
+{
+    delete[] m_pointer;
+}</code></pre>
+<h2 id="intarray测试">IntArray测试</h2>
+<pre><code>#include &quot;IntArray.h&quot;
+#include &lt;stdio.h&gt;
+
+int main()
+{
+    IntArray a(5);
+
+    for(int i = 0; i &lt; a.length(); i++)
+    {
+        a.set(i, i + 1);
+    }
+
+    for(int i = 0; i &lt; a.length(); i++)
+    {
+        int value = 0;
+
+        if( a.get(i, value) )
+        {
+            printf(&quot;a[%d] = %d\n&quot;, i, value);
+        }
+    }
+
+    IntArray b = a;
+
+    for(int i = 0; i &lt; b.length(); i++)
+    {
+        int value = 0;
+
+        if( b.get(i, value) )
+        {
+            printf(&quot;b[%d] = %d\n&quot;, i, value);
+        }
+    }
+
+    return 0;
+}</code></pre>
+<p><img src="./images/对象的构造与析构（二）1.png" /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

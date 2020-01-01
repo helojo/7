@@ -1,0 +1,239 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修高仿富途牛牛-组件化(五)-如何去管理炒鸡多的小窗口' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>高仿富途牛牛-组件化(五)-如何去管理炒鸡多的小窗口</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11062824.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一概述">一、概述</a></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三功能类">三、功能类</a></li>
+        <li><a href="#四设计上的考虑">四、设计上的考虑</a><ul>
+        <li><a href="#功能拆分">1、功能拆分</a></li>
+        <li><a href="#关键类">2、关键类</a></li>
+        </ul></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<h2 id="一概述">一、概述</h2>
+<p>代码写的久了，什么功能都想搞点儿模式。不知道是不是只有我一个人这么想的，做功能时不在是只为了完成功能，而是在完成功能的同时会去考虑可扩展性怎么样？哪块儿的代码可以复用？又或者哪里需要留更多的接口？这两个类之间是不是可以加一个协作类？总之各种想法都出来了。</p>
+<p>假设说有这样一种场景，我们通过一个入口界面，上边有很多种按钮，当我们点击上边的按钮时，程序就会生成一个小窗口。这些小窗口他们的外在行为基本一致，只是窗口里边展示的内容各不一样。</p>
+<p>总结一下应该是这样的</p>
+<ul>
+<li>窗体可以通过标题栏进行拖拽</li>
+<li>鼠标移动到边界可以进行放大缩小</li>
+<li>鼠标选中时边框高量显示</li>
+<li>标题栏具有名称、关闭和各种各样的菜单</li>
+<li>不同功能窗体的菜单内容不一样，展示风格也可能完全不同</li>
+<li>标题栏和中心窗体也有交互</li>
+<li>连续点击一个按钮时，生成同类型的窗体不能完全覆盖</li>
+</ul>
+<p>用过富途牛牛的同学应该对这个功能比较清楚一点，富途中的交易模块也是如此，工具箱里支持各种小窗体生成，并且都有各自丰富的内容。</p>
+<p>这么多繁杂的窗体，富途是怎么管理的呢？</p>
+<p>本篇文章就来仔细挖掘下这个功能，我们也来实现一个小窗口管理功能。</p>
+<h2 id="二效果展示">二、效果展示</h2>
+<p>如效果图所示，我们之前所说的几个功能点都已经有了，并且在配色上比之前的demo程序也有改善，当然要投入使用还是需要设计师同学经过专业的指点。</p>
+<html>
+<center>
+<div>
+    <img src="./images/高仿富途牛牛-组件化(五)-如何去管理炒鸡多的小窗口0.png" />
+</div>
+</center>
+</html>
+<h2 id="三功能类">三、功能类</h2>
+<p>为了实现这个窗口管理功能，思考的头都快要炸掉了，不是因为功能有多复杂，而是作为一个开发人员，我想的太多了，总是会出现一种幻觉，产品经理可能会提出这样那样的新需求，测试也可能会给你报一个莫名其妙的问题。</p>
+<p><strong>最最关键的还是我们要对自己写的代码有一个基本要求。结构必须合理、减少冗余和耦合，让其他人阅读代码时使用最小的成本，</strong></p>
+<p>为了做这个窗口管理功能，我也是想了好久，总是想着设计的更合理一些，别人在使用时就会更简单一些，使用成本也会更小。</p>
+<p>为此，我引入了好几个关键类，都是辅助管理窗口的，下面先来一张类图，这是我使用starUML画的，不是特别规范，主要是为了说明这些类的功能，以及他们之间的一个关系，图上都用注释写出了每个类的大概作用。</p>
+<html>
+<center>
+<div>
+    <img src="./images/高仿富途牛牛-组件化(五)-如何去管理炒鸡多的小窗口1.png" />
+</div>
+</center>
+</html>
+<p>从图上也可以看出来，类中就是一个简单的名字，我没有把类的接口都贴上去，一个是时间问题，另一个我也觉着不是特别有必要，因为我本身对这个画图工具使用就不是特别深入，所以这里就只提供了简单的版本。大家凑合看吧，对理解设计思路还是有很大的帮助。</p>
+<p><strong>本篇文章主要讲的是小窗口管理，但是这里主要是通过讲述<code>迷你报价</code>小窗口来说明怎么去管理炒鸡多的小窗口</strong></p>
+<p>从上边图中可知，关键类有以下这些</p>
+<ol>
+<li>ISmall：业务窗口接口类，负责和SmallWidget进行通信</li>
+<li>MiniPriceSmall：迷你报价小窗口的中心窗口</li>
+<li>SmallWidget：小窗口模板类，这是所有小窗口的外壳类，包含了标题栏。迷你报价窗口就是构造了这么一个类，然后设置了一个中心窗口MiniPriceSmall。其他的业务窗口都是使用同样的模式</li>
+<li>ViewModePanel：<code>迷你报价</code>工具菜单按下时，弹出的视图列表，主要是为了修改显示模式。仔细观察效果展示中的gif图，菜单'M'被点击时，弹出了<code>显示模式</code>窗口，随后在显示模式窗口任意选项上单击后，<code>迷你报价</code>窗口上都出现了一行欢迎文本--<strong>感谢您的使用，您选择了模式:X</strong></li>
+<li>SmallContext：<code>小窗口</code>管理上下文类，主要负责处理我们定制好的外壳类SmallWidget和业务窗口MiniPriceSmall(其他更多业务窗口)之间的消息通信</li>
+<li>SmallGroup：小窗口组管理者，主要负责磁力吸附这个功能，详情参看<a href="https://www.cnblogs.com/swarmbees/p/11042704.html">高仿富途牛牛-组件化(二)-磁力吸附</a>这篇文章</li>
+<li>SmallFactory：<code>小窗口</code>工厂，负责构造各式各样的小窗口</li>
+<li>ToolBoxDialog：工具箱的实现没有专门去写文章讲解，需要了解的可以参看<a href="https://www.cnblogs.com/swarmbees/p/11048378.html">高仿富途牛牛-组件化(三)-界面美化</a>这篇文章，第三小节对工具箱做了简单的讲解</li>
+</ol>
+<h2 id="四设计上的考虑">四、设计上的考虑</h2>
+<p>首先，我自己做的是一个组件化的功能，我需要考虑的东西也是更多的，不仅仅要把功能完成，更多的是要去考虑，别人用的时候代价怎么可以更小？可以复用的代码，我尽量都提取出来，写成共性的东西，其他开发在做相应业务模块时，只需要考虑真的和他们有直接关系的地方。</p>
+<p>这里我们就拿<code>迷你报价</code>这个功能来说事，看看怎么去设计是合理的，或者说目前看起来是合理的，可能后期根据需求，我们的结构或许会进行一定的调整。</p>
+<h3 id="功能拆分">1、功能拆分</h3>
+<p>单独拿出一个<code>迷你报价</code>功能来说，可能100%的人都会说很简单，这有什么难的，我刚参加工作那会儿百度百度也都能做出来。可是往往把一些简单的东西，抽象抽来，让程序变得更简单这件事情本身就是一件比较难的事情。</p>
+<p><code>迷你报价</code>这个窗口总的来说可以分为上下两部分：上边标题栏和下面内容展示区域</p>
+<p><strong>标题栏</strong></p>
+<p>标题栏是每一个小窗口都有的，因此这里我们肯定是要单独提出来作为一个公有的东西，当其他开发做自选股、小时钟、短线精灵这些小窗口时，标题栏的移动事件他们就根本不需要考虑了。</p>
+<p>细心的同学可能会发现了，标题栏上还有一些不认识的按钮，这些按钮时干什么的呢？</p>
+<p>虽然标题栏已经被公有化，但是标题栏上的按钮可不是这么想的，他们的行为要根据底部内容窗口的类型决定，因此这里就有了一定的变化。</p>
+<p>为了适应这个变化，我自己定义了一个接口类ISmall，主要是让内容窗口进行继承的，也就是说内容窗口需要重写这个接口类的一些接口，来完成运行时的一些设定。</p>
+<p>比如说，<code>迷你报价</code>标题栏按钮显示有哪些？按钮显示时都有哪些功能？按钮点击时该有什么样的相应？按钮点击后弹出的面板点击被点击了，内容窗口做何处理等等。</p>
+<p><strong>内容展示</strong></p>
+<p>内容展示窗口就比较简单了，这里有2个选择，继承ISmall接口类或者不继承</p>
+<ol>
+<li>继承-意味着内容窗口需要和外壳窗口进行消息通信</li>
+<li>不继承-我们就只是展示数据的，不需要进行消息通信</li>
+</ol>
+<p>事实上大多数的内容窗口都是需要继承ISmall这个接口类的，纯展示而没有交互的功能几乎没有。</p>
+<h3 id="关键类">2、关键类</h3>
+<p><strong>ISmall</strong></p>
+<p>ISmall接口类是毫无疑问的关键类，它是一个纯虚类，继承它的类都必须实现它的所有接口，如下代码所示</p>
+<pre><code>/**
+* 简介： 小窗口上的回调事件，需要通知中心窗体
+*/
+struct ISmallCall
+{
+    virtual ViewMode ViewType(SmallToolType) = 0;
+    virtual void GetItems(QVector&lt;DataItem&gt; &amp;) = 0;
+    virtual QSize GetSize() const = 0;
+    virtual void Notify(const QString &amp;) = 0;
+};</code></pre>
+<p>GetSize()、GetItems()这些接口都是获取数据接口，外壳类SmallWidget，会根据当前中心窗口返回的定制数据去初始化自己。</p>
+<p>比如说效果图中展示的<code>显示模式</code>面板，这个面板中的数据内容，就是迷你报价类MiniPriceSmall重写了getItems接口之后，给外壳类提供的数据，并且制定了事件触发时使用的显示模式为视图。</p>
+<p><code>迷你报价</code>类重写的数据准备接口如下</p>
+<pre><code>void MiniPriceSmall::GetItems(QVector&lt;DataItem&gt; &amp; items)
+{
+    for (int i = 0; i &lt; 9; ++i)
+    {
+        DataItem item;
+        item.name = &#39;A&#39; + i;
+        item.type = item.name;
+        item.img = &quot;./image/mainWindow/tquant-btn_normal.png&quot;;
+        items.append(item);
+    }
+}</code></pre>
+<blockquote>
+<p>目前接口类中的接口还不是特别完善，根据后续业务功能的变化，接口肯定还会继续增多。</p>
+</blockquote>
+<p><strong>MiniPriceSmall</strong></p>
+<p>这个类是迷你报价的数据展示类，他继承自QWidget窗口类和ISmall接口类，界面搭建这里我就不说了，两个原因：其一是这里的界面本身就是空的，其二也是比较关键的，中心窗口的内容是根据业务类型决定的，后期根据不同开发负责的功能自己去搭建。通常情况下这里都是别人已经封装好了的控件，有必要的时候在使用一个简单外壳类包一层即可。</p>
+<p>除过界面之外，就是ISmall的接口实现类了，一部分接口是给外部SmallWidget提供数据的，而另一部分接口就是响应外部事件。</p>
+<blockquote>
+<p>目前来说，响应外部接口事件就只有一个接口Notify，比较重要，消息响应时根据参数来区分消息类型</p>
+</blockquote>
+<p><strong>SmallWidget</strong></p>
+<p>小窗口类，为所有小窗口的外壳类，提供了定制化的标题栏和边界缩放。功能实现不难，需要的可自行百度。</p>
+<p><strong>ViewModePanel</strong></p>
+<p><code>显示模式</code>面板，主要是一些小窗口可以根据该面板的选项可以进行显示模式的重组，并且可以切换窗体的大小等等。效果展示中我们只是修改了显示的问题，不过实现起来思路是一样的，最主要的是内容窗体已经接收到我们传递的消息。</p>
+<p><strong>SmallContext</strong></p>
+<p>这是一个比较关键的类，当时想了很久，到底要不要加。</p>
+<p>这个类主要负责的功能就是同步小窗体外壳类SmallWidget和内容窗体类之间的消息传递。</p>
+<ul>
+<li>当SmallWidget想要给内容窗体传递消息时，会通过ISmall接口类进行发送指令，因为内容窗体是继承了这个ISmall接口类的</li>
+<li>当内容窗体想给外壳发送消息时，是通过ISmall的接口调用来到达目的的，严格来说其实是外壳窗体主动跟内容窗体要的消息内容。</li>
+</ul>
+<p>当SunPanel面板通过工厂类SmallFactory进行构造小窗口时，会把SmallWidget和构造好的内容窗体进行注册，并开始接收SmallWidget发送过来的事件请求。</p>
+<pre><code>void SmallContext::RegisterSmallWidget(SmallWidget * widget, ISmallCall * call)
+{
+    m_itemMap[widget] = call;
+
+    connect(widget, &amp;SmallWidget::ClickedButton, this, &amp;SmallContext::HandleEvent);
+}</code></pre>
+<p>当工具栏点击了'M'按钮时，SMallWidget就会给SmallContext发送事件请求，并附带相关参数，这里SmallWidget发送了<code>显示模式</code>选择事件，下面是SmallContext的处理方式</p>
+<pre><code>void SmallContext::HandleEvent(int type, const QPoint &amp; globalPos)
+{
+    if (SmallWidget * widget = dynamic_cast&lt;SmallWidget *&gt;(sender()))
+    {
+        if (m_itemMap.contains(widget))
+        {
+            if (ISmallCall * call = m_itemMap[widget])
+            {
+                ViewMode view = call-&gt;ViewType(SmallToolType(type));
+
+                if (view == VM_VIEW)
+                {
+                    ShowView(widget, call, globalPos);
+                }
+            }
+        }
+    }
+}</code></pre>
+<p><strong>SmallFactory</strong></p>
+<p>最后就是工厂类了，一看名字就知道，他是一个工厂，专门负责生产小窗口的，对工具箱来说，他只知道给SubPanel发送显示一个小窗口这个指令，但是SubPanel自己其实也不会去真正的构造一个小窗口，原因其实很简单，单个的构造一个小窗体其实没问题，但是当小窗体种类多起来时，需要维护的消息就随之增多。</p>
+<p>重构之后的代码看起来像这样，当SubPanel类需要一个小窗口时，他只需要这么干就行</p>
+<pre><code>SmallWidget * smallWidget = m_pSmallFactory-&gt;CreateWidget(type, subContent);
+subContent-&gt;AddSmallWidget(smallWidget);
+
+smallWidget-&gt;move(m_pSmallFactory-&gt;GetPos(type, subContent));
+smallWidget-&gt;show();</code></pre>
+<p>调用工程的CreateWidget方法，构造一个小窗口，然后加入到自己的布局中</p>
+<p><strong>这里还有一个比较关键的问题，就是窗口初始位置管理，我们在工厂里维护了一个位置偏移量，当连续请求同一类型的小窗口时，我们会给这个偏移量增加一个固定值，使得连续请求时，同一类型的小窗口获取到的位置是有规律的变化</strong></p>
+<pre><code>void SmallFactory::UpdateOffset(bool change, QWidget * parent)
+{
+    if (change)
+    {
+        m_offset += QPoint(13, 13);
+    }
+    else
+    {
+        m_offset = QPoint(0, 0);
+    }
+
+    QRect r = parent-&gt;rect();
+    if ( m_offset.y() &gt; r.height() / 4 
+        || m_offset.x() &gt; r.width() / 4)
+    {
+        m_offset *= -1;
+        m_offset.setX(m_offset.x() - 15);
+    }
+}</code></pre>
+<h2 id="五相关文章">五、相关文章</h2>
+<p><a href="https://www.cnblogs.com/swarmbees/p/11027429.html">高仿富途牛牛-组件化(一)-支持页签拖拽、增删、小工具</a></p>
+<p><a href="https://www.cnblogs.com/swarmbees/p/11042704.html">高仿富途牛牛-组件化(二)-磁力吸附</a></p>
+<p><a href="https://www.cnblogs.com/swarmbees/p/11048378.html">高仿富途牛牛-组件化(三)-界面美化</a></p>
+<p><a href="https://www.cnblogs.com/swarmbees/p/11055495.html">高仿富途牛牛-组件化(四)-优秀的时钟</a></p>
+<html>
+    <div style='font-weight:600;'>
+    如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！
+    </div>
+<center>
+    <div>
+        <table>
+        <tr>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td>
+        </tr>
+        </table>
+    </div>
+</center>
+</html>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

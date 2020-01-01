@@ -1,0 +1,141 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修通过 Channel 实现 Goroutine Pool' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>通过 Channel 实现 Goroutine Pool</center></div><div class='banquan'>原文出处:本文由博客园博主MiaoWoo提供。<br/>
+原文连接:https://www.cnblogs.com/miaowoo/p/11412751.html</div><br>
+    <p>最近用到了 Go 从 Excel 导数据到服务器内部 用的是 http 请求<br />
+但是发现一个问题 从文件读取之后 新开 Goroutine 会无限制新增<br />
+导致全部卡在初始化请求 于是乎就卡死了</p>
+<h3 id="问题模拟">问题模拟</h3>
+<ul>
+<li>模拟代码</li>
+</ul>
+<pre><code><code>func main() {
+    pool := sync.WaitGroup{}
+    for i := 0; i &lt; 500; i++ {
+        pool.Add(1)
+        go func(i int) {
+            resp, err := http.Get(&quot;http://ip.3322.org&quot;)
+            if err != nil {
+                fmt.Println(i, err)
+            } else {
+                defer resp.Body.Close()
+                result, _ := ioutil.ReadAll(resp.Body)
+                fmt.Println(i, string(result))
+            }
+            pool.Done()
+        }(i)
+    }
+    pool.Wait()
+}</code></pre>
+<ul>
+<li>数量小的情况下 没有问题 但是数量比较大的情况 就会发现程序直接卡死 一段时间之后报错 并且没有发出任何请求</li>
+</ul>
+<h3 id="问题解决">问题解决</h3>
+<ul>
+<li>实际上看的出来 是应为同时发起了太多的HTTP请求 导致系统卡死 数据没有发送</li>
+<li>想到我在Java中用Thread提交请求 我就考虑 可不可限制 Goroutine 的数量</li>
+<li>使用强大的百度 果然找到了大佬已经写好的协程池</li>
+<li>代码如下 我加上了注释</li>
+</ul>
+<pre><code><code>package gopool
+
+import (
+    &quot;sync&quot;
+)
+
+// Pool Goroutine Pool
+type Pool struct {
+    queue chan int
+    wg    *sync.WaitGroup
+}
+
+// New 新建一个协程池
+func New(size int) *Pool {
+    if size &lt;= 0 {
+        size = 1
+    }
+    return &amp;Pool{
+        queue: make(chan int, size),
+        wg:    &amp;sync.WaitGroup{},
+    }
+}
+
+// Add 新增一个执行
+func (p *Pool) Add(delta int) {
+    // delta为正数就添加
+    for i := 0; i &lt; delta; i++ {
+        p.queue &lt;- 1
+    }
+    // delta为负数就减少
+    for i := 0; i &gt; delta; i-- {
+        &lt;-p.queue
+    }
+    p.wg.Add(delta)
+}
+
+// Done 执行完成减一
+func (p *Pool) Done() {
+    &lt;-p.queue
+    p.wg.Done()
+}
+
+// Wait 等待Goroutine执行完毕
+func (p *Pool) Wait() {
+    p.wg.Wait()
+}</code></pre>
+<ul>
+<li>然后修改刚才的测试方法</li>
+</ul>
+<pre><code><code>package main
+
+import (
+    &quot;io/ioutil&quot;
+    &quot;log&quot;
+    &quot;net/http&quot;
+    &quot;yumc.pw/cloud/lib/gopool&quot;
+)
+
+func main() {
+    // 这里限制5个并发
+    pool := gopool.New(5)// sync.WaitGroup{}
+    for i := 0; i &lt; 500; i++ {
+        pool.Add(1)
+        go func(i int) {
+            resp, err := http.Get(&quot;http://ip.3322.org&quot;)
+            if err != nil {
+                fmt.Println(i, err)
+            } else {
+                defer resp.Body.Close()
+                result, _ := ioutil.ReadAll(resp.Body)
+                fmt.Println(i, string(result))
+            }
+            pool.Done()
+        }(i)
+    }
+    pool.Wait()
+}</code></pre>
+<ul>
+<li>完美解决</li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,122 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++系列总结——volatile关键字' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++系列总结——volatile关键字</center></div><div class='banquan'>原文出处:本文由博客园博主一罪提供。<br/>
+原文连接:https://www.cnblogs.com/yizui/p/10628020.html</div><br>
+    <h2 id="前言">前言</h2>
+<p><code>volatile</code>的中文意思是易变的，但这个易变和<code>mutable</code>是不同的含义。<code>mutable</code>是指编译期的易变，根据语法编译器默认不会让我们修改某些变量，但是加上<code>mutable</code>让编译器知道我们要修改的态度很强硬。而<code>volatile</code>的易变是指运行期的易变，这些变化是编译器无法感知的变化，让编译器不要瞎优化。</p>
+<h2 id="volatile如何影响编译结果"><code>volatile</code>如何影响编译结果</h2>
+<h3 id="例一">例一</h3>
+<p>编译器会将其认为无用的死代码优化掉。</p>
+<pre><code>int main()
+{
+    int* reg = 0x123456; // 假设0x123456是某个特殊寄存器的地址
+    *reg = 0x1;
+    *reg = 0x2;
+    *reg = 0x3;
+    *reg = 0x4;
+    return 0;
+}</code></pre>
+<p>上面的代码通过<code>g++ a.cpp -O2</code>编译后，你会发现只有<code>*reg = 0x4;</code>生效了，其他语句被优化掉了。</p>
+<pre><code>   0x0000000000400540 &lt;+0&gt;: movl   $0x4,0x123456
+   0x000000000040054b &lt;+11&gt;:    xor    %eax,%eax
+   0x000000000040054d &lt;+13&gt;:    retq </code></pre>
+<p>一般情况下，这没有什么影响，但是上例中的代码实际是初始化某个设备的状态，任何状态的赋值都不能被省略，否则可能导致设备异常无法工作，此时就需要用到<code>volatile</code>。当加上<code>volatile</code>修饰后，同样通过<code>g++ a.cpp -O2</code>编译后，没有任何语句被优化掉</p>
+<pre><code>   0x0000000000400540 &lt;+0&gt;: movl   $0x1,0x123456
+   0x000000000040054b &lt;+11&gt;:    xor    %eax,%eax
+   0x000000000040054d &lt;+13&gt;:    movl   $0x2,0x123456
+   0x0000000000400558 &lt;+24&gt;:    movl   $0x3,0x123456
+   0x0000000000400563 &lt;+35&gt;:    movl   $0x4,0x123456
+   0x000000000040056e &lt;+46&gt;:    retq </code></pre>
+<h3 id="例二">例二</h3>
+<p>因为寄存器速度快，所以编译器会使用寄存器达到优化的目的，避免频繁操作内存。<br />
+玩过单片机或者ARM板的同学肯定都写过跑马灯程序，下面的程序就算简单模拟一下LED灯忽闪忽闪。</p>
+<pre><code>int main()
+{
+    int* a = (int*)0x123456; 
+    for( int i = 0; i &lt; 1000; ++i ){
+        *a = ~(*a); // 反复取反，开关LED灯
+        sleep( 1 );
+    }
+    return 0;
+}</code></pre>
+<p>通过<code>g++ a.cpp -O2</code>编译后，你会发现每次取反后的值都保存在寄存器<code>edx</code>中，只在最后把<code>edx</code>里的值保存到了0x123456，这相当于只开关了LED灯一次，不符合预期。</p>
+<pre><code>   0x0000000000400540 &lt;+0&gt;: mov    0x123456,%edx
+   0x0000000000400547 &lt;+7&gt;: mov    $0x3e8,%eax
+   0x000000000040054c &lt;+12&gt;:    nopl   0x0(%rax)
+   0x0000000000400550 &lt;+16&gt;:    sub    $0x1,%eax
+   0x0000000000400553 &lt;+19&gt;:    not    %edx
+   0x0000000000400555 &lt;+21&gt;:    jne    0x400550 &lt;main+16&gt;
+   0x0000000000400557 &lt;+23&gt;:    mov    %edx,0x123456
+   0x000000000040055e &lt;+30&gt;:    xor    %eax,%eax
+   0x0000000000400560 &lt;+32&gt;:    retq </code></pre>
+<p>当加上<code>volatile</code>后，每次取反结果都会存入0x123456，开关LED灯1000次符合预期。</p>
+<pre><code>=&gt; 0x0000000000400540 &lt;+0&gt;: mov    $0x3e8,%edx
+   0x0000000000400545 &lt;+5&gt;: nopl   (%rax)
+   0x0000000000400548 &lt;+8&gt;: mov    0x123456,%eax
+   0x000000000040054f &lt;+15&gt;:    sub    $0x1,%edx
+   0x0000000000400552 &lt;+18&gt;:    not    %eax
+   0x0000000000400554 &lt;+20&gt;:    mov    %eax,0x123456      # 每次取反结果都会存入0x123456
+   0x000000000040055b &lt;+27&gt;:    jne    0x400548 &lt;main+8&gt;
+   0x000000000040055d &lt;+29&gt;:    xor    %eax,%eax
+   0x000000000040055f &lt;+31&gt;:    retq</code></pre>
+<p>上面这个例子还可以反一下，即程序统计外部开关LED灯的开关次数（通过中断感知），如果使用寄存器优化的话，CPU可能只感知到一次变化。</p>
+<h3 id="例三">例三</h3>
+<p>编译器可以重排指令方便指令流水化处理，达到优化目的。</p>
+<pre><code>int main()
+{
+    int* a = (int*)0x123456;  // 0x123456是某个设备地址
+    *a = 0x1; // 开启该设备
+    int* b = (int*)0x654321; // 0x654321是该设备的数据读取地址
+    printf( &quot;%d\n&quot;, *b ); // 读取该地址的数据
+    return 0;;
+}</code></pre>
+<p>上面代码的逻辑是开启某个设备后，从该设备指定地址读取数据，存在因果关系，但编译器无法识别。因此通过<code>g++ a.cpp -O2</code>编译后，你会发现<code>*b</code>被提前了，程序不符合预期。</p>
+<pre><code>=&gt; 0x0000000000400590 &lt;+0&gt;: sub    $0x8,%rsp
+   0x0000000000400594 &lt;+4&gt;: mov    0x654321,%esi # 先从0x654321读取数据放入esi作为printf的第二个参数，也就是先执行了*b
+   0x000000000040059b &lt;+11&gt;:    movl   $0x1,0x123456 # 后将0x1设置到0x123456
+   0x00000000004005a6 &lt;+22&gt;:    mov    $0x400760,%edi # &quot;%d\n&quot;放入edi作为printf的第一个参数
+   0x00000000004005ab &lt;+27&gt;:    xor    %eax,%eax
+   0x00000000004005ad &lt;+29&gt;:    callq  0x400530 &lt;printf@plt&gt;
+   0x00000000004005b2 &lt;+34&gt;:    xor    %eax,%eax
+   0x00000000004005b4 &lt;+36&gt;:    add    $0x8,%rsp
+   0x00000000004005b8 &lt;+40&gt;:    retq</code></pre>
+<p>使用<code>volatile</code>修饰a和b后，指令执行顺序符合预期</p>
+<pre><code>=&gt; 0x0000000000400590 &lt;+0&gt;: sub    $0x8,%rsp
+   0x0000000000400594 &lt;+4&gt;: movl   $0x1,0x123456 # 先将0x1设置到0x123456
+   0x000000000040059f &lt;+15&gt;:    mov    0x654321,%esi # 后从0x654321读取数据放入esi作为printf的第二个参数，也就是先执行了*b
+   0x00000000004005a6 &lt;+22&gt;:    mov    $0x400760,%edi
+   0x00000000004005ab &lt;+27&gt;:    xor    %eax,%eax
+   0x00000000004005ad &lt;+29&gt;:    callq  0x400530 &lt;printf@plt&gt;
+   0x00000000004005b2 &lt;+34&gt;:    xor    %eax,%eax
+   0x00000000004005b4 &lt;+36&gt;:    add    $0x8,%rsp
+   0x00000000004005b8 &lt;+40&gt;:    retq</code></pre>
+<h2 id="结语">结语</h2>
+<p><code>volatile</code>保证了单一执行线程内，对其修饰的变量的访问不能被优化，以及对另一先序或后序该<code>volatile</code>变量的<code>volatile</code>变量的访问不会被重排序。<br />
+从上面的例子能看看出，<strong>嵌入式开发中，<code>volatile</code>会比较常用，但在普通应用开发中其实很少用到，一般配合信号处理函数使用。</strong></p>
+<p><strong><code>volatile</code>并不能保证多线程安全。</strong></p>
+<blockquote>
+<p>上述代码运行必崩溃，看看意思就好。<br />
+gcc version 4.8.5 20150623</p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,104 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修虚函数探秘' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>虚函数探秘</center></div><div class='banquan'>原文出处:本文由博客园博主leno米雷提供。<br/>
+原文连接:https://www.cnblogs.com/lenomirei/p/11384480.html</div><br>
+    <p>C++的多态分为动态多态和静态多态，其中静态多态主要靠重载和模板来实现，而动态多态则主要靠继承来实现了。</p>
+<p>那么静态和动态，怎么算静，怎么算动呢？静态多指编译期能决定的事情，而动态多指运行时才决定的事情。例如重载，在编译期生成符号的时候就已经确定不同的函数了，而继承的重写（override）则是在运行到具体的代码位置确认指针内部的虚函数表指向的函数地址时才知道执行哪个函数，被称为动态多态。</p>
+<h2 id="虚函数表指针">虚函数表指针</h2>
+<p>虚函数表指针指向虚函数表，虚函数表每个类一个，如果是单继承的话子类和父类的虚函数表会合体，下面是一个简单的例子</p>
+<pre><code>class Father {
+public:
+    virtual void fatherfunction() {
+        cout &lt;&lt; &quot;fatherfunction&quot; &lt;&lt; endl;
+    }
+};
+
+class Child : public Father {
+public:
+    virtual void childfunction() {
+        cout &lt;&lt; &quot;childfunction&quot; &lt;&lt; endl;
+    }
+};
+
+Child c;
+Father f;</code></pre>
+<p>用过调试器查看变量内部可以看到Child类的对象c中有父类的虚函数表指针，但是自己的呢？单纯一个父类对象也有自己的虚函数表指针，为什么Child类的对象自己的虚表指针不见了呢？<br />
+<img src="./images/虚函数探秘0.png" /></p>
+<p>那么一个猜测就是子类的虚函数表和父类的虚函数表合体了，这个猜测到底正不正确呢？得想个办法验证一下！</p>
+<p>一般虚表指针存放在对象地址空间的头4位，这里先取得上图中看到的Father的vptr指向的虚表，虚表地址的获取需要获取虚表指针中存放的值。</p>
+<pre><code> cout &lt;&lt; hex &lt;&lt; &quot;virtual table address: &quot; &lt;&lt; *(int *)(&amp;c) &lt;&lt; endl;</code></pre>
+<p>然后是获得<code>fatherfunction</code>函数指针的地址</p>
+<pre><code>cout &lt;&lt; hex &lt;&lt; &quot;fatherfunction address: &quot; &lt;&lt; (int *)*(int *)(&amp;c) &lt;&lt; endl;</code></pre>
+<pre><code>typedef void(*FUN)();
+
+Child c;
+cout &lt;&lt; hex &lt;&lt; &quot;virtual table address: &quot; &lt;&lt; *(int *)(&amp;c) &lt;&lt; endl;
+cout &lt;&lt; hex &lt;&lt; &quot;fatherfunction address: &quot; &lt;&lt; (int *)*(int *)(&amp;c) &lt;&lt; endl;
+
+FUN father_func = (FUN)*((int *)*(int *)(&amp;c));
+
+FUN child_func = (FUN)*((int *)*(int *)(&amp;c) + 1);
+
+father_func();
+child_func();</code></pre>
+<p>得到的结果如下图所示</p>
+<p><img src="./images/虚函数探秘1.png" /></p>
+<p>虚函数表中存放的紧接着father_func函数地址的下一个就是child_func的地址，因此是合并了。</p>
+<p>PS：简单解释一下取函数指针的代码<br />
+<img src="./images/虚函数探秘2.png" /><br />
+续表为手误，是虚表。图不好改就不改了</p>
+<h2 id="静态函数不能是虚函数">静态函数不能是虚函数</h2>
+<p>静态成员不属于任何对象，所以就算加上了virtual也没有意义<br />
+静态函数没有this指针，虚函数表存在于对象的地址空间，使用对象的this指针访问，但是静态函数没有this指针故也无法访问虚函数表。</p>
+<h2 id="静态函数不能是const也不能是volatile">静态函数不能是const也不能是volatile</h2>
+<p>const成员函数要求使用者为const类对象，再换一个说法就是要求this指针为const，但是静态函数没有this指针，故使用const关键字修饰静态函数毫无意义</p>
+<p><strong>PS：volatile是一个关键字用来表示当前语句不会被编译器优化，且要求每次直接读值</strong></p>
+<h2 id="多继承的时候虚表指针表现">多继承的时候虚表指针表现</h2>
+<p>多继承时，对象内部会有多个虚表指针指向多个虚函数表，如果自己也能继续继承，那么自己的续表会和第一个虚表合体，虚表合体这个在上面已经描述过了，多个多继承的话也会合并，是会和内存空间的第一个虚表合并。</p>
+<pre><code>class Father {
+public:
+    virtual void fatherfunction() {
+        cout &lt;&lt; &quot;fatherfunction&quot; &lt;&lt; endl;
+    }
+};
+
+class Mother {
+public:
+    virtual void motherfunction() {
+        cout &lt;&lt; &quot;motherfunction&quot; &lt;&lt; endl;
+    }
+};
+
+class Child : public Father, public Mother {
+public:
+    virtual void childfunction() {
+        cout &lt;&lt; &quot;childfunction&quot; &lt;&lt; endl;
+    }
+};</code></pre>
+<p>把类的继承关系改成这样，让Child类继承自Father和Mother，此时Child的对象c中有几个虚表指针？</p>
+<p><img src="./images/虚函数探秘3.png" /></p>
+<p>答案是两个分别是两个类的虚表指针，此时为了判断合体，还是用上面提到的方法，也能成功，发现子类的虚表是存在头4个字节的虚表指针所指向的虚表内的。</p>
+<p>而这个虚表指针的先后顺序和声明继承的顺序一致，<code>public Mother</code>如果在<code>public Father</code>之前的话就会变成如下图所示<br />
+<img src="./images/虚函数探秘4.png" /></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

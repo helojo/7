@@ -1,0 +1,245 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go语言中的代码重用 - 继承还是组合？' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go语言中的代码重用 - 继承还是组合？</center></div><div class='banquan'>原文出处:本文由博客园博主欣欣念念提供。<br/>
+原文连接:https://www.cnblogs.com/xxnn/p/10910843.html</div><br>
+    <p>故事要从我在一个项目中，想要假装的专业一点而遇到的一个陷阱说起。</p>
+<h1 id="代码重用">代码重用</h1>
+<p>在这个项目中，我们已经有了类似如下的代码：</p>
+<pre><code><code>package main
+ 
+import (
+    &quot;fmt&quot;
+)
+ 
+func main() {
+    user := &amp;User{name: &quot;Chris&quot;}
+    user.sayHi()
+}
+ 
+type User struct {
+    name string
+}
+ 
+func (u *User) sayHi() {
+    u.sayName()
+    u.sayType()
+}
+ 
+func (u *User) sayName() {
+    fmt.Printf(&quot;I am %s.&quot;, u.name)
+}
+ 
+func (u *User) sayType() {
+    fmt.Println(&quot;I am a user.&quot;)
+}</code></pre>
+<pre><code><code>I am Chris.I am a user.</code></pre>
+<p>然后我接到的新需求是这样的，我需要开发一种新的用户，它和当前这种用户有一些相同的行为。当然，最主要的是也有很多不同的行为。作为一名老司机，我当然知道，这些不同的地方才是我需要重点关注并且实现的。<br />
+为了区分这两种用户，我们就叫他们普通用户和文艺用户吧。<br />
+因为我们已经有了普通用户的实现代码了，作为一个资深（误）Java工程师，我想通过继承这个普通用户来实现代码的复用。然而悲伤辣么大，我发现在Go语言中是不支持继承的。</p>
+<h1 id="嵌入类型">嵌入类型</h1>
+<p>好吧，只要思想不滑坡，办法总比困难多。我发现在Go中有一种叫做Embedding的东西。在网上的一些文章中，他们说这就是Go中实现继承的方式。可是看起来，这更像是Java中的组合，至少语法上像，是不？</p>
+<pre><code><code>package main
+ 
+import (
+    &quot;fmt&quot;
+)
+ 
+func main() {
+    artisticUser := &amp;ArtisticUser{User: &amp;User{name: &quot;Chris&quot;}}
+    artisticUser.sayName()
+    artisticUser.sayType()
+}
+ 
+type User struct {
+    name string
+}
+ 
+func (u *User) sayHi() {
+    u.sayName()
+    u.sayType()
+}
+ 
+func (u *User) sayName() {
+    fmt.Printf(&quot;I am %s.&quot;, u.name)
+}
+ 
+func (u *User) sayType() {
+    fmt.Println(&quot;I am a user.&quot;)
+}
+ 
+type ArtisticUser struct {
+    *User
+}
+ 
+func (u *ArtisticUser) sayType() {
+    fmt.Println(&quot;I am an artistic user.&quot;)
+}</code></pre>
+<pre><code><code>I am Chris.I am an artistic user.</code></pre>
+<p>干得漂亮！这样我就可以复用User的sayName方法，只要把sayType方法用我自己的逻辑实现就好了。这正是我想要的。</p>
+<h1 id="继承组合">继承？组合？</h1>
+<p>但是，少侠请留步！我们试一下sayHi方法看看会发生什么？</p>
+<pre><code><code>package main
+ 
+import (
+    &quot;fmt&quot;
+)
+ 
+func main() {
+    artisticUser := &amp;ArtisticUser{User: &amp;User{name: &quot;Chris&quot;}}
+    artisticUser.sayHi()
+}
+ 
+type User struct {
+    name string
+}
+ 
+func (u *User) sayHi() {
+    u.sayName()
+    u.sayType()
+}
+ 
+func (u *User) sayName() {
+    fmt.Printf(&quot;I am %s.&quot;, u.name)
+}
+ 
+func (u *User) sayType() {
+    fmt.Println(&quot;I am a user.&quot;)
+}
+ 
+type ArtisticUser struct {
+    *User
+}
+ 
+func (a *ArtisticUser) sayType() {
+    fmt.Println(&quot;I am an artistic user.&quot;)
+}</code></pre>
+<pre><code><code>I am Chris.I am a user.</code></pre>
+<p>这不科学！在Java里，子类总是会调用自己的方法的（已经override了父类的方法）。除非子类没有覆盖父类的方法，才会使用从父类继承来的方法。<br />
+在这个例子中，我override了（其实Go中没有这个概念）sayType方法，但是当我们在sayHi中调用它时，却没有调用这个override方法，而是用了父类的原始方法。</p>
+<p>实际上，类型嵌入不是继承。它只是某种形式上的语法糖而已。在面向对象编程中，子类应该是可以被当做父类来使用的。在里氏替换原则中，子类应该能在任何需要的地方替换掉父类。（注意一点，我们这里一开始尝试覆盖父类的非抽象方法已经违背了里氏替换原则）。<br />
+但是在上边的例子中，ArtisticUser和User是两种不同的类型。且不能替换使用。</p>
+<pre><code><code>package main
+ 
+import (
+    &quot;fmt&quot;
+)
+ 
+func main() {
+    user := &amp;User{name: &quot;Chris&quot;}
+    artisticUser := &amp;ArtisticUser{User: user}
+    fmt.Printf(&quot;user&#39;s type is: %T\n&quot;, user)
+    fmt.Printf(&quot;artisticUser&#39;s type is: %T\n&quot;, artisticUser)
+    acceptUser(user)
+    //acceptUser(artisticUser)
+}
+ 
+type User struct {
+    name string
+}
+ 
+func (u *User) sayHi() {
+    u.sayName()
+    u.sayType()
+}
+ 
+func (u *User) sayName() {
+    fmt.Printf(&quot;I am %s.&quot;, u.name)
+}
+ 
+func (u *User) sayType() {
+    fmt.Println(&quot;I am a user.&quot;)
+}
+ 
+type ArtisticUser struct {
+    *User
+}
+ 
+func (a *ArtisticUser) sayType() {
+    fmt.Println(&quot;I am an artistic user.&quot;)
+}
+ 
+func acceptUser(u *User) {
+ 
+}</code></pre>
+<pre><code><code>user&#39;s type is: *main.User
+artisticUser&#39;s type is: *main.ArtisticUser</code></pre>
+<p>如果你尝试去掉注释掉的那一行，你会得到一个build错误：</p>
+<pre><code><code>cannot use artisticUser (type *ArtisticUser) as type *User in argument to acceptUser</code></pre>
+<p>要我说，嵌入类型既不是继承，也不是组合，只是跟它们都有点像。</p>
+<h1 id="多态性">多态性</h1>
+<p>那么回到我的问题。事实上我一开始就不该尝试继承。即使Go提供了继承机制，覆盖一个父类的非抽象方法也将破坏里氏替换原则。我一开始想要试试继承其实是一种偷懒的行为，因为我并不想重构已有的那么一大坨代码。</p>
+<p>但是我们不应该害怕重构。你看，就算我想试着逃避重构，还是掉进别的沟里了。</p>
+<p>如果能重来，我要选李白。。。呸，如果能让我重构已有代码的话，也许我可以试试接口。在Go语言中，接口非常灵活，是实现多态的手段。</p>
+<pre><code><code>package main
+ 
+import (
+    &quot;fmt&quot;
+)
+ 
+func main() {
+    user := &amp;User{name: &quot;Chris&quot;}
+    user.ISubUser = &amp;NormalUser{}
+    user.sayHi()
+    user.ISubUser = &amp;ArtisticUser{}
+    user.sayHi()
+}
+ 
+type ISubUser interface {
+    sayType()
+}
+ 
+type User struct {
+    name string
+    ISubUser
+}
+ 
+func (u *User) sayHi() {
+    u.sayName()
+    u.sayType()
+}
+ 
+func (u *User) sayName() {
+    fmt.Printf(&quot;I am %s.&quot;, u.name)
+}
+ 
+type NormalUser struct {
+ 
+}
+ 
+func (n *NormalUser) sayType() {
+    fmt.Println(&quot;I am a normal user.&quot;)
+}
+ 
+type ArtisticUser struct {
+ 
+}
+ 
+func (a *ArtisticUser) sayType() {
+    fmt.Println(&quot;I am an artistic user.&quot;)
+}</code></pre>
+<pre><code><code>I am Chris.I am a normal user.
+I am Chris.I am a artistic user.</code></pre>
+<p>这样我就重用了sayName和sayHi方法，并且把sayType方法留给多态来实现。</p>
+<p>完美。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

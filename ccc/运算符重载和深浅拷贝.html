@@ -1,0 +1,169 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修运算符重载和深浅拷贝' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>运算符重载和深浅拷贝</center></div><div class='banquan'>原文出处:本文由博客园博主回忆酿的甜提供。<br/>
+原文连接:https://www.cnblogs.com/ygsworld/p/11324550.html</div><br>
+    <p><span style="font-size: 18px;">对于某些运算符号(+,-,*,/....)，我们不满足与它原有的操作方式，而是要在对<strong>特有对象</strong>(如负数的加减)进行使用，但是编译器会不允许这样做，因为会与操作符<strong>原本的类型不匹配</strong>而导致操作失败。因此我们需要对运算符进行重载，即赋予它新的意义，从而满足我们的使用需求。</span></p>
+<p><span style="font-size: 18px;">如complex_a和complex_b是两个复数对象求两个复数的和, 希望能直接写：complexa + comple_b</span></p>
+<p><span style="font-size: 18px;"> <strong>运算符重载的目的是：扩展C++中提供的运算符的适用范围，使之能作用于对象</strong>。</span></p>
+<p><span style="font-size: 18px;"> 同一个运算符，<strong>对不同类型的操作数，所发生的行为不同。</strong></span><br /><span style="font-size: 18px;"> 对于复数对象：complex_a + complex_b&nbsp; &nbsp;=&gt; 生成新的复数对象</span><br /><span style="font-size: 18px;"> 对于整数：5 + 4 = 9</span></p>
+<p><span style="font-size: 18px;"><em><em><em>运算符重载的<span style="text-decoration: underline;"><strong>实质是函数重载</strong></span>，<strong>它可以重载为普通函数，也可以重载为成员</strong>，在对含有该运算法的表达式转换时，调用对应的运算符函数完成重载的操作。(<strong>依据参数的类型进行匹配</strong>)</em></em></em></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 18px;"><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Complex 
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">public</span>:<span style="color: #0000ff;">double</span><span style="color: #000000;"> real,imag; 
+</span><span style="color: #008080;"> 4</span>     Complex( <span style="color: #0000ff;">double</span> r = <span style="color: #800080;">0.0</span>, <span style="color: #0000ff;">double</span> i= <span style="color: #800080;">0.0</span><span style="color: #000000;"> ):real(r),imag(i) {}
+</span><span style="color: #008080;"> 5</span>     Complex <span style="color: #0000ff;">operator</span>-(<span style="color: #0000ff;">const</span> Complex &amp;<span style="color: #000000;"> c); 
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 7</span> Complex <span style="color: #0000ff;">operator</span> + ( <span style="color: #0000ff;">const</span> Complex &amp; a, <span style="color: #0000ff;">const</span> Complex &amp;<span style="color: #000000;"> b)
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">{   
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">return</span> Complex( a.real+b.real,a.imag+b.imag); <span style="color: #008000;">//</span><span style="color: #008000;">返回一个临时对象</span>
+<span style="color: #008080;">10</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">11</span> Complex Complex::<span style="color: #0000ff;">operator</span>-(<span style="color: #0000ff;">const</span> Complex &amp;<span style="color: #000000;"> c)
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">return</span> Complex(real - c.real, imag - c.imag); <span style="color: #008000;">//</span><span style="color: #008000;">返回一个临时对象</span>
+<span style="color: #008080;">14</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">15</span> <span style="color: #008000;">//</span><span style="color: #008000;">重载为成员函数时，参数个数为运算符目数减一。
+</span><span style="color: #008080;">16</span> <span style="color: #008000;">//</span><span style="color: #008000;">重载为普通函数时，参数个数为运算符目数。</span>
+<span style="color: #008080;">17</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">19</span>     Complex a(<span style="color: #800080;">4</span>,<span style="color: #800080;">4</span>),b(<span style="color: #800080;">1</span>,<span style="color: #800080;">1</span><span style="color: #000000;">),c;
+</span><span style="color: #008080;">20</span>     c = a + b; <span style="color: #008000;">//</span><span style="color: #008000;">等价于c=operator+(a,b)</span>
+<span style="color: #008080;">21</span>     cout &lt;&lt; c.real &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">,</span><span style="color: #800000;">"</span> &lt;&lt; c.imag &lt;&lt; endl;<span style="color: #008000;">//</span><span style="color: #008000;">5,5,</span>
+<span style="color: #008080;">22</span>     cout &lt;&lt; (a-b).real &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">,</span><span style="color: #800000;">"</span> &lt;&lt; (a-b).imag &lt;&lt; endl;<span style="color: #008000;">//</span><span style="color: #008000;">3,3
+</span><span style="color: #008080;">23</span>     <span style="color: #008000;">//</span><span style="color: #008000;">a-b等价于a.operator-(b)</span>
+<span style="color: #008080;">24</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">25</span> }</span></pre>
+</div>
+<ul>
+<li><strong><span style="font-size: 18px;"><em id="__mceDel">赋值运算符重载</em></span></strong></li>
+</ul>
+<p><span style="font-size: 18px;"><em id="__mceDel">有时候希望赋值运算符两边的类型可以不匹配，</em><em id="__mceDel"><em id="__mceDel">比如，把一个int类型变量赋值给一个Complex对象，</em></em><em id="__mceDel"><em id="__mceDel"><em id="__mceDel">把一个 char * 类型的字符串赋值给一个字符串对</em></em></em><em id="__mceDel"><em id="__mceDel"><em id="__mceDel"><em id="__mceDel">象,此时就需要重载赋值运算符&ldquo;=&rdquo;。</em></em></em></em><em id="__mceDel"><em id="__mceDel"><em id="__mceDel"><em id="__mceDel"><em id="__mceDel">赋值运算符&ldquo;=&rdquo;只能重载为成员函数</em></em></em></em></em></span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 18px;"><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> String 
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span>     <span style="color: #0000ff;">private</span><span style="color: #000000;">:    
+</span><span style="color: #008080;"> 4</span>         <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> str;
+</span><span style="color: #008080;"> 5</span>     <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 6</span>         String ():str(<span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>[<span style="color: #800080;">1</span>]) { str[<span style="color: #800080;">0</span>] = <span style="color: #800080;">0</span><span style="color: #000000;">;}
+</span><span style="color: #008080;"> 7</span>         <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> * c_str() { <span style="color: #0000ff;">return</span><span style="color: #000000;"> str; };
+</span><span style="color: #008080;"> 8</span>         String &amp; <span style="color: #0000ff;">operator</span> = (<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> s);
+</span><span style="color: #008080;"> 9</span>     String::~String( ) { <span style="color: #0000ff;">delete</span><span style="color: #000000;"> [] str; }
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">11</span> String &amp; String::<span style="color: #0000ff;">operator</span> = (<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> s) 
+</span><span style="color: #008080;">12</span> { <span style="color: #008000;">//</span><span style="color: #008000;">重载&ldquo;=&rdquo;以使得 obj = &ldquo;hello&rdquo;能够成立</span>
+<span style="color: #008080;">13</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> [] str;
+</span><span style="color: #008080;">14</span>     str = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>[strlen(s)+<span style="color: #800080;">1</span><span style="color: #000000;">];
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    strcpy( str, s);
+</span><span style="color: #008080;">16</span>     <span style="color: #0000ff;">return</span> * <span style="color: #0000ff;">this</span><span style="color: #000000;">;
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">18</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    String s;
+</span><span style="color: #008080;">21</span>     s = <span style="color: #800000;">"</span><span style="color: #800000;">Good Luck,</span><span style="color: #800000;">"</span> ; <span style="color: #008000;">//</span><span style="color: #008000;">等价于 s.operator=("Good Luck,");</span>
+<span style="color: #008080;">22</span>     cout &lt;&lt; s.c_str() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">23</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> String s2 = "hello!"; </span><span style="color: #008000;">//</span><span style="color: #008000;">error</span>
+<span style="color: #008080;">24</span>     s = <span style="color: #800000;">"</span><span style="color: #800000;">Shenzhou 8!</span><span style="color: #800000;">"</span>; <span style="color: #008000;">//</span><span style="color: #008000;">等价于 s.operator=("Shenzhou 8!");</span>
+<span style="color: #008080;">25</span>     cout &lt;&lt; s.c_str() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">26</span> <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">28</span> <span style="color: #008000;">//</span><span style="color: #008000;"> 输出：
+</span><span style="color: #008080;">29</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Good Luck,
+</span><span style="color: #008080;">30</span> <span style="color: #008000;">//</span><span style="color: #008000;"> Shenzhou 8!</span></span></pre>
+</div>
+<ul>
+<li><em><strong><span style="font-size: 18px;">浅拷贝和深拷贝</span></strong></em></li>
+</ul>
+<p><span style="font-size: 18px;">一个字符串的例子</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 18px;"><span style="color: #008080;">1</span> <span style="color: #000000;">String S1, S2;
+</span><span style="color: #008080;">2</span> S1 = &ldquo;<span style="color: #0000ff;">this</span><span style="color: #000000;">&rdquo;;
+</span><span style="color: #008080;">3</span> S2 =<span style="color: #000000;"> &ldquo;that&rdquo;;
+</span><span style="color: #008080;">4</span> S1 = S2;</span></pre>
+</div>
+<p><span style="font-size: 18px;">这几句的含义很清楚，一个S1串和S2串，并将S2赋值给S1,此时S1就和S2是一样的值。。但是....这样却不是我们理解的那种copy</span></p>
+<p><span style="font-size: 18px;">它是在将s2赋值给s1的时候，将原来指向s1的指针取指向s2</span></p>
+<p><span style="font-size: 18px;"><img src="./images/运算符重载和深浅拷贝0.png" alt="" width="479" height="250" /></span></p>
+<p><span style="font-size: 18px;">原本指向'this'字符串的指针s1指向了'that'的字符空间，这样原来的'this'的字符空间就找不到了(变成<strong>内存垃圾</strong>)。</span></p>
+<p><span style="font-size: 18px;">这就是<span style="text-decoration: underline;"><strong><em>浅拷贝</em>。</strong></span>此时若我们释放s1所指向的存储空间，将会释放掉'that'，但是继续释放s2时，会发生问题(程序崩溃)，因为此刻s2指向的存储空间已经被s1所释放了</span></p>
+<p><span style="font-size: 18px;">但是原来的'this'却孤独的无人问津，好惨 ...所以这样是很不妥的。。。或者，我们更换此刻s1的值，又导致'that'被更换了。。。就会一团糟。。</span></p>
+<p><span style="font-size: 18px;">所以需要对原来的'='号进行重载(<em><strong>深拷贝：生成一个新的，值与当前的值一样的，不同地址空间的复制，互相的操作不相往来的那种，即真正意义上的copy</strong></em>)</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 18px;"><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> String 
+</span><span style="color: #008080;"> 2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 3</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">: 
+</span><span style="color: #008080;"> 4</span>     <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> str;
+</span><span style="color: #008080;"> 5</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 6</span>     String ():str(<span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>[<span style="color: #800080;">1</span><span style="color: #000000;">]) 
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">    { 
+</span><span style="color: #008080;"> 8</span>         str[<span style="color: #800080;">0</span>] = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">10</span>     <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> c_str() 
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    { 
+</span><span style="color: #008080;">12</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> str; 
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    };
+</span><span style="color: #008080;">14</span>     String &amp; <span style="color: #0000ff;">operator</span> = (<span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *<span style="color: #000000;"> s)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">16</span>         <span style="color: #0000ff;">delete</span><span style="color: #000000;"> [] str;//删除原来的str
+</span><span style="color: #008080;">17</span>         str = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>[strlen(s)+<span style="color: #800080;">1</span><span style="color: #000000;">];//开辟足够大的存储空间
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">        strcpy( str, s);//将s拷贝过来
+</span><span style="color: #008080;">19</span>         <span style="color: #0000ff;">return</span> * <span style="color: #0000ff;">this</span><span style="color: #000000;">;//这样s1就会指向新分配的存储空间
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    };
+</span><span style="color: #008080;">21</span>     ~<span style="color: #000000;">String( ) 
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    { 
+</span><span style="color: #008080;">23</span>         <span style="color: #0000ff;">delete</span><span style="color: #000000;"> [] str; 
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">25</span> };</span></pre>
+</div>
+<p><span style="font-size: 18px;">但是，这样写还是有一点小问题的。如果我写了这个 <strong>s=s</strong>，就问又有小问题。这样在赋值时，<span style="text-decoration: underline;"><em>左边的s先被delete，然后将右边s赋值给左边的s，但是右边的s已经没了</em></span>啊？！？！？这样就出错了。所以代码要继续修改，成这样</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 18px;"><span style="color: #008080;">1</span> String &amp; <span style="color: #0000ff;">operator</span> = (<span style="color: #0000ff;">const</span> String &amp;<span style="color: #000000;"> s)
+</span><span style="color: #008080;">2</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">3</span>     <span style="color: #0000ff;">if</span>( <span style="color: #0000ff;">this</span> == &amp; s) <span style="color: #008000;">//
+</span><span style="color: #008080;">4</span>         <span style="color: #0000ff;">return</span> * <span style="color: #0000ff;">this</span>;<span style="color: #008000;">//</span><span style="color: #008000;">防止出现自己给自己赋值出错的情况，直接返回就行了</span>
+<span style="color: #008080;">5</span>     <span style="color: #0000ff;">delete</span><span style="color: #000000;"> [] str;
+</span><span style="color: #008080;">6</span>     str = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>[strlen(s.str)+<span style="color: #800080;">1</span><span style="color: #000000;">];
+</span><span style="color: #008080;">7</span> <span style="color: #000000;">    strcpy( str,s.str);
+</span><span style="color: #008080;">8</span>     <span style="color: #0000ff;">return</span> * <span style="color: #0000ff;">this</span><span style="color: #000000;">;
+</span><span style="color: #008080;">9</span> }</span></pre>
+</div>
+<p><span style="font-size: 18px;">注意，返回值类型是<strong>String &amp; 型</strong>这样是为了<strong>对应原来 &ldquo;=&rdquo;运算符的左右两边类型</strong></span></p>
+<div class="cnblogs_code">
+<pre><strong><span style="font-size: 18px;"><span style="color: #008080;">1</span> <span style="color: #008000;">//</span><span style="color: #008000;">如</span>
+<span style="color: #008080;">2</span> a = b =<span style="color: #000000;"> c;
+</span><span style="color: #008080;">3</span> (a=b)=c; <span style="color: #008000;">//</span><span style="color: #008000;">会修改a的值
+</span><span style="color: #008080;">4</span> <span style="color: #008000;">//</span><span style="color: #008000;">分别等价于：</span>
+<span style="color: #008080;">5</span> a.<span style="color: #0000ff;">operator</span>=  (b.<span style="color: #0000ff;">operator</span>=<span style="color: #000000;">(c));
+</span><span style="color: #008080;">6</span> (a.<span style="color: #0000ff;">operator</span>=(b)).<span style="color: #0000ff;">operator</span>=(c);</span></strong></pre>
+</div>
+<p><span style="font-size: 18px;">现在应该可以了。</span></p>
+<p><span style="font-size: 18px;">但是。。。。</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="font-size: 18px;"><span style="color: #008080;">1</span> <span style="color: #008000;">//</span><span style="color: #008000;">为 String类编写复制构造函数的时候，会面临和不重载的 = 同样的问题，即默认构造函数会将=变成复制的操作，是浅拷贝！！所以我们用同样的方法处理。写个复制构造</span>
+<span style="color: #008080;">2</span> String( String &amp;<span style="color: #000000;"> s) 
+</span><span style="color: #008080;">3</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">4</span>     str = <span style="color: #0000ff;">new</span> <span style="color: #0000ff;">char</span>[strlen(s.str)+<span style="color: #800080;">1</span><span style="color: #000000;">];
+</span><span style="color: #008080;">5</span> <span style="color: #000000;">    strcpy(str,s.str)
+</span><span style="color: #008080;">6</span> }</span></pre>
+</div>
+<p><span style="font-size: 18px;">&nbsp;</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

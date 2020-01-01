@@ -1,0 +1,155 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang开发环境篇(六) Go运行监控Supervisord的使用' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang开发环境篇(六) Go运行监控Supervisord的使用</center></div><div class='banquan'>原文出处:本文由博客园博主飞翔码农提供。<br/>
+原文连接:https://www.cnblogs.com/feixiangmanon/p/11067700.html</div><br>
+    <h3 id="为什么要使用supervisord">为什么要使用Supervisord</h3>
+<p>17年第一次写Go项目的时候，用Go开发项目倒没没费多大劲，很快就开发完成了。到了在测试环境部署的时候，由于不知道有 Supervisord 这个软件，着实花了些功夫。总不能跟开发环境一样，直接执行编译生成的二进制文件吧，即使 后台执行了，万一它挂了，没人知道，即使测试人员发现了，开发还得登录到服务器再次启动下这个二进制文件。很明显这个解决方案没有任何意义，后来就在网上找解决方案。<br />
+然后，咨询Go开发的前同事，发现了Supervisord，喜出望外。它就是最优的解决方案啊。</p>
+<p>Supervisord 是什么？<br />
+Supervisord 是用 Python 实现的一款非常实用的进程管理工具，supervisord 还要求管理的程序是非 daemon 程序，supervisord 会帮你把它转成 daemon 程序，因此如果用 supervisord 来管理 nginx 的话，必须在 nginx 的配置文件里添加一行设置 daemon off 让 nginx 以非 daemon 方式启动。<br />
+程序崩溃或者退出Supervisord会自动启动程序。这样就再不也不怕go的执行文件挂掉或者退出或者死掉，Supervisord只要监控到异常状态就会重启执行文件并且记录日志。</p>
+<p>官方的解释<br />
+Supervisor: A Process Control System<br />
+Supervisor is a client/server system that allows its users to monitor and control a number of processes on UNIX-like operating systems.<br />
+It shares some of the same goals of programs like launchd, daemontools, and runit. Unlike some of these programs, it is not meant to be run as a substitute for init as “process id 1”. Instead it is meant to be used to control processes related to a project or a customer, and is meant to start like any other program at boot time.</p>
+<p>它是进程控制系统。监控和控制 Unix系统上进程。</p>
+<h3 id="supervisor-安装">Supervisor 安装</h3>
+<p>当然是在我们的虚拟机中安装 Supervisor</p>
+<pre><code><code>sudo vagrant ssh
+apt-get install supervisor
+
+supervisorctl -h
+supervisorctl -- control applications run by supervisord from the cmd line.
+Usage: /usr/bin/supervisorctl [options] [action [arguments]]
+Options:
+-c/--configuration FILENAME -- configuration file path (default /etc/supervisord.conf)
+-h/--help -- print usage message and exit
+出现上面的帮助信息表示安装成功了
+
+安装完成后，可以查看配置
+vim /etc/supervisor/supervisord.conf
+看到
+[include]
+files = /etc/supervisor/conf.d/*.conf
+supervisord 监控的项目的配置必须部署到 /etc/supervisor/conf.d/目录下，
+并且使用conf后缀</code></pre>
+<h3 id="举个栗子">举个栗子</h3>
+<p>找个简单的Go Web的项目试试supervisor怎么监控软件运行的。<br />
+首先生成一个Go编译生成的二进制可执行文件<br />
+main.go</p>
+<pre><code><code>package main
+
+import (
+    &quot;fmt&quot;
+    &quot;net/http&quot;
+    &quot;log&quot;
+)
+
+func sayhelloName(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, &quot;Hello China!&quot;)
+}
+
+func main() {
+    http.HandleFunc(&quot;/&quot;, sayhelloName)
+    err := http.ListenAndServe(&quot;:9090&quot;, nil)
+    if err != nil {
+        log.Fatal(&quot;ListenAndServe: &quot;, err)
+    }
+}</code></pre>
+<p>编译生成可执行文件，测试下是否访问是否正常</p>
+<pre><code><code>go build -o test.gobin
+./test.gobin
+curl http://192.168.0.10:9090
+Hello China!
+说明Go Web是正常的</code></pre>
+<p>接下来我们用使用Supervisord监控这个Go web程序。<br />
+先看下Supervisord监控的软件的配置说明<br />
+[program:项目名]<br />
+command=/data/www/go/src/test/test.bin<br />
+程序启动命令<br />
+autostart=true<br />
+在supervisord启动的时候也自动启动<br />
+startsecs=10<br />
+启动10秒后没有异常退出，就表示进程正常启动了，默认为1秒<br />
+autorestart=true<br />
+程序退出后自动重启,可选值：[unexpected,true,false]，默认为unexpected，表示进程意外杀死后才重启<br />
+startretries=3<br />
+启动失败自动重试次数，默认是3<br />
+user=root<br />
+用哪个用户启动进程，默认是root<br />
+priority=999<br />
+进程启动优先级，默认999，值小的优先启动<br />
+redirect_stderr=true<br />
+把stderr重定向到stdout，默认false<br />
+stdout_logfile_maxbytes=20MB<br />
+stdout 日志文件大小，默认50MB<br />
+stdout_logfile_backups = 20<br />
+stdout 日志文件备份数，默认是10<br />
+stdout 日志文件，需要注意当指定目录不存在时无法正常启动，所以需要手动创建目录（supervisord 会自动创建日志文件）<br />
+stdout_logfile=/data/logs/test/test.log<br />
+日志输出的文件地址<br />
+stopasgroup=false<br />
+默认为false,进程被杀死时，是否向这个进程组发送stop信号，包括子进程<br />
+killasgroup=false<br />
+默认为false，向进程组发送kill信号，包括子进程</p>
+<p>为上面我们生成 test.bin 的执行文件创建一个Supervisord监控的配置文件，配置文件必须在 /etc/supervisor/conf.d 目录下</p>
+<pre><code><code>cd  /etc/supervisor/conf.d
+vim test.conf
+[program:test]
+command=/data/www/go/src/test/test.bin
+autostart=true
+startsecs=10
+autorestart=true
+startretries=3
+user=root
+priority=999
+redirect_stderr=true
+stdout_logfile_maxbytes=20MB
+stdout_logfile_backups = 20
+stdout_logfile=/data/logs/test/test.log
+stopasgroup=false
+killasgroup=false</code></pre>
+<p>运行Supervisord，使之监控 test.gobin</p>
+<pre><code><code>添加了新的配置之后一定需要执行
+supervisorctl update
+会提示
+test: added process group
+表示test添加成功了。
+查看执行状态
+supervisorctl status
+test                             RUNNING   pid 4354, uptime 0:00:16</code></pre>
+<p>这样表示运行成功了。<br />
+我们请求试下test.bin的服务是否正常。</p>
+<p>curl <a href="http://192.168.0.10:9090" class="uri">http://192.168.0.10:9090</a><br />
+Hello China!<br />
+整个项目监控服务部署完成。</p>
+<h3 id="supervisord-的常用命令">Supervisord 的常用命令</h3>
+<pre><code><code>supervisorctl status 监控的程序的运行状态的列表
+supervisorctl stop test 停止监控的程序
+supervisorctl start test 启动监控的程序
+supervisorctl restart test 重启监控的程序
+supervisorctl update 更新监控的程序，如有新的配置添加一定要先执行update</code></pre>
+<p>想了解更多，当然查看官方文档。<br />
+<a href="http://supervisord.org/" class="uri">http://supervisord.org/</a></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

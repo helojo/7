@@ -1,0 +1,264 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修40.QT-QPropertyAnimationdong和QParallelAnimationGroup动画实现' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>40.QT-QPropertyAnimationdong和QParallelAnimationGroup动画实现</center></div><div class='banquan'>原文出处:本文由博客园博主NQian提供。<br/>
+原文连接:https://www.cnblogs.com/lifexy/p/10903081.html</div><br>
+    <p>&nbsp;</p>
+<ul>
+<li><span style="font-size: 15px;">简述:<strong><span style="color: #ff0000;">QPropertyAnimation</span> </strong>(动画类,用来向QObject对象添加动画)</span></li>
+</ul>
+<p><span style="font-size: 15px;">该类的继承框图如下所示:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/40.QT-QPropertyAnimationdong和QParallelAnimationGroup动画实现0.png" alt="" width="510" height="318" /></span></p>
+<p><strong><span style="font-size: 18px; color: #008000; background-color: #ffff99;">1.QAbstractAnimation(所有动画的抽象基类)</span></strong></p>
+<p><span style="font-size: 15px;">该抽象类为<span style="color: #ff0000;">QPropertyAnimation</span>提供了<span style="color: #0000ff;">动画播放,暂停,停止,持续时间,循环周期等</span>抽象函数.</span></p>
+<p><span style="font-size: 15px;">其中常用的成员函数如下所示:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">int</span>   currentLoop() <span style="color: #0000ff;">const</span>                   <span style="color: #008000;">//</span><span style="color: #008000;">获取当前动画已经循环了几个周期了</span>
+
+<span style="color: #0000ff;">int</span>   currentTime() <span style="color: #0000ff;">const</span>                     <span style="color: #008000;">//</span><span style="color: #008000;">获取当前动画已经启动了多少时间</span>
+
+<span style="color: #0000ff;">void</span>   setLoopCount(<span style="color: #0000ff;">int</span> loopCount);           <span style="color: #008000;">//</span><span style="color: #008000;">设置动画循环次数,默认为1(表示动画运行1次就停止),如果为-1,则表示动画一直循环,直到调用stop()为止.</span>
+
+<span style="color: #0000ff;">void</span>  setDirection(Direction direction);     <span style="color: #008000;">//</span><span style="color: #008000;">设置动画方向,默认为QAbstractAnimation::Forward(表示从起始点到结束点),也可以设置为QAbstractAnimation::Backward.</span></pre>
+</div>
+<p><span style="font-size: 15px;">常用信号函数如下所示:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span>   currentLoopChanged(<span style="color: #0000ff;">int</span> currentLoop);      <span style="color: #008000;">//</span><span style="color: #008000;">动画运行周期信号函数,当周期进行新的循环时,则会发出这个信号</span>
+
+<span style="color: #0000ff;">void</span>   finished();                    <span style="color: #008000;">//</span><span style="color: #008000;">当动画完成后,则会发出这个信号</span>
+
+<span style="color: #0000ff;">void</span>  stateChanged(QAbstractAnimation::State newState, QAbstractAnimation::State oldState);   <br /> <span style="color: #008000;">//</span><span style="color: #008000;">当动画发生改变(停止/暂停/运行)时,则会发出这个信号, newState表示动画改变后的状态, oldState表示动画改变前的状态</span>
+
+<span style="color: #0000ff;">void</span><span style="color: #000000;">  directionChanged(QAbstractAnimation::Direction newDirection);</span><span style="color: #008000;">//</span><span style="color: #008000;">当动画发生方向改变时,这会发出这个信号,</span></pre>
+</div>
+<p><span style="font-size: 15px;">常用槽函数如下所示:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span>  pause();                          <span style="color: #008000;">//</span><span style="color: #008000;">暂停动画</span>
+
+<span style="color: #0000ff;">void</span>  resume();                       <span style="color: #008000;">//</span><span style="color: #008000;">恢复动画</span>
+
+<span style="color: #0000ff;">void</span>  setCurrentTime(<span style="color: #0000ff;">int</span> msecs);   <span style="color: #008000;">//</span><span style="color: #008000;">直接更改当前动画的进度时间,可以通过currentTime()函数来获取改的值</span>
+
+<span style="color: #0000ff;">void</span>  setPaused(<span style="color: #0000ff;">bool</span> paused);   <span style="color: #008000;">//</span><span style="color: #008000;">和pause()类似,但是有个参数,如果paused为真则暂停动画,否则就是恢复动画</span>
+
+<span style="color: #0000ff;">void</span>  start(QAbstractAnimation::DeletionPolicy policy = KeepWhenStopped);   <span style="color: #008000;">//</span><span style="color: #008000;">启动动画
+                                                     </span><span style="color: #008000;">//</span><span style="color: #008000;">默认参数为KeepWhenStopped,表示停止动画时,保持当前状态
+                                                     </span><span style="color: #008000;">//</span><span style="color: #008000;">如果改为DeleteWhenStopped,则表示停止动画时,自动删除</span>
+
+
+<span style="color: #0000ff;">void</span>  stop();               <span style="color: #008000;">//</span><span style="color: #008000;">停止动画</span></pre>
+</div>
+<p><span style="font-size: 18px; color: #008000; background-color: #ffff99;"><strong>2.QVariantAnimation (</strong><strong>动画的多样类)</strong></span></p>
+<p><span style="font-size: 15px;">该QVariantAnimation类主要是为<span style="color: #ff0000;">QPropertyAnimation类</span>提供<span style="color: #0000ff;">动画起始结束的位置,方向,运动等</span>机制</span></p>
+<p><span style="font-size: 15px;">该类常用函数如下所示:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span>         setStartValue(<span style="color: #0000ff;">const</span> QVariant &amp;value);           <span style="color: #008000;">//</span><span style="color: #008000;">设置动画启动的位置</span>
+<span style="color: #0000ff;">void</span>         setEndValue(<span style="color: #0000ff;">const</span> QVariant &amp;value);             <span style="color: #008000;">//</span><span style="color: #008000;">设置动画结束的位置</span>
+<span style="color: #0000ff;">void</span>         setDuration(<span style="color: #0000ff;">int</span> msecs);                         <span style="color: #008000;">//</span><span style="color: #008000;">设置动画运行一次需要的时间,单位为毫秒</span>
+<span style="color: #000000;">
+QEasingCurve         easingCurve() </span><span style="color: #0000ff;">const</span>;                     <span style="color: #008000;">//</span><span style="color: #008000;">返回EasingCurve曲线的设置(EasingCurve:可以设置动画运动曲线的动作)</span>
+
+<span style="color: #0000ff;">void</span>         setEasingCurve(<span style="color: #0000ff;">const</span> QEasingCurve &amp;easing);       <span style="color: #008000;">//</span><span style="color: #008000;">设置动画运动时的EasingCurve曲线</span>
+
+<span style="color: #0000ff;">void</span>         setKeyValueAt(qreal step, <span style="color: #0000ff;">const</span> QVariant &amp;<span style="color: #000000;">value);       </span><span style="color: #008000;">//</span><span style="color: #008000;">设置动画在不同时间帧时所在的位置
+</span><span style="color: #008000;"> //</span><span style="color: #008000;">step(0~1): 时间帧,0表示为开始的帧,1表示结束的帧,0.5表示在中间的时间帧
+</span><span style="color: #008000;"> //</span><span style="color: #008000;"> value:表示对应的step时间帧所在的动画位置(比如设置抖动,则会用到该函数)</span>
+<span style="color: #000000;">
+QVariant  keyValueAt(qreal step) </span><span style="color: #0000ff;">const</span>;      <span style="color: #008000;">//</span><span style="color: #008000;">返回step时间帧所在的动画位置</span></pre>
+</div>
+<p><span style="font-size: 15px;">该类常用信号函数如下所示:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span>         valueChanged(<span style="color: #0000ff;">const</span> QVariant &amp;<span style="color: #000000;">value);
+                          </span><span style="color: #008000;">//</span><span style="color: #008000;">当运行的动画位置在改变时,则会发出这个信号</span><span style="color: #000000;"><br /></span></pre>
+</div>
+<p>&nbsp;</p>
+<p><strong><span style="color: #008000; background-color: #ffff99; font-size: 18px;">3.QPropertyAnimation (用来向QObject对象添加动画属性)</span></strong></p>
+<p><span style="font-size: 15px;">该类的构造函数如下所示:</span></p>
+<div class="cnblogs_code">
+<pre>QPropertyAnimation(QObject *target, <span style="color: #0000ff;">const</span> QByteArray &amp;propertyName, QObject *parent =<span style="color: #000000;"> Q_NULLPTR);
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> target:要实现动画的目标对象
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> propertyName:动画属性名称
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> parent:该动画的父类,一般设为this</span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>4.示例1-界面实现下降动画</strong></span></p>
+<p><span style="font-size: 15px;">效果如下:</span></p>
+<p><img src="./images/40.QT-QPropertyAnimationdong和QParallelAnimationGroup动画实现1.png" alt="" width="326" height="228" /></p>
+<p><span style="color: #ff0000;"><strong>PS:由于GIF录制无法录制带阴影的界面,所以将界面阴影屏蔽掉了.</strong></span></p>
+<p><span style="color: #ff0000;"><strong>PS:如果动画启动失败,则看看父界面是否布局了.</strong></span></p>
+<p><span style="font-size: 15px;">代码如下:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span> loginwindow::initAnimation()                 <span style="color: #008000;">//</span><span style="color: #008000;">在构造函数里调用该函数</span><span style="color: #000000;">
+{
+    DownAnimation </span>= <span style="color: #0000ff;">new</span> QPropertyAnimation(<span style="color: #0000ff;">this</span>,<span style="color: #800000;">"</span><span style="color: #800000;">geometry</span><span style="color: #800000;">"</span>,<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+    DownAnimation</span>-&gt;setDuration(<span style="color: #800080;">300</span>);             <span style="color: #008000;">//</span><span style="color: #008000;">设置动画时间</span><span style="color: #000000;">
+    QDesktopWidget</span>* desktop = qApp-&gt;<span style="color: #000000;">desktop();
+    DownAnimation</span>-&gt;setStartValue(QRect((desktop-&gt;width() -<span style="color: #0000ff;">this</span>-&gt;width())/<span style="color: #800080;">2</span>,(desktop-&gt;height() -<span style="color: #0000ff;">this</span>-&gt;height())/<span style="color: #800080;">2</span>,<span style="color: #0000ff;">this</span>-&gt;width(),<span style="color: #800080;">0</span>));        <span style="color: #008000;">//</span><span style="color: #008000;">起始位置</span><span style="color: #000000;">
+    DownAnimation</span>-&gt;setEndValue(QRect((desktop-&gt;width() -<span style="color: #0000ff;">this</span>-&gt;width())/<span style="color: #800080;">2</span>,(desktop-&gt;height() -<span style="color: #0000ff;">this</span>-&gt;height())/<span style="color: #800080;">2</span>,<span style="color: #0000ff;">this</span>-&gt;width(),<span style="color: #0000ff;">this</span>-&gt;height()));            <span style="color: #008000;">//</span><span style="color: #008000;">结束位置</span><span style="color: #000000;">
+     DownAnimation</span>-&gt;start();              <span style="color: #008000;">//</span><span style="color: #008000;">启动动画</span><span style="color: #000000;">
+}</span></pre>
+</div>
+<p><span style="font-size: 15px;">这个我们只是实现单个动画,如果该动画后面还要实现其它动画,则需要信号槽机制来实现.</span></p>
+<p><span style="font-size: 15px;">&nbsp;</span></p>
+<p><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>5.示例2-通过信号槽机制实现多个动画串行运行</strong></span></p>
+<p><span style="font-size: 15px;">启动界面时,通过下降动画结束后,再来继续实现logo向上浮的动画<span style="color: #ff0000;">(参考的QQ启动画面)</span></span></p>
+<p><span style="font-size: 15px;">效果如下所示:</span></p>
+<p><img src="./images/40.QT-QPropertyAnimationdong和QParallelAnimationGroup动画实现2.png" alt="" width="485" height="343" /></p>
+<p><span style="font-size: 15px;">代码如下:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">设置图标</span>
+<span style="color: #0000ff;">void</span> loginwindow::setIconPix(QLabel *l,<span style="color: #0000ff;">const</span> QString &amp;<span style="color: #000000;"> name,QSize size)
+{
+    QPixmap pix(name);
+    pix </span>=<span style="color: #000000;"> pix.scaled(size,Qt::IgnoreAspectRatio);
+    l</span>-&gt;<span style="color: #000000;">setPixmap(pix);
+    l</span>-&gt;<span style="color: #000000;">setFixedSize(size);
+}
+</span><span style="color: #008000;">//</span><span style="color: #008000;">初始化动画</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> loginwindow::initAnimation()
+{
+    QSize size(</span><span style="color: #800080;">110</span>,<span style="color: #800080;">110</span><span style="color: #000000;">);
+    logo </span>= <span style="color: #0000ff;">new</span> QLabel(<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+    setIconPix(logo,</span><span style="color: #800000;">"</span><span style="color: #800000;">:logo</span><span style="color: #800000;">"</span>,size);                <span style="color: #008000;">//</span><span style="color: #008000;">设置logo图标</span><span style="color: #000000;">
+    logo</span>-&gt;move(<span style="color: #0000ff;">this</span>-&gt;width()/<span style="color: #800080;">2</span>-size.width()/<span style="color: #800080;">2</span>,<span style="color: #800080;">142</span><span style="color: #000000;">);    
+    logo</span>-&gt;hide();                                  <span style="color: #008000;">//</span><span style="color: #008000;">先隐藏
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">设置图标上浮动画</span><span style="color: #000000;">
+    LogoAnimation </span>= <span style="color: #0000ff;">new</span> QPropertyAnimation(logo,<span style="color: #800000;">"</span><span style="color: #800000;">geometry</span><span style="color: #800000;">"</span>,<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+    LogoAnimation</span>-&gt;setDuration(<span style="color: #800080;">200</span><span style="color: #000000;">);
+    LogoAnimation</span>-&gt;setStartValue(QRect(<span style="color: #0000ff;">this</span>-&gt;width()/<span style="color: #800080;">2</span>-size.width()/<span style="color: #800080;">2</span>,<span style="color: #800080;">142</span>,<span style="color: #800080;">100</span>,<span style="color: #800080;">100</span><span style="color: #000000;">));
+    LogoAnimation</span>-&gt;setEndValue(QRect(<span style="color: #0000ff;">this</span>-&gt;width()/<span style="color: #800080;">2</span>-size.width()/<span style="color: #800080;">2</span>,<span style="color: #800080;">107</span>,<span style="color: #800080;">100</span>,<span style="color: #800080;">100</span><span style="color: #000000;">));
+
+     </span><span style="color: #008000;">//</span><span style="color: #008000;">设置界面下降动画</span><span style="color: #000000;">
+    DownAnimation </span>= <span style="color: #0000ff;">new</span> QPropertyAnimation(<span style="color: #0000ff;">this</span>,<span style="color: #800000;">"</span><span style="color: #800000;">geometry</span><span style="color: #800000;">"</span>,<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+    DownAnimation</span>-&gt;setDuration(<span style="color: #800080;">300</span><span style="color: #000000;">);
+    QDesktopWidget</span>* desktop = qApp-&gt;<span style="color: #000000;">desktop();
+    DownAnimation</span>-&gt;setStartValue(QRect((desktop-&gt;width() -<span style="color: #0000ff;">this</span>-&gt;width())/<span style="color: #800080;">2</span>,(desktop-&gt;height() -<span style="color: #0000ff;">this</span>-&gt;height())/<span style="color: #800080;">2</span>,<span style="color: #0000ff;">this</span>-&gt;width(),<span style="color: #800080;">0</span><span style="color: #000000;">));
+    DownAnimation</span>-&gt;setEndValue(QRect((desktop-&gt;width() -<span style="color: #0000ff;">this</span>-&gt;width())/<span style="color: #800080;">2</span>,(desktop-&gt;height() -<span style="color: #0000ff;">this</span>-&gt;height())/<span style="color: #800080;">2</span>,<span style="color: #0000ff;">this</span>-&gt;width(),<span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">height()));
+    DownAnimation</span>-&gt;<span style="color: #000000;">start();
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">连接槽函数</span><span style="color: #000000;">
+    connect(DownAnimation,SIGNAL(finished()),</span><span style="color: #0000ff;">this</span><span style="color: #000000;">,SLOT(DownAnimationOnfinished()));
+}<br />
+</span><span style="color: #008000;">//</span><span style="color: #008000;">槽函数,用来启动图标上浮动画</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> loginwindow::DownAnimationOnfinished()
+{
+    logo</span>-&gt;<span style="color: #000000;">show();
+    LogoAnimation</span>-&gt;<span style="color: #000000;">start();
+}</span></pre>
+</div>
+<p><strong><span style="font-size: 18px; color: #008000; background-color: #ffff99;">6.示例3-界面关闭时实现居中关闭</span></strong></p>
+<p><span style="font-size: 15px;">效果如下:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/40.QT-QPropertyAnimationdong和QParallelAnimationGroup动画实现3.png" alt="" width="409" height="289" /></span></p>
+<p><span style="color: #ff0000;"><strong>PS：GIF录制的帧数不达标,有点延迟.</strong></span></p>
+<p><span style="font-size: 15px;">关闭居中的代码如下:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">初始化动画</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> loginwindow::initAnimation()
+{
+</span><span style="color: #008000;">  //</span><span style="color: #008000;">... ... 省略其它动画初始化</span><span style="color: #000000;">
+  CloseAnimation </span>= <span style="color: #0000ff;">new</span> QPropertyAnimation(<span style="color: #0000ff;">this</span>,<span style="color: #800000;">"</span><span style="color: #800000;">geometry</span><span style="color: #800000;">"</span>,<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+  CloseAnimation</span>-&gt;setDuration(<span style="color: #800080;">150</span><span style="color: #000000;">);
+
+  connect(ui</span>-&gt;title_close,SIGNAL(clicked()),<span style="color: #0000ff;">this</span><span style="color: #000000;">,SLOT(CloseAnimationOnStart()));
+  connect(CloseAnimation,SIGNAL(finished()),</span><span style="color: #0000ff;">this</span><span style="color: #000000;">,SLOT(close()));
+};
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">关闭槽函数,由于界面随时会在任意XY位置,所以需要在关闭时,再来初始化CloseAnimation的起始和结束的动画位置</span>
+<span style="color: #0000ff;">void</span><span style="color: #000000;"> loginwindow::CloseAnimationOnStart()
+{
+    CloseAnimation</span>-&gt;setStartValue(QRect(<span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">geometry()));
+    CloseAnimation</span>-&gt;setEndValue(QRect(<span style="color: #0000ff;">this</span>-&gt;x(),<span style="color: #0000ff;">this</span>-&gt;y()+<span style="color: #0000ff;">this</span>-&gt;height()/<span style="color: #800080;">4</span>-<span style="color: #800080;">2</span>,<span style="color: #0000ff;">this</span>-&gt;width(),<span style="color: #800080;">4</span><span style="color: #000000;">));
+    CloseAnimation</span>-&gt;<span style="color: #000000;">start();
+}</span></pre>
+</div>
+<p align="left"><span style="color: #008000; background-color: #ffff99; font-size: 18px;"><strong>7.QParallelAnimationGroup并行动画组</strong></span></p>
+<p><span style="font-size: 15px;">该QParallelAnimationGroup类主要是用来封装多个QPropertyAnimation动画类,从而<span style="color: #ff0000;">实现并行运行多个动画</span></span></p>
+<p><span style="font-size: 15px;">来个示例,当我们点击登录按钮时,同时的<span style="color: #0000ff;">将logo向下降</span>,并且将stackedWidge<span style="color: #0000ff;">t登录窗口也向下降</span>,再重新升起stackedWidget下的<span style="color: #0000ff;">第二个校验登录窗口</span>.</span></p>
+<p><span style="font-size: 15px;">效果如下:</span></p>
+<p><span style="font-size: 15px;">&nbsp;<img src="./images/40.QT-QPropertyAnimationdong和QParallelAnimationGroup动画实现4.png" alt="" width="412" height="287" /></span></p>
+<p align="left"><span style="font-size: 15px;">实现的代码如下:</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span><span style="color: #000000;"> loginwindow::initAnimation()
+{
+    QSize logoSize(</span><span style="color: #800080;">110</span>,<span style="color: #800080;">110</span><span style="color: #000000;">);
+
+   </span><span style="color: #008000;">//</span><span style="color: #008000;">此处忽略其它动画... ...
+
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">图标下浮动画</span><span style="color: #000000;">
+    LogoDownAnimation </span>= <span style="color: #0000ff;">new</span> QPropertyAnimation(logo,<span style="color: #800000;">"</span><span style="color: #800000;">geometry</span><span style="color: #800000;">"</span>,<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+    LogoDownAnimation</span>-&gt;setDuration(<span style="color: #800080;">200</span><span style="color: #000000;">);
+    LogoDownAnimation</span>-&gt;setEndValue(QRect(<span style="color: #0000ff;">this</span>-&gt;width()/<span style="color: #800080;">2</span>-logoSize.width()/<span style="color: #800080;">2</span>,<span style="color: #800080;">160</span><span style="color: #000000;">,logoSize.width(),logoSize.height()));
+    LogoDownAnimation</span>-&gt;setStartValue(QRect(<span style="color: #0000ff;">this</span>-&gt;width()/<span style="color: #800080;">2</span>-logoSize.width()/<span style="color: #800080;">2</span>,<span style="color: #800080;">107</span><span style="color: #000000;">,logoSize.width(),logoSize.height()));
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">stackedWidget窗口下浮动画</span><span style="color: #000000;">
+    LogoInDownAnimation </span>= <span style="color: #0000ff;">new</span> QPropertyAnimation(ui-&gt;stackedWidget,<span style="color: #800000;">"</span><span style="color: #800000;">geometry</span><span style="color: #800000;">"</span>,<span style="color: #0000ff;">this</span><span style="color: #000000;">);
+    LogoInDownAnimation</span>-&gt;setDuration(<span style="color: #800080;">400</span><span style="color: #000000;">);
+    LogoInDownAnimation</span>-&gt;setStartValue(QRect(<span style="color: #800080;">0</span>,ui-&gt;widget_title-&gt;height(),ui-&gt;stackedWidget-&gt;width(),ui-&gt;stackedWidget-&gt;height()));   <span style="color: #008000;">//</span><span style="color: #008000;">从title界面的高度起点</span><span style="color: #000000;">
+    LogoInDownAnimation</span>-&gt;setKeyValueAt(<span style="color: #800080;">0.6</span>,QRect(<span style="color: #800080;">0</span>,ui-&gt;window-&gt;height(),ui-&gt;stackedWidget-&gt;width(),ui-&gt;stackedWidget-&gt;height()));     <span style="color: #008000;">//</span><span style="color: #008000;">到主界面底部</span><span style="color: #000000;">
+    LogoInDownAnimation</span>-&gt;setEndValue(QRect(<span style="color: #800080;">0</span>,logoSize.height()/<span style="color: #800080;">2</span>+<span style="color: #800080;">140</span>,ui-&gt;stackedWidget-&gt;width(),ui-&gt;stackedWidget-&gt;height()));      <span style="color: #008000;">//</span><span style="color: #008000;">到150的高处
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">设置并行动画组</span><span style="color: #000000;">
+    LoginGroup </span>= <span style="color: #0000ff;">new</span><span style="color: #000000;"> QParallelAnimationGroup;
+    LoginGroup</span>-&gt;<span style="color: #000000;">addAnimation(LogoDownAnimation);
+    LoginGroup</span>-&gt;<span style="color: #000000;">addAnimation(LogoInDownAnimation);
+
+
+    connect(ui</span>-&gt;<span style="color: #000000;">login,SIGNAL(clicked()),LoginGroup,SLOT(start()));                                                 
+    connect(ui</span>-&gt;<span style="color: #000000;">cancelLogin,SIGNAL(clicked()),LoginGroup,SLOT(start()));
+    connect(LoginGroup,SIGNAL(finished()),</span><span style="color: #0000ff;">this</span><span style="color: #000000;">,SLOT(goCheckorLoginFinished()));
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> loginwindow::goCheckorLoginFinished()
+{
+    </span><span style="color: #0000ff;">if</span>(LoginGroup-&gt;direction() == QAbstractAnimation::Forward)  <span style="color: #000000;">
+    {
+        ui</span>-&gt;stackedWidget-&gt;setCurrentIndex(<span style="color: #800080;">1</span>);         <span style="color: #000000;">
+        LoginGroup</span>-&gt;<span style="color: #000000;">setDirection(QAbstractAnimation::Backward);
+    }
+    </span><span style="color: #0000ff;">else</span><span style="color: #000000;">
+    {
+        ui</span>-&gt;stackedWidget-&gt;setCurrentIndex(<span style="color: #800080;">0</span>);     <span style="color: #000000;">
+        LoginGroup</span>-&gt;<span style="color: #000000;">setDirection(QAbstractAnimation::Forward);
+    }
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="color: #ff0000; font-size: 18px;"><strong>PS:</strong></span></p>
+<p><span style="font-size: 16px;">我们初始化动画时,提供的属性名称为"geometry",表示提供的是界面的XYWH4个值.</span></p>
+<p><span style="font-size: 16px;">当然也有其它名称,比如:</span></p>
+<div class="cnblogs_code">
+<pre>    QPropertyAnimation  *anima1= <span style="color: #0000ff;">new</span> QPropertyAnimation(m_topWidget, <span style="color: #800000;">"</span><span style="color: #800000;">pos</span><span style="color: #800000;">"</span>);    <span style="color: #008000;">//</span><span style="color: #008000;">设置XY位置</span>
+    anima1-&gt;setDuration(<span style="color: #800080;">500</span><span style="color: #000000;">);
+    anima1</span>-&gt;setStartValue(QPoint(<span style="color: #800080;">0</span>, <span style="color: #800080;">0</span>));     <span style="color: #008000;">//</span><span style="color: #008000;">起始时,为0,0位置    </span>
+    anima1-&gt;setEndValue(QPoint(<span style="color: #800080;">0</span>, <span style="color: #800080;">100</span>));    <span style="color: #008000;">//</span><span style="color: #008000;">500ms后,为0,100位置</span>
+<span style="color: #000000;">
+    QPropertyAnimation  </span>*anima2= <span style="color: #0000ff;">new</span> QPropertyAnimation(m_grayWidget, <span style="color: #800000;">"</span><span style="color: #800000;">opacity</span><span style="color: #800000;">"</span>);    <span style="color: #008000;">//</span><span style="color: #008000;">设置透明度</span>
+    anima2-&gt;setDuration(<span style="color: #800080;">500</span><span style="color: #000000;">);
+    anima2</span>-&gt;setStartValue(<span style="color: #800080;">1</span>);     <span style="color: #008000;">//</span><span style="color: #008000;">起始时,为不透明    </span>
+    anima2-&gt;setEndValue(<span style="color: #800080;">0</span>);    <span style="color: #008000;">//</span><span style="color: #008000;">500ms后,为透明</span>
+     </pre>
+</div>
+<p>&nbsp;</p>
+<p align="left"><span style="font-size: 15px;">&nbsp;</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

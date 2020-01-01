@@ -1,0 +1,577 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修二叉堆【转】' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>二叉堆【转】</center></div><div class='banquan'>原文出处:本文由博客园博主yooooooo提供。<br/>
+原文连接:https://www.cnblogs.com/linhaostudy/p/11517408.html</div><br>
+    <h2 id="什么是二叉堆">什么是二叉堆？</h2>
+<p>二叉堆是一种特殊的堆。具有如下的特性：</p>
+<ol>
+<li>具有完全二叉树的特性。</li>
+<li>堆中的任何一个父节点的值都大于等于它左右孩子节点的值(最大堆)，或者都小于等于它左右孩子节点的值（最小堆）。</li>
+</ol>
+<p>这个为最大堆：</p>
+<p><img src="./images/二叉堆【转】0.png" alt="image" /></p>
+<p>这个为最小堆：</p>
+<p><img src="./images/二叉堆【转】1.png" alt="image" /></p>
+<p>我们把二叉堆的根节点称之为堆顶。根据二叉堆的特性，堆顶要嘛是整个堆中的最大元素，要嘛是最小元素。</p>
+<p>不过这里需要注意的是，在二叉堆这种结构中，对于删除一个节点，我们一般删的是根节点。</p>
+<p>假设&quot;第一个元素&quot;在数组中的索引为 0 的话，则父节点和子节点的位置关系如下：</p>
+<ol>
+<li>索引为i的左孩子的索引是 (2*i+1);</li>
+<li>索引为i的右孩子的索引是 (2*i+2);</li>
+<li>索引为i的父结点的索引是 floor((i-1)/2);</li>
+</ol>
+<p><img src="./images/二叉堆【转】2.png" alt="image" /></p>
+<p>假设&quot;第一个元素&quot;在数组中的索引为 1 的话，则父节点和子节点的位置关系如下：</p>
+<ol>
+<li>索引为i的左孩子的索引是 (2*i);</li>
+<li>索引为i的右孩子的索引是 (2*i+1);</li>
+<li>索引为i的父结点的索引是 floor(i/2);</li>
+</ol>
+<p><img src="./images/二叉堆【转】3.png" alt="image" /></p>
+<h2 id="二叉堆的图文解析">二叉堆的图文解析</h2>
+<p>在前面，我们已经了解到：&quot;最大堆&quot;和&quot;最小堆&quot;是对称关系。这也意味着，了解其中之一即可。本节的图文解析是以&quot;最大堆&quot;来进行介绍的。</p>
+<p>二叉堆的核心是&quot;添加节点&quot;和&quot;删除节点&quot;，理解这两个算法，二叉堆也就基本掌握了。下面对它们进行介绍。</p>
+<h3 id="添加">1. 添加</h3>
+<p>假设在最大堆[90,80,70,60,40,30,20,10,50]种添加85，需要执行的步骤如下：</p>
+<p><img src="./images/二叉堆【转】4.png" alt="image" /></p>
+<p>如上图所示，当向最大堆中添加数据时：先将数据加入到最大堆的最后，然后尽可能把这个元素往上挪，直到挪不动为止！</p>
+<p>将85添加到[90,80,70,60,40,30,20,10,50]中后，最大堆变成了[90,85,70,60,80,30,20,10,50,40]。</p>
+<p><strong>最大堆的插入代码(C语言)</strong></p>
+<pre><code><code>/*
+ * 最大堆的向上调整算法(从start开始向上直到0，调整堆)
+ *
+ * 注：数组实现的堆中，第N个节点的左孩子的索引值是(2N+1)，右孩子的索引是(2N+2)。
+ *
+ * 参数说明：
+ *     start -- 被上调节点的起始位置(一般为数组中最后一个元素的索引)
+ */
+static void maxheap_filterup(int start)
+{
+    int c = start;            // 当前节点(current)的位置
+    int p = (c-1)/2;        // 父(parent)结点的位置 
+    int tmp = m_heap[c];        // 当前节点(current)的大小
+
+    while(c &gt; 0)
+    {
+        if(m_heap[p] &gt;= tmp)
+            break;
+        else
+        {
+            m_heap[c] = m_heap[p];
+            c = p;
+            p = (p-1)/2;   
+        }       
+    }
+    m_heap[c] = tmp;
+}
+  
+/* 
+ * 将data插入到二叉堆中
+ *
+ * 返回值：
+ *     0，表示成功
+ *    -1，表示失败
+ */
+int maxheap_insert(int data)
+{
+    // 如果&quot;堆&quot;已满，则返回
+    if(m_size == m_capacity)
+        return -1;
+ 
+    m_heap[m_size] = data;        // 将&quot;数组&quot;插在表尾
+    maxheap_filterup(m_size);    // 向上调整堆
+    m_size++;                    // 堆的实际容量+1
+
+    return 0;
+}</code></code></pre>
+<p>maxheap_insert(data)的作用：将数据data添加到最大堆中。</p>
+<p>当堆已满的时候，添加失败；否则data添加到最大堆的末尾。然后通过上调算法重新调整数组，使之重新成为最大堆。</p>
+<h3 id="删除">2. 删除</h3>
+<p>假设从最大堆[90,85,70,60,80,30,20,10,50,40]中删除90，需要执行的步骤如下：</p>
+<p><img src="./images/二叉堆【转】5.png" alt="image" /></p>
+<p>从[90,85,70,60,80,30,20,10,50,40]删除90之后，最大堆变成了[85,80,70,60,40,30,20,10,50]。</p>
+<p>如上图所示，当从最大堆中删除数据时：先删除该数据，然后用最大堆中最后一个的元素插入这个空位；接着，把这个“空位”尽量往上挪，直到剩余的数据变成一个最大堆。</p>
+<p>注意：考虑从最大堆[90,85,70,60,80,30,20,10,50,40]中删除60，执行的步骤不能单纯的用它的子节点来替换；而必须考虑到&quot;替换后的树仍然要是最大堆&quot;！</p>
+<p><img src="./images/二叉堆【转】6.png" alt="image" /></p>
+<p>最大堆的删除代码(C语言)</p>
+<pre><code><code>/* 
+ * 返回data在二叉堆中的索引
+ *
+ * 返回值：
+ *     存在 -- 返回data在数组中的索引
+ *     不存在 -- -1
+ */
+int get_index(int data)
+{
+    int i=0;
+
+    for(i=0; i&lt;m_size; i++)
+        if (data==m_heap[i])
+            return i;
+
+    return -1;
+}
+
+/* 
+ * 最大堆的向下调整算法
+ *
+ * 注：数组实现的堆中，第N个节点的左孩子的索引值是(2N+1)，右孩子的索引是(2N+2)。
+ *
+ * 参数说明：
+ *     start -- 被下调节点的起始位置(一般为0，表示从第1个开始)
+ *     end   -- 截至范围(一般为数组中最后一个元素的索引)
+ */
+static void maxheap_filterdown(int start, int end)
+{
+    int c = start;          // 当前(current)节点的位置
+    int l = 2*c + 1;     // 左(left)孩子的位置
+    int tmp = m_heap[c];    // 当前(current)节点的大小
+
+    while(l &lt;= end)
+    {
+        // &quot;l&quot;是左孩子，&quot;l+1&quot;是右孩子
+        if(l &lt; end &amp;&amp; m_heap[l] &lt; m_heap[l+1])
+            l++;        // 左右两孩子中选择较大者，即m_heap[l+1]
+        if(tmp &gt;= m_heap[l])
+            break;        //调整结束
+        else
+        {
+            m_heap[c] = m_heap[l];
+            c = l;
+            l = 2*l + 1;   
+        }       
+    }   
+    m_heap[c] = tmp;
+}
+
+/*
+ * 删除最大堆中的data
+ *
+ * 返回值：
+ *      0，成功
+ *     -1，失败
+ */
+int maxheap_remove(int data)
+{
+    int index;
+    // 如果&quot;堆&quot;已空，则返回-1
+    if(m_size == 0)
+        return -1;
+
+    // 获取data在数组中的索引
+    index = get_index(data); 
+    if (index==-1)
+        return -1;
+
+    m_heap[index] = m_heap[--m_size];        // 用最后元素填补
+    maxheap_filterdown(index, m_size-1);    // 从index位置开始自上向下调整为最大堆
+
+    return 0;
+}</code></code></pre>
+<p>maxheap_remove(data)的作用：从最大堆中删除数据data。</p>
+<p>当堆已经为空的时候，删除失败；否则查处data在最大堆数组中的位置。找到之后，先用最后的元素来替换被删除元素；然后通过下调算法重新调整数组，使之重新成为最大堆。</p>
+<p>该&quot;示例的完整代码&quot;以及&quot;最小堆的相关代码&quot;，请参考下面的二叉堆的实现。</p>
+<h2 id="二叉堆的c实现完整源码">二叉堆的C实现(完整源码)</h2>
+<p>二叉堆的实现同时包含了&quot;最大堆&quot;和&quot;最小堆&quot;，它们是对称关系；理解一个，另一个就非常容易懂了。</p>
+<p>二叉堆(最大堆)的实现文件(max_heap.c)</p>
+<pre><code><code>/**
+ * 二叉堆(最大堆)
+ *
+ * @author skywang
+ * @date 2014/03/07
+ */
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define LENGTH(a) ( (sizeof(a)) / (sizeof(a[0])) )
+
+static int m_heap[30];        // 数据
+static int m_capacity=30;    // 总的容量
+static int m_size=0;        // 实际容量(初始化为0)
+ 
+/* 
+ * 返回data在二叉堆中的索引
+ *
+ * 返回值：
+ *     存在 -- 返回data在数组中的索引
+ *     不存在 -- -1
+ */
+int get_index(int data)
+{
+    int i=0;
+
+    for(i=0; i&lt;m_size; i++)
+        if (data==m_heap[i])
+            return i;
+
+    return -1;
+}
+
+/* 
+ * 最大堆的向下调整算法
+ *
+ * 注：数组实现的堆中，第N个节点的左孩子的索引值是(2N+1)，右孩子的索引是(2N+2)。
+ *
+ * 参数说明：
+ *     start -- 被下调节点的起始位置(一般为0，表示从第1个开始)
+ *     end   -- 截至范围(一般为数组中最后一个元素的索引)
+ */
+static void maxheap_filterdown(int start, int end)
+{
+    int c = start;          // 当前(current)节点的位置
+    int l = 2*c + 1;     // 左(left)孩子的位置
+    int tmp = m_heap[c];    // 当前(current)节点的大小
+
+    while(l &lt;= end)
+    {
+        // &quot;l&quot;是左孩子，&quot;l+1&quot;是右孩子
+        if(l &lt; end &amp;&amp; m_heap[l] &lt; m_heap[l+1])
+            l++;        // 左右两孩子中选择较大者，即m_heap[l+1]
+        if(tmp &gt;= m_heap[l])
+            break;        //调整结束
+        else
+        {
+            m_heap[c] = m_heap[l];
+            c = l;
+            l = 2*l + 1;   
+        }       
+    }   
+    m_heap[c] = tmp;
+}
+
+/*
+ * 删除最大堆中的data
+ *
+ * 返回值：
+ *      0，成功
+ *     -1，失败
+ */
+int maxheap_remove(int data)
+{
+    int index;
+    // 如果&quot;堆&quot;已空，则返回-1
+    if(m_size == 0)
+        return -1;
+
+    // 获取data在数组中的索引
+    index = get_index(data); 
+    if (index==-1)
+        return -1;
+
+    m_heap[index] = m_heap[--m_size];        // 用最后元素填补
+    maxheap_filterdown(index, m_size-1);    // 从index位置开始自上向下调整为最大堆
+
+    return 0;
+}
+
+/*
+ * 最大堆的向上调整算法(从start开始向上直到0，调整堆)
+ *
+ * 注：数组实现的堆中，第N个节点的左孩子的索引值是(2N+1)，右孩子的索引是(2N+2)。
+ *
+ * 参数说明：
+ *     start -- 被上调节点的起始位置(一般为数组中最后一个元素的索引)
+ */
+static void maxheap_filterup(int start)
+{
+    int c = start;            // 当前节点(current)的位置
+    int p = (c-1)/2;        // 父(parent)结点的位置 
+    int tmp = m_heap[c];        // 当前节点(current)的大小
+
+    while(c &gt; 0)
+    {
+        if(m_heap[p] &gt;= tmp)
+            break;
+        else
+        {
+            m_heap[c] = m_heap[p];
+            c = p;
+            p = (p-1)/2;   
+        }       
+    }
+    m_heap[c] = tmp;
+}
+  
+/* 
+ * 将data插入到二叉堆中
+ *
+ * 返回值：
+ *     0，表示成功
+ *    -1，表示失败
+ */
+int maxheap_insert(int data)
+{
+    // 如果&quot;堆&quot;已满，则返回
+    if(m_size == m_capacity)
+        return -1;
+ 
+    m_heap[m_size] = data;        // 将&quot;数组&quot;插在表尾
+    maxheap_filterup(m_size);    // 向上调整堆
+    m_size++;                    // 堆的实际容量+1
+
+    return 0;
+}
+  
+/* 
+ * 打印二叉堆
+ *
+ * 返回值：
+ *     0，表示成功
+ *    -1，表示失败
+ */
+void maxheap_print()
+{
+    int i;
+    for (i=0; i&lt;m_size; i++)
+        printf(&quot;%d &quot;, m_heap[i]);
+}
+    
+void main()
+{
+    int a[] = {10, 40, 30, 60, 90, 70, 20, 50, 80};
+    int i, len=LENGTH(a);
+
+    printf(&quot;== 依次添加: &quot;);
+    for(i=0; i&lt;len; i++)
+    {
+        printf(&quot;%d &quot;, a[i]);
+        maxheap_insert(a[i]);
+    }
+
+    printf(&quot;\n== 最 大 堆: &quot;);
+    maxheap_print();
+
+    i=85;
+    maxheap_insert(i);
+    printf(&quot;\n== 添加元素: %d&quot;, i);
+    printf(&quot;\n== 最 大 堆: &quot;);
+    maxheap_print();
+
+    i=90;
+    maxheap_remove(i);
+    printf(&quot;\n== 删除元素: %d&quot;, i);
+    printf(&quot;\n== 最 大 堆: &quot;);
+    maxheap_print();
+    printf(&quot;\n&quot;);
+}</code></code></pre>
+<p>二叉堆(最小堆)的实现文件(min_heap.c)</p>
+<pre><code><code>/**
+ * 二叉堆(最小堆)
+ *
+ * @author skywang
+ * @date 2014/03/07
+ */
+
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+
+#define LENGTH(a) ( (sizeof(a)) / (sizeof(a[0])) )
+
+static int m_heap[30];
+static int m_capacity=30;    // 总的容量
+static int m_size=0;        // 实际容量(初始化为0)
+ 
+/* 
+ * 返回data在二叉堆中的索引
+ *
+ * 返回值：
+ *     存在 -- 返回data在数组中的索引
+ *     不存在 -- -1
+ */
+int get_index(int data)
+{
+    int i=0;
+
+    for(i=0; i&lt;m_size; i++)
+        if (data==m_heap[i])
+            return i;
+
+    return -1;
+}
+
+/* 
+ * 最小堆的向下调整算法
+ *
+ * 注：数组实现的堆中，第N个节点的左孩子的索引值是(2N+1)，右孩子的索引是(2N+2)。
+ *
+ * 参数说明：
+ *     start -- 被下调节点的起始位置(一般为0，表示从第1个开始)
+ *     end   -- 截至范围(一般为数组中最后一个元素的索引)
+ */
+static void minheap_filterdown(int start, int end)
+{
+    int c = start;          // 当前(current)节点的位置
+    int l = 2*c + 1;     // 左(left)孩子的位置
+    int tmp = m_heap[c];    // 当前(current)节点的大小
+
+    while(l &lt;= end)
+    {
+        // &quot;l&quot;是左孩子，&quot;l+1&quot;是右孩子
+        if(l &lt; end &amp;&amp; m_heap[l] &gt; m_heap[l+1])
+            l++;        // 左右两孩子中选择较小者，即m_heap[l+1]
+        if(tmp &lt;= m_heap[l])
+            break;        //调整结束
+        else
+        {
+            m_heap[c] = m_heap[l];
+            c = l;
+            l = 2*l + 1;   
+        }       
+    }   
+    m_heap[c] = tmp;
+}
+ 
+/*
+ * 删除最小堆中的data
+ *
+ * 返回值：
+ *      0，成功
+ *     -1，失败
+ */
+int minheap_remove(int data)
+{
+    int index;
+    // 如果&quot;堆&quot;已空，则返回-1
+    if(m_size == 0)
+        return -1;
+
+    // 获取data在数组中的索引
+    index = get_index(data); 
+    if (index==-1)
+        return -1;
+
+    m_heap[index] = m_heap[--m_size];        // 用最后元素填补
+    minheap_filterdown(index, m_size-1);    // 从index号位置开始自上向下调整为最小堆
+
+    return 0;
+}
+
+/*
+ * 最小堆的向上调整算法(从start开始向上直到0，调整堆)
+ *
+ * 注：数组实现的堆中，第N个节点的左孩子的索引值是(2N+1)，右孩子的索引是(2N+2)。
+ *
+ * 参数说明：
+ *     start -- 被上调节点的起始位置(一般为数组中最后一个元素的索引)
+ */
+static void filter_up(int start)
+{
+    int c = start;            // 当前节点(current)的位置
+    int p = (c-1)/2;        // 父(parent)结点的位置 
+    int tmp = m_heap[c];        // 当前节点(current)的大小
+
+    while(c &gt; 0)
+    {
+        if(m_heap[p] &lt;= tmp)
+            break;
+        else
+        {
+            m_heap[c] = m_heap[p];
+            c = p;
+            p = (p-1)/2;   
+        }       
+    }
+    m_heap[c] = tmp;
+}
+  
+/* 
+ * 将data插入到二叉堆中
+ *
+ * 返回值：
+ *     0，表示成功
+ *    -1，表示失败
+ */
+int minheap_insert(int data)
+{
+    // 如果&quot;堆&quot;已满，则返回
+    if(m_size == m_capacity)
+        return -1;
+ 
+    m_heap[m_size] = data;        // 将&quot;数组&quot;插在表尾
+    filter_up(m_size);            // 向上调整堆
+    m_size++;                    // 堆的实际容量+1
+
+    return 0;
+}
+  
+/* 
+ * 打印二叉堆
+ *
+ * 返回值：
+ *     0，表示成功
+ *    -1，表示失败
+ */
+void minheap_print()
+{
+    int i;
+    for (i=0; i&lt;m_size; i++)
+        printf(&quot;%d &quot;, m_heap[i]);
+}
+
+void main()
+{
+    int a[] = {80, 40, 30, 60, 90, 70, 10, 50, 20};
+    int i, len=LENGTH(a);
+
+    printf(&quot;== 依次添加: &quot;);
+    for(i=0; i&lt;len; i++)
+    {
+        printf(&quot;%d &quot;, a[i]);
+        minheap_insert(a[i]);
+    }
+
+    printf(&quot;\n== 最 小 堆: &quot;);
+    minheap_print();
+
+    i=15;
+    minheap_insert(i);
+    printf(&quot;\n== 添加元素: %d&quot;, i);
+    printf(&quot;\n== 最 小 堆: &quot;);
+    minheap_print();
+
+    i=10;
+    minheap_remove(i);
+    printf(&quot;\n== 删除元素: %d&quot;, i);
+    printf(&quot;\n== 最 小 堆: &quot;);
+    minheap_print();
+    printf(&quot;\n&quot;);
+}</code></code></pre>
+<h2 id="二叉堆的c测试程序">二叉堆的C测试程序</h2>
+<p>测试程序已经包含在相应的实现文件中了，这里就不再重复说明了。</p>
+<p>最大堆(max_heap.c)的运行结果：</p>
+<pre><code><code>== 依次添加: 10 40 30 60 90 70 20 50 80 
+== 最 大 堆: 90 80 70 60 40 30 20 10 50 
+== 添加元素: 85
+== 最 大 堆: 90 85 70 60 80 30 20 10 50 40 
+== 删除元素: 90
+== 最 大 堆: 85 80 70 60 40 30 20 10 50</code></code></pre>
+<p>最小堆(min_heap.c)的运行结果：</p>
+<pre><code><code>== 依次添加: 80 40 30 60 90 70 10 50 20 
+== 最 小 堆: 10 20 30 50 90 70 40 80 60 
+== 添加元素: 15
+== 最 小 堆: 10 15 30 50 20 70 40 80 60 90 
+== 删除元素: 10
+== 最 小 堆: 15 20 30 50 90 70 40 80 60</code></code></pre>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

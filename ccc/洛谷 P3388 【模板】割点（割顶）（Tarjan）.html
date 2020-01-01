@@ -1,0 +1,108 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修洛谷 P3388 【模板】割点（割顶）（Tarjan）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>洛谷 P3388 【模板】割点（割顶）（Tarjan）</center></div><div class='banquan'>原文出处:本文由博客园博主尹昱钦提供。<br/>
+原文连接:https://www.cnblogs.com/yinyuqin/p/10919950.html</div><br>
+    <h2>题目链接</h2>
+<p><a href="https://www.luogu.org/problemnew/show/P3388">https://www.luogu.org/problemnew/show/P3388</a></p>
+<p><strong>模板题</strong></p>
+<hr />
+<p>&nbsp;</p>
+<h2>解题思路</h2>
+<p><a href="https://baike.baidu.com/item/%E5%89%B2%E7%82%B9/9384042?fr=aladdin" target="_blank">什么是割点？</a></p>
+<h3>怎样求割点？</h3>
+<ul>
+<li>dfn ：即时间戳，一张图的dfs序（dfs遍历时出现的顺序）</li>
+<li>树边：连向孩子的边</li>
+<li>反向边：连向祖先的边</li>
+<li>low ：即一个点能到达的时间戳最小的边（反向边只能经过一条）</li>
+</ul>
+<p>显然，一个点如果它的任意一个孩子的low大于等于这个点，那么这个点就是割点。</p>
+<h2>AC代码</h2>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include&lt;cstdio&gt;
+<span style="color: #008080;"> 3</span> #include&lt;cstring&gt;
+<span style="color: #008080;"> 4</span> #include&lt;<span style="color: #0000ff;">set</span>&gt;
+<span style="color: #008080;"> 5</span> #include&lt;stack&gt;
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 7</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> maxn=<span style="color: #800080;">20005</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">int</span> maxm=<span style="color: #800080;">200005</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> n,m,cnt,dfn[maxn],low[maxn],times,p[maxn];
+</span><span style="color: #008080;">10</span> <span style="color: #0000ff;">bool</span><span style="color: #000000;"> iscut[maxn];
+</span><span style="color: #008080;">11</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> edge{
+</span><span style="color: #008080;">12</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> u;
+</span><span style="color: #008080;">13</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> v;
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> next;
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">}e[maxm];
+</span><span style="color: #008080;">16</span> stack&lt;edge&gt;<span style="color: #000000;"> S;
+</span><span style="color: #008080;">17</span> <span style="color: #0000ff;">void</span> insert(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+</span><span style="color: #008080;">18</span>     ++<span style="color: #000000;">cnt;
+</span><span style="color: #008080;">19</span>     e[cnt].u=<span style="color: #000000;">u;
+</span><span style="color: #008080;">20</span>     e[cnt].v=<span style="color: #000000;">v;
+</span><span style="color: #008080;">21</span>     e[cnt].next=<span style="color: #000000;">p[u];
+</span><span style="color: #008080;">22</span>     p[u]=<span style="color: #000000;">cnt;
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">24</span> <span style="color: #0000ff;">void</span> dfs(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> fa){
+</span><span style="color: #008080;">25</span>     dfn[u]=low[u]=++<span style="color: #000000;">times;
+</span><span style="color: #008080;">26</span>     <span style="color: #0000ff;">int</span> child=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">27</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=p[u];i!=-<span style="color: #800080;">1</span>;i=<span style="color: #000000;">e[i].next){
+</span><span style="color: #008080;">28</span>         <span style="color: #0000ff;">int</span> v=<span style="color: #000000;">e[i].v;
+</span><span style="color: #008080;">29</span>         <span style="color: #0000ff;">if</span>(dfn[v]==<span style="color: #800080;">0</span><span style="color: #000000;">){
+</span><span style="color: #008080;">30</span>             child++<span style="color: #000000;">;
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">            dfs(v,u);
+</span><span style="color: #008080;">32</span>             low[u]=<span style="color: #000000;">min(low[u],low[v]);
+</span><span style="color: #008080;">33</span>             <span style="color: #0000ff;">if</span>(low[v]&gt;=dfn[u])iscut[u]=<span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;">34</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">35</span>         <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(dfn[v]&lt;dfn[u]&amp;&amp;v!=<span style="color: #000000;">fa){
+</span><span style="color: #008080;">36</span>             low[u]=<span style="color: #000000;">min(low[u],dfn[v]);
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">39</span>     <span style="color: #0000ff;">if</span>(fa==-<span style="color: #800080;">1</span>&amp;&amp;child==<span style="color: #800080;">1</span>) iscut[u]=<span style="color: #0000ff;">false</span><span style="color: #000000;">;
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">41</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">43</span>     cin&gt;&gt;n&gt;&gt;<span style="color: #000000;">m;
+</span><span style="color: #008080;">44</span>     memset(p,-<span style="color: #800080;">1</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(p));
+</span><span style="color: #008080;">45</span>     memset(low,<span style="color: #800080;">0x3f3f3f</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(low));
+</span><span style="color: #008080;">46</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=m;i++<span style="color: #000000;">){
+</span><span style="color: #008080;">47</span>         <span style="color: #0000ff;">int</span><span style="color: #000000;"> x,y;
+</span><span style="color: #008080;">48</span>         scanf(<span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;x,&amp;<span style="color: #000000;">y);
+</span><span style="color: #008080;">49</span> <span style="color: #000000;">        insert(x,y);
+</span><span style="color: #008080;">50</span> <span style="color: #000000;">        insert(y,x);
+</span><span style="color: #008080;">51</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">52</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">){
+</span><span style="color: #008080;">53</span>         <span style="color: #0000ff;">if</span>(!dfn[i]) dfs(i,-<span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;">54</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">55</span>     <span style="color: #0000ff;">int</span> ans=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">56</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">){
+</span><span style="color: #008080;">57</span>         <span style="color: #0000ff;">if</span>(iscut[i]) ans++<span style="color: #000000;">;
+</span><span style="color: #008080;">58</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">59</span>     cout&lt;&lt;ans&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;">60</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++<span style="color: #000000;">){
+</span><span style="color: #008080;">61</span>         <span style="color: #0000ff;">if</span>(iscut[i]) cout&lt;&lt;i&lt;&lt;<span style="color: #800000;">"</span> <span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">62</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">63</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">64</span> }</pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

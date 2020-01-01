@@ -1,0 +1,163 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[终极巨坑]golang+vue开发日记【三】，登陆界面制作（二）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[终极巨坑]golang+vue开发日记【三】，登陆界面制作（二）</center></div><div class='banquan'>原文出处:本文由博客园博主segredo提供。<br/>
+原文连接:https://www.cnblogs.com/segredo/p/11663224.html</div><br>
+    <h1 id="写在前面">写在前面</h1>
+<p>本期内容是承接上期已经做好了登陆界面来写的，不过本期是以golang为主，可能需要大家把最基本的语法结构熟悉一下：<a href="https://www.runoob.com/go/go-tutorial.html">菜鸟教程</a>。这样的话方便展开，自然而然的，本篇也是直接实战为主。这次需要依赖mysql，这个必须安装，redis最好也安装一下，以后会用到。</p>
+<h2 id="启动一个go项目">启动一个go项目</h2>
+<p>这里我打算启动一个go的web application，那么很多人的话都会自己从头开始，不过这的确有点麻烦，网上其实很多大佬写了一些脚手架，这里我打算直接使用bydmm大佬的singo项目来开发，可以看他的B站空间的系列教程：<a href="%22https://space.bilibili.com/10/video%22">bydmm的个人空间</a>。</p>
+<p>所以首先在github把项目弄下来把：</p>
+<blockquote>
+<p>git clone https://github.com/Gourouting/singo.git</p>
+</blockquote>
+<p>然后把项目文件夹目录改称自己的项目名称把，就是把singo这个文件夹名字给改了，然后对应里面的所有文件import都需要把singo改成你的项目名称。</p>
+<p>我们可以顺便看一看项目结构，说明一下：<br />
+<img src="./images/[终极巨坑]golang+vue开发日记【三】，登陆界面制作（二）0.png" /></p>
+<p>这些文件夹的名字都很明显暴露意图，这里我打算暂时不一个个去讲，因为这里我打算说一些所有go项目应该都有的基础东西，就是main.go。如果学过编程都明白，有且只有一个程序的入口，因此这个入口就是main.go，并且他只需要满足他的package是main，并且有一个func main()就可以了：</p>
+<pre><code><code>package main
+
+func main() {
+}
+</code></pre>
+<h3 id="项目环境配置">项目环境配置</h3>
+<p>这个脚手架他的环境配置使用.env来配置的，他也有一个.env exmaple，如果你想知道在哪里实现的可以看conf文件夹下面的conf.go，就是通过.env设置项目下的环境变量，然后在conf.go获取而已，所以你修改一下文件名和把MYSQL_DSN修改成自己的即可，如果不懂DSN的，可以参考如下格式写：</p>
+<blockquote>
+<p>username:password@protocol(address)/dbname?param=value<br />
+一个例子，因为默认的localhost:3306，可以不用写protocol字段<br />
+root:123456@/ysyh?charset=utf8&amp;parseTime=True&amp;loc=Local</p>
+</blockquote>
+<h3 id="go-mod怎么用">go mod怎么用</h3>
+<p>go mod在这里面是包管理器，在第一篇应该已经配好了goproxy和go111module，这个包管理器在如今版本很牛逼，你只需要做2件事情就可以完成，为了演示，我们先把原来项目中的go.mod和go.sum给删了，然后在shell输入:</p>
+<blockquote>
+<p>go mod init your_projectname</p>
+</blockquote>
+<p>这样你就弄好了go mod，之后你在运行项目的时候他会自动检测你缺少的依赖，并且安装，你可以直接试一试：</p>
+<blockquote>
+<p>go run main.go</p>
+</blockquote>
+<p>本来你只有一行的go.mod文件多了一堆依赖声明，并且可以运行项目。</p>
+<h2 id="路由">路由</h2>
+<p>后端第一件事是做接收请求，只有你能接受了请求，并且把他发到对应的地址才有接下来的操作，所以我们从路由看起。对于gin的路由，官方已经写的很清楚了，在项目里面就是server下的router.go，下面是关键的几个代码</p>
+<pre><code><code>func NewRouter() *gin.Engine {
+    r := gin.Default()
+
+    r.Use(middleware.Cors())
+
+    v1 := r.Group(&quot;/api/v1&quot;)
+    {
+        v1.POST(&quot;ping&quot;, api.Ping)
+        auth := v1.Group(&quot;&quot;)
+        auth.Use(middleware.AuthRequired())
+        {
+            auth.GET(&quot;user/me&quot;, api.UserMe)
+                }
+        }
+}</code></pre>
+<p>我只截取了几个知识点，首先 gin.Default()就是路由了，你直接r.Run(&quot;:port&quot;)就可以直接在该端口上执行该路由。</p>
+<p>接下来有个r.Use，这个是中间件的意思，中间件其实就是到你路由的方法前，他会做这个方法里面的内容，例如例子中的Cors，因为我几乎所有的请求都要做Cors，所以我不可能在每个方法里面都写一遍这段代码，因此我们放在中间件里面就省事了。可以看一下gin的middlerware的格式：</p>
+<pre><code><code>import(
+    &quot;github.com/gin-contrib/cors&quot;
+)
+func Cors() gin.HandlerFunc {
+    config := cors.DefaultConfig()
+        return cors.New(config)
+}</code></pre>
+<p>拿Cors为例子，只是把一个gin.HandlerFunc传入Use方法里面就可以实现中间件注册。</p>
+<p>Group方法，其实Group方法就是把他下面的地址加上一段地址，例如上例子，v1下面的post方法呢，他的地址就是/api/v1/ping，调用的三api.ping这个方法。其实单看这个功能感觉也一般，但是可以看一下下面的auth的例子，他在auth下面直接Use，做了个登陆认证，所以在auth下面的地址都有一个middlerware，没有登陆的都没办法访问。因此分组之后可以给组内成员加上middlerware，这样就可以节省很多代码量。</p>
+<h2 id="处理函数">处理函数</h2>
+<p>路由之后呢，就会到达你想要处理这个请求的函数，我直接拿注册为例子来说明。</p>
+<pre><code><code>func UserRegister(c *gin.Context) {
+    var service service.UserRegisterService
+    if err := c.ShouldBind(&amp;service); err == nil {
+        res := service.Register()
+        c.JSON(200, res)
+    } else {
+        c.JSON(200, ErrorResponse(err))
+    }
+}</code></pre>
+<p>这个就是注册的处理函数，但是这个是这个脚手架做了封装的，但是已经有灵魂了。首先可以函数有个参数进来，是gin.Context指针的值。Context顾名思义的上下文，其实就是请求的cookie，headers，content之类的。所以我们请求的信息都要从这里面拿到。</p>
+<p>之后有个这个c.ShouldBind(&amp;service)，这个意思是可以对请求的内容做一个验证，如果符合service这个strcut呢，他就告诉你请求的内容是没有问题的，这里可以看一看这个struct的写法</p>
+<pre><code><code>type UserRegisterService struct {
+    Email           string `form:&quot;email&quot; json:&quot;email&quot; binding:&quot;required,email&quot;`
+    UserName        string `form:&quot;user_name&quot; json:&quot;user_name&quot; binding:&quot;required,min=5,max=30&quot;`
+    Password        string `form:&quot;password&quot; json:&quot;password&quot; binding:&quot;required,min=8,max=40&quot;`
+    PasswordConfirm string `form:&quot;password_confirm&quot; json:&quot;password_confirm&quot; binding:&quot;required,min=8,max=40&quot;`
+}</code></pre>
+<p>除了最后的字段应该都可以看得懂的。就是最后面有段内容，gin可以读取到那里，并且根据这里的内容去判断传入的参数是否有问题，可以看一下Email这个例子，他要求前段可以用form提交或者json提交，他对应的字段是email，并且后面有个binding，这个是验证的规则了，required代表他必须存在，第二个email是代表他是一个email格式的文本。</p>
+<p>最后呢，我们处理完了就要返回结果了，这里直接c.JSON就可以以json的格式返回了。</p>
+<h2 id="数据库操作">数据库操作</h2>
+<p>后端操作不可避免要与数据库交互的，所以这里数据库操作也是很重要的，我们这里用到的数据库叫做gorm，可以看看<a href="%22http://gorm.book.jasperxu.com/%22">gorm官方文档</a>。不过gorm只支持mysql，PostgreSQL和Sqlite3，其他的数据库可能要用别的orm。这里可以在model下init.go看到数据库的基本操作</p>
+<pre><code><code>func Database(connString string) {
+    db, err := gorm.Open(&quot;mysql&quot;, connString)
+    if err != nil {
+        util.Log().Panic(&quot;连接数据库不成功&quot;, err)
+    }
+    //设置连接池
+    //空闲
+    db.DB().SetMaxIdleConns(50)
+    //打开
+    db.DB().SetMaxOpenConns(100)
+    //超时
+    db.DB().SetConnMaxLifetime(time.Second * 30)
+
+    migration()
+}</code></pre>
+<p>我这里也是把跟数据库链接比较重要的代码拿出来了，这里用单例我就没贴了。首先怎么去链接数据库，就是gorm.Open就完事了，然后第一个参数是数据库种类，第二个是DSN，DSN上面已经讲过了。</p>
+<p>之后呢我们就要设置一些参数，上面也写的很清楚了，最后有个migration，这个是gorm的很厉害的功能，他可以自动的去生成表和修改表结构。其实就是DB.AutoMigrate这个方法，每次运行的时候，他都会先去把里面的struct加入到数据库中，例如这里的user表，就是用如下的stcut自动迁移：</p>
+<pre><code><code>// User 用户模型
+type User struct {
+    gorm.Model
+    UserName       string
+    PasswordDigest string
+    Email       string
+    Status         string
+    Avatar         string `gorm:&quot;size:1000&quot;`
+}</code></pre>
+<p>这里面的gorm.Model是这样的，这里面可能会涉及到gorm的软删除的内容，所以建议加上gorm.Model在你任意的表结构中：</p>
+<pre><code><code>type Model struct {
+    ID        uint `gorm:&quot;primary_key&quot;`
+    CreatedAt time.Time
+    UpdatedAt time.Time
+    DeletedAt *time.Time `sql:&quot;index&quot;`
+}</code></pre>
+<h2 id="前端请求">前端请求</h2>
+<p>我们已经把最基本的后端逻辑给弄懂了，~虽然没有弄实现逻辑~。但是我们Vue怎么给后端发请求？可能懂得人应该知道是ajax了，在Vue里面的话大家常用的是axios，是基于Promise机制的，首先可以安装一下。</p>
+<blockquote>
+<p>npm install axios</p>
+</blockquote>
+<p>然后呢在main.js里面加上（其中第二行是为了防止做Cors的时候出问题）：</p>
+<blockquote>
+<p>import axios from 'axios';<br />
+axios.defaults.withCredentials=true<br />
+Vue.prototype.$axios = axios;</p>
+</blockquote>
+<p>之后我们在我们的项目文件做请求就可以：</p>
+<pre><code><code>this.$axios.get(&quot;http://127.0.0.1:3000/api/v1/user/me&quot;).then((res) =&gt; {
+    //todo
+}).catch(err =&gt; {
+    //todo
+}).finally(() =&gt; {
+})</code></pre>
+<p>如果是post请求就在后面把请求的参数加上去。这个请求发送之后如果正确了，就会到then里面，结果就是用一个变量去接受即可。出现问题就可以catch错误，最后也可以用finally，这个函数不管成功与否都会去做。</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

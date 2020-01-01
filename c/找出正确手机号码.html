@@ -1,0 +1,112 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修找出正确手机号码' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>找出正确手机号码</center></div><div class='banquan'>原文出处:本文由博客园博主治愈系的江予夺提供。<br/>
+原文连接:https://www.cnblogs.com/zyxdjyd/p/10742705.html</div><br>
+    <p><span style="text-decoration: underline; font-size: 18px; font-family: 宋体;">题目：已知手机号码是由0-9等组成的11位的字符串，现根据所输入的字符判断其是否为正确的手机号码</span></p>
+<p><span style="font-size: 18px;">要求：1、若输入的字符串开头为151、153、173、180、193任意一组且刚好为11位的数字组成，则输出：%s is ok</span></p>
+<p><span style="font-size: 18px;">2、若输入的字符都是由数字组成且字符个数不足11位，则输出：%s is short&nbsp; &nbsp; </span></p>
+<p><span style="font-size: 18px;">若</span><span style="font-size: 18px;">输入的字符都是由数字组成且字符个数大于11位，则输出：</span><span style="font-size: 18px;">%s is long</span></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><span style="font-size: 18px;">3、若输入的字符包含除0-9以外的字符，则输出：illegal</span></p>
+<p><span style="font-size: 18px;">思路：根据所输入的字符进行一个一个判断，此处可以参考形式语言与自动机理论中的自动机思想，画个自动机状态图，根据一个个输入的字符进行下一步判断，满足条件的进行相应情况输出。</span></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include&lt;stdio.h&gt;
+<span style="color: #008080;"> 2</span> #include&lt;<span style="color: #0000ff;">string</span>.h&gt;
+<span style="color: #008080;"> 3</span> <span style="color: #0000ff;">#define</span> x0 0
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">#define</span> x1 1
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">#define</span> x2 2
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">#define</span> x3 3
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">#define</span> x4 4
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">#define</span> x5 5
+<span style="color: #008080;"> 9</span> <span style="color: #0000ff;">#define</span> short 6
+<span style="color: #008080;">10</span> <span style="color: #0000ff;">#define</span> long 7
+<span style="color: #008080;">11</span> <span style="color: #0000ff;">#define</span> ok 8
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">#define</span> illegal 9
+<span style="color: #008080;">13</span> <span style="color: #0000ff;">int</span> FA(<span style="color: #0000ff;">int</span> state,<span style="color: #0000ff;">char</span><span style="color: #000000;"> input);
+</span><span style="color: #008080;">14</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">16</span>    <span style="color: #0000ff;">char</span> a[<span style="color: #800080;">100</span><span style="color: #000000;">];
+</span><span style="color: #008080;">17</span>    <span style="color: #0000ff;">int</span> state,i=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">   gets(a);
+</span><span style="color: #008080;">19</span>    state=<span style="color: #000000;">x0;
+</span><span style="color: #008080;">20</span>    <span style="color: #0000ff;">while</span>(a[i]!=<span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">)
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">   {
+</span><span style="color: #008080;">22</span>        state =<span style="color: #000000;"> FA(state,a[i]);
+</span><span style="color: #008080;">23</span>        i++<span style="color: #000000;">;
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">   }
+</span><span style="color: #008080;">25</span>    <span style="color: #0000ff;">if</span>(i==<span style="color: #800080;">11</span> &amp;&amp; state==<span style="color: #0000ff;">short</span><span style="color: #000000;"> )
+</span><span style="color: #008080;">26</span>        state =<span style="color: #000000;"> ok;
+</span><span style="color: #008080;">27</span>    <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(i&gt;<span style="color: #800080;">11</span> &amp;&amp; state==<span style="color: #0000ff;">short</span><span style="color: #000000;">)
+</span><span style="color: #008080;">28</span>        state = <span style="color: #0000ff;">long</span><span style="color: #000000;">;
+</span><span style="color: #008080;">29</span>    <span style="color: #0000ff;">if</span>(state &gt;= <span style="color: #800080;">1</span> &amp;&amp; state &lt;= <span style="color: #800080;">6</span><span style="color: #000000;">)
+</span><span style="color: #008080;">30</span>        printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s is short</span><span style="color: #800000;">"</span><span style="color: #000000;">,a);
+</span><span style="color: #008080;">31</span>    <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(state == <span style="color: #800080;">7</span><span style="color: #000000;">)
+</span><span style="color: #008080;">32</span>        printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s is long</span><span style="color: #800000;">"</span><span style="color: #000000;">,a);
+</span><span style="color: #008080;">33</span>    <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(state == <span style="color: #800080;">8</span><span style="color: #000000;">)
+</span><span style="color: #008080;">34</span>        printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s is ok</span><span style="color: #800000;">"</span><span style="color: #000000;">,a);
+</span><span style="color: #008080;">35</span>    <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(state == <span style="color: #800080;">9</span> || state == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">36</span>        printf(<span style="color: #800000;">"</span><span style="color: #800000;">%s is illegal</span><span style="color: #800000;">"</span><span style="color: #000000;">,a);
+</span><span style="color: #008080;">37</span>    <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">39</span> <span style="color: #0000ff;">int</span> FA(<span style="color: #0000ff;">int</span> state, <span style="color: #0000ff;">char</span><span style="color: #000000;"> input)
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">41</span> <span style="color: #0000ff;">switch</span><span style="color: #000000;">(state)
+</span><span style="color: #008080;">42</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">43</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> x0:
+</span><span style="color: #008080;">44</span>     <span style="color: #0000ff;">if</span>(input == <span style="color: #800000;">'</span><span style="color: #800000;">1</span><span style="color: #800000;">'</span>) state=<span style="color: #000000;">x1;
+</span><span style="color: #008080;">45</span>     <span style="color: #0000ff;">else</span> state=<span style="color: #000000;">illegal;
+</span><span style="color: #008080;">46</span>     <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">47</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> x1:
+</span><span style="color: #008080;">48</span>     <span style="color: #0000ff;">if</span>(input == <span style="color: #800000;">'</span><span style="color: #800000;">5</span><span style="color: #800000;">'</span>) state=<span style="color: #000000;">x2;
+</span><span style="color: #008080;">49</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(input == <span style="color: #800000;">'</span><span style="color: #800000;">7</span><span style="color: #800000;">'</span>) state=<span style="color: #000000;">x3;
+</span><span style="color: #008080;">50</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(input == <span style="color: #800000;">'</span><span style="color: #800000;">8</span><span style="color: #800000;">'</span>) state=<span style="color: #000000;">x4;
+</span><span style="color: #008080;">51</span>     <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(input == <span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span>) state=<span style="color: #000000;">x5;
+</span><span style="color: #008080;">52</span>     <span style="color: #0000ff;">else</span> state=<span style="color: #000000;">illegal;
+</span><span style="color: #008080;">53</span>     <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">54</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> x2:
+</span><span style="color: #008080;">55</span>     <span style="color: #0000ff;">if</span>(input == <span style="color: #800000;">'</span><span style="color: #800000;">1</span><span style="color: #800000;">'</span> || input == <span style="color: #800000;">'</span><span style="color: #800000;">3</span><span style="color: #800000;">'</span>) state=<span style="color: #0000ff;">short</span><span style="color: #000000;">;
+</span><span style="color: #008080;">56</span>     <span style="color: #0000ff;">else</span> state=<span style="color: #000000;">illegal;
+</span><span style="color: #008080;">57</span>     <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">58</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> x3:
+</span><span style="color: #008080;">59</span>     <span style="color: #0000ff;">if</span>(input == <span style="color: #800000;">'</span><span style="color: #800000;">3</span><span style="color: #800000;">'</span>)  state=<span style="color: #0000ff;">short</span><span style="color: #000000;">;
+</span><span style="color: #008080;">60</span>     <span style="color: #0000ff;">else</span> state=<span style="color: #000000;">illegal;
+</span><span style="color: #008080;">61</span>     <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">62</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> x4:
+</span><span style="color: #008080;">63</span>     <span style="color: #0000ff;">if</span>(input == <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>) state=<span style="color: #0000ff;">short</span><span style="color: #000000;">;
+</span><span style="color: #008080;">64</span>     <span style="color: #0000ff;">else</span> state=<span style="color: #000000;">illegal;
+</span><span style="color: #008080;">65</span>     <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">66</span> <span style="color: #0000ff;">case</span><span style="color: #000000;"> x5:
+</span><span style="color: #008080;">67</span>     <span style="color: #0000ff;">if</span>(input == <span style="color: #800000;">'</span><span style="color: #800000;">8</span><span style="color: #800000;">'</span>) state=<span style="color: #0000ff;">short</span><span style="color: #000000;">;
+</span><span style="color: #008080;">68</span>     <span style="color: #0000ff;">else</span> state=<span style="color: #000000;">illegal;
+</span><span style="color: #008080;">69</span>     <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">70</span> <span style="color: #0000ff;">case</span> <span style="color: #0000ff;">short</span><span style="color: #000000;">:
+</span><span style="color: #008080;">71</span>     <span style="color: #0000ff;">if</span>(input &lt;= <span style="color: #800000;">'</span><span style="color: #800000;">9</span><span style="color: #800000;">'</span> &amp;&amp; input &gt;= <span style="color: #800000;">'</span><span style="color: #800000;">0</span><span style="color: #800000;">'</span>) state=<span style="color: #0000ff;">short</span><span style="color: #000000;">;
+</span><span style="color: #008080;">72</span>     <span style="color: #0000ff;">else</span> state=<span style="color: #000000;">illegal;
+</span><span style="color: #008080;">73</span>     <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">74</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">75</span>     <span style="color: #0000ff;">return</span><span style="color: #000000;"> state;
+</span><span style="color: #008080;">76</span> }</code></pre>
+
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

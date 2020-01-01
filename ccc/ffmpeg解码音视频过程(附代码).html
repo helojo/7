@@ -1,0 +1,213 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修ffmpeg解码音视频过程(附代码)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>ffmpeg解码音视频过程(附代码)</center></div><div class='banquan'>原文出处:本文由博客园博主丁方提供。<br/>
+原文连接:https://www.cnblogs.com/changdingfang/p/11243065.html</div><br>
+    <h3><strong>0. 引言</strong></h3>
+<p style="margin-left: 30px;"><span style="font-size: 14px;"><strong>最近一直在使用和学习ffmpeg. 工作中需要拉流解码, 获取音频和视频数据. 这些都是使用ffmpeg处理.</strong></span></p>
+<p><span style="font-size: 14px;"><strong>　　因为对ffmpeg接触不多, 用的不深, 在使用的过程中经常遇到不太懂的地方, 就会花费很多时间去查阅资料. 所以自己对用到的知识点总结一下, 方便自己以后再重复用到时能够方便找到.</strong></span></p>
+<p><span style="font-size: 14px;"><strong><strong>　　环境: ubuntu16.04, 已安装ffmpeg依赖库. gcc编译工具.</strong></strong></span></p>
+<p style="margin-left: 30px;"><span style="font-size: 14px;"><strong>ffmpeg解码过程中用到了两个很重要的结构体, 这两个结构体比较复杂, 用到的次数也非常多, 以后我单独写一篇进行总结.</strong></span></p>
+<ul>
+<li style="list-style-type: none;"></li>
+<ul>
+<li><strong>AVPacket 保存未解码的数据.</strong></li>
+<li><strong>AVFrame 保存解码后的数据.</strong></li>
+</ul>
+</ul>
+<p>&nbsp;</p>
+<h3>1. 解码流程</h3>
+<p><img src="./images/ffmpeg解码音视频过程(附代码)0.png" alt="" /></p>
+<p>&nbsp;</p>
+<h3><span style="font-family: 楷体; font-size: 18px;">2. 代码</span></h3>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> <span style="color: #008000;">//</span><span style="color: #008000;">***************************************************************
+</span><span style="color: #008080;">  2</span> <span style="color: #008000;">//</span><span style="color: #008000;"> @file:    test.c
+</span><span style="color: #008080;">  3</span> <span style="color: #008000;">//</span><span style="color: #008000;"> @author:  dingfang
+</span><span style="color: #008080;">  4</span> <span style="color: #008000;">//</span><span style="color: #008000;"> @date    2019-07-24 18:55:16
+</span><span style="color: #008080;">  5</span> <span style="color: #008000;">//</span><span style="color: #008000;">***************************************************************</span>
+<span style="color: #008080;">  6</span> 
+<span style="color: #008080;">  7</span> #include &lt;stdio.h&gt;
+<span style="color: #008080;">  8</span> 
+<span style="color: #008080;">  9</span> <span style="color: #000000;">#ifdef __cplusplus
+</span><span style="color: #008080;"> 10</span> <span style="color: #0000ff;">extern</span> <span style="color: #800000;">"</span><span style="color: #800000;">C</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 11</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 12</span> <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;"> 13</span> #include &lt;libavcodec/avcodec.h&gt;
+<span style="color: #008080;"> 14</span> #include &lt;libavformat/avformat.h&gt;
+<span style="color: #008080;"> 15</span> <span style="color: #000000;">#ifdef __cplusplus
+</span><span style="color: #008080;"> 16</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 17</span> <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;"> 18</span> 
+<span style="color: #008080;"> 19</span> <span style="color: #0000ff;">int</span> openCodecContext(<span style="color: #0000ff;">const</span> AVFormatContext *pFormatCtx, <span style="color: #0000ff;">int</span> *pStreamIndex, <span style="color: #0000ff;">enum</span> AVMediaType type, AVCodecContext **<span style="color: #000000;">ppCodecCtx)
+</span><span style="color: #008080;"> 20</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 21</span>     <span style="color: #0000ff;">int</span> streamIdx = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 22</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 获取流下标</span>
+<span style="color: #008080;"> 23</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; pFormatCtx-&gt;nb_streams; i++<span style="color: #000000;">) 
+</span><span style="color: #008080;"> 24</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 25</span>         <span style="color: #0000ff;">if</span> (pFormatCtx-&gt;streams[i]-&gt;codec-&gt;codec_type ==<span style="color: #000000;"> type) 
+</span><span style="color: #008080;"> 26</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 27</span>             streamIdx =<span style="color: #000000;"> i;
+</span><span style="color: #008080;"> 28</span>             <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 29</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 30</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 31</span>     <span style="color: #0000ff;">if</span> (streamIdx == -<span style="color: #800080;">1</span><span style="color: #000000;">) 
+</span><span style="color: #008080;"> 32</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 33</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">find video stream failed!\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 34</span>         exit(-<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 35</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 36</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> 寻找解码器</span>
+<span style="color: #008080;"> 37</span>     AVCodecContext  *pCodecCtx = pFormatCtx-&gt;streams[streamIdx]-&gt;<span style="color: #000000;">codec;
+</span><span style="color: #008080;"> 38</span>     AVCodec *pCodec = avcodec_find_decoder(pCodecCtx-&gt;<span style="color: #000000;">codec_id);
+</span><span style="color: #008080;"> 39</span>     <span style="color: #0000ff;">if</span> (NULL ==<span style="color: #000000;"> pCodec) 
+</span><span style="color: #008080;"> 40</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 41</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">avcode find decoder failed!\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 42</span>         exit(-<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 43</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 44</span> 
+<span style="color: #008080;"> 45</span>     <span style="color: #008000;">//</span><span style="color: #008000;">打开解码器</span>
+<span style="color: #008080;"> 46</span>     <span style="color: #0000ff;">if</span> (avcodec_open2(pCodecCtx, pCodec, NULL) &lt; <span style="color: #800080;">0</span><span style="color: #000000;">) 
+</span><span style="color: #008080;"> 47</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 48</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">avcode open failed!\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 49</span>         exit(-<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 50</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 51</span>     *ppCodecCtx        =<span style="color: #000000;"> pCodecCtx;
+</span><span style="color: #008080;"> 52</span>     *pStreamIndex    =<span style="color: #000000;"> streamIdx;
+</span><span style="color: #008080;"> 53</span> 
+<span style="color: #008080;"> 54</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 55</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 56</span> 
+<span style="color: #008080;"> 57</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 58</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 59</span>     AVFormatContext    *pInFormatCtx    =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 60</span>     AVCodecContext  *pVideoCodecCtx    =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 61</span>     AVCodecContext  *pAudioCodecCtx    =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 62</span>     AVPacket *pPacket    =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;"> 63</span>     AVFrame *pFrame        =<span style="color: #000000;"> NULL; 
+</span><span style="color: #008080;"> 64</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> ret;
+</span><span style="color: #008080;"> 65</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> 支持本地文件和网络url </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 66</span>     <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> streamUrl[] = <span style="color: #800000;">"</span><span style="color: #800000;">./test.flv</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 67</span> 
+<span style="color: #008080;"> 68</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> 1. 注册 </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 69</span> <span style="color: #000000;">    av_register_all();
+</span><span style="color: #008080;"> 70</span>     
+<span style="color: #008080;"> 71</span>     pInFormatCtx =<span style="color: #000000;"> avformat_alloc_context();
+</span><span style="color: #008080;"> 72</span> 
+<span style="color: #008080;"> 73</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> 2. 打开流 </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 74</span>     <span style="color: #0000ff;">if</span>(avformat_open_input(&amp;pInFormatCtx, streamUrl, NULL, NULL) != <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 75</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 76</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Couldn't open input stream.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 77</span>         <span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 78</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 79</span> 
+<span style="color: #008080;"> 80</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> 3. 获取流的信息 </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 81</span>     <span style="color: #0000ff;">if</span>(avformat_find_stream_info(pInFormatCtx, NULL) &lt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 82</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 83</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">Couldn't find stream information.\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 84</span>         <span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 85</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 86</span> 
+<span style="color: #008080;"> 87</span>     <span style="color: #0000ff;">int</span> videoStreamIdx = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 88</span>     <span style="color: #0000ff;">int</span> audioStreamIdx = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 89</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> 4. 寻找并打开解码器 </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;"> 90</span>     openCodecContext(pInFormatCtx, &amp;videoStreamIdx, AVMEDIA_TYPE_VIDEO, &amp;<span style="color: #000000;">pVideoCodecCtx);
+</span><span style="color: #008080;"> 91</span>     openCodecContext(pInFormatCtx, &amp;audioStreamIdx, AVMEDIA_TYPE_AUDIO, &amp;<span style="color: #000000;">pAudioCodecCtx);
+</span><span style="color: #008080;"> 92</span> 
+<span style="color: #008080;"> 93</span>     pPacket    =<span style="color: #000000;"> av_packet_alloc();
+</span><span style="color: #008080;"> 94</span>     pFrame    =<span style="color: #000000;"> av_frame_alloc();
+</span><span style="color: #008080;"> 95</span> 
+<span style="color: #008080;"> 96</span>     <span style="color: #0000ff;">int</span> cnt = <span style="color: #800080;">30</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 97</span>     <span style="color: #0000ff;">while</span> (cnt--<span style="color: #000000;">)
+</span><span style="color: #008080;"> 98</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 99</span>         <span style="color: #008000;">/*</span><span style="color: #008000;"> 5. 读流数据, 未解码的数据存放于pPacket </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">100</span>         ret =<span style="color: #000000;"> av_read_frame(pInFormatCtx, pPacket);
+</span><span style="color: #008080;">101</span>         <span style="color: #0000ff;">if</span> (ret &lt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">102</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">103</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">av_read_frame error\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">104</span>             <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">105</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">106</span> 
+<span style="color: #008080;">107</span>         <span style="color: #008000;">/*</span><span style="color: #008000;"> 6. 解码, 解码后的数据存放于pFrame </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">108</span>         <span style="color: #008000;">/*</span><span style="color: #008000;"> 视频解码 </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">109</span>         <span style="color: #0000ff;">if</span> (pPacket-&gt;stream_index ==<span style="color: #000000;"> videoStreamIdx)
+</span><span style="color: #008080;">110</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">111</span>             avcodec_decode_video2(pVideoCodecCtx, pFrame, &amp;<span style="color: #000000;">ret, pPacket);
+</span><span style="color: #008080;">112</span>             <span style="color: #0000ff;">if</span> (ret == <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">113</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">114</span>                 printf(<span style="color: #800000;">"</span><span style="color: #800000;">video decodec error!\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">115</span>                 <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+</span><span style="color: #008080;">116</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">117</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">* * * * * * video * * * * * * * * *\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">118</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">___height: [%d]\n</span><span style="color: #800000;">"</span>, pFrame-&gt;<span style="color: #000000;">height);
+</span><span style="color: #008080;">119</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">____width: [%d]\n</span><span style="color: #800000;">"</span>, pFrame-&gt;<span style="color: #000000;">width);
+</span><span style="color: #008080;">120</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">pict_type: [%d]\n</span><span style="color: #800000;">"</span>, pFrame-&gt;<span style="color: #000000;">pict_type);
+</span><span style="color: #008080;">121</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">___format: [%d]\n</span><span style="color: #800000;">"</span>, pFrame-&gt;<span style="color: #000000;">format);
+</span><span style="color: #008080;">122</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">* * * * * * * * * * * * * * * * * * *\n\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">123</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">124</span> 
+<span style="color: #008080;">125</span>         <span style="color: #008000;">/*</span><span style="color: #008000;"> 音频解码 </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">126</span>         <span style="color: #0000ff;">if</span> (pPacket-&gt;stream_index ==<span style="color: #000000;"> audioStreamIdx)
+</span><span style="color: #008080;">127</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">128</span>             avcodec_decode_audio4(pAudioCodecCtx, pFrame, &amp;<span style="color: #000000;">ret, pPacket);
+</span><span style="color: #008080;">129</span>             <span style="color: #0000ff;">if</span> (ret &lt; <span style="color: #800080;">0</span><span style="color: #000000;">)
+</span><span style="color: #008080;">130</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;">131</span>                 printf(<span style="color: #800000;">"</span><span style="color: #800000;">audio decodec error!\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">132</span>                 <span style="color: #0000ff;">continue</span><span style="color: #000000;">;
+</span><span style="color: #008080;">133</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;">134</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">* * * * * * audio * * * * * * * * * *\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">135</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">____nb_samples: [%d]\n</span><span style="color: #800000;">"</span>, pFrame-&gt;<span style="color: #000000;">nb_samples);
+</span><span style="color: #008080;">136</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">__samples_rate: [%d]\n</span><span style="color: #800000;">"</span>, pFrame-&gt;<span style="color: #000000;">sample_rate);
+</span><span style="color: #008080;">137</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">channel_layout: [%lu]\n</span><span style="color: #800000;">"</span>, pFrame-&gt;<span style="color: #000000;">channel_layout);
+</span><span style="color: #008080;">138</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">________format: [%d]\n</span><span style="color: #800000;">"</span>, pFrame-&gt;<span style="color: #000000;">format);
+</span><span style="color: #008080;">139</span>             printf(<span style="color: #800000;">"</span><span style="color: #800000;">* * * * * * * * * * * * * * * * * * *\n\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">140</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">141</span> <span style="color: #000000;">        av_packet_unref(pPacket);
+</span><span style="color: #008080;">142</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">143</span> 
+<span style="color: #008080;">144</span>     av_frame_free(&amp;<span style="color: #000000;">pFrame);
+</span><span style="color: #008080;">145</span>     av_packet_free(&amp;<span style="color: #000000;">pPacket);
+</span><span style="color: #008080;">146</span> <span style="color: #000000;">    avcodec_close(pVideoCodecCtx);
+</span><span style="color: #008080;">147</span> <span style="color: #000000;">    avcodec_close(pAudioCodecCtx);
+</span><span style="color: #008080;">148</span>     avformat_close_input(&amp;<span style="color: #000000;">pInFormatCtx);
+</span><span style="color: #008080;">149</span> 
+<span style="color: #008080;">150</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">151</span> }</pre>
+</div>
+<p>该代码不能直接编译,&nbsp;编译需要依赖ffmpeg库. 包含ffmpeg动态库和makefile文件的压缩包地址: <a href="https://files.cnblogs.com/files/changdingfang/ffmpeg_test_decode.zip" target="_blank">点我下载</a></p>
+<p>解压后, 进入目录, 使用make命令即可编译.</p>
+<p>&nbsp;</p>
+<h3><span style="font-family: 楷体; font-size: 18px;">3. 函数说明</span></h3>
+<p><span style="font-family: 楷体; font-size: 18px;">这里就几个比较重要的函数简单介绍一下.</span></p>
+<blockquote>
+<p><span style="font-family: 楷体;"><span style="font-size: 18px;">av_register_all()&nbsp;　　　　　　 /* 使用ffmpeg几乎都要调用这一个函数, 注册ffmpeg各种编解码器, 复用器等. */</span></span></p>
+<p><span style="font-family: 楷体;"><span style="font-size: 18px;">avformat_open_input()&nbsp; 　　　　/* 该函数用于打开本地多媒体文件或者网络流媒体url */</span></span></p>
+<p><span style="font-family: 楷体;"><span style="font-size: 18px;">avformat_find_stream_info()&nbsp; &nbsp;/*&nbsp;该函数用于读取一部分音视频数据并且获得一些相关的信息&nbsp;*/</span></span></p>
+<p><span style="font-family: 楷体;"><span style="font-size: 18px;">avcodec_find_decoder()　　　　/* 由codec_id或者解码器名称来寻找对应的解码器 */</span></span></p>
+<p><span style="font-family: 楷体;"><span style="font-size: 18px;">avcodec_open2()　　　　　　　 /* 初始化解码器 */</span></span></p>
+<p><span style="font-family: 楷体;"><span style="font-size: 18px;">av_read_frame()　　　　　　　 /* 读流数据, 读出来的是压缩数据, 存放于AVPacket */</span></span></p>
+<p><span style="font-family: 楷体;"><span style="font-size: 18px;">avcodec_decode_video2()　　　 /* 视频解码 解码后数据为原始数据, 存放于AVFrame */</span></span></p>
+<p><span style="font-family: 楷体;"><span style="font-size: 18px;">avcodec_decode_audio4()　　　 /* 音频解码 解码后数据为原始数据, 存放于AVFrame */</span></span></p>
+</blockquote>
+<p>&nbsp;</p>
+<p><span style="font-family: 楷体; font-size: 18px;">&nbsp;</span></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

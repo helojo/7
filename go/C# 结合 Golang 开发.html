@@ -1,0 +1,162 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C# 结合 Golang 开发' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C# 结合 Golang 开发</center></div><div class='banquan'>原文出处:本文由博客园博主三人行工作室提供。<br/>
+原文连接:https://www.cnblogs.com/timeddd/p/11731160.html</div><br>
+    <h3 id="实现方式与语法形式">1. 实现方式与语法形式</h3>
+<p>基本方式：将 Go 程序编译成 DLL 供 C# 调用。</p>
+<h4 id="go代码">1.1 Go代码</h4>
+<p>注意：代码中 export 的注释是定义的入口描述不能省略</p>
+<pre><code><code>package main
+
+import &quot;C&quot;
+import &quot;fmt&quot;
+
+func main() {
+    fmt.Println(Test())
+}
+
+var _count = 0
+
+//Test :
+//export Test
+func Test() int {
+    _count++
+    return _count
+}</code></pre>
+<p>在 LiteIDE 中将编译配置的 <code>BUILDARGS</code> 自定义值为 <code>--buildmode=c-shared -o Test.dll</code>，从而形成以下编译语句。</p>
+<pre><code><code>go build --buildmode=c-shared -o Test.dll</code></pre>
+<h4 id="c-代码">1.2 C# 代码</h4>
+<pre><code><code>[DllImport(&quot;Test.dll&quot;, EntryPoint = &quot;Test&quot;)]
+extern static int Test();</code></pre>
+<h3 id="windows-下编译依赖的环境">2. Windows 下编译依赖的环境</h3>
+<p>生成 DLL 依赖于 gcc，没有 gcc 环境时，会报以下错误：</p>
+<blockquote>
+<p>&quot;gcc&quot;: executable file not found in %PATH%</p>
+</blockquote>
+<p>GCC下载：<a href="http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-posix/seh/" title="http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-posix/seh/">Windows 64位版本</a>  || <a href="http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/seh/" title="http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.8.2/threads-win32/seh/">Windows 32位版本</a>，也可以从从<a href="https://pan.baidu.com/s/1zzxAE5rD_Ox1qQbLrmDkOA">云盘下载</a>。<br />
+下载之后，解压后确保 gcc 命令在搜索路径（Path）中。<br />
+更多信息可参考：<a href="https://www.cnblogs.com/ghj1976/p/3540257.html" class="uri">https://www.cnblogs.com/ghj1976/p/3540257.html</a></p>
+<h3 id="操作系统-64-位与-32-的编译">3. 操作系统 64 位与 32 的编译</h3>
+<p>在 LiteIDE 中，可以通过配置 <code>win32.env</code> 和 <code>win64.env</code> 来指定不同的 gcc 环境路径达到生成指定系统的 DLL 文件。</p>
+<h3 id="c-中操作系统-64-位与-32-的适配">4. c# 中操作系统 64 位与 32 的适配</h3>
+<p>在 c# 中判断操作系统是否 64 位，可以使用以下语句。</p>
+<pre><code><code>bool is64 = Environment.Is64BitOperatingSystem;</code></pre>
+<p>为了在不同的操作系统下，加载不同的 DLL，采取以下步骤来进行组织。<br />
+（1）将 32 位的版本命名为 Test32.dll，将 64 位的版本命名为 Test64.dll<br />
+（2）定义 ITest 接口，将 DLL 将要调用的方法定义为接口方法<br />
+（3）分别为ITest接口实现 Test32 与 Test64 类，在类中加载相应的 DLL<br />
+（4）通过判断操作系统类型，实例化一个 ITest 的具体实现类实例来使用<br />
+<strong>具体接口与类实现代码如下：</strong></p>
+<pre><code><code>public interface ITest
+{
+    int Test();
+}
+
+public class Test32 : ITest
+{
+    class TestDLL
+    {
+        const string DLL_NAME = &quot;Test32.dll&quot;;
+
+        [DllImport(DLL_NAME, EntryPoint = &quot;Test&quot;)]
+        public extern static int Test();
+    }
+
+    public int Test()
+    {
+        return TestDLL.Test();
+    }
+}
+
+public class Test64 : ITest
+{
+    class TestDLL
+    {
+        const string DLL_NAME = &quot;Test64.dll&quot;;
+
+        [DllImport(DLL_NAME, EntryPoint = &quot;Test&quot;)]
+        public extern static int Test();
+    }
+
+    public int Test()
+    {
+        return TestDLL.Test();
+    }
+}</code></pre>
+<p><strong>实例化与调用：</strong></p>
+<pre><code><code>ITest test = Environment.Is64BitOperatingSystem ? (ITest)new Test64() : (ITest)new Test32();
+int result = test.Test();</code></pre>
+<h3 id="其它一些问题">5. 其它一些问题</h3>
+<h4 id="字符串转换">5.1 字符串转换</h4>
+<ul>
+<li>传入字符串，C#: byte[] -&gt; GO: *C.char</li>
+<li>接收字符串，GO: string -&gt; C#: GoString struct<br />
+GO 定义示例</li>
+</ul>
+<pre><code><code>//Hello :
+//export Hello
+func Hello(name *C.char) string {
+    return fmt.Sprintf(&quot;hello %s&quot;, C.GoString(name))
+}</code></pre>
+<p>C# GoString struct 定义</p>
+<pre><code><code>public struct GoString
+{        
+    public IntPtr p; 
+    public int n;
+    public GoString(IntPtr n1, int n2)
+    {
+        p = n1; n = n2;
+    }
+}</code></pre>
+<p>C# DllImport 声明</p>
+<pre><code><code>[DllImport(DLL_NAME, EntryPoint = &quot;Hello&quot;, CallingConvention = CallingConvention.Cdecl)]
+public extern static GoString Hello(byte[] name);</code></pre>
+<p>C# GoString struct 转 String</p>
+<pre><code><code>public string GoStringToCSharpString(GoString goString)
+{
+    byte[] bytes = new byte[goString.n];
+    for (int i = 0; i &lt; goString.n; i++)
+    {
+        bytes[i] = Marshal.ReadByte(goString.p, i);
+    }
+    string result = Encoding.UTF8.GetString(bytes);
+    return result;
+}</code></pre>
+<p>C# 调用示例</p>
+<pre><code><code>GoString goResult = test.Hello(Encoding.UTF8.GetBytes(&quot;张三&quot;));
+Debug.WriteLine(GoStringToCSharpString(goResult));</code></pre>
+<h4 id="调试">5.2 调试</h4>
+<p>CallingConvention<br />
+在声明中加入 <code>CallingConvention = CallingConvention.Cdecl</code> 避免未知异常。</p>
+<pre><code><code>[DllImport(&quot;Test.dll&quot;, CallingConvention = CallingConvention.Cdecl)]</code></pre>
+<p>程序崩溃甚至异常提示都没有，可在加载 DLL 之前：</p>
+<pre><code><code>Environment.SetEnvironmentVariable(&quot;GODEBUG&quot;, &quot;cgocheck=0&quot;);</code></pre>
+<h3 id="相关参考">6. 相关参考</h3>
+<ul>
+<li>GO 生成 DLL，C# 调用的一个完整小示例：<br />
+<a href="https://github.com/Baozisoftware/go-dll" class="uri">https://github.com/Baozisoftware/go-dll</a></li>
+<li>字符串处理相关的一个问答<br />
+<a href="https://stackoverflow.com/questions/48208098/using-generated-golang-dll-to-return-string-or-c-char" class="uri">https://stackoverflow.com/questions/48208098/using-generated-golang-dll-to-return-string-or-c-char</a></li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,276 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修BFS（三）：双向广度优先搜索' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>BFS（三）：双向广度优先搜索</center></div><div class='banquan'>原文出处:本文由博客园博主aTeacher提供。<br/>
+原文连接:https://www.cnblogs.com/cs-whut/p/11157732.html</div><br>
+    <p>&nbsp; &nbsp; &nbsp; 所谓双向广度搜索指的是搜索沿两个方向同时进行：（1）正向搜索：从初始结点向目标结点方向搜索；（2）逆向搜索：从目标结点向初始结点方向搜索；当两个方向的搜索生成同一子结点时终止此搜索过程。</p>
+<p>&nbsp; &nbsp; &nbsp; 广度双向搜索通常有两种方法：（1）两个方向交替扩展；（2）选择结点个数较少的那个方向先扩展。方法（2）克服了两方向结点的生成速度不平衡的状态，可明显提高效率。</p>
+<p><span style="font-size: 16px;"><strong>【例1】Knight Moves （POJ 1915）</strong></span></p>
+<p><strong>Description</strong></p>
+<p>Background <br />Mr Somurolov, fabulous chess-gamer indeed, asserts that no one else but him can move knights from one position to another so fast. Can you beat him? <br />The Problem <br />Your task is to write a program to calculate the minimum number of moves needed for a knight to reach one point from another, so that you have the chance to be faster than Somurolov. <br />For people not familiar with chess, the possible knight moves are shown in Figure 1.</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/BFS（三）：双向广度优先搜索0.png" alt="" /></p>
+<p><strong>Input</strong></p>
+<p>The input begins with the number n of scenarios on a single line by itself. <br />Next follow n scenarios. Each scenario consists of three lines containing integer numbers. The first line specifies the length l of a side of the chess board (4 &lt;= l &lt;= 300). The entire board has size l * l. The second and third line contain pair of integers {0, ..., l-1}*{0, ..., l-1} specifying the starting and ending position of the knight on the board. The integers are separated by a single blank. You can assume that the positions are valid positions on the chess board of that scenario.<br /><strong>Output</strong></p>
+<p>For each scenario of the input you have to calculate the minimal amount of knight moves which are necessary to move from the starting point to the ending point. If starting point and ending point are equal,distance is zero. The distance must be written on a single line.<br /><strong>Sample Input</strong></p>
+<p>3<br />8<br />0 0<br />7 0<br />100<br />0 0<br />30 50<br />10<br />1 1<br />1 1<br /><strong>Sample Output</strong></p>
+<p>5<br />28<br />0</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;（1）编程思路1。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;先采用一般的单向广度优先搜索方法。设置数组step[305][305]记录走到某个位置需要的步数，数组vis[305][305]来记录某个位置是否已访问过（值0代表未访问，1代表已访问过）。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;用数组q[]来模拟队列，front和rear分别为队头和队尾指针。单向广度优先搜索的框架可写为：</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;队列初始化，即front=rear=0;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;起点坐标入队列;</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;while (front&lt;rear)&nbsp; &nbsp; &nbsp; // 队列不为空</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 队头元素出队，送cur结点；</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 若cur结点的坐标等于终点坐标，则搜索完成，返回；</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 将cur结点按规则展出新结点next（即用循环进行8个方向的新结点生成）；</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;若next结点未访问过，则置相应的值，并将next结点入队；</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; }</p>
+<p>&nbsp; &nbsp; &nbsp; （2）采用单向广度优先搜索的源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">int vis[305][305], step[305][305];</p>
+<p style="margin-left: 30px;">int dx[] = {-2, -2, -1, 1, 2, 2, 1, -1};</p>
+<p style="margin-left: 30px;">int dy[] = {-1, 1, 2, 2, 1, -1, -2, -2};</p>
+<p style="margin-left: 30px;">struct point</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; int x, y;</p>
+<p style="margin-left: 30px;">};</p>
+<p style="margin-left: 30px;">int BFS(int start_x,int start_y,int end_x,int end_y,int n)</p>
+<p style="margin-left: 30px;">// 在n*n的棋盘中搜索从起点（start_x,strat_y)到终点（end_x,end_y)所需的最少步数</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; int front,rear,i;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;point cur,next,q[90005];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;front=rear=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; cur.x = start_x;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; cur.y = start_y;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; vis[start_x][start_y] = 1;&nbsp; &nbsp;// 设置探索标记为1</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; q[rear++] = cur;&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; // 起始坐标入队</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; while (front &lt; rear)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; cur = q[front++];&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 队头结点坐标出队</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0; i&lt;8; ++i)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; next.x = cur.x + dx[i];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; next.y = cur.y + dy[i];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (next.x&lt;0 || next.x&gt;=n || next.y&lt;0 || next.y&gt;=n)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; continue;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;if (next.x==end_x &amp;&amp; next.y==end_y)&nbsp; &nbsp;// 到达目标位置</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; return step[cur.x][cur.y]+1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (!vis[next.x][next.y])</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vis[next.x][next.y] = 1;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; step[next.x][next.y] = step[cur.x][cur.y] + 1; // 记录步数</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; q[rear++] = next; // 当前合法坐标位置入队</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return -1;&nbsp; // 若搜索不成功，表示不可达</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int nCase,sx,sy,tx,ty,size,i,j;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; scanf("%d", &amp;nCase);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while (nCase--)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d", &amp;size);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;size;i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; for (j=0;j&lt;size;j++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; vis[i][j]=step[i][j]=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d %d", &amp;sx, &amp;sy);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d %d", &amp;tx, &amp;ty);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (sx==tx &amp;&amp; sy==ty)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("0\n");</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("%d\n",BFS(sx,sy,tx,ty,size));</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">&nbsp;}</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;（3）编程思路2。</p>
+<p>&nbsp; &nbsp; &nbsp; 用同一个队列来保存正向和逆向扩展的结点。开始时，将起点坐标和终点坐标同时入队列。这样，第1个出队的坐标是起点，正向搜索扩展队列；第2个出队的坐标是终点，逆向搜索扩展队列。&hellip;，两个方向的扩展依次交替进行。</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;由于采用双向搜索，如何知道某个结点是正向还是逆向扩展来的呢？</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp;简单修改vis[][]数组元素的置值方法即可。初始时，vis数组的全部元素值为0，由正向扩展来的结点的vis对应元素值置为1，由逆向扩展来的结点的vis对应元素值置为2。</p>
+<p>&nbsp; &nbsp; &nbsp; 设当前结点为cur，由cur可以扩展出新结点next。若vis[next.x][next.y]==0，则next结点未访问过，将next结点入队并进行相应设置；若vis[next.x][next.y]！=0，则next结点已访问过。由于vis[cur.x][cur.y]记录的是当前扩展方向（1代表正向，2代表逆向），若vis[next.x][next.y] != vis[cur.x][cur.y]，则表示next结点以前按相反的方向访问过，正向和反向遇到了同一个结点，搜索成功。</p>
+<p>&nbsp; &nbsp; &nbsp; （4）采用双向广度优先搜索的源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">int vis[305][305], step[305][305];</p>
+<p style="margin-left: 30px;">int dx[] = {-2, -2, -1, 1, 2, 2, 1, -1};</p>
+<p style="margin-left: 30px;">int dy[] = {-1, 1, 2, 2, 1, -1, -2, -2};</p>
+<p style="margin-left: 30px;">struct point</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; int x, y;</p>
+<p style="margin-left: 30px;">};</p>
+<p style="margin-left: 30px;">int BFS(int start_x,int start_y,int end_x,int end_y,int n)</p>
+<p style="margin-left: 30px;">// 在n*n的棋盘中搜索从起点（start_x,strat_y)到终点（end_x,end_y)所需的最少步数</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; int front,rear,i;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;point cur,next,q[90005];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;front=rear=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; cur.x = start_x;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; cur.y = start_y;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; vis[start_x][start_y] = 1;&nbsp; // 从起始位置开始的探索标记为1</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; q[rear++] = cur;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 起始坐标入队</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; next.x = end_x;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; next.y = end_y;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; vis[end_x][end_y] = 2;&nbsp;&nbsp; // 从终点位置开始的探索标记为 2</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; q[rear++] = next;&nbsp;&nbsp;&nbsp; // 终点坐标入队</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; while (front &lt; rear)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur = q[front++];&nbsp;&nbsp;&nbsp;&nbsp; /* 队首结点坐标出队 */</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0; i&lt;8; ++i)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; next.x = cur.x + dx[i];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; next.y = cur.y + dy[i];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (next.x&lt;0 || next.x&gt;=n || next.y&lt;0 || next.y&gt;=n)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; continue;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (!vis[next.x][next.y])</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vis[next.x][next.y] = vis[cur.x][cur.y];&nbsp;&nbsp;&nbsp;&nbsp; // 设为与当前探索路径相同的标记</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; step[next.x][next.y] = step[cur.x][cur.y] + 1; // 记录步数</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; q[rear++] = next; // 当前合法坐标位置入队</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else if (vis[cur.x][cur.y] != vis[next.x][next.y])</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {&nbsp;&nbsp; // 说明从起点出发的探索与从终点出发的探索重合</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; return step[cur.x][cur.y]+step[next.x][next.y]+1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return -1;&nbsp; // 若搜索不成功，表示不可达</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int nCase,sx,sy,tx,ty,size,i,j;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d", &amp;nCase);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while (nCase--)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d", &amp;size);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;size;i++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;for (j=0;j&lt;size;j++)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;vis[i][j]=step[i][j]=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d %d", &amp;sx, &amp;sy);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d %d", &amp;tx, &amp;ty);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (sx==tx &amp;&amp; sy==ty)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("0\n");</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("%d\n",BFS(sx,sy,tx,ty,size));</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">&nbsp;}</p>
+<p style="margin-left: 30px;">（5）编程思路3。</p>
+<p>&nbsp; &nbsp; &nbsp; 定义两个队列q1[]和q2[]分别用于两个方向的扩展，两个队列的队头指针和队尾指针分别为front1、front2和rear1、rear2。双向广度优先搜索的框架还可写成：<br />&nbsp; &nbsp; &nbsp; void BFS()<br />&nbsp; &nbsp; &nbsp; {</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;将起始节点放入队列q1，将目的节点放入队列q2；</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;当两个队列都未空时，作如下循环<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;{<br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;如果队列q1里的未处理节点比q2中的少（即rear1-front1 &lt; rear2-front2)，</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 则扩展队列q1；</p>
+<p>&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;否则扩展队列q2； <br />&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;}</p>
+<p>&nbsp; &nbsp; &nbsp; }</p>
+<p>&nbsp; &nbsp; &nbsp; （6）采用两个队列的双向广度优先搜索方法的源程序。</p>
+<p style="margin-left: 30px;">#include &lt;stdio.h&gt;</p>
+<p style="margin-left: 30px;">int vis[305][305], step[305][305];</p>
+<p style="margin-left: 30px;">int dx[] = {-2, -2, -1, 1, 2, 2, 1, -1};</p>
+<p style="margin-left: 30px;">int dy[] = {-1, 1, 2, 2, 1, -1, -2, -2};</p>
+<p style="margin-left: 30px;">struct point</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; int x, y;</p>
+<p style="margin-left: 30px;">};</p>
+<p style="margin-left: 30px;">int BFS(int start_x,int start_y,int end_x,int end_y,int n)</p>
+<p style="margin-left: 30px;">// 在n*n的棋盘中搜索从起点（start_x,strat_y)到终点（end_x,end_y)所需的最少步数</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; int front1,rear1,front2,rear2,i,flag;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;point cur,next,q1[45001],q2[45001];</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;front1=rear1=0;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp;front2=rear2=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; cur.x = start_x;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; cur.y = start_y;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; vis[start_x][start_y] = 1;&nbsp; // 设置正向探索标记为1</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; q1[rear1++] = cur;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 起始坐标入正向队列</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; next.x = end_x;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; next.y = end_y;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; vis[end_x][end_y] = 2;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 设置逆向探索标记为2</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; q2[rear2++] = next;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // 终点坐标入逆向队列</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; while (front1 &lt; rear1 &amp;&amp; front2&lt;rear2)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; if (rear1-front1 &lt; rear2-front2)</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;{</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;cur = q1[front1++]; flag=1;&nbsp;&nbsp;&nbsp; // 扩展正向队列</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;}</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;else</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;{</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;cur = q2[front2++]; flag=2;&nbsp;&nbsp;&nbsp; // 扩展逆向队列</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;}</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;for (i=0; i&lt;8; ++i)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; next.x = cur.x + dx[i];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; next.y = cur.y + dy[i];</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (next.x&lt;0 || next.x&gt;=n || next.y&lt;0 || next.y&gt;=n)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;continue;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (!vis[next.x][next.y])</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; vis[next.x][next.y] = flag;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; step[next.x][next.y] = step[cur.x][cur.y] + 1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (flag==1)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; q1[rear1++] = next;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;else</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; q2[rear2++] = next;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;else if (vis[cur.x][cur.y] != vis[next.x][next.y])</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; return step[cur.x][cur.y]+step[next.x][next.y]+1;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; return -1;&nbsp; // 若搜索不成功，表示不可达</p>
+<p style="margin-left: 30px;">}</p>
+<p style="margin-left: 30px;">int main()</p>
+<p style="margin-left: 30px;">{</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; int nCase,sx,sy,tx,ty,size,i,j;</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; scanf("%d", &amp;nCase);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; while (nCase--)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d", &amp;size);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; for (i=0;i&lt;size;i++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;for (j=0;j&lt;size;j++)</p>
+<p style="margin-left: 30px;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; vis[i][j]=step[i][j]=0;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d %d", &amp;sx, &amp;sy);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; scanf("%d %d", &amp;tx, &amp;ty);</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (sx==tx &amp;&amp; sy==ty)</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("0\n");</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; else</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; printf("%d\n",BFS(sx,sy,tx,ty,size));</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; }&nbsp;&nbsp;&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; }</p>
+<p style="margin-left: 30px;">&nbsp;&nbsp;&nbsp;&nbsp; return 0;</p>
+<p style="margin-left: 30px;">&nbsp;}</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p style="margin-left: 30px;">&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,99 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Golang中类面向对象特性' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Golang中类面向对象特性</center></div><div class='banquan'>原文出处:本文由博客园博主AiFly提供。<br/>
+原文连接:https://www.cnblogs.com/softlin/p/12080018.html</div><br>
+    <p><strong>一、类型方法的实例成员复制与类型方法的实例成员引用</strong><br />
+  在Go中可以类似Java等面向对象语言一定为某个对象定义方法，但是Go中并没有类的存在，可以不严格的将Go中的struct类型理解为面向对象中的类；</p>
+<pre><code><code>type demoObject struct {
+    id int
+}</code></pre>
+<p>  类的概念有了，那怎么为这个类（struct结构）定义方法呢；Go语言中有两种方式：<br />
+<strong>1、在类型指针上定义方法；</strong></p>
+<pre><code><code>func (o *demoObject) one() {
+   fmt.Printf(&quot;one方法字段的内存地址：%x\n&quot;, 
+   unsafe.Pointer(&amp;o.id))
+}</code></pre>
+<p><strong>2、在类型上定义方法；</strong></p>
+<pre><code><code>func (o demoObject) two() {
+    fmt.Printf(&quot;one方法字段的内存地址：%x\n&quot;, 
+    unsafe.Pointer(&amp;o.id))
+}</code></pre>
+<p>  这两种方式其实定义方式都差不多，区别只是在于方法时定义在类型上还是定义在类型指针上面，就是因为这点区别导致了方法中类型实例有了本质的区别；<br />
+  在类型上定义方法其类型实例的成员值会进行复制，也就是说每个该类型实例的方法中类型的成员地址也都不一样；<br />
+  而在类型指针上定义方法其类型实例的成员只是指针复制，所有类型指针上方法的类型成员地址完全一样；</p>
+<pre><code><code>var obj = new(demoObject)
+fmt.Printf(&quot;main函数obj对象字段的内存地址：%x\n&quot;, 
+unsafe.Pointer(&amp;obj.id))
+obj.one()
+obj.two()</code></pre>
+<p>  one方法：o实例的成员id内存地址与obj实例的成员id地址一样<br />
+  two方法：o实例的成员id内存地址与obj实例的成员id地址不一样<br />
+<strong>总结来说：</strong><br />
+  one方法中修改demoObject类型的成员id的值obj实例成员id值也会变化<br />
+  two方法中修改demoObject类型的成员id的值obj实例成员id值不会变化</p>
+<p><strong>二、接口与实现</strong><br />
+  在Go中实现某接口不需要显式的依赖该接口，只需要在某类型或类型指针上定义与该接口的方法签名完全一致的接口即可；</p>
+<pre><code><code>type inter interface {
+    hello()
+}
+func (o *demoObject) hello() {
+}
+var i inter = new(demoObject)
+i.hello()</code></pre>
+<p>  如上代码所示，即可说类型demoObject实现了inter接口，Go的接口具有非入侵性，由于该特性因此Go语言也具有了dock typing ，也就是鸭子类型；</p>
+<p><strong>三、内嵌类型（类似继承并非等同于Java中的继承）</strong><br />
+  Go中存在这一种匿名内嵌类型，通过匿名内嵌类型可以得到类似与继承的结果；</p>
+<pre><code><code>type base struct {
+    Id int
+}
+type level struct {
+    *base
+}
+var l=new(level)
+fmt.Println(l.Id)</code></pre>
+<p>  如上代码所示，通过在类型level中引入匿名内嵌类型base，可以使用level类型的实例l调用得到类型base中的成员Id，如果base类型有绑定方法level类型实例一样可以调用该方法。<br />
+  请注意上面说的是通过内嵌类型可以得到的是类似继承，并非等同于继承，level实例虽然可以访问得到base类型实例，但并不能在level中重写base的方法。两者并非继承与被继承的关系；</p>
+<p><strong>四、Go中的多态</strong><br />
+  Go有接口的存在，是否也存在多态的概念呢。 答案是存在的如下代码所示，与Java中的多态并没有很大区别；</p>
+<pre><code><code>type one struct{}
+type two struct{}
+type inter interface {
+   hello()
+}
+func (o *one) hello() {
+   fmt.Println(&quot;one hello&quot;)
+}
+func (t *two) hello() {
+   fmt.Println(&quot;two hello&quot;)
+}
+func say(i inter) {
+   i.hello()
+}
+
+var o = new(one)
+var t = new(two)
+say(o)
+say(t)</code></pre>
+<p>  Golang中存在面向对象的某些特征，但又与传统的面向对象语言有着不小区别；如Go中只有类似继承功能，又不等同于其他语言的继承，无法重写方法，也不存在子类于父类的概念；Go中存在接口但空接口代表着是任意类型于Java中的Object类类似但又不一样；</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

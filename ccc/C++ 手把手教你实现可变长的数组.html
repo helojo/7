@@ -1,0 +1,307 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++ 手把手教你实现可变长的数组' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++ 手把手教你实现可变长的数组</center></div><div class='banquan'>原文出处:本文由博客园博主小林coding提供。<br/>
+原文连接:https://www.cnblogs.com/xiaolincoding/p/11967844.html</div><br>
+    <h2 id="实现自定义的可变长数组类型">01 实现自定义的可变长数组类型</h2>
+<p>假设我们要实现一个会自动扩展的数组，要实现什么函数呢？先从下面的main函数给出的实现，看看有什么函数是需要我们实现的。</p>
+<pre><code>int main()
+{
+    MyArray a;  // 初始化的数组是空的
+    for(int i = 0; i &lt; 5; ++i)
+        a.push_back(i); // push_back是成员函数
+        
+    MyArray a2,a3;
+    a2 = a; // 重载赋值运算符函数
+    
+    // 由于上一句a2 = a语句，所以a.length()实际上就是a2.length()
+    for(int i = 0; i &lt; a.length(); ++i) 
+        cout &lt;&lt; a2[i] &lt;&lt; &quot; &quot;;
+    
+    a2 = a3; // a2是空的数组
+    for(int i = 0; i &lt; a2.length(); ++i) // a2.length()返回0
+        cout &lt;&lt; a2[i] &lt;&lt; &quot; &quot;;
+    cout &lt;&lt; endl;
+    
+    a[3] = 100;    // 重载[]运算符函数
+    MyArray a4(a); // 重载复制构造函数
+    
+    for(int i = 0; i &lt; a4.length(); ++i)
+        cout &lt;&lt; a4[i] &lt;&lt; &quot; &quot;;
+    
+    return 0;
+}</code></pre>
+<p>输出结果：</p>
+<pre><code>0 1 2 3 4
+0 1 2 100 4</code></pre>
+<p>要实现的方式，要做哪些事情呢？我先列一下：</p>
+<ul>
+<li>要用动态分配的内存来存放数组元素，需要一个指针成员变量</li>
+<li>重载赋值=运算符</li>
+<li>重载[]运算符</li>
+<li>重载复制构造函数</li>
+<li>实现push_back和length()函数</li>
+</ul>
+<hr />
+<h2 id="myarray类的实现步骤">02 MyArray类的实现步骤</h2>
+<p>要实现一个可变长数组类的，基本需要实现下面的7个函数：</p>
+<pre><code>class MyArray // 可变长数组类
+{
+public:
+    // 1. 构造函数，s代表数组元素的个数
+    MyArray(int s = 0);
+    
+    // 2. 复制构造函数
+    MyArray(MyArray &amp;a);
+    
+    // 3. 析构函数
+    ~MyArray();
+    
+    // 4. 重载赋值=运算符函数，用于数组对象间的赋值
+    MyArray &amp; operator=(const MyArray &amp; a);
+
+    // 5. 重载[]运算符函数，用于获取数组下标对于的值
+    int &amp; operator[](int i);
+    
+    // 6. 加入一个元素到数组的末尾
+    void push_back(int v);
+    
+    // 7. 获取数组的长度
+    int length();
+
+private:
+    int  m_size; // 数组元素的个数
+    int* m_ptr;  // 指向动态分配的数组
+};</code></pre>
+<h4 id="构造函数">1. 构造函数</h4>
+<p>构造函数的目的就是初始化一个数组，代码如下：</p>
+<pre><code>// 构造函数
+MyArray::MyArray(int s = 0):m_size(s)
+{
+    // 当初始化长度为0的数组时，数组指针就是空的
+    if(s == 0)
+        m_ptr = NULL;
+    // 当初始化长度不为0时，则申请对应大小的空间
+    else
+        m_ptr = new int[s];
+}</code></pre>
+<h4 id="复制构造函数">2. 复制构造函数</h4>
+<p>复制构造函数目的就是产生一个与入参对象一样的对象，但是由于<code>MyArray</code>类是有指针成员变量的，所以我们必须才用<strong>深拷贝</strong>的方式来实现复制构造函数，如果使用默认的复制构造函数，则会导致两个对象的指针成员变量指向的地址是同一个，这是非常危险的。</p>
+<pre><code>// 复制构造函数
+MyArray::MyArray(const MyArray &amp;a)
+{
+    // 如果入参的数组对象的指针地址为空时，则也初始化一个空的数组
+    if(a.m_ptr == NULL)
+    {
+        m_ptr = NULL;
+        m_size = 0;
+    }
+    // 如果入参的数组对象有数据时，则申请一个新的地址，最后来复制入参对象数组对象的数据和大小。
+    else
+    {
+        m_ptr = new int[a.m_size];
+        memcpy(m_ptr, a.m_ptr, sizeof(int)*a.m_size);
+        m_size = a.m_size;
+    }
+}</code></pre>
+<h4 id="析构函数">3. 析构函数</h4>
+<p>析构函数的目的就是释放数组的资源</p>
+<pre><code>// 析构函数
+MyArray::~MyArray()
+{
+    // 如果指针地址不为空时，则释放资源
+    if(m_ptr)
+        delete [] m_ptr;
+}</code></pre>
+<h4 id="重载赋值运算符函数">4. 重载赋值=运算符函数</h4>
+<p>重载赋值=运算符函数目的就使<code>=</code>号左边对象里存放的数组，大小和内容都和右边的对象一样</p>
+<pre><code>// 重载赋值=运算符函数
+MyArray &amp; MyArray::operator=(const MyArray &amp; a)
+{
+    if(m_ptr == a.m_ptr) // 防止a=a这样的赋值导致出错
+        return *this; 
+    
+    if(a.m_ptr == NULL) // 如果a里面的数组是空的
+    {
+        if(m_ptr)
+            delete [] m_ptr; // 释放旧数组的资源
+        
+        m_ptr = NULL;
+        m_size = 0;
+        return *this;
+    }
+    
+    if(m_size &lt; a.m_size) // 如果原有空间足够大，就不用分配新的空间
+    {
+        if(m_ptr)
+            delete [] m_ptr; // 释放旧数组的资源
+            
+        m_ptr = new int[a.m_size]; // 申请新的内存地址
+    }
+    
+    memcpy(m_ptr, a.m_ptr, sizeof(int)*a.m_size);
+    m_size = a.m_size;
+    return *this;
+}</code></pre>
+<h4 id="重载运算符函数">5. 重载[]运算符函数</h4>
+<p>重载[]运算符函数目的就是能通过[]运算符来获取对应下标的数组值</p>
+<pre><code>// 重载[]运算符函数
+int &amp; MyArray::operator[](int i)
+{
+    return m_ptr[i]; // 返回对应下标的数组值
+}</code></pre>
+<h4 id="加入元素到数组末尾的函数">6. 加入元素到数组末尾的函数</h4>
+<p>push_back函数的目的就是把一个新的元素，加入到数组的末尾</p>
+<pre><code>// 在数组尾部添加一个元素
+void MyArray::push_back(int v)
+{
+    if(m_ptr) // 如果数组不为空
+    {
+        int *tmpPtr = new int[m_size + 1]; // 重新分配空间
+        memcpy(tmpPtr, m_ptr, sizeof(int)*m_size); // 拷贝原数组内容
+        delect [] m_ptr;
+        m_ptr = tmpPtr;
+    }
+    else // 如果数组本来就是空的
+    {
+        m_ptr = new int[1];   
+    }
+    
+    m_ptr[m_size++] = v; //加入新的数组元素
+}</code></pre>
+<h4 id="获取数组长度的函数">7. 获取数组长度的函数</h4>
+<p>length()函数就比较简单了，直接返回成员变量m_size，就是数组的长度了</p>
+<pre><code>// 获取数组长度的函数
+int MyArray:;length()
+{
+    return m_size;
+}</code></pre>
+<hr />
+<h2 id="小结">03 小结</h2>
+<p>可变长数组类型实现的整体代码，如下：</p>
+<pre><code>class MyArray
+{
+public:
+    // 1. 构造函数，s代表数组元素的个数
+    MyArray(int s = 0):m_size(s)
+    {
+        if(s == 0)
+            m_ptr = NULL;
+        else
+            m_ptr = new int[s];
+    }
+    
+    // 2. 复制构造函数
+    MyArray(const MyArray &amp;a)
+    {
+        if(a.m_ptr == NULL)
+        {
+            m_ptr = NULL;
+            m_size = 0;
+        }
+        else
+        {
+            m_ptr = new int[a.m_size];
+            memcpy(m_ptr, a.m_ptr, sizeof(int)*a.m_size); // 拷贝原数组内容
+            m_size = a.m_size;
+        }
+    }
+    
+    // 3. 拷贝构造函数
+    ~MyArray()
+    {
+        if(m_ptr)
+            delete [] m_ptr;
+    }
+    
+    // 4. 重载赋值=运算符函数
+    MyArray &amp; operator=(const MyArray &amp; a)
+    {
+        if(m_ptr == a.m_ptr)
+            return *this;
+        
+        if(a.m_ptr == NULL)
+        {
+            if(m_ptr)
+                delete [] m_ptr;
+            
+            m_ptr = NULL;
+            m_size = 0;
+            return *this;
+        }
+        
+        if(m_size &lt; a.m_size)
+        {
+            if(m_ptr)
+                delete [] m_ptr;
+                
+            m_ptr = new int[a.m_size];
+        }
+        
+        memcpy(m_ptr, a.m_ptr, sizeof(int)*a.m_size); // 拷贝原数组内容
+        m_size = a.m_size;
+        return *this;
+    }
+    
+    // 5. 重载[]运算符函数
+    int &amp; operator[](int i)
+    {
+        return m_ptr[i];
+    }
+    
+    // 6. 在数组的末尾加入一个新的元素
+    void push_back(int v)
+    {
+        if(m_ptr) // 如果数组不为空
+        {
+            int *tmpPtr = new int[m_size + 1]; // 重新分配空间
+            memcpy(tmpPtr, m_ptr, sizeof(int)*m_size); // 拷贝原数组内容
+            delete [] m_ptr;
+            m_ptr = tmpPtr;
+        }
+        else // 如果数组本来就是空的
+        {
+            m_ptr = new int[1];   
+        }
+        
+        m_ptr[m_size++] = v; //加入新的数组元素
+    }
+    
+    // 7. 获取数组的长度
+    int length()
+    {
+        return m_size;
+    }
+
+private:
+    int  m_size; // 数组元素的个数
+    int* m_ptr;  // 指向动态分配的数组
+};</code></pre>
+<p>实际上本次的可变长的数组类还缺少一下函数，比如：删除某个元素的函数、清空数组的函数等等，这些可以留给大家思考。</p>
+<p>还有就是 push_back 函数还有优化的空间，当前的 push_back 函数每加入一个元素都会重新分配新的内存，这是会增大开销的，那么优化的思路：<br />
+提前分配好一个 n 大小的空间，当数组大小不够的时候，则才继续重新分配 2n 大小的空间，以此类推。</p>
+<hr />
+<blockquote>
+<p><img src="./images/C++ 手把手教你实现可变长的数组0.png" /></p>
+</blockquote>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

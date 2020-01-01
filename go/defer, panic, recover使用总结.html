@@ -1,0 +1,194 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修defer, panic, recover使用总结' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>defer, panic, recover使用总结</center></div><div class='banquan'>原文出处:本文由博客园博主蓝色天马提供。<br/>
+原文连接:https://www.cnblogs.com/BluePegasus/p/10926175.html</div><br>
+    <p>1. defer ： 延迟调用。多个defer，依次入栈，在函数即将退出时，依次出栈调用</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">package main
+</span><span style="color: #008080;"> 2</span> import <span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span> <span style="color: #000000;">func main() {
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">    defer func() {
+</span><span style="color: #008080;"> 5</span>         fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">defer one</span><span style="color: #800000;">"</span><span style="color: #000000;">)　　 
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    }()
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">    defer func() {
+</span><span style="color: #008080;"> 8</span>         fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">defer two</span><span style="color: #800000;">"</span><span style="color: #000000;">)　　　
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    }()
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    defer func() {
+</span><span style="color: #008080;">11</span>         fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">defer three</span><span style="color: #800000;">"</span><span style="color: #000000;">)　　
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    }()
+</span><span style="color: #008080;">13</span> }</pre>
+</div>
+<p><img src="./images/defer, panic, recover使用总结0.png" alt="" /></p>
+<p>2. panic和defer结合使用：panic触发错误，defer依次出栈调用，没有recover捕获的情况下，最后才打印错误</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">package main
+</span><span style="color: #008080;"> 2</span> import <span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span> <span style="color: #000000;">func main() {
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">    defer func() {
+</span><span style="color: #008080;"> 5</span>         fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">defer one</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    }()
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">    defer func() {
+</span><span style="color: #008080;"> 8</span>         fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">defer two</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    }()
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    defer func() {
+</span><span style="color: #008080;">11</span>         fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">defer three</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;">12</span> <span style="color: #000000;">    }()
+</span><span style="color: #008080;">13</span>     panic(<span style="color: #800000;">"</span><span style="color: #800000;">panic here</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;">14</span> }</pre>
+</div>
+<p><img src="./images/defer, panic, recover使用总结1.png" alt="" /></p>
+<p>3. defer,panic, recover 结合使用，panic触发错误，defer依次出栈调用，直到被recover捕获，打印捕获的信息，之后继续defer出栈</p>
+<p>例一:</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">package main
+</span><span style="color: #008080;"> 2</span> import <span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span> <span style="color: #000000;">func main() {
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">    defer func() {
+</span><span style="color: #008080;"> 5</span>         fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">defer one</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 6</span> <span style="color: #000000;">    }()
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">    defer func() {
+</span><span style="color: #008080;"> 8</span>         fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">defer two</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 9</span> <span style="color: #000000;">    }()
+</span><span style="color: #008080;">10</span> <span style="color: #000000;">    defer func() {
+</span><span style="color: #008080;">11</span>         <span style="color: #0000ff;">if</span> info := recover(); info !=<span style="color: #000000;"> nil {
+</span><span style="color: #008080;">12</span>             fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">catch: </span><span style="color: #800000;">"</span><span style="color: #000000;">, info)
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">14</span>         fmt.Println(<span style="color: #800000;">"</span><span style="color: #800000;">defer three</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    }()
+</span><span style="color: #008080;">16</span>     panic(<span style="color: #800000;">"</span><span style="color: #800000;">panic here</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+</span><span style="color: #008080;">17</span> }</pre>
+</div>
+<p><img src="./images/defer, panic, recover使用总结2.png" alt="" /></p>
+<p>例二：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+func main() {
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer one</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    defer func() {
+        </span><span style="color: #0000ff;">if</span> info := recover(); info !=<span style="color: #000000;"> nil {
+            fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">catch: </span><span style="color: #800000;">"</span><span style="color: #000000;">, info)
+        }
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer two</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer three</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    panic(</span><span style="color: #800000;">"</span><span style="color: #800000;">panic here</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+}</span></pre>
+</div>
+<p><img src="./images/defer, panic, recover使用总结3.png" alt="" /></p>
+<p>例三：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+func main() {
+    defer func() {
+        </span><span style="color: #0000ff;">if</span> info := recover(); info !=<span style="color: #000000;"> nil {
+            fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">catch: </span><span style="color: #800000;">"</span><span style="color: #000000;">, info)
+        }
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer one</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer two</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer three</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    panic(</span><span style="color: #800000;">"</span><span style="color: #800000;">panic here</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+}</span></pre>
+</div>
+<p><img src="./images/defer, panic, recover使用总结4.png" alt="" /></p>
+<p>4. recover 必须在defer中调用，才有效，否则返回nil</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+func main() {
+    </span><span style="color: #0000ff;">if</span> info := recover(); info !=<span style="color: #000000;"> nil {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">catch: </span><span style="color: #800000;">"</span><span style="color: #000000;">, info)
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">recover return nil</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer one</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer two</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer three</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    panic(</span><span style="color: #800000;">"</span><span style="color: #800000;">panic here</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+}</span></pre>
+</div>
+<p><img src="./images/defer, panic, recover使用总结5.png" alt="" /></p>
+<p>5. panic 其后的代码不会执行</p>
+<p>例一：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+func main() {
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer one</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer two</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer three</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    panic(</span><span style="color: #800000;">"</span><span style="color: #800000;">panic here</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> info := recover(); info !=<span style="color: #000000;"> nil {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">catch: </span><span style="color: #800000;">"</span><span style="color: #000000;">, info)
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">recover return nil</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }
+}</span></pre>
+</div>
+<p><img src="./images/defer, panic, recover使用总结6.png" alt="" /></p>
+<p>例二：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+func main() {
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer one</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    defer func() {
+        </span><span style="color: #0000ff;">if</span> v := recover(); v !=<span style="color: #000000;"> nil {
+            fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">catch panic error: </span><span style="color: #800000;">"</span><span style="color: #000000;">, v)
+        }
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer two</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    defer func() {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">defer three</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }()
+    panic(</span><span style="color: #800000;">"</span><span style="color: #800000;">panic here</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">after panic</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+}</span></pre>
+</div>
+<p><img src="./images/defer, panic, recover使用总结7.png" alt="" /></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,197 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修函数重载分析' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>函数重载分析</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11581635.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#函数重载">1. 函数重载</a></li>
+        <li><a href="#函数重载与函数默认参数">2. 函数重载与函数默认参数</a></li>
+        <li><a href="#函数重载与函数指针">3. 函数重载与函数指针</a></li>
+        </ul>
+    </div>
+</div>
+<h1 id="函数重载">1. 函数重载</h1>
+<p>函数重载，指的是<font color=red>用同一个函数名搭配不同的参数，从而定义不同的函数。</font><br />
+重载函数在<font color=magenta>本质上是相互独立的不同函数</font>，它们的<font color=blue>函数类型不同</font>。<br />
+函数重载<font color=irange>至少</font>需要满足下面三个条件之一</p>
+<ul>
+<li><font color=orange>参数个数不同</font></li>
+<li><font color=red>参数类型不同</font>（指的是显式类型，不包括隐式类型转换，如int和char属不同类型）</li>
+<li><font color=magenta>参数顺序不同</font></li>
+</ul>
+<p>下面是函数重载的一些注意事项</p>
+<ul>
+<li><font color=red><strong>函数重载是由函数名和参数列表决定的</strong></font></li>
+<li><font color=red><strong>函数返回值不能作为函数重载的依据</strong></font></li>
+<li><font color=red><strong>函数重载必然发生在在同一个作用域中</strong></font></li>
+</ul>
+<pre><code>#include &lt;stdio.h&gt;
+
+void func(int a)
+{
+    printf(&quot;void func(int a)\n&quot;);
+}
+
+void func(char a)
+{
+    printf(&quot;void func(char a)\n&quot;);
+}
+
+char func(int a, int b)
+{
+    printf(&quot;char func(int a, int b)\n&quot;);
+    return &#39;a&#39;;
+}
+
+int *func(int a, char c)
+{
+    printf(&quot;int *func(int a, char c)\n&quot;);
+    return NULL;
+}
+
+int func(char c, int a)
+{
+    printf(&quot;int func(char c, int a)\n&quot;);
+    return 0;
+}
+
+int main()
+{
+    func(1);
+    func(&#39;a&#39;);
+    func(1, 2);
+    func(1, &#39;a&#39;);
+    func(&#39;a&#39;, 1);
+
+    return 0;
+}</code></pre>
+<p><img src="./images/函数重载分析0.png" /></p>
+<pre><code>/*
+ * 打印重载函数的地址，证明其本质是互不相同的函数
+*/
+
+#include &lt;stdio.h&gt;
+
+int add(int a, int b)        // 函数类型为int(int, int)
+{
+    return a + b;
+}
+
+int add(int a, int b, int c) // 函数类型为int(int, int, int)
+{
+    return a + b + c;
+}
+
+int main()
+{
+    printf(&quot;%p\n&quot;, (int(*)(int, int))add);  //打印add入口地址时，根据函数类型进行强制类型转换
+    printf(&quot;%p\n&quot;, (int(*)(int, int, int))add);
+
+    return 0;
+}</code></pre>
+<p><img src="./images/函数重载分析1.png" /></p>
+<p>通过输出结果，可以看出构成重载的两个func函数地址不同，说明重载函数的本质确实是相互独立的不同函数。</p>
+<h1 id="函数重载与函数默认参数">2. 函数重载与函数默认参数</h1>
+<p>当函数默认参数遇上函数重载，会发生什么？下面的代码，C++编译器如何选择调用哪一个func？</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+int func(int a, int b, int c = 0)
+{
+    return a * b * c;
+}
+
+int func(int a, int b)
+{
+    return a + b;
+}
+
+int main(int argc, char *argv[])
+{
+    int c = func(1, 2);  //which one?
+
+    return 0;
+}</code></pre>
+<p><img src="./images/函数重载分析2.png" /></p>
+<p>从编译结果看以看出，C++编译器也不知道该如何选择了，因此直接报错：第15行对重载函数func的调用是模糊的、不明确的，因为有两个可选的函数。</p>
+<p>我们来分析下编译器调用重载函数的准则</p>
+<ul>
+<li><font color=blue>将所有同名函数作为候选者</font></li>
+<li><font color=red>尝试寻找可行的候选函数</font></li>
+<li><font color=orange>精确匹配实参</font></li>
+<li><font color=orange>通过默认参数匹配实参</font></li>
+<li><font color=orange>通过默认类型转换匹配实参</font></li>
+<li><font color=magenta>匹配失败</font></li>
+<li><font color=irange>最终找到的候选函数不唯一，出现二义性，编译失败</font></li>
+<li><font color=irange>没有匹配到任何候选函数，函数未定义，编译失败</font></li>
+</ul>
+<p>上述示例代码，就是由于匹配结果出现了二义性，而导致的编译失败。</p>
+<h1 id="函数重载与函数指针">3. 函数重载与函数指针</h1>
+<p><font color=red>将重载函数名赋值给函数指针时</font></p>
+<ul>
+<li>根据重载规则挑选与<font color=blue>函数指针参数列表一致</font>的候选者</li>
+<li><font color=magenta>严格匹配</font>候选者的函数类型与函数指针的<font color=magenta>函数类型</font></li>
+<li><font color=orange>无法直接通过函数名得到重载函数的入口地址</font></li>
+</ul>
+<pre><code>#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int func(int x)
+{
+    return x;
+}
+
+int func(int a, int b)
+{
+    return a + b;
+}
+
+int func(const char *s)
+{
+    return strlen(s);
+}
+
+typedef int(*PFUNC1)(int a);
+typedef int(*PFUNC2)(int a, int b);
+typedef int(*PFUNC3)(const char *s);
+typedef void(*PFUNC4)(const char *s);
+
+int main(int argc, char *argv[])
+{
+    PFUNC1 p1 = func;
+    PFUNC2 p2 = func;
+    PFUNC3 p3 = func;
+    PFUNC4 p4 = func;
+
+    printf(&quot;%d\n&quot;, p1(1));
+    printf(&quot;%d\n&quot;, p2(1, 2));
+    printf(&quot;%d\n&quot;, p3(&quot;hello world&quot;));
+
+    return 0;
+}</code></pre>
+<p><img src="./images/函数重载分析3.png" /></p>
+<p>编译第29行报错，根据匹配规则，第一步匹配到<code>int func(const char *s)</code>，第二步匹配函数类型失败，不存在函数类型为<code>void(*)(const char *)</code>的func。<br />
+注释掉第29行，再次编译运行结果如下。</p>
+<p><img src="./images/函数重载分析4.png" /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

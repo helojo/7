@@ -1,0 +1,416 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++屌屌的观察者模式-同步回调和异步回调' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++屌屌的观察者模式-同步回调和异步回调</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11155072.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一概述">一、概述</a><ul>
+        <li><a href="#同步观察者">1、同步观察者</a></li>
+        <li><a href="#异步观察者">2、异步观察者</a></li>
+        </ul></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三同步观察者">三、同步观察者</a></li>
+        <li><a href="#四异步观察者">四、异步观察者</a></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11155072.html">C++屌屌的观察者模式-同步回调和异步回调</a></p>
+<h2 id="一概述">一、概述</h2>
+<p>说起观察者模式，也是比较简单的一种模式了，稍微工作有1年经验的同学，写起来都是666...</p>
+<p><strong>想看观察者模式的说明可以直接上<a href="https://www.runoob.com/design-pattern/observer-pattern.html">菜鸟教程|观察者模式</a>这个地址去看。</strong></p>
+<p>本篇文章其实就是一个简单的观察者模式，只是使用了模板的方式，把我们的回调接口进行了参数化，这样有什么好处呢？</p>
+<p><strong>好处当然是大大的有了。</strong> 平时我们在不同业务逻辑之间写观察者模式呢，都得写好多个，大家有没有发现，所有的被观察者Subject其实很多操作都是一样的。</p>
+<p>本篇我们带来两种观察者模式：<strong>同步观察者和异步观察者</strong></p>
+<h3 id="同步观察者">1、同步观察者</h3>
+<p>顾名思义，同步观察者其实就是不管是谁，触发了Subject的Update操作，该操作都是同步进行的，他会调用所有的观察者(Observer)的OnUpdate接口，来通知Observer处理改变操作。</p>
+<p>如效果展示图中的第一个<code>单次拉取</code>页签，当我们点击拉取按钮时，就相当于触发了一次Subject对象的Update操作</p>
+<h3 id="异步观察者">2、异步观察者</h3>
+<p>异步观察者模式上和同步观察者基本一样，只是在事件处理上有稍微不同</p>
+<ol>
+<li>执行Update操作是由Subject自己去完成的</li>
+<li>调用Observer的OnUpdate回调接口时，处于工作线程中</li>
+<li>Subject所有的请求操作都是在工作现场中进行</li>
+</ol>
+<p>如效果图所示，<code>定时拉取</code>观察者模式，Subject启动了一个后台线程，3秒钟拉取一次数据，并回调到界面</p>
+<h2 id="二效果展示">二、效果展示</h2>
+<p>如下图所示，是一个简单的观察者模式事例。</p>
+<p><code>单次拉取</code>：演示了同步观察者模式</p>
+<p><code>定时拉取</code>：演示了异步观察者模式</p>
+<html>
+<center>
+<div>
+    <img src="./images/C++屌屌的观察者模式-同步回调和异步回调0.png" />
+</div>
+</center>
+</html>
+<p>工程结构如图所示，这里只把头文件的目录展示出来了。</p>
+<p>实现文件的目录和头文件类似，为了截图方便所以做了隐藏操作。</p>
+<html>
+<center>
+<div>
+    <img src="./images/C++屌屌的观察者模式-同步回调和异步回调1.png" />
+</div>
+</center>
+</html>
+<p>Header Files目录下有2个虚拟文件夹，分别就是对<code>单次拉取</code>和<code>定时拉取</code>功能的实践</p>
+<p><strong>下面我们就来正式开始讲解这个屌屌的观察者模式</strong></p>
+<h2 id="三同步观察者">三、同步观察者</h2>
+<p><strong>1、首先就是定义一堆接口和回调参数</strong></p>
+<pre><code>struct DataItem
+{
+    std::string     strID;  
+    std::string     strName;        
+};
+
+typedef IUpdate1&lt;DataItem&gt;          ISignalObserver;
+
+//单次回调
+struct ISignal : public SubjectBase&lt;ISignalObserver&gt;
+{
+    virtual void RequestData() = 0;
+};</code></pre>
+<p><strong>2、业务观察者</strong></p>
+<p>这里我定义了一个SignalResponse业务观察者，也就是我们在开发工程中的实际功能类。</p>
+<pre><code>class SignalResponse : public ISignal
+{
+public:
+    SignalResponse();
+    ~SignalResponse();
+
+public:
+    virtual void RequestData() override;
+
+private:
+    
+};</code></pre>
+<p>*3、获取观察者指针**</p>
+<p>通过一个门面接口获取观察者指针</p>
+<ol>
+<li>调用ISignal的Attach接口，就可以把自己添加到观察者列表。</li>
+<li>调用ISignal的RequestData接口，就可以拉取数据。</li>
+<li>调用ISignal的Detach接口，就可以把自己从观察者列表中移除。</li>
+</ol>
+<pre><code>ISignal * GetSignalCommon();</code></pre>
+<p><strong>4、UI界面</strong></p>
+<p>接下来就是写一个UI界面啦，当我们通过上一步调用拉取数据接口后，我们的UI上相应的OnUpdate接口就会被回调</p>
+<pre><code>class SignalWidget : public QWidget, public ISignalObserver
+{
+    Q_OBJECT
+
+public:
+    SignalWidget(QWidget * parent = 0);
+    ~SignalWidget();
+
+protected:
+    virtual void OnUpdate(const DataItem &amp;) override;
+
+private slots:
+    void on_pushButton_clicked();
+
+private:
+    Ui::SignalWidget *ui;
+};</code></pre>
+<p><strong>通过以上四步，就可以很方便的实现一个现在业务中的观察者，是不是很简单呢</strong>，编写过程中，需要完成这几个地方</p>
+<ol>
+<li>需要定义我们回调函数的参数结构</li>
+<li>需要实例化一个被观察者接口类</li>
+<li>实例化一个业务观察者</li>
+<li>做一个UI界面，并集成第二步实例化的被观察者的模板参数(接口类)</li>
+</ol>
+<p>注意看这里的ISignalObserver，是不是很眼熟，其实他就是我们的模板被观察者SubjectBase的模板参数。</p>
+<p><strong>讲到这里，大家是不是都很关心这个模板观察者到底是何方神圣，居然这么叼。那么接下来就是模板SubjectBase出场啦。。。</strong></p>
+<p>下面我直接给出代码，学过C++的同学阅读起来应该都不难。</p>
+<blockquote>
+<p>觉着难了就多读几遍</p>
+</blockquote>
+<pre><code>template &lt;typename T&gt;
+struct ISubject
+{
+    virtual void Attach(T * pObserver) = 0;
+    virtual void Detach(T * pObserver) = 0;
+};
+
+template &lt;typename P&gt;
+struct IUpdate1
+{
+    virtual void OnUpdate(const P&amp; data) = 0;
+};
+
+template &lt;typename P1, typename P2&gt;
+struct IUpdate2
+{
+    virtual void OnUpdate2(const P1 &amp; p1, const P2 &amp; p2) = 0;
+};
+
+template &lt;typename P&gt;
+struct IUpdate1_P
+{
+    virtual void OnUpdate(const P * data) = 0;
+};
+
+template &lt;typename T&gt;
+struct SubjectBase
+{
+public:
+    virtual void Attach(T * pObserver)
+    {
+        std::lock_guard&lt;std::mutex&gt; lg(m_mutex);
+#ifdef _DEBUG
+        if (m_observers.end() != std::find(m_observers.begin(), m_observers.end(), pObserver))
+        {
+            assert(false);
+        }
+#endif // _DEBUG
+        m_observers.push_back(pObserver);
+    }
+
+    virtual void Detach(T * pObserver)
+    {
+        std::lock_guard&lt;std::mutex&gt; lg(m_mutex);
+        auto it = std::find(m_observers.begin(), m_observers.end(), pObserver);
+        if (it != m_observers.end())
+        {
+            m_observers.erase(it);
+        }
+        else
+        {
+            assert(false);
+        }
+    }
+
+    //protected:
+    template &lt;typename P&gt;
+    void UpdateImpl(const P &amp; data)
+    {
+        std::lock_guard&lt;mutex&gt; lg(m_mutex);
+        for (T * observer : m_observers)
+        {
+            observer-&gt;OnUpdate(data);
+        }
+    }
+
+    template &lt;typename P&gt;
+    void UpdateImpl(P &amp; data)
+    {
+        std::lock_guard&lt;std::mutex&gt; lg(m_mutex);
+        for (T* observer : m_observers)
+        {
+            observer-&gt;OnUpdate(data);
+        }
+    }
+
+    template &lt;typename P1, typename P2&gt;
+    void UpdateImpl(const P1&amp; p1, const P2&amp; p2)
+    {
+        std::lock_guard&lt;mutex&gt; lg(m_mutex);
+        for (T* observer : m_observers)
+        {
+            observer-&gt;OnUpdate2(p1, p2);
+        }
+    }
+
+    template &lt;typename P1, typename P2&gt;
+    void UpdateImpl(P1&amp; p1, P2&amp; p2)
+    {
+        std::lock_guard&lt;mutex&gt; lg(m_mutex);
+        for (T* observer : m_observers)
+        {
+            observer-&gt;OnUpdate2(p1, p2);
+        }
+    }
+
+    template &lt;typename P&gt;
+    void UpdateImpl(const P * data)
+    {
+        std::lock_guard&lt;mutex&gt; lg(m_mutex);
+        for (T * observer : m_observers)
+        {
+            observer-&gt;OnUpdate(data);
+        }
+    }
+
+    template &lt;typename P&gt;
+    void UpdateImpl(P * data)
+    {
+        std::lock_guard&lt;mutex&gt; lg(m_mutex);
+        for (T* observer : m_observers)
+        {
+            observer-&gt;OnUpdate(data);
+        }
+    }
+
+protected:
+    std::mutex      m_mutex;
+    std::list&lt;T *&gt;  m_observers;
+};
+</code></pre>
+<h2 id="四异步观察者">四、异步观察者</h2>
+<p>异步观察者的实现和同步观察者的结构基本一样，都是使用同样的套路，唯一有区别的地方就是，异步观察者所有的逻辑处理操作都是在工作线程中的。</p>
+<p>由于ITimerSubject和SubjectBase很多接口都是一样的，因此我这里就只把差异的部分贴出来。</p>
+<p><strong>1、线程</strong></p>
+<p>ITimerSubject对象在构造时，就启动了一个线程，然后在线程中定时执行TimerNotify函数</p>
+<pre><code>ITimerSubject()
+{
+    m_thread = std::thread(std::bind(&amp;ITimerSubject::TimerNotify, this));
+}
+
+virtual ~ITimerSubject()
+{
+    m_thread.join();
+}</code></pre>
+<p>再来看下定时处理任务这个函数，这个函数本身是用boost的库实现我的，我改成C++11的模式的，新城退出这块有些问题，我没有处理，这个也不是本篇文章的核心要讲解的东西。</p>
+<blockquote>
+<p>怎么优雅的退出std::thread，这个从网上查下资料吧，我能想到的也就是加一个标识，然后子线程去判断。如果大家有更好的办法的话可以私信我，或者在底部留言。</p>
+</blockquote>
+<pre><code>void TimerNotify()
+{
+    for (;;)
+    {
+        //std::this_thread::interruption_point();
+
+        bool bNotify = false;
+        {
+            std::lock_guard&lt;std::mutex&gt; lg(m_mutex);
+            bNotify = m_sleeping_observers.size() &lt; m_observers.size() ? true : false;
+        }
+
+        if (bNotify)
+        {
+            OnTimerNotify();
+        }
+
+        //std::this_thread::interruption_point();
+
+        std::chrono::milliseconds timespan(GetTimerInterval() * 1000); // or whatever
+        std::this_thread::sleep_for(timespan);
+    }
+}</code></pre>
+<p><strong>2、定义一堆接口和回调参数</strong></p>
+<pre><code>struct TimerDataItem
+{
+    std::string     strID;
+    std::string     strName;
+};
+
+typedef IUpdate1&lt;TimerDataItem&gt;     ITimerObserver;
+
+//定时回调
+struct ITimer : public ITimerSubject&lt;ITimerObserver, std::string, TimerDataItem&gt;{};</code></pre>
+<p><strong>3、业务观察者</strong></p>
+<p>这里我定义了一个TimerResponse业务观察者，也就是我们在开发工程中的实际功能类。</p>
+<pre><code>class TimerResponse : public ITimer
+{
+public:
+    TimerResponse();
+    ~TimerResponse();
+
+protected:
+    virtual void OnNotify() override;
+
+private:
+    
+};</code></pre>
+<p>TimerResponse::OnNotify()这个接口的实现就像这样，<strong>这里需要注意的一点是，这个函数的执行位于工作线程中，也就意味着UI界面的回调函数也在工作线程中，操作UI界面时，一定需要抛事件到UI线程中。</strong></p>
+<pre><code>void TimerResponse::OnNotify()
+{
+    static int id = 0;
+    static std::string name = &quot;miki&quot;;
+    id += 1;
+    TimerDataItem item;
+
+    std::stringstream ss;
+    ss &lt;&lt; &quot;timer&quot; &lt;&lt; id;
+
+    item.strID = ss.str();
+    item.strName = name;
+
+    UpdateImpl(item);
+}</code></pre>
+<p>OnNotify会定时被调用，然后去更新UI上的内容。</p>
+<p><strong>4、获取观察者指针</strong></p>
+<p>通过一个门面接口获取观察者指针，调用ITimer的Attach接口把自己添加到观察者列表，然后就可以定时获取到数据，反之也能把自己从观察者列表中移除，并停止接收到数据。</p>
+<pre><code>ITimer * GetTimerCommon();</code></pre>
+<p><strong>5、UI界面</strong></p>
+<p>定时回调功能测试界面</p>
+<ol>
+<li>on_pushButton_clicked槽函数只是为了把当前线程唤醒，并定时回调</li>
+<li>OnUpdate属于定时回调接口</li>
+</ol>
+<pre><code>class TimerWidget : public QWidget, public ITimerObserver
+{
+    Q_OBJECT
+
+public:
+    TimerWidget(QWidget *parent = 0);
+    ~TimerWidget();
+
+protected:
+    virtual void OnUpdate(const TimerDataItem &amp;) override;
+
+private slots:
+    void on_pushButton_clicked();
+
+signals:
+    void RerfushData(TimerDataItem);
+
+private:
+    Ui::TimerWidget *ui;
+};</code></pre>
+<p>上边也强调过了，OnUpdate的执行是在工作线程中的，因此实现的时候，如果涉及到访问UI界面，一定要注意切换线程</p>
+<pre><code>void TimerWidget::OnUpdate(const TimerDataItem &amp; item)
+{
+    //注意这里的定时回调都在工作线程中 需要切换到主线程
+
+    emit RerfushData(item);
+}</code></pre>
+<p><strong>以上讲解就是我们观察者的实现了，如果有疑问欢迎提出</strong></p>
+<h2 id="五相关文章">五、相关文章</h2>
+<p><a href="https://www.runoob.com/design-pattern/observer-pattern.html">菜鸟教程|观察者模式</a></p>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

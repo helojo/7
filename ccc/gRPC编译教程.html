@@ -1,0 +1,172 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修gRPC编译教程' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>gRPC编译教程</center></div><div class='banquan'>原文出处:本文由博客园博主天末提供。<br/>
+原文连接:https://www.cnblogs.com/skyend/p/10831700.html</div><br>
+    <p><span style="font-size: 14pt;">　　windows平台的编译</span></p>
+<p>一.编译openssl</p>
+<p>　　① 安装perl(可以使用ActivePerl)，执行<em><strong>perl Configure VC-WIN64A no-asm</strong></em>&nbsp;。在这里解释一下参数含义，VC-WIN64A是指amd64也就是我们常用的x64，还要一个VC-WIN64I是安腾Itanium，目前没有使用，no-asm是不使用汇编。</p>
+<p>　　② 执行<em><strong>ms\do_win64a.bat</strong></em> 。</p>
+<p><strong>　　</strong>③&nbsp;使用vs的x86_x64命令行工具执行<em><strong>nmake -f ms\ntdll.mak</strong></em> 生成动态库。</p>
+<p>　　④ 使用vs的x86_x64命令行工具执行<em><strong>nmake -f ms\nt.mak</strong> </em>生成静态库，这步可以不用执行一般生成动态库即可。</p>
+<p>　　备注：遇到过的常见问题，比如ml64、rc等命令不存在以及x86和x64，这都是没有使用vs的x84_x64命令行工具导致的。</p>
+<p>二.编译zlib</p>
+<p>　　zlib的编译非常简单，在contrib\vstudio选择任意一个文件夹然后生成全部即可。</p>
+<p>　　备注：最好生成Release x64的，ReleaseWithoutAsm可能会有某些project生成失败，这是因为它们的lib使用的是Release的。</p>
+<p>三.编译gRPC</p>
+<p>　　① 将下载的好的cares、protobuf、gflags、benchmark源码放到third_party文件夹下的对应文件夹中(cares需要放到cares\cares中)。</p>
+<p>　　② 使用CMake打开，并将<em><strong>gRPC_ZLIB_PROVIDER、gRPC_SSL_PROVIDER</strong></em>由module改成package</p>
+<p>　　③ 在CMake中配置好<em><strong>ZLIB_ROOT、ZLIB_BINARAY、LIB_EAY_DEBUG、LIB_EAY_RELEASE、SSL_EAY_DEBUG、SSL_EAY_RELEASE、OEPNSSL_INCLUDE_DIR</strong></em>这些变量</p>
+<p>　　④ Configure，像ZLIB_ROOT CMake is ignoring the variable、&nbsp;gRPC_INSTALL will be forced to FALSE等警告可以忽略</p>
+<p>　　⑤ Generate，启动vs全部生成</p>
+<p>测试案例：</p>
+<p>　　HelloSerivce.proto</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> syntax = <span style="color: #800000;">"</span><span style="color: #800000;">proto3</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> <span style="color: #000000;">service HelloService{
+</span><span style="color: #008080;"> 4</span> <span style="color: #000000;">    rpc SayHello(Request) returns(Response){}
+</span><span style="color: #008080;"> 5</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #000000;">message Request{
+</span><span style="color: #008080;"> 8</span>     int32 id = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span>     <span style="color: #0000ff;">string</span> req = <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">10</span>     bytes data = <span style="color: #800080;">3</span><span style="color: #000000;">;
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span> <span style="color: #000000;">message Response{
+</span><span style="color: #008080;">14</span>     int32 id = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">string</span> resp = <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">16</span>     bytes data = <span style="color: #800080;">3</span><span style="color: #000000;">;
+</span><span style="color: #008080;">17</span> }</pre>
+</div>
+<p>　　执行<em><strong>protoc.exe HelloService.proto -I=. --cpp_out=.</strong> </em>和<em><strong>protoc.exe HelloService.proto -I=. --grpc_out=.&nbsp;--plugin=protoc-gen-grpc=grpc_cpp_plugin.exe</strong></em>生成编译产物</p>
+<p>　　服务器：HelloService_server.cpp</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">HelloService.grpc.pb.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> #include &lt;grpc/grpc.h&gt;
+<span style="color: #008080;"> 7</span> #include &lt;grpcpp/server.h&gt;
+<span style="color: #008080;"> 8</span> #include &lt;grpcpp/server_builder.h&gt;
+<span style="color: #008080;"> 9</span> #include &lt;grpcpp/server_context.h&gt;
+<span style="color: #008080;">10</span> #include &lt;grpcpp/security/server_credentials.h&gt;
+<span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span> <span style="color: #0000ff;">class</span> HelloServiceImpl final :<span style="color: #0000ff;">public</span><span style="color: #000000;"> HelloService::Service 
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">15</span>     grpc::Status SayHello(grpc::ServerContext* context, <span style="color: #0000ff;">const</span> ::Request* request, ::Response*<span style="color: #000000;"> response)
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">17</span>         std::cout &lt;&lt; request-&gt;data() &lt;&lt;<span style="color: #000000;"> std::endl;
+</span><span style="color: #008080;">18</span> 
+<span style="color: #008080;">19</span>         response-&gt;set_data(<span style="color: #800000;">"</span><span style="color: #800000;">hello from server</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">20</span> 
+<span style="color: #008080;">21</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> grpc::Status::OK;
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">24</span> 
+<span style="color: #008080;">25</span> 
+<span style="color: #008080;">26</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> RunServer() 
+</span><span style="color: #008080;">27</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">28</span>     std::<span style="color: #0000ff;">string</span> server_address(<span style="color: #800000;">"</span><span style="color: #800000;">127.0.0.1:57501</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">29</span> <span style="color: #000000;">    HelloServiceImpl service;
+</span><span style="color: #008080;">30</span> 
+<span style="color: #008080;">31</span> <span style="color: #000000;">    grpc::ServerBuilder builder;
+</span><span style="color: #008080;">32</span> <span style="color: #000000;">    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+</span><span style="color: #008080;">33</span>     builder.RegisterService(&amp;<span style="color: #000000;">service);
+</span><span style="color: #008080;">34</span>     std::unique_ptr&lt;grpc::Server&gt;<span style="color: #000000;"> server(builder.BuildAndStart());
+</span><span style="color: #008080;">35</span>     std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Server listening on </span><span style="color: #800000;">"</span> &lt;&lt; server_address &lt;&lt;<span style="color: #000000;"> std::endl;
+</span><span style="color: #008080;">36</span>     server-&gt;<span style="color: #000000;">Wait();
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">38</span> 
+<span style="color: #008080;">39</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> **<span style="color: #000000;"> argv)
+</span><span style="color: #008080;">40</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">41</span> <span style="color: #000000;">    RunServer();
+</span><span style="color: #008080;">42</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">43</span> }</pre>
+</div>
+<p>　　客户端：HelloService_client.cpp</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">HelloService.grpc.pb.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 2</span> 
+<span style="color: #008080;"> 3</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 4</span> #include &lt;memory&gt;
+<span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> #include &lt;grpc/grpc.h&gt;
+<span style="color: #008080;"> 7</span> #include &lt;grpcpp/channel.h&gt;
+<span style="color: #008080;"> 8</span> #include &lt;grpcpp/client_context.h&gt;
+<span style="color: #008080;"> 9</span> #include &lt;grpcpp/create_channel.h&gt;
+<span style="color: #008080;">10</span> #include &lt;grpcpp/security/credentials.h&gt;
+<span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> HelloServiceClient
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">14</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">15</span>     HelloServiceClient(std::shared_ptr&lt;grpc::ChannelInterface&gt;<span style="color: #000000;"> channel) :stub(HelloService::NewStub(channel))
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">17</span> 
+<span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span>     <span style="color: #0000ff;">bool</span><span style="color: #000000;"> SayHello()
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">        grpc::ClientContext context;
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">        Request req;
+</span><span style="color: #008080;">23</span>         req.set_data(<span style="color: #800000;">"</span><span style="color: #800000;">send from client</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">        Response resp;
+</span><span style="color: #008080;">25</span>         stub-&gt;SayHello(&amp;context,req,&amp;<span style="color: #000000;">resp);
+</span><span style="color: #008080;">26</span>         std::cout &lt;&lt; resp.data() &lt;&lt;<span style="color: #000000;"> std::endl;
+</span><span style="color: #008080;">27</span>         <span style="color: #0000ff;">return</span> <span style="color: #0000ff;">true</span><span style="color: #000000;">;
+</span><span style="color: #008080;">28</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">29</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;">30</span>     std::unique_ptr&lt;HelloService::Stub&gt;<span style="color: #000000;"> stub;
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">32</span> 
+<span style="color: #008080;">33</span> 
+<span style="color: #008080;">34</span> 
+<span style="color: #008080;">35</span> 
+<span style="color: #008080;">36</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc,<span style="color: #0000ff;">char</span> **<span style="color: #000000;"> argv)
+</span><span style="color: #008080;">37</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">38</span>     HelloServiceClient client(grpc::CreateChannel(<span style="color: #800000;">"</span><span style="color: #800000;">127.0.0.1:57501</span><span style="color: #800000;">"</span><span style="color: #000000;">, grpc::InsecureChannelCredentials()));
+</span><span style="color: #008080;">39</span> 
+<span style="color: #008080;">40</span> <span style="color: #000000;">    client.SayHello();
+</span><span style="color: #008080;">41</span> 
+<span style="color: #008080;">42</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">43</span> }</pre>
+</div>
+<p>编译时需要注意设置<em><strong>_WIN32_WINNT</strong></em>大于等于0x600 ，添加<em><strong>address_sorting.lib、gpr.lib、grpc.lib、grpc++.lib、libprotobuf.lib、zlibstat.lib、libeay32.lib、ssleay32.lib、ws2_32.lib、cares.lib</strong></em>这些lib。</p>
+<p>测试结果：</p>
+<p>服务器：<img src="./images/gRPC编译教程0.png" alt="" /></p>
+<p>客户端：<img src="./images/gRPC编译教程1.png" alt="" /></p>
+<p>&nbsp;</p>
+<p><span style="font-size: 14pt;">　　Fedora编译教程</span></p>
+<p>　　直接执行<strong><em>sudo dnf install grpc&nbsp;<strong><em>grpc-devel&nbsp;</em></strong>protobuf-compiler grpc-plugins</em></strong>即可</p>
+<p>测试案例：</p>
+<p>　　代码同上</p>
+<p>　　备注：执行<em><strong>protoc HelloService.proto -I=. --grpc_out=. --plugin=protoc-gen-grpc=grpc_cpp_plugin</strong></em>可能会出现下面的错误：</p>
+<p>　　　　grpc_cpp_plugin: program not found or is not executable</p>
+<p>　　　　--grpc_out: protoc-gen-grpc: Plugin failed with status code 1.</p>
+<p>　　改成执行<em><strong>protoc HelloService.proto -I=. --grpc_out=. --plugin=protoc-gen-grpc=/usr/bin/grpc_cpp_plugin</strong></em>就行了</p>
+<p>　　使用上面的代码执行<em><strong>g++ -o client HelloService_client.cpp HelloService.grpc.pb.cc HelloService.pb.cc -lgrpc++ -lprotobuf&nbsp; -std=c++17</strong></em>和&nbsp;<em><strong>g++ -o server HelloService_server.cpp HelloService.grpc.pb.cc HelloService.pb.cc -lgrpc++ -lprotobuf -std=c++17</strong></em>编译</p>
+<p>测试结果：</p>
+<p><img src="./images/gRPC编译教程2.png" alt="" /></p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

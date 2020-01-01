@@ -1,0 +1,119 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++中的强制类型转换' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++中的强制类型转换</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11521589.html</div><br>
+    <p>在C语言中，强制类型转换的方式为(Type)Expression，另外还有一种现在已经不用的旧式写法Type(Expression)，这两种方式是等价的。</p>
+<p>但是，C语言的强制类型转换方式存在一些问题：</p>
+<ul>
+<li>过于粗暴，可以在任意类型之间进行转换，编译器很难判断其正确性</li>
+<li>难于定位，在源代码中无法快速定位所有使用强制类型转换的语句</li>
+</ul>
+<p>然而，强制类型转换在实际工程中几乎是不可避免的，为此C++将强制类型转换分为4种不同的类型，以提供更加安全可靠的转换。</p>
+<table>
+<thead>
+<tr class="header">
+<th>强制类型转换</th>
+<th>说 明</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><font color=blue>static_cast</font></td>
+<td>用于<font color=red>基本类型之间、有继承关系的类对象之间、类指针之间</font>的转换<br> 不能用于<font color=magenta>基本类型指针之间</font>的转换</td>
+</tr>
+<tr class="even">
+<td><font color=blue>const_cast</font></td>
+<td>用于<font color=red>去除变量的只读属性</font><br> 强制转换的<font color=orange>目标类型必须是指针或引用</font></td>
+</tr>
+<tr class="odd">
+<td><font color=blue>reinterpret_cast</font></td>
+<td>用于<font color=red>指针类型之间、整数和指针类型之间</font>的转换</td>
+</tr>
+<tr class="even">
+<td><font color=blue>dynamic_cast</font></td>
+<td>用于<font color=red>有继承关系的类指针之间、有交叉关系的类指针之间</font>的转换<br> <font color=orange>具有类型检查的功能</font><br> <font color=magenta>需要虚函数的支持</font></td>
+</tr>
+</tbody>
+</table>
+<p>C++提供的4种强制类型转换以关键字的方式出现，使用语法为：<code>xxx_cast&lt;Target Type&gt;(Expression)</code>。</p>
+<pre><code>#include &lt;stdio.h&gt;
+
+void static_cast_demo()
+{
+    int i = 0x12345;
+    char c = &#39;c&#39;;
+    int *pi = &amp;i;
+    char *pc = &amp;c;
+
+    c = static_cast&lt;char&gt;(i);
+    pc = static_cast&lt;char *&gt;(pi); // Error，static_cast不能用于基本类型指针间的转换
+}
+
+void const_cast_demo()
+{
+    const int &amp;j = 1;
+    int &amp;k = const_cast&lt;int &amp;&gt;(j);
+
+    const int x = 2;
+    int &amp;y = const_cast&lt;int &amp;&gt;(x);
+
+    int z = const_cast&lt;int&gt;(x);  // Error，const_cast的目标类型必须是指针或引用
+}
+
+void reinterpret_cast_demo()
+{
+    int i = 0;
+    char c = &#39;c&#39;;
+    int *pi = &amp;i;
+    char *pc = &amp;c;
+
+    pc = reinterpret_cast&lt;char *&gt;(pi);
+    pi = reinterpret_cast&lt;int *&gt;(pc);
+    pi = reinterpret_cast&lt;int *&gt;(i);
+    c = reinterpret_cast&lt;char&gt;(i); // Error，reinterpret_cast不能用于基本类型间的转换
+}
+
+void dynamic_cast_demo()
+{
+    int i = 0;
+    int *pi = &amp;i;
+    char *pc = dynamic_cast&lt;char *&gt;(pi); // Error，dynamic_cast只能用于有继承关系或交叉关系的类指针间的转换，且类中必须有虚函数
+}
+
+int main()
+{
+    static_cast_demo();
+    const_cast_demo();
+    reinterpret_cast_demo();
+    dynamic_cast_demo();
+
+    return 0;
+}</code></pre>
+<p><img src="./images/C++中的强制类型转换0.png" /></p>
+<p>可以看出，使用新的强制类型转换</p>
+<ul>
+<li>在编译时能够帮助检查潜在的问题</li>
+<li>搜索4个关键字，可以非常方便在代码中定位</li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,87 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修EffectiveC++' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>EffectiveC++</center></div><div class='banquan'>原文出处:本文由博客园博主LmLmLms提供。<br/>
+原文连接:https://www.cnblogs.com/congrifan/p/11267596.html</div><br>
+    <h1 id="宁可以编译器替换预处理器">宁可以编译器替换预处理器</h1>
+<h1 id="define-不被视为语言的一部分因此也就有可能在预处理阶段被优化掉导致相关变量出现错误">define 不被视为语言的一部分，因此也就有可能在预处理阶段被优化掉，导致相关变量出现错误。</h1>
+<pre><code>#define ASPECT_RATIO 1.63
+//可以尝试将其替换为
+const double AspectRatio=1.63</code></pre>
+<p>这里注意一下大写名称常用于宏，因此，转写时候将相关名称进行了相应的替换</p>
+<p>1.定义常量的指针constant pointers 由于定义式通常被放在头文件内，因此有必要将指针声明为const</p>
+<p>若要在头文件内定义 一个常量</p>
+<pre><code>char * based字符串</code></pre>
+<p>必须要写两次</p>
+<pre><code>const char *const authorName=&quot;ScottMeyers&quot;</code></pre>
+<p>或者在C++中将其写成如下格式</p>
+<pre class="cpp"><code>const std::string authorName(&quot;ScottMeyers&quot;);</code></pre>
+<p>2.class 专属常量，为了将常量的作用域（scope)限制于class内，你必须让他成为class的一个成员member；而为了确保此常量至多只有一份实体，它就必须有必要成为static成员</p>
+<pre class="cpp"><code>class Sem
+{
+    private:
+        static const int isnum=5;//这里是常量式的声明
+        int scores[isnum];
+    public:
+        void std_print()
+        {
+            std::cout&lt;&lt;isnum;
+            std::cout&lt;&lt;&quot; &quot;;
+            for(auto s:scores)
+            {
+                std::cout&lt;&lt;s&lt;&lt;&quot; &quot;;
+            }
+            std::cout&lt;&lt;std::endl;
+        }
+};</code></pre>
+<pre class="cpp"><code>private:
+        static const int isnum=5;//这里是常量式的声明
+        int scores[isnum];
+private:
+        static const int isnum;//将声明放在头文件里面
+        const double Sem::isnum=5;//将实现放在文件中
+private:
+        enum {isnum=5};//the enum hack补偿做法，即一个属于枚举类型的数可权充int 被使用
+        int scores[isnum];</code></pre>
+<p>关于宏与内联函数：尽量以内联的模板函数代替宏（类似于实现函数功能的宏）</p>
+<pre class="cpp"><code>#include &lt;iostream&gt;
+#define CALL_WITH_MAX(a, b) ((a) &gt; (b) ? (a) : (b))
+int main()
+{
+    int a = 5, b = 0;
+    CALL_WITH_MAX(++a, b);//这里的++会执行2次
+    std::cout &lt;&lt; a &lt;&lt; &quot; &quot; &lt;&lt; b &lt;&lt; std::endl;
+    CALL_WITH_MAX(++a, b + 10);//这里的++就执行一次
+    std::cout &lt;&lt; a &lt;&lt; &quot; &quot; &lt;&lt; b &lt;&lt; std::endl;
+}</code></pre>
+<p>原因：第一次执行的宏从简单替换开始返回到a后再执行一次++</p>
+<p>而第二次执行的宏因为没有返回到a，这次返回到的是b所以不会有第二次++</p>
+<p>相反的若要替换成功能相同的内联函数就不会出现这样的问题</p>
+<pre class="cpp"><code>template &lt;typename T&gt;
+inline T CallWithMax(const T&amp;a,const T&amp;b)
+{
+    return (a&gt;b?a:b);
+}</code></pre>
+<p>如此而言，对于单纯的常量，最好用const对象或者enums替换掉#defines</p>
+<p>对于形似函数的宏可以用inline函数替换掉</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

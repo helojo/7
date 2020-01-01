@@ -1,0 +1,270 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修浅谈LCA' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>浅谈LCA</center></div><div class='banquan'>原文出处:本文由博客园博主JasonZRY提供。<br/>
+原文连接:https://www.cnblogs.com/gzezzry/p/12096244.html</div><br>
+    <p><span style="font-size: 18pt; font-family: 楷体;"><strong>最近公共祖先LCA</strong></span></p>
+<p><span style="font-family: 楷体;">如图</span></p>
+<p><span style="font-family: 楷体;"><img src="./images/浅谈LCA0.png" alt="" /></span></p>
+<p><span style="font-family: 楷体;">LCA(4,5)=8</span></p>
+<p><span style="font-family: 楷体;">LCA(10,16)=10</span></p>
+<p><span style="font-family: 楷体;">LCA(7,3)=4</span></p>
+<p><span style="font-family: 楷体;">求LCA主要算法有：<strong>RMQ,tarjan,倍增</strong></span></p>
+<p><span style="font-family: 仿宋;"><strong><span style="font-size: 14pt;">RMQ</span></strong></span></p>
+<p><span style="font-family: 楷体;">这种方法就是打表</span></p>
+<p><span style="font-family: 楷体;"><em>O(n logn)</em>预处理，<em>O(1)</em>回答</span></p>
+<p><span style="font-family: 楷体;">RMQ就是区间最值查询。</span></p>
+<p><span style="font-family: 楷体;">首先通过dfs求出每个点的深度</span></p>
+<p><span style="font-family: 楷体;">显然，两个节点的LCA不仅是两个节点的最近公共祖先，而且包括这两个节点的最小子树的根，即包括这两个节点的最小子树中的深度最小的节点。</span></p>
+<p><span style="font-family: 楷体;">现在，我们改一下dfs，变成欧拉序。</span></p>
+<p><span style="font-family: 楷体;">欧拉序，就是每次从x的父亲进入节点x或者从子节点回溯到x都要把x这个编号扔到一个数组的最后。</span></p>
+<p><span style="font-family: 楷体;">如图</span></p>
+<p><span style="font-family: 楷体;"><img src="./images/浅谈LCA1.png" alt="" /></span></p>
+<p><span style="font-family: 楷体;">欧拉序为：<strong>8 5 9 5 8 4 6 15 6 7 6 4 10 11 10 16 3 16 12 16 10 2 10 4 8 1 14 1 13 1 8</strong></span></p>
+<p><span style="font-family: 楷体;">再注意到，一对点的 LCA 不仅是包括这两个节点的最小子树中的深度最小的节点，还是连接这对点的简单路径上深度最小的点。</span></p>
+<p><span style="font-family: 楷体;">而且从离开x到进入y的这段欧拉序必然包括所有这对点之间的简单路径上的所有点，所以我们考虑求得这段欧拉序中所包含的节点中的深度最小的点,即他们的LCA。</span></p>
+<p><span style="font-family: 楷体;">从x到y的这段欧拉序会包含这棵子树中的其他节点，但是不会影响这个最浅点的求得。</span></p>
+<p><span style="font-family: 楷体;">显然，x到y这段欧拉序是个连续区间。</span></p>
+<p><span style="font-family: 楷体;">现在我们考虑通过预处理来<em>O(1)</em>获得这个最浅点。</span></p>
+<p><span style="font-family: 楷体;">这里有一个叫做<span style="text-decoration: underline;"><em>ST表</em></span>的东西。</span></p>
+<p><span style="font-family: 楷体;"><strong><span style="font-size: 18px;">代码</span></strong></span></p>
+<div class="cnblogs_code">
+<pre><code>#include&lt;bits/stdc++.h&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> edge{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> to,next;
+}ed[</span><span style="color: #800080;">100005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span> n,q,u,v,cnt,head[<span style="color: #800080;">50005</span>],ind,dfn[<span style="color: #800080;">50005</span>],dep[<span style="color: #800080;">50005</span>],lg[<span style="color: #800080;">50005</span>],f[<span style="color: #800080;">50005</span>][<span style="color: #800080;">21</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">void</span> add(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+    cnt</span>++<span style="color: #000000;">;
+    ed[cnt].to</span>=<span style="color: #000000;">v;
+    ed[cnt].next</span>=<span style="color: #000000;">head[u];
+    head[u]</span>=<span style="color: #000000;">cnt;
+}
+</span><span style="color: #0000ff;">void</span> dfs(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> fa){
+    dfn[u]</span>=++<span style="color: #000000;">ind;
+    dep[u]</span>=dep[fa]+<span style="color: #800080;">1</span><span style="color: #000000;">;
+    f[ind][</span><span style="color: #800080;">0</span>]=<span style="color: #000000;">u; 
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=head[u];i;i=<span style="color: #000000;">ed[i].next){
+        </span><span style="color: #0000ff;">int</span> v=<span style="color: #000000;">ed[i].to;
+        </span><span style="color: #0000ff;">if</span>(v!=fa)dfs(v,u),f[++ind][<span style="color: #800080;">0</span>]=<span style="color: #000000;">u;
+    }
+}
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> st(){
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>;j&lt;=<span style="color: #800080;">20</span>;j++<span style="color: #000000;">){
+        </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i+(<span style="color: #800080;">1</span>&lt;&lt;j)&lt;=ind+<span style="color: #800080;">1</span>;i++<span style="color: #000000;">){
+            </span><span style="color: #0000ff;">int</span> k=i+(<span style="color: #800080;">1</span>&lt;&lt;(j-<span style="color: #800080;">1</span><span style="color: #000000;">));
+            </span><span style="color: #0000ff;">if</span>(dep[f[i][j-<span style="color: #800080;">1</span>]]&lt;dep[f[k][j-<span style="color: #800080;">1</span>]])f[i][j]=f[i][j-<span style="color: #800080;">1</span><span style="color: #000000;">];
+            </span><span style="color: #0000ff;">else</span> f[i][j]=f[k][j-<span style="color: #800080;">1</span><span style="color: #000000;">];
+        }
+    }
+}
+</span><span style="color: #0000ff;">int</span> rmq(<span style="color: #0000ff;">int</span> l,<span style="color: #0000ff;">int</span><span style="color: #000000;"> r){
+    </span><span style="color: #0000ff;">if</span>(l&gt;<span style="color: #000000;">r)swap(l,r);
+    </span><span style="color: #0000ff;">int</span> k=lg[r-l+<span style="color: #800080;">1</span><span style="color: #000000;">];
+    </span><span style="color: #0000ff;">if</span>(dep[f[l][k]]&lt;dep[f[r-(<span style="color: #800080;">1</span>&lt;&lt;k)+<span style="color: #800080;">1</span>][k]])<span style="color: #0000ff;">return</span><span style="color: #000000;"> f[l][k];
+    </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">return</span> f[r-(<span style="color: #800080;">1</span>&lt;&lt;k)+<span style="color: #800080;">1</span><span style="color: #000000;">][k];
+}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+    scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;n,&amp;<span style="color: #000000;">q);
+    lg[</span><span style="color: #800080;">0</span>]=-<span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=n;i++)lg[i]=lg[i/<span style="color: #800080;">2</span>]+<span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;n;i++<span style="color: #000000;">){
+        scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;u,&amp;<span style="color: #000000;">v);
+        add(u,v),add(v,u);
+    }
+    dfs(</span><span style="color: #800080;">1</span>,<span style="color: #800080;">0</span><span style="color: #000000;">);
+    st();
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=q;i++<span style="color: #000000;">){
+        scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;u,&amp;<span style="color: #000000;">v);
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,rmq(dfn[u],dfn[v]));
+    }
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p><span style="font-family: 楷体;"><span style="font-size: 14pt;"><strong>Tarjan</strong></span></span></p>
+<p><span style="font-family: 楷体;">一种离线算法，要用到并查集。</span></p>
+<p><span style="font-family: 楷体;">时间复杂度为<em>O(n+q)</em>。</span></p>
+<p><span style="font-family: 楷体;">Tarjan算法基于dfs，在dfs的过程中，对于每个节点位置的询问做出相应的回答。</span></p>
+<p><span style="font-family: 楷体;">dfs的过程中，当一棵子树被搜索完成之后，就把他和他的父亲合并成同一集合；在搜索当前子树节点的询问时，如果该询问的另一个节点已经被访问过，那么该编号的询问是被标记了的，于是直接输出当前状态下，另一个节点所在的并查集的祖先；如果另一个节点还没有被访问过，那么就做下标记，继续dfs。</span></p>
+<p><span style="font-family: 楷体;">如图</span></p>
+<p><span style="font-family: 楷体;"><img src="./images/浅谈LCA2.png" alt="" /></span></p>
+<p><span style="font-family: 楷体;">比如：8&minus;1&minus;14&minus;13,此时已经完成了对子树1的子树14的dfs与合并，如果存在询问(13,14)，则其LCA即find(14)，即1；如果还存在由节点13与已经完成搜索的子树中的节点的询问，那么处理完。然后合并子树13的集合与其父亲1当前的集合，回溯到子树1，并深搜完所有1的其他未被搜索过的儿子，并完成子树1中所有节点的合并，再往上回溯，对节点1进行类似的操作即可。</span></p>
+<p><span style="font-family: 楷体;"><strong><span style="font-size: 18px;">代码</span></strong></span></p>
+<div class="cnblogs_code">
+<pre><code>#include&lt;bits/stdc++.h&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> edge{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> to,next;
+}ed[</span><span style="color: #800080;">50005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> qedge{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> to,next,lca;
+}qed[</span><span style="color: #800080;">50005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span> n,q,u,v,cnt,qcnt,head[<span style="color: #800080;">50005</span>],qhead[<span style="color: #800080;">50005</span>],fa[<span style="color: #800080;">50005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">void</span> add(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+    cnt</span>++<span style="color: #000000;">;
+    ed[cnt].to</span>=<span style="color: #000000;">v;
+    ed[cnt].next</span>=<span style="color: #000000;">head[u];
+    head[u]</span>=<span style="color: #000000;">cnt;
+}
+</span><span style="color: #0000ff;">void</span> qadd(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+    qcnt</span>++<span style="color: #000000;">;
+    qed[qcnt].to</span>=<span style="color: #000000;">v;
+    qed[qcnt].next</span>=<span style="color: #000000;">qhead[u];
+    qhead[u]</span>=<span style="color: #000000;">qcnt;
+}
+</span><span style="color: #0000ff;">int</span> find(<span style="color: #0000ff;">int</span><span style="color: #000000;"> x){
+    </span><span style="color: #0000ff;">return</span> fa[x]==x?<span style="color: #000000;">x:find(fa[x]);
+}
+</span><span style="color: #0000ff;">void</span> dfs(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> pa){
+    fa[u]</span>=<span style="color: #000000;">u;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=head[u];i;i=<span style="color: #000000;">ed[i].next){
+        </span><span style="color: #0000ff;">int</span> v=<span style="color: #000000;">ed[i].to;
+        </span><span style="color: #0000ff;">if</span>(v!=<span style="color: #000000;">pa){
+            dfs(v,u);
+            fa[v]</span>=<span style="color: #000000;">u;
+        }
+    }
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=qhead[u];i;i=<span style="color: #000000;">qed[i].next){
+        </span><span style="color: #0000ff;">int</span> v=<span style="color: #000000;">qed[i].to;
+        </span><span style="color: #0000ff;">if</span>(v!=pa&amp;&amp;!<span style="color: #000000;">qed[i].lca){
+            qed[i].lca</span>=<span style="color: #000000;">find(v);
+            </span><span style="color: #0000ff;">if</span>(i%<span style="color: #800080;">2</span>)qed[i+<span style="color: #800080;">1</span>].lca=<span style="color: #000000;">qed[i].lca;
+            </span><span style="color: #0000ff;">else</span> qed[i-<span style="color: #800080;">1</span>].lca=<span style="color: #000000;">qed[i].lca;
+        }
+    }
+}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+    scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;n,&amp;<span style="color: #000000;">q);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;n;i++<span style="color: #000000;">){
+        scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;u,&amp;<span style="color: #000000;">v);
+        add(u,v),add(v,u);
+    }
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=q;i++<span style="color: #000000;">){
+        scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;u,&amp;<span style="color: #000000;">v);
+        qadd(u,v),qadd(v,u);
+    }
+    dfs(</span><span style="color: #800080;">1</span>,<span style="color: #800080;">0</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=q;i++)printf(<span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span>,qed[<span style="color: #800080;">2</span>*<span style="color: #000000;">i].lca);
+}</span></pre>
+</div>
+<p><span style="font-size: 14pt;"><strong><span style="font-family: 楷体;">倍增</span></strong></span></p>
+<p><span style="font-family: 楷体;">时间复杂度<em>O((n+q)logn)</em></span></p>
+<p><span style="font-family: 楷体;">对于这个算法，我们从最暴力的算法开始：</span></p>
+<p><span style="font-family: 楷体;">①如果x和y深度不同，先把深度调浅，使他变得和深度小的那个一样</span></p>
+<p><span style="font-family: 楷体;">②现在已经保证了x和y的深度一样，所以我们只要把两个一起一步一步往上移动，直到他们到达同一个节点，也就是他们的最近公共祖先了。</span></p>
+<p><span style="font-size: 18px;"><strong><span style="font-family: 楷体;">代码</span></strong></span></p>
+<div class="cnblogs_code">
+<pre><code>#include&lt;bits/stdc++.h&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> edge{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> to,next;
+}ed[</span><span style="color: #800080;">100005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span> n,q,u,v,cnt,head[<span style="color: #800080;">50005</span>],dep[<span style="color: #800080;">10005</span>],fa[<span style="color: #800080;">10005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">void</span> add(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+    cnt</span>++<span style="color: #000000;">;
+    ed[cnt].to</span>=<span style="color: #000000;">v;
+    ed[cnt].next</span>=<span style="color: #000000;">head[u];
+    head[u]</span>=<span style="color: #000000;">cnt;
+}
+</span><span style="color: #0000ff;">void</span> dfs(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> pa){
+    dep[u]</span>=dep[pa]+<span style="color: #800080;">1</span>,fa[u]=<span style="color: #000000;">pa;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=head[u];i;i=<span style="color: #000000;">ed[i].next){
+        </span><span style="color: #0000ff;">int</span> v=<span style="color: #000000;">ed[i].to;
+        </span><span style="color: #0000ff;">if</span>(v!=<span style="color: #000000;">pa)dfs(v,u);
+    }
+}
+</span><span style="color: #0000ff;">int</span> lca(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+    </span><span style="color: #0000ff;">if</span>(u==v)<span style="color: #0000ff;">return</span><span style="color: #000000;"> u;
+    </span><span style="color: #0000ff;">if</span>(dep[u]==dep[v])<span style="color: #0000ff;">return</span><span style="color: #000000;"> lca(fa[u],fa[v]);
+    </span><span style="color: #0000ff;">if</span>(dep[u]&gt;dep[v])<span style="color: #0000ff;">return</span><span style="color: #000000;"> lca(fa[u],v);
+    </span><span style="color: #0000ff;">if</span>(dep[u]&lt;dep[v])<span style="color: #0000ff;">return</span><span style="color: #000000;"> lca(u,fa[v]);
+}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+    scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;n,&amp;<span style="color: #000000;">q);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;n;i++<span style="color: #000000;">){
+        scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;u,&amp;<span style="color: #000000;">v);
+        add(u,v),add(v,u);
+    }
+    dfs(</span><span style="color: #800080;">1</span>,<span style="color: #800080;">0</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=q;i++<span style="color: #000000;">){
+        scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;u,&amp;<span style="color: #000000;">v);
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,lca(u,v));
+    }
+}</span></pre>
+</div>
+<p><span style="font-family: 楷体;">但这样一步一步往上移动太慢，我们可以做一个预处理：</span></p>
+<p><span style="font-family: 楷体;">设f<sub>i,j</sub>表示从结点i开始向上走2<sup>j</sup>步到达的点，所以f<sub>i,0</sub>=fa(i),f<sub>i,1</sub>=f<sub>f[0][0],0</sub>,$f<sub>i,j</sub>=f<sub>f[i][j-1],i-j</sub>$</span></p>
+<p><span style="font-family: 楷体;">如图</span></p>
+<p><span style="font-family: 楷体;"><img src="./images/浅谈LCA3.png" alt="" /></span></p>
+<p><span style="font-family: 楷体;">f<sub>5,0</sub>=5</span></p>
+<p><span style="font-family: 楷体;">f<sub>7,1</sub>=4</span></p>
+<p><span style="font-family: 楷体;">f<sub>3,2</sub>=f<sub>f[3][2-1],2-1</sub>=f<sub>10,1</sub>=8</span></p>
+<p><span style="font-family: 楷体;">于是我们可以得出以下做法：</span></p>
+<p><span style="font-family: 楷体;">1.把x和y移到同一深度（设dep<sub>x</sub>为节点x的深度），假设dep<sub>x</sub>&lt;dep<sub>y</sub>，从大到小枚举k，如果dep<sub>f[y][k]</sub>&ne;dep<sub>x</sub>，那么y就往上跳。</span></p>
+<p><span style="font-family: 楷体;">2.如果x=y，那么显然LCA就是f<sub>x,0</sub>。否则执行第3步。</span></p>
+<p><span style="font-family: 楷体;">3.在xx&ne;yy的情况下找到深度最小的xx和yy。</span></p>
+<p><span style="font-size: 18px;"><strong><span style="font-family: 楷体;">代码</span></strong></span></p>
+<div class="cnblogs_code">
+<pre><code>#include&lt;bits/stdc++.h&gt;
+<span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> edge{
+    </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> to,next;
+}ed[</span><span style="color: #800080;">100005</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">int</span> n,q,u,v,cnt,head[<span style="color: #800080;">50005</span>],dep[<span style="color: #800080;">50005</span>],f[<span style="color: #800080;">50005</span>][<span style="color: #800080;">20</span><span style="color: #000000;">];
+</span><span style="color: #0000ff;">void</span> add(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+    cnt</span>++<span style="color: #000000;">;
+    ed[cnt].to</span>=<span style="color: #000000;">v;
+    ed[cnt].next</span>=<span style="color: #000000;">head[u];
+    head[u]</span>=<span style="color: #000000;">cnt;
+}
+</span><span style="color: #0000ff;">void</span> dfs(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> fa){
+    f[u][</span><span style="color: #800080;">0</span>]=<span style="color: #000000;">fa;
+    dep[u]</span>=dep[fa]+<span style="color: #800080;">1</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;<span style="color: #800080;">20</span>;i++)f[u][i]=f[f[u][i-<span style="color: #800080;">1</span>]][i-<span style="color: #800080;">1</span><span style="color: #000000;">];
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=head[u];i;i=<span style="color: #000000;">ed[i].next){
+        </span><span style="color: #0000ff;">int</span> v=<span style="color: #000000;">ed[i].to;
+        </span><span style="color: #0000ff;">if</span>(v!=<span style="color: #000000;">fa)dfs(v,u);
+    }
+}
+</span><span style="color: #0000ff;">int</span> lca(<span style="color: #0000ff;">int</span> u,<span style="color: #0000ff;">int</span><span style="color: #000000;"> v){
+    </span><span style="color: #0000ff;">if</span>(dep[u]&lt;<span style="color: #000000;">dep[v])swap(u,v);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">19</span>;i&gt;=<span style="color: #800080;">0</span>;i--)<span style="color: #0000ff;">if</span>(dep[u]-(<span style="color: #800080;">1</span>&lt;&lt;i)&gt;=dep[v])u=<span style="color: #000000;">f[u][i];
+    </span><span style="color: #0000ff;">if</span>(u==v)<span style="color: #0000ff;">return</span><span style="color: #000000;"> u;
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">19</span>;i&gt;=<span style="color: #800080;">0</span>;i--)<span style="color: #0000ff;">if</span>(f[u][i]!=f[v][i])u=f[u][i],v=<span style="color: #000000;">f[v][i];
+    </span><span style="color: #0000ff;">return</span> f[u][<span style="color: #800080;">0</span><span style="color: #000000;">];
+}
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> main(){
+    scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;n,&amp;<span style="color: #000000;">q);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;n;i++<span style="color: #000000;">){
+        scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;u,&amp;<span style="color: #000000;">v);
+        add(u,v),add(v,u);
+    }
+    dfs(</span><span style="color: #800080;">1</span>,<span style="color: #800080;">0</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>;i&lt;=q;i++<span style="color: #000000;">){
+        scanf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d%d</span><span style="color: #800000;">"</span>,&amp;u,&amp;<span style="color: #000000;">v);
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,lca(u,v));
+    }
+}</span></pre>
+</div>
+<p><span style="font-family: 楷体;">&nbsp;</span></p>
+</div>
+</div></div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

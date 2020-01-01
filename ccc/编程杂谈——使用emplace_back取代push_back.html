@@ -1,0 +1,94 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修编程杂谈——使用emplace_back取代push_back' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>编程杂谈——使用emplace_back取代push_back</center></div><div class='banquan'>原文出处:本文由博客园博主Ken.W提供。<br/>
+原文连接:https://www.cnblogs.com/kenwoo/p/11689284.html</div><br>
+    <p>近日在YouTube视频上看到关于vector中emplace_back与push_back区别的介绍，深感自己在现代C++中还是有不少遗漏的知识点，遂写了段代码，尝试比较两者的差别。</p>
+<h1 id="示例代码">示例代码</h1>
+<pre><code>#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;functional&gt;
+#include &lt;chrono&gt;
+
+class Item
+{
+public:
+    Item(std::string name, bool display = true):name(name), display(display)
+    {
+        if (display)
+            std::cout &lt;&lt; &quot;Constructor: &quot; &lt;&lt; name &lt;&lt; std::endl;
+    }
+
+    Item(const Item&amp; item):name(item.name), display(item.display)
+    {
+        if (item.display)
+            std::cout &lt;&lt; &quot;Copy Consturctor: &quot; &lt;&lt; item.name &lt;&lt; std::endl;
+    }
+private:
+    std::string name;
+    bool display;
+};
+
+void calculate(std::vector&lt;Item&gt;&amp; v, int count, std::function&lt;void()&gt; const&amp; f)
+{
+    clock_t begin_time = clock();
+    for (auto i = 0; i &lt; count; i++)
+    {
+        f();
+    }
+
+    std::cout &lt;&lt; float(clock() - begin_time) / CLOCKS_PER_SEC &lt;&lt; std::endl;
+}
+
+int main()
+{
+    std::vector&lt;Item&gt; v;
+    v.reserve(2);
+
+    v.push_back(Item(&quot;push_back&quot;));
+    v.emplace_back(&quot;emplace_back&quot;, true);
+
+    v.clear();
+
+    int count = 100000;
+    v.reserve(count);
+
+    calculate(v, count, [&amp;]() { v.push_back(Item(&quot;push_back&quot;, false)); });
+
+    v.clear();
+
+    calculate(v, count, [&amp;]() { v.emplace_back(&quot;emplace_back&quot;, false); });
+}</code></pre>
+<h1 id="运行结果">运行结果</h1>
+<pre class="plain"><code>Constructor: push_back
+Copy Consturctor: push_back
+Constructor: emplace_back
+0.431
+0.28</code></pre>
+<h1 id="结论">结论</h1>
+<ul>
+<li>emplace_back方法可以不调用拷贝构造函数，所以理论上它应该比push_back性能更好</li>
+<li>经过10W次量级的数据计算，最终结果与预期一致</li>
+<li>reserve方法必须要使用，可以减少分配内存时间，提升性能</li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

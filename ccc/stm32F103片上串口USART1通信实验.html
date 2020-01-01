@@ -1,0 +1,212 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修stm32F103片上串口USART1通信实验' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>stm32F103片上串口USART1通信实验</center></div><div class='banquan'>原文出处:本文由博客园博主田野小毛驴提供。<br/>
+原文连接:https://www.cnblogs.com/tengye/p/11492511.html</div><br>
+    <p>硬件说明：<img src="./images/stm32F103片上串口USART1通信实验0.png" alt="" />如原理图所示，</p>
+<p>103的PA10 PA11分别接CP2102usb转串口芯片的TXD RXD引脚。CP2102芯片是将串口和电脑USB接口进行了转接，方便应用灵活。</p>
+<p>片上串口驱动代码如下。</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('e554705e-3d78-48a4-ad51-33ddcc642651')"><img id="code_img_closed_e554705e-3d78-48a4-ad51-33ddcc642651" class="code_img_closed" src="./images/stm32F103片上串口USART1通信实验1.png" alt="" /><img id="code_img_opened_e554705e-3d78-48a4-ad51-33ddcc642651" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('e554705e-3d78-48a4-ad51-33ddcc642651',event)" src="./images/stm32F103片上串口USART1通信实验2.png" alt="" />
+<div id="cnblogs_code_open_e554705e-3d78-48a4-ad51-33ddcc642651" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;">  1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">usart.h</span><span style="color: #800000;">"</span>    
+<span style="color: #008080;">  2</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">stm32f10x_usart.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">  3</span> 
+<span style="color: #008080;">  4</span> <span style="color: #0000ff;">#if</span> SYSTEM_SUPPORT_UCOS
+<span style="color: #008080;">  5</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">includes.h</span><span style="color: #800000;">"</span>    <span style="color: #008000;">//</span><span style="color: #008000;">ucos </span>
+<span style="color: #008080;">  6</span> <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;">  7</span> 
+<span style="color: #008080;">  8</span> <span style="color: #0000ff;">#if</span> 1
+<span style="color: #008080;">  9</span> <span style="color: #0000ff;">#pragma</span> import(__use_no_semihosting)             
+<span style="color: #008080;"> 10</span>                
+<span style="color: #008080;"> 11</span> <span style="color: #0000ff;">struct</span><span style="color: #000000;"> __FILE 
+</span><span style="color: #008080;"> 12</span> <span style="color: #000000;">{ 
+</span><span style="color: #008080;"> 13</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> handle; 
+</span><span style="color: #008080;"> 14</span> 
+<span style="color: #008080;"> 15</span> <span style="color: #000000;">}; 
+</span><span style="color: #008080;"> 16</span> 
+<span style="color: #008080;"> 17</span> <span style="color: #000000;">FILE __stdout;         
+</span><span style="color: #008080;"> 18</span> _sys_exit(<span style="color: #0000ff;">int</span><span style="color: #000000;"> x) 
+</span><span style="color: #008080;"> 19</span> <span style="color: #000000;">{ 
+</span><span style="color: #008080;"> 20</span>     x =<span style="color: #000000;"> x; 
+</span><span style="color: #008080;"> 21</span> <span style="color: #000000;">} 
+</span><span style="color: #008080;"> 22</span> 
+<span style="color: #008080;"> 23</span> <span style="color: #0000ff;">int</span> fputc(<span style="color: #0000ff;">int</span> ch, FILE *<span style="color: #000000;">f)
+</span><span style="color: #008080;"> 24</span> <span style="color: #000000;">{      
+</span><span style="color: #008080;"> 25</span>         <span style="color: #0000ff;">while</span>(USART_GetFlagStatus(USART1,USART_FLAG_TC)==<span style="color: #000000;">RESET); 
+</span><span style="color: #008080;"> 26</span> <span style="color: #000000;">    USART_SendData(USART1,(uint8_t)ch);   
+</span><span style="color: #008080;"> 27</span>       <span style="color: #0000ff;">return</span><span style="color: #000000;"> ch;
+</span><span style="color: #008080;"> 28</span> <span style="color: #000000;">}
+</span><span style="color: #008080;"> 29</span> <span style="color: #0000ff;">#endif</span> 
+<span style="color: #008080;"> 30</span> 
+<span style="color: #008080;"> 31</span> 
+<span style="color: #008080;"> 32</span> <span style="color: #0000ff;">#if</span> EN_USART1_RX   
+<span style="color: #008080;"> 33</span> <span style="color: #008000;">//</span><span style="color: #008000;">&acute;&reg;&iquest;&Uacute;1&Ouml;&ETH;&para;&Iuml;&middot;&thorn;&Icirc;&ntilde;&sup3;&Igrave;&ETH;&ograve;
+</span><span style="color: #008080;"> 34</span> <span style="color: #008000;">//</span><span style="color: #008000;">&times;&cent;&Ograve;&acirc;,&para;&Aacute;&Egrave;&iexcl;USARTx-&gt;SR&Auml;&Uuml;&plusmn;&Uuml;&Atilde;&acirc;&Auml;&ordf;&Atilde;&ucirc;&AElig;&auml;&Atilde;&icirc;&micro;&Auml;&acute;&iacute;&Icirc;&oacute;       </span>
+<span style="color: #008080;"> 35</span> u8 USART_RX_BUF[USART_REC_LEN];  <span style="color: #008000;">//</span><span style="color: #008000;">&frac12;&Oacute;&Ecirc;&Otilde;&raquo;&ordm;&sup3;&aring;,&times;&icirc;&acute;&oacute;USART_REC_LEN&cedil;&ouml;&times;&Ouml;&frac12;&Uacute;.</span>
+<span style="color: #008080;"> 36</span> 
+<span style="color: #008080;"> 37</span> 
+<span style="color: #008080;"> 38</span> 
+<span style="color: #008080;"> 39</span> u16 USART_RX_STA=<span style="color: #800080;">0</span>;       <span style="color: #008000;">//</span><span style="color: #008000;">Receiving status marker</span>
+<span style="color: #008080;"> 40</span>   
+<span style="color: #008080;"> 41</span> <span style="color: #0000ff;">void</span> USART1_IRQHandler(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 42</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 43</span>     
+<span style="color: #008080;"> 44</span> <span style="color: #000000;">    u8 res;    
+</span><span style="color: #008080;"> 45</span> <span style="color: #000000;">#ifdef OS_CRITICAL_METHOD     
+</span><span style="color: #008080;"> 46</span> <span style="color: #000000;">    OSIntEnter();    
+</span><span style="color: #008080;"> 47</span> <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;"> 48</span>     <span style="color: #0000ff;">if</span>(USART_GetITStatus(USART1, USART_IT_RXNE) != RESET)  <span style="color: #008000;">//</span><span style="color: #008000;">&frac12;&Oacute;&Ecirc;&Otilde;&Ouml;&ETH;&para;&Iuml;(&frac12;&Oacute;&Ecirc;&Otilde;&micro;&frac12;&micro;&Auml;&Ecirc;&yacute;&frac34;&Yacute;&plusmn;&Oslash;&ETH;&euml;&Ecirc;&Ccedil;0x0d 0x0a&frac12;&aacute;&Icirc;&sup2;)</span>
+<span style="color: #008080;"> 49</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 50</span>         res =USART_ReceiveData(USART1);<span style="color: #008000;">//</span><span style="color: #008000;">(USART1-&gt;DR);    </span><span style="color: #008000;">//</span><span style="color: #008000;">&para;&Aacute;&Egrave;&iexcl;&frac12;&Oacute;&Ecirc;&Otilde;&micro;&frac12;&micro;&Auml;&Ecirc;&yacute;&frac34;&Yacute;</span>
+<span style="color: #008080;"> 51</span>         
+<span style="color: #008080;"> 52</span>         <span style="color: #0000ff;">if</span>((USART_RX_STA&amp;<span style="color: #800080;">0x8000</span>)==<span style="color: #800080;">0</span>)<span style="color: #008000;">//</span><span style="color: #008000;">&frac12;&Oacute;&Ecirc;&Otilde;&Icirc;&acute;&Iacute;&ecirc;&sup3;&Eacute;</span>
+<span style="color: #008080;"> 53</span> <span style="color: #000000;">            {
+</span><span style="color: #008080;"> 54</span>             <span style="color: #0000ff;">if</span>(USART_RX_STA&amp;<span style="color: #800080;">0x4000</span>)<span style="color: #008000;">//</span><span style="color: #008000;">&frac12;&Oacute;&Ecirc;&Otilde;&micro;&frac12;&Aacute;&Euml;0x0d</span>
+<span style="color: #008080;"> 55</span> <span style="color: #000000;">                {
+</span><span style="color: #008080;"> 56</span>                 <span style="color: #0000ff;">if</span>(res!=<span style="color: #800080;">0x0a</span>)USART_RX_STA=<span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">&frac12;&Oacute;&Ecirc;&Otilde;&acute;&iacute;&Icirc;&oacute;,&Ouml;&Oslash;&ETH;&Acirc;&iquest;&ordf;&Ecirc;&frac14;</span>
+<span style="color: #008080;"> 57</span>                 <span style="color: #0000ff;">else</span> USART_RX_STA|=<span style="color: #800080;">0x8000</span>;    <span style="color: #008000;">//</span><span style="color: #008000;">&frac12;&Oacute;&Ecirc;&Otilde;&Iacute;&ecirc;&sup3;&Eacute;&Aacute;&Euml; </span>
+<span style="color: #008080;"> 58</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 59</span>             <span style="color: #0000ff;">else</span> <span style="color: #008000;">//</span><span style="color: #008000;">&raquo;&sup1;&Atilde;&raquo;&Ecirc;&Otilde;&micro;&frac12;0X0D</span>
+<span style="color: #008080;"> 60</span> <span style="color: #000000;">                {    
+</span><span style="color: #008080;"> 61</span>                 <span style="color: #0000ff;">if</span>(res==<span style="color: #800080;">0x0d</span>)USART_RX_STA|=<span style="color: #800080;">0x4000</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 62</span>                 <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 63</span> <span style="color: #000000;">                    {
+</span><span style="color: #008080;"> 64</span>                     USART_RX_BUF[USART_RX_STA&amp;<span style="color: #800080;">0X3FFF</span>]=<span style="color: #000000;"> res;
+</span><span style="color: #008080;"> 65</span>                     USART_RX_STA++<span style="color: #000000;">;
+</span><span style="color: #008080;"> 66</span>                     <span style="color: #0000ff;">if</span>(USART_RX_STA&gt;(USART_REC_LEN-<span style="color: #800080;">1</span>))USART_RX_STA=<span style="color: #800080;">0</span>;<span style="color: #008000;">//</span><span style="color: #008000;">&frac12;&Oacute;&Ecirc;&Otilde;&Ecirc;&yacute;&frac34;&Yacute;&acute;&iacute;&Icirc;&oacute;,&Ouml;&Oslash;&ETH;&Acirc;&iquest;&ordf;&Ecirc;&frac14;&frac12;&Oacute;&Ecirc;&Otilde;      </span>
+<span style="color: #008080;"> 67</span> <span style="color: #000000;">                    }         
+</span><span style="color: #008080;"> 68</span> <span style="color: #000000;">                }
+</span><span style="color: #008080;"> 69</span> <span style="color: #000000;">            }   
+</span><span style="color: #008080;"> 70</span>             
+<span style="color: #008080;"> 71</span> <span style="color: #000000;">     } 
+</span><span style="color: #008080;"> 72</span> <span style="color: #000000;">#ifdef OS_CRITICAL_METHOD     
+</span><span style="color: #008080;"> 73</span> <span style="color: #000000;">    OSIntExit();                                               
+</span><span style="color: #008080;"> 74</span> <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;"> 75</span> <span style="color: #000000;">} 
+</span><span style="color: #008080;"> 76</span> <span style="color: #0000ff;">#endif</span>                                         
+<span style="color: #008080;"> 77</span> 
+<span style="color: #008080;"> 78</span> <span style="color: #008000;">//</span><span style="color: #008000;">A11 RX  A10 TX</span>
+<span style="color: #008080;"> 79</span> 
+<span style="color: #008080;"> 80</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> uart_init()
+</span><span style="color: #008080;"> 81</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 82</span>     
+<span style="color: #008080;"> 83</span> 
+<span style="color: #008080;"> 84</span> <span style="color: #000000;">  GPIO_InitTypeDef GPIO_InitStructure;
+</span><span style="color: #008080;"> 85</span> <span style="color: #000000;">    USART_InitTypeDef USART_InitStructure;
+</span><span style="color: #008080;"> 86</span> <span style="color: #000000;">    NVIC_InitTypeDef NVIC_InitStructure;
+</span><span style="color: #008080;"> 87</span>      
+<span style="color: #008080;"> 88</span>     RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1|RCC_APB2Periph_GPIOA, ENABLE);    <span style="color: #008000;">//</span><span style="color: #008000;">&Ecirc;&sup1;&Auml;&Uuml;USART1&pound;&not;GPIOA&Ecirc;&plusmn;&Ouml;&Oacute;</span>
+<span style="color: #008080;"> 89</span>   USART_DeInit(USART1);  <span style="color: #008000;">//</span><span style="color: #008000;">&cedil;&acute;&Icirc;&raquo;&acute;&reg;&iquest;&Uacute;1</span>
+<span style="color: #008080;"> 90</span> 
+<span style="color: #008080;"> 91</span>     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10; <span style="color: #008000;">//</span><span style="color: #008000;">PC.10</span>
+<span style="color: #008080;"> 92</span>     GPIO_InitStructure.GPIO_Speed =<span style="color: #000000;"> GPIO_Speed_50MHz;
+</span><span style="color: #008080;"> 93</span>     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;    <span style="color: #008000;">//</span><span style="color: #008000;">&cedil;&acute;&Oacute;&Atilde;&Iacute;&AElig;&Iacute;&igrave;&Ecirc;&auml;&sup3;&ouml;</span>
+<span style="color: #008080;"> 94</span>     GPIO_Init(GPIOA, &amp;GPIO_InitStructure); <span style="color: #008000;">//</span><span style="color: #008000;">&sup3;&otilde;&Ecirc;&frac14;&raquo;&macr;PA9</span>
+<span style="color: #008080;"> 95</span>    
+<span style="color: #008080;"> 96</span> 
+<span style="color: #008080;"> 97</span>     GPIO_InitStructure.GPIO_Pin =<span style="color: #000000;"> GPIO_Pin_11;
+</span><span style="color: #008080;"> 98</span>     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;<span style="color: #008000;">//</span><span style="color: #008000;">&cedil;&iexcl;&iquest;&Otilde;&Ecirc;&auml;&Egrave;&euml;</span>
+<span style="color: #008080;"> 99</span>     GPIO_Init(GPIOA, &amp;GPIO_InitStructure);  <span style="color: #008000;">//</span><span style="color: #008000;">&sup3;&otilde;&Ecirc;&frac14;&raquo;&macr;PA10</span>
+<span style="color: #008080;">100</span>     USART_InitStructure.USART_BaudRate = <span style="color: #800080;">9600</span>;<span style="color: #008000;">//</span><span style="color: #008000;">&Ograve;&raquo;&deg;&atilde;&Eacute;&egrave;&Ouml;&Atilde;&Icirc;&ordf;9600;</span>
+<span style="color: #008080;">101</span>     USART_InitStructure.USART_WordLength = USART_WordLength_8b;<span style="color: #008000;">//</span><span style="color: #008000;">&times;&Ouml;&sup3;&curren;&Icirc;&ordf;8&Icirc;&raquo;&Ecirc;&yacute;&frac34;&Yacute;&cedil;&ntilde;&Ecirc;&frac12;</span>
+<span style="color: #008080;">102</span>     USART_InitStructure.USART_StopBits = USART_StopBits_1;<span style="color: #008000;">//</span><span style="color: #008000;">&Ograve;&raquo;&cedil;&ouml;&Iacute;&pound;&Ouml;&sup1;&Icirc;&raquo;</span>
+<span style="color: #008080;">103</span>     USART_InitStructure.USART_Parity = USART_Parity_No;<span style="color: #008000;">//</span><span style="color: #008000;">&Icirc;&THORN;&AElig;&aelig;&Aring;&frac14;&ETH;&pound;&Ntilde;&eacute;&Icirc;&raquo;</span>
+<span style="color: #008080;">104</span>     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;<span style="color: #008000;">//</span><span style="color: #008000;">&Icirc;&THORN;&Oacute;&sup2;&frac14;&thorn;&Ecirc;&yacute;&frac34;&Yacute;&Aacute;&divide;&iquest;&Oslash;&Ouml;&AElig;</span>
+<span style="color: #008080;">105</span>     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;    <span style="color: #008000;">//</span><span style="color: #008000;">&Ecirc;&Otilde;&middot;&cent;&Auml;&pound;&Ecirc;&frac12;</span>
+<span style="color: #008080;">106</span> 
+<span style="color: #008080;">107</span>     USART_Init(USART1, &amp;USART_InitStructure); <span style="color: #008000;">//</span><span style="color: #008000;">&sup3;&otilde;&Ecirc;&frac14;&raquo;&macr;&acute;&reg;&iquest;&Uacute;</span>
+<span style="color: #008080;">108</span> <span style="color: #0000ff;">#if</span> EN_USART1_RX          <span style="color: #008000;">//</span><span style="color: #008000;">&Egrave;&ccedil;&sup1;&ucirc;&Ecirc;&sup1;&Auml;&Uuml;&Aacute;&Euml;&frac12;&Oacute;&Ecirc;&Otilde;  </span>
+<span style="color: #008080;">109</span>    <span style="color: #008000;">//</span><span style="color: #008000;">Usart1 NVIC &Aring;&auml;&Ouml;&Atilde;</span>
+<span style="color: #008080;">110</span>   NVIC_InitStructure.NVIC_IRQChannel =<span style="color: #000000;"> USART1_IRQn;
+</span><span style="color: #008080;">111</span>     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority=<span style="color: #800080;">3</span> ;<span style="color: #008000;">//</span><span style="color: #008000;">&Ccedil;&Agrave;&Otilde;&frac14;&Oacute;&Aring;&Iuml;&Egrave;&frac14;&para;3</span>
+<span style="color: #008080;">112</span>     NVIC_InitStructure.NVIC_IRQChannelSubPriority = <span style="color: #800080;">3</span>;        <span style="color: #008000;">//</span><span style="color: #008000;">&times;&Oacute;&Oacute;&Aring;&Iuml;&Egrave;&frac14;&para;3</span>
+<span style="color: #008080;">113</span>     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;            <span style="color: #008000;">//</span><span style="color: #008000;">IRQ&Iacute;&uml;&micro;&Agrave;&Ecirc;&sup1;&Auml;&Uuml;</span>
+<span style="color: #008080;">114</span>     NVIC_Init(&amp;NVIC_InitStructure);    <span style="color: #008000;">//</span><span style="color: #008000;">&cedil;&ugrave;&frac34;&Yacute;&Ouml;&cedil;&para;&uml;&micro;&Auml;&sup2;&Icirc;&Ecirc;&yacute;&sup3;&otilde;&Ecirc;&frac14;&raquo;&macr;VIC&frac14;&Auml;&acute;&aelig;&AElig;&divide;</span>
+<span style="color: #008080;">115</span>    
+<span style="color: #008080;">116</span>   USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);<span style="color: #008000;">//</span><span style="color: #008000;">&iquest;&ordf;&AElig;&ocirc;&Ouml;&ETH;&para;&Iuml;</span>
+<span style="color: #008080;">117</span> <span style="color: #0000ff;">#endif</span>
+<span style="color: #008080;">118</span>   USART_Cmd(USART1, ENABLE);                    <span style="color: #008000;">//</span><span style="color: #008000;">&Ecirc;&sup1;&Auml;&Uuml;&acute;&reg;&iquest;&Uacute; </span>
+<span style="color: #008080;">119</span> 
+<span style="color: #008080;">120</span> }</pre>
+</div>
+<span class="cnblogs_code_collapse">c文件</span></div>
+<div class="cnblogs_code" onclick="cnblogs_code_show('3766eb8d-221e-4a0b-a563-8b66a2bf9019')"><img id="code_img_closed_3766eb8d-221e-4a0b-a563-8b66a2bf9019" class="code_img_closed" src="./images/stm32F103片上串口USART1通信实验1.png" alt="" /><img id="code_img_opened_3766eb8d-221e-4a0b-a563-8b66a2bf9019" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('3766eb8d-221e-4a0b-a563-8b66a2bf9019',event)" src="./images/stm32F103片上串口USART1通信实验2.png" alt="" />
+<div id="cnblogs_code_open_3766eb8d-221e-4a0b-a563-8b66a2bf9019" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #000000;">#ifndef __USART_H
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">#define</span> __USART_H
+<span style="color: #008080;"> 3</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">sys.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 4</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">stdio.h</span><span style="color: #800000;">"</span>     
+<span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #808080;">/////////////////////////////////////////////////////////////////////////////////</span><span style="color: #008000;">/     </span>
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">#define</span> USART_REC_LEN              200      
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">#define</span> EN_USART1_RX               1        
+<span style="color: #008080;"> 9</span>           
+<span style="color: #008080;">10</span> <span style="color: #0000ff;">extern</span><span style="color: #000000;"> u8  USART_RX_BUF[USART_REC_LEN]; 
+</span><span style="color: #008080;">11</span> <span style="color: #0000ff;">extern</span><span style="color: #000000;"> u16 USART_RX_STA;                 
+</span><span style="color: #008080;">12</span> 
+<span style="color: #008080;">13</span> <span style="color: #0000ff;">void</span><span style="color: #000000;"> uart_init();
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> <span style="color: #0000ff;">#endif</span>       </pre>
+</div>
+<span class="cnblogs_code_collapse">h文件</span></div>
+<div class="cnblogs_code" onclick="cnblogs_code_show('311eac78-4cd7-4bbb-889a-1a71fd4e40cb')"><img id="code_img_closed_311eac78-4cd7-4bbb-889a-1a71fd4e40cb" class="code_img_closed" src="./images/stm32F103片上串口USART1通信实验1.png" alt="" /><img id="code_img_opened_311eac78-4cd7-4bbb-889a-1a71fd4e40cb" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('311eac78-4cd7-4bbb-889a-1a71fd4e40cb',event)" src="./images/stm32F103片上串口USART1通信实验2.png" alt="" />
+<div id="cnblogs_code_open_311eac78-4cd7-4bbb-889a-1a71fd4e40cb" class="cnblogs_code_hide">
+<pre><code><span style="color: #008080;"> 1</span>                         #include <span style="color: #800000;">"</span><span style="color: #800000;">sys.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 2</span>                         #include <span style="color: #800000;">"</span><span style="color: #800000;">usart.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 3</span>                         #include <span style="color: #800000;">"</span><span style="color: #800000;">delay.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 4</span>                         
+<span style="color: #008080;"> 5</span> <span style="color: #0000ff;">#define</span> LED0 PAout(8)<span style="color: #008000;">//</span><span style="color: #008000;"> DS0</span>
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">#define</span> LED1 PBout(1)<span style="color: #008000;">//</span><span style="color: #008000;"> DS1    </span>
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">#define</span> LED2 PBout(3)<span style="color: #008000;">//</span><span style="color: #008000;"> DS1</span>
+<span style="color: #008080;"> 8</span> <span style="color: #0000ff;">#define</span> LED3 PAout(11)<span style="color: #008000;">//</span><span style="color: #008000;"> DS1    </span>
+<span style="color: #008080;"> 9</span> 
+<span style="color: #008080;">10</span>                         <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">                        {
+</span><span style="color: #008080;">12</span>                             
+<span style="color: #008080;">13</span>                         u8 t=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">14</span>                         u8 y=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">15</span>                         Stm32_Clock_Init(<span style="color: #800080;">9</span><span style="color: #000000;">); 
+</span><span style="color: #008080;">16</span>                         delay_init(<span style="color: #800080;">72</span><span style="color: #000000;">); 
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">                        uart_init(); 
+</span><span style="color: #008080;">18</span>     
+<span style="color: #008080;">19</span>                         <span style="color: #0000ff;">while</span>(<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">                        {
+</span><span style="color: #008080;">21</span>                         printf(<span style="color: #800000;">"</span><span style="color: #800000;">t999:%d\n</span><span style="color: #800000;">"</span><span style="color: #000000;">,t);
+</span><span style="color: #008080;">22</span>                         delay_ms(<span style="color: #800080;">1000</span><span style="color: #000000;">);
+</span><span style="color: #008080;">23</span>                         t++<span style="color: #000000;">;
+</span><span style="color: #008080;">24</span>                             <span style="color: #0000ff;">if</span>(y ==<span style="color: #800080;">4</span>)y=<span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">25</span>                             <span style="color: #0000ff;">switch</span><span style="color: #000000;">(y)
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">                            {
+</span><span style="color: #008080;">27</span>                                 <span style="color: #0000ff;">case</span> <span style="color: #800080;">0</span>:  LED0 = <span style="color: #800080;">1</span>;LED1 =<span style="color: #800080;">0</span>; LED2 =<span style="color: #800080;">0</span>; LED3=<span style="color: #800080;">0</span>;<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">28</span>                                 <span style="color: #0000ff;">case</span> <span style="color: #800080;">1</span>:     LED1 = <span style="color: #800080;">1</span>;LED0 =<span style="color: #800080;">0</span>; LED2 =<span style="color: #800080;">0</span>; LED3=<span style="color: #800080;">0</span>; <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">29</span>                                 <span style="color: #0000ff;">case</span> <span style="color: #800080;">2</span>:  LED2 = <span style="color: #800080;">1</span>;LED0 =<span style="color: #800080;">0</span>; LED1 =<span style="color: #800080;">0</span>; LED3=<span style="color: #800080;">0</span>;<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">30</span>                                 <span style="color: #0000ff;">case</span> <span style="color: #800080;">3</span>:     LED3 = <span style="color: #800080;">1</span>;LED1 =<span style="color: #800080;">0</span>; LED0 =<span style="color: #800080;">0</span>; LED2=<span style="color: #800080;">0</span>;<span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">                            }
+</span><span style="color: #008080;">32</span>                             y++<span style="color: #000000;">;
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">                        }
+</span><span style="color: #008080;">34</span> 
+<span style="color: #008080;">35</span>                         <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">36</span>                         }</pre>
+</div>
+<span class="cnblogs_code_collapse">main</span></div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

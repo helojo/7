@@ -1,0 +1,104 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修P3121 [USACO15FEB]审查(AC自动机)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>P3121 [USACO15FEB]审查(AC自动机)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/11265566.html</div><br>
+    <h2 id="题目">题目：</h2>
+<p><a href="https://www.luogu.org/problem/P3121">P3121 [USACO15FEB]审查（黄金）Censoring (Gold)</a></p>
+<h2 id="解析">解析：</h2>
+<p>多字符串匹配，首先想到AC自动机<br />
+建立一个AC自动机<br />
+因为有删除和拼接这种操作，考虑用栈维护<br />
+顺着文本串匹配的方向走，将经过的节点放入栈中，若匹配到一个模式串，就将这个模式串弹出，从栈顶开始继续走<br />
+我们再维护一个pos数组，用来维护trie树中节点对应在文本串中的位置</p>
+<h2 id="代码">代码</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N = 1e5 + 10;
+
+int n, num;
+int sta[N], pos[N];
+
+char s[N], t[N];
+
+struct node {
+    int fail, end;
+    int nx[26];
+} e[N];
+
+inline void TrieInsert(char *s) {
+    int rt = 0, len = strlen(s);
+    for (int i = 0; i &lt; len; ++i) {
+        int v = s[i] - &#39;a&#39;;
+        if (!e[rt].nx[v]) e[rt].nx[v] = ++num;
+        rt = e[rt].nx[v];
+    }
+    e[rt].end = len;
+}
+
+queue&lt;int&gt;q;
+inline void GetFail() {
+    for (int i = 0; i &lt; 26; ++i) if (e[0].nx[i]) {
+            q.push(e[0].nx[i]);
+            e[e[0].nx[i]].fail = 0;
+        }
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        for (int i = 0; i &lt; 26; ++i) {
+            if (e[u].nx[i]) {
+                e[e[u].nx[i]].fail = e[e[u].fail].nx[i];
+                q.push(e[u].nx[i]);
+            } else e[u].nx[i] = e[e[u].fail].nx[i];
+        }
+    }
+}
+
+void query(char *s) {
+    int rt = 0, top = 0, len = strlen(s);
+    for (int i = 0; i &lt; len; ++i) {
+        rt = e[rt].nx[s[i] - &#39;a&#39;];
+        sta[++top] = rt;
+        pos[top] = i;
+        if (e[rt].end) {
+            top -= e[rt].end;
+            rt = sta[top];
+        }
+    }
+    for (int i = 1; i &lt;= top; ++i) printf(&quot;%c&quot;, s[pos[i]]);
+    putchar(&#39;\n&#39;);
+}
+
+int main() {
+    cin &gt;&gt; t;
+    cin &gt;&gt; n;
+    for (int i = 1; i &lt;= n; ++i) {
+        cin &gt;&gt; s;
+        TrieInsert(s);
+    }
+    GetFail();
+    query(t);
+    return 0;
+}
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

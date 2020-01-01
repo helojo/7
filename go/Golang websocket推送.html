@@ -1,0 +1,213 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Golang websocket推送' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Golang websocket推送</center></div><div class='banquan'>原文出处:本文由博客园博主bener提供。<br/>
+原文连接:https://www.cnblogs.com/bener/p/10717466.html</div><br>
+    <h1 id="golang-websocket推送">Golang websocket推送</h1>
+<blockquote>
+<p>在工作用主要使用的是Java，也做过IM（后端用的netty websocket）。最近想通过Golang重写下，于是通过websocket撸了一个聊天室。</p>
+</blockquote>
+<h2 id="项目地址">项目地址</h2>
+<p><a href="https://github.com/xuanbo/pusher">Github</a></p>
+<h2 id="依赖">依赖</h2>
+<p><code>golang.org/x/net</code>下的websocket。</p>
+<p>由于我使用的是golang版本是1.12，在国内访问<code>golang.org/x</code>需要借助代理，或者通过replace替换为github下的镜像。</p>
+<pre><code><code>module github.com/xuanbo/pusher
+
+require golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
+
+replace (
+        golang.org/x/crypto =&gt; github.com/golang/crypto v0.0.0-20190308221718-c2843e01d9a2
+        golang.org/x/net =&gt; github.com/golang/net v0.0.0-20190404232315-eb5bcb51f2a3
+        golang.org/x/sys =&gt; github.com/golang/sys v0.0.0-20190215142949-d0b11bdaac8a
+        golang.org/x/text =&gt; github.com/golang/text v0.3.0
+)</code></pre>
+<p>即工程下的<code>go.mod.cn</code>文件。</p>
+<h2 id="websocket用法">websocket用法</h2>
+<p>核心就是for循环下的处理收到的消息逻辑，然后对消息进行处理（转发、广播等）。</p>
+<pre class="go"><code>// websocket Handler
+// usage: http.Handle(&quot;/websocket&quot;, websocket.Handler(pusher.Handler))
+func Handler(conn *websocket.Conn) {
+    // handle connected
+    var userId string
+    var err error
+    if userId, err = doConnected(conn); err != nil {
+        fmt.Println(&quot;Client connect error: &quot;, err)
+        return
+    }
+
+    fmt.Println(&quot;Client connected, userId: &quot;, userId)
+
+    for {
+        msg := new(Message)
+
+        if err := websocket.JSON.Receive(conn, msg); err != nil {
+            fmt.Println(&quot;Can&#39;t receive, error: &quot;, err)
+            break
+        }
+
+        msg.UpdateAt = Timestamp()
+
+        fmt.Println(&quot;Received from client: &quot;, msg)
+
+        // handle received message
+        if err := doReceived(conn, msg); err != nil {
+            fmt.Println(&quot;Received message error: &quot;, err)
+            break
+        }
+    }
+
+    // handle disConnected
+    if err := doDisConnected(userId, conn); err != nil {
+        fmt.Println(&quot;Client disconnected error: &quot;, err)
+        return
+    }
+
+    fmt.Println(&quot;Client disconnected, userId: &quot;, userId)
+}</code></pre>
+<h2 id="连接管理">连接管理</h2>
+<p>在IM中比较重要的点就是管理客户端连接，这样我们才能通过服务端转发消息给对应的用户。注意，下面没有考虑集群，只在单机中考虑。</p>
+<pre class="go"><code>// websocket connection manager
+type ConnManager struct {
+    // websocket connection number
+    Online *int32
+    // websocket connection
+    connections *sync.Map
+}</code></pre>
+<p>上面定义了一个连接管理结构体，<code>Online</code>为在线的人数，<code>connections</code>为客户端的连接管理（key为userId，value为websocket connection）。</p>
+<p>下面为ConnManager添加一些方法来处理连接、断开连接、发送消息、广播等操作。</p>
+<pre class="go"><code>// add websocket connection
+// online number + 1
+func (m *ConnManager) Connected(k, v interface{}) {
+    m.connections.Store(k, v)
+
+    atomic.AddInt32(m.Online, 1)
+}
+
+// remove websocket connection by key
+// online number - 1
+func (m *ConnManager) DisConnected(k interface{}) {
+    m.connections.Delete(k)
+
+    atomic.AddInt32(m.Online, -1)
+}
+
+// get websocket connection by key
+func (m *ConnManager) Get(k interface{}) (v interface{}, ok bool) {
+    return m.connections.Load(k)
+}
+
+// iter websocket connections
+func (m *ConnManager) Foreach(f func(k, v interface{})) {
+    m.connections.Range(func(k, v interface{}) bool {
+        f(k, v)
+        return true
+    })
+}
+
+// send message to one websocket connection
+func (m *ConnManager) Send(k string, msg *Message) {
+    v, ok := m.Get(k)
+    if ok {
+        if conn, ok := v.(*websocket.Conn); ok {
+            if err := websocket.JSON.Send(conn, msg); err != nil {
+                fmt.Println(&quot;Send msg error: &quot;, err)
+            }
+        } else {
+            fmt.Println(&quot;invalid type, expect *websocket.Conn&quot;)
+        }
+    } else {
+        fmt.Println(&quot;connection not exist&quot;)
+    }
+}
+
+// send message to multi websocket connections
+func (m *ConnManager) SendMulti(keys []string, msg interface{}) {
+    for _, k := range keys {
+        v, ok := m.Get(k)
+        if ok {
+            if conn, ok := v.(*websocket.Conn); ok {
+                if err := websocket.JSON.Send(conn, msg); err != nil {
+                    fmt.Println(&quot;Send msg error: &quot;, err)
+                }
+            } else {
+                fmt.Println(&quot;invalid type, expect *websocket.Conn&quot;)
+            }
+        } else {
+            fmt.Println(&quot;connection not exist&quot;)
+        }
+    }
+}
+
+// broadcast message to all websocket connections otherwise own connection
+func (m *ConnManager) Broadcast(conn *websocket.Conn, msg *Message) {
+    m.Foreach(func(k, v interface{}) {
+        if c, ok := v.(*websocket.Conn); ok &amp;&amp; c != conn {
+            if err := websocket.JSON.Send(c, msg); err != nil {
+                fmt.Println(&quot;Send msg error: &quot;, err)
+            }
+        }
+    })
+}</code></pre>
+<h2 id="消息类型格式">消息类型、格式</h2>
+<p>消息类型（MessageType）主要有单聊、群聊、系统通知等。</p>
+<p>消息格式（MediaType）主要有文本格式、图片、文件等。</p>
+<pre><code><code>type MessageType int
+type MediaType int
+
+const (
+    Single MessageType = iota
+    Group
+    SysNotify
+    OnlineNotify
+    OfflineNotify
+)
+
+const (
+    Text MediaType = iota
+    Image
+    File
+)
+
+// websocket message
+type Message struct {
+    MessageType MessageType `json:&quot;messageType&quot;`
+    MediaType   MediaType   `json:&quot;mediaType&quot;`
+    From        string      `json:&quot;from&quot;`
+    To          string      `json:&quot;to&quot;`
+    Content     string      `json:&quot;content,omitempty&quot;`
+    FileId      string      `json:&quot;fileId,omitempty&quot;`
+    Url         string      `json:&quot;url,omitempty&quot;`
+    CreateAt    int64       `json:&quot;createAt,omitempty&quot;`
+    UpdateAt    int64       `json:&quot;updateAt,omitempty&quot;`
+}</code></pre>
+<p>上面定义了一个统一的消息（Message）。</p>
+<h2 id="效果">效果</h2>
+<p>前端的代码就不展示了，最终实现的聊天室效果如下：</p>
+<p><img src="./images/Golang websocket推送0.png" alt="UI" /></p>
+<h2 id="补充">补充</h2>
+<p>本例子没有涉及到用户认证、消息加密、idle、单聊、消息格式、消息持久化等等，只做了一个简单的群聊。</p>
+<p>欢迎感兴趣的道友，基于此扩展出自己的推送系统、IM等。</p>
+<h2 id="说明">说明</h2>
+<p>Just for fun！</p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

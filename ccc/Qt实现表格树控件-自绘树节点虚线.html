@@ -1,0 +1,372 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Qt实现表格树控件-自绘树节点虚线' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Qt实现表格树控件-自绘树节点虚线</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11312691.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一开心一刻">一、开心一刻</a></li>
+        <li><a href="#二自绘树节点">二、自绘树节点？</a></li>
+        <li><a href="#三效果展示">三、效果展示</a></li>
+        <li><a href="#四实现思路">四、实现思路</a><ul>
+        <li><a href="#可扩展接口">1、可扩展接口</a></li>
+        <li><a href="#函数重写">2、函数重写</a></li>
+        <li><a href="#同步左侧表头">3、同步左侧表头</a></li>
+        </ul></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11312691.html">Qt实现表格树控件-自绘树节点虚线</a></p>
+<h2 id="一开心一刻">一、开心一刻</h2>
+<blockquote>
+<p>一程序员第一次上女朋友家她妈板着脸问 ：你想娶我女儿，有多少存款？</p>
+</blockquote>
+<blockquote>
+<p>程序员低了下头：五百！</p>
+</blockquote>
+<blockquote>
+<p>她妈更鄙视了：才五百块，买个厕所都不够！</p>
+</blockquote>
+<blockquote>
+<p>程序员忙说：不是人民币！</p>
+</blockquote>
+<blockquote>
+<p>她妈：就算是美元，还是不够买厕所！</p>
+</blockquote>
+<blockquote>
+<p>程序员：其实是比特币！</p>
+</blockquote>
+<blockquote>
+<p>她妈：哇，贤婿，我给你买只大龙虾去</p>
+</blockquote>
+<h2 id="二自绘树节点">二、自绘树节点？</h2>
+<p>自绘树节点？听起来都挺复杂的，可是为什么还要自绘树节点呢？这充分说明产品的脑子是什么东西都能想出来的。</p>
+<p>有一天产品说我们的软件里缺少一个美丽的树控件，然后就要求开发去实现这个功能。</p>
+<p>对于有一定开发经验的同学可能直接会去百度，或者上Qt帮助文档上查找资料，然后发现直接设置qss就能达到我们需要的效果，于是一顿操作后，发现效果还是不错滴。</p>
+<pre><code>setStyleSheet(&quot;&quot;
+    &quot;QTreeView {outline:none;show-decoration-selected: 1;}&quot;
+    &quot;QTreeView {outline:none;border:0px;}&quot;
+    &quot;QTreeView::branch{     background-color: transparent;  }&quot;
+    &quot;QTreeView::item:hover, QTreeView::branch:hover { background-color: transparent;border-color: rgb(255, 0, 0);}&quot;
+    &quot;QTreeView::item:selected, QTreeView::branch:selected { background-color: #C5E0F7;}&quot;
+    &quot;QTreeView::branch:open:has-children{image: url(:/branch-expand.png);}&quot;
+    &quot;QTreeView::branch:closed:has-children{image: url(:/branch-collapse.png);}&quot;
+    &quot;QTreeView::branch:has-siblings:!adjoins-item{border-image:url(:/branch-line.png) 0;}&quot;
+    &quot;QTreeView::branch:has-siblings:adjoins-item{border-image:url(:/branch-more.png) 0;}&quot;
+    &quot;QTreeView::branch:!has-children:!has-siblings:adjoins-item{border-image:url(:/branch-end.png) 0;   }&quot;
+    &quot;QTreeView::branch:has-children:!has-siblings:closed,QTreeView::branch:closed:has-children:has-siblings{border-image:none;image: url(:/branch-collapse.png);    }&quot;
+    &quot;QTreeView::branch:open:has-children:!has-siblings,QTreeView::branch:open:has-children:has-siblings{border-image:none;image: url(:/branch-expand.png);  }&quot;
+    );</code></pre>
+<p>遂找来产品验证，当产品看到这个效果后，脸直接都绿了。</p>
+<blockquote>
+<p>产品：我不是说要一个树形控件吗？行高需要能动态调整那种！</p>
+</blockquote>
+<blockquote>
+<p>开发：。。。</p>
+</blockquote>
+<blockquote>
+<p>开发：行高调整了，那branch上贴的图拉伸后不是模糊了么。。。</p>
+</blockquote>
+<blockquote>
+<p>产品：。。。</p>
+</blockquote>
+<blockquote>
+<p>产品：我不管，这个行高可拖拽功能很重要，怎么实现我不管，但是功能必须要有。</p>
+</blockquote>
+<blockquote>
+<p>开发：卧槽，看来只有出终极大法了，直接自绘吧</p>
+</blockquote>
+<h2 id="三效果展示">三、效果展示</h2>
+<p>如下图所示，是一个简单的树branch自绘效果。</p>
+<blockquote>
+<p>此处主要是展示一个demo效果，如果需要美化需要专业设计师出图来做。</p>
+</blockquote>
+<html>
+<center>
+<div>
+    <img src="./images/Qt实现表格树控件-自绘树节点虚线0.png" />
+</div>
+</center>
+</html>
+<h2 id="四实现思路">四、实现思路</h2>
+<p>既然要自己绘制树形节点，那必然要去研究Qt的源码。</p>
+<h3 id="可扩展接口">1、可扩展接口</h3>
+<p>首先我们打开QTreeView类的帮助文档，查找这个类都有哪些可供重写的接口，然后就发现了这么几个函数</p>
+<center>
+    <img src="./images/Qt实现表格树控件-自绘树节点虚线1.png" />
+</center>
+<p>看名字大概都知道是什么意思，不过这里还是做简要说明</p>
+<center>
+
+函数名  |   含义
+---     |   ---
+drawBranches| 绘制branch
+drawRow     | 绘制行
+drawTree    | 绘制树
+indexRowSizeHint    | 默认行高
+rowHeight| 获取行高
+
+</center>
+<p><strong>前边提到我们要自己绘制branch线条，但是其余的东西还是要走Qt默认的绘制风格，因此在重写绘制函数时，千万不要忘记了调用原有的绘制方法。</strong></p>
+<p>表格中前3个函数就是绘制树控件的具体方法，这3个函数搭配起来完成了树控件内容格子的绘制。下面我们来重写这3个函数，分别完成我们的需求</p>
+<h3 id="函数重写">2、函数重写</h3>
+<p><strong>a、绘制行drawRow</strong></p>
+<p>drawRow顾名思义就是绘制一行的意思，这里也确实如此。为什么要重写这个函数呢？答案也很简单。</p>
+<p>树控件本身是不具有垂直分割线的，既然我们要模拟表格的样式，那么垂直分割线必然是需要的。</p>
+<p>实现代码可能像下面这样，是不是很简单。</p>
+<pre><code>void FrozenTreeView::drawRow(QPainter * painter, const QStyleOptionViewItem &amp; options, const QModelIndex &amp; index) const
+{
+    QTreeView::drawRow(painter, options, index);
+
+    //绘制网格线
+    QPen pen;
+    pen.setWidth(m_iWidth);
+    pen.setColor(m_gridLineColor);
+
+    painter-&gt;save();
+    painter-&gt;setPen(pen);
+    painter-&gt;drawRect(options.rect);
+    painter-&gt;restore();
+}</code></pre>
+<p><strong>b、绘制branch</strong></p>
+<p>绘制行函数主要是添加了单元格边框绘制，接下来就是第一列的branch绘制。</p>
+<p>绘制branch时一定不要忘记调用原有的绘制函数，否则界面显示会异常。</p>
+<pre><code>{
+    painter-&gt;save();
+    QTreeView::drawBranches(painter, rect, index);
+    painter-&gt;restore();
+}</code></pre>
+<p>绘制branch时主要是根据当前节点是否展开、是否有孩子节点、是否有兄弟节点等状态来联合判断并进行绘制</p>
+<p>如下是绘制代码，可能有些长，但是应该比较好理解。</p>
+<p><strong>需要注意的点</strong></p>
+<ol>
+<li>除根节点外，每个节点都需要绘制文字前边的水平线</li>
+<li>有父亲的节点需要绘制垂直线。绘制的竖线是否绘制到底，取决于是否有向下的兄弟</li>
+<li>有爷爷的节点可能需要额外绘制向下的竖线。是否绘制取决于自己的父亲是否有向下的兄弟</li>
+<li>规则3其实是一个循环的处理，也就是说爷爷如果有爸爸，也就是说节点如果有祖爷爷，那么可能还需要绘制更多的向下竖线。是否绘制取决于节点的爷爷是否有向下的兄弟</li>
+</ol>
+<p>代码这里就不细说了，有兴趣的可以自己研究研究。绘制规则就是上述4点</p>
+<pre><code>//绘制branch
+{
+    DataNode * node = static_cast&lt;DataNode *&gt;(index.internalPointer());
+    bool hasChild = node-&gt;children().size() != 0;//是否有孩子
+
+    QList&lt;DataNode *&gt; &amp; children = node-&gt;parent()-&gt;children();
+    bool has_next_siblings = children.indexOf(node) != (children.size() - 1);//是否有向后的兄弟
+    bool has_pre_siblings = children.indexOf(node) != 0;//是否有向前的兄弟
+
+    int level = node-&gt;level();
+    int indentaion = indentation();//缩进
+    int indentaions = indentaion * (level - 1);//缩进距离
+
+    QRect r = rect;
+    r.setLeft(r.left() + indentaions);//图标绘制位置
+
+    painter-&gt;save();
+    painter-&gt;setPen(m_branchLine);
+
+    bool expaned = isExpanded(index);//节点是否展开
+
+    QLine line(r.center() + QPoint(0, r.top() - r.center().y()), r.center() + QPoint(0, r.bottom() - r.center().y()));
+    line.translate(-indentaion, 0);
+    //QLine line(r.topLeft(), r.bottomLeft());
+    //循环绘制(具有兄弟节点的)父节点向下的竖线
+    DataNode * parent_node = node-&gt;parent();
+    DataNode * sub_node = node;
+    bool isNeed = node-&gt;children().size() == 0;
+    for (int i = level - 1; i &gt;= 0; --i)
+    {
+        QList&lt;DataNode *&gt; &amp; children = parent_node-&gt;children();
+        bool has_next_siblings = children.indexOf(sub_node) != (children.size() - 1);//父节点是否有(向后的)兄弟
+
+        if (has_next_siblings)
+        {
+            painter-&gt;drawLine(line);
+        }
+        
+
+        if (level - 1 == i)
+        {
+            QPoint pos = (line.p1() + line.p2()) / 2;
+            QPoint pos2 = pos + QPoint(indentaion / 2, 0);
+
+            painter-&gt;drawLine(pos, pos2);
+
+            if (!has_next_siblings)
+            {
+                painter-&gt;drawLine(line.p1(), (line.p1() + line.p2()) / 2);
+            }
+        }
+
+        sub_node = parent_node;
+        parent_node = parent_node-&gt;parent();
+        line.translate(-indentaion, 0);
+    }
+
+    QPixmap pix;
+    if (expaned)
+    {
+        if (hasChild)
+        {
+            pix = QPixmap(&quot;:/branch-expand.png&quot;);
+        }
+    }
+    else
+    {
+        if (hasChild)
+        {
+            pix = QPixmap(&quot;:/branch-collapse.png&quot;);
+        }
+    }
+    if (pix.isNull() == false)
+    {
+        QRect pixRect = QRect(QPoint(0, 0), pix.size());
+        pixRect.moveCenter(r.center());
+
+        if (expaned)
+        {
+            QLine line(r.center(), r.center() + QPoint(0, r.bottom() - r.center().y()));
+            painter-&gt;drawLine(line);
+        }
+
+        painter-&gt;drawPixmap(pixRect, pix);
+    }
+
+    painter-&gt;restore();
+}</code></pre>
+<h3 id="同步左侧表头">3、同步左侧表头</h3>
+<p>上一篇文章<a href="https://www.cnblogs.com/swarmbees/p/11167659.html">Qt实现表格树控件-支持多级表头</a> 中已经说了，我们的表格控件是使用QTableView+QTreeView来实现的，那么我们操作树控件时必然要对表格中的表头进行同步操作了。</p>
+<p><strong>树控件折叠时隐藏垂直表头指定行</strong></p>
+<pre><code>void collapsed_p(DataNode * node)
+{
+    QList&lt;DataNode *&gt; childNodeList = node-&gt;children();
+    //DataManager::getInstance()-&gt;allChildNode(node, childNodeList);
+
+    int size = childNodeList.size();
+    for (int i = 0; i &lt; size; ++i)
+    {
+        int serial = DataManager::getInstance()-&gt;serialNoOfNode(childNodeList.at(i));
+        VHeaderView::instance-&gt;SetRowHide(serial, true);
+
+        QModelIndex subIndex = FrozenTreeView::instance-&gt;rowIndex(serial);
+
+        collapsed_p(childNodeList.at(i));
+    }
+}
+
+void FrozenTreeView::onCollapsed(const QModelIndex &amp; index)
+{
+    if (!index.isValid())
+        return;
+
+    DataNode * node = static_cast&lt;DataNode*&gt;(index.internalPointer());
+    if (nullptr == node)
+        return;
+
+    collapsed_p(node);
+    VHeaderView::instance-&gt;UpdateCache();
+
+    //要对水平头的最后一列进行重设大小，引起水平头自己的更新操作，从而使整个界面显示正确
+    HHeaderView::instance-&gt;resizeLastSection(true);
+}</code></pre>
+<p><strong>树控件展开时显示垂直表头指定行</strong></p>
+<pre><code>void expanded_p(DataNode * node)
+{
+    QList&lt;DataNode *&gt; childNodeList = node-&gt;children();
+
+    int size = childNodeList.size();
+    for (int i = 0; i &lt; size; ++i)
+    {
+        int serial = DataManager::getInstance()-&gt;serialNoOfNode(childNodeList.at(i));
+        VHeaderView::instance-&gt;SetRowHide(serial, false);
+
+        QModelIndex subIndex = FrozenTreeView::instance-&gt;rowIndex(serial);
+
+        if (FrozenTreeView::instance-&gt;isExpanded(subIndex))
+        {
+            expanded_p(childNodeList.at(i));
+        }
+    }
+}
+
+void FrozenTreeView::onExpanded(const QModelIndex &amp; index)
+{
+    DataNode * node = static_cast&lt;DataNode *&gt;(index.internalPointer());
+    if (nullptr == node)
+        return;
+
+    VHeaderView::instance-&gt;blockSignals(true);
+    expanded_p(node);
+    VHeaderView::instance-&gt;UpdateCache();
+    VHeaderView::instance-&gt;blockSignals(false);
+
+    //要对水平头的最后一列进行重设大小，引起水平头自己的更新操作，从而使整个界面显示正确
+    HHeaderView::instance-&gt;resizeLastSection(false);
+}</code></pre>
+<h2 id="五相关文章">五、相关文章</h2>
+<hr />
+<p><strong>值得一看的优秀文章：</strong></p>
+<ol>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/6707798.html">财联社-产品展示</a></strong></li>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/10836505.html">广联达-产品展示</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95527107">Qt定制控件列表</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95526527">牛逼哄哄的Qt库</a></strong></li>
+</ol>
+<hr />
+<ol>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11167664.html">Qt实现表格控件-支持多级列表头、多级行表头、单元格合并、字体设置等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11155074.html">Qt高仿Excel表格组件-支持冻结列、冻结行、内容自适应和合并单元格</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11129274.html">属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11117259.html">超级实用的属性浏览器控件--QtTreePropertyBrowser</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/9288902.html">Qt之表格控件蚂蚁线</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11185435.html">QRowTable表格控件-支持hover整行、checked整行、指定列排序等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11167659.html">Qt实现表格树控件-支持多级表头</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11280122.html">QTableView表格控件区域选择-自绘选择区域</a></p></li>
+</ol>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

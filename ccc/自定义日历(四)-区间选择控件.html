@@ -1,0 +1,371 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修自定义日历(四)-区间选择控件' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>自定义日历(四)-区间选择控件</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11783045.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一概述">一、概述</a></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三整体结构">三、整体结构</a></li>
+        <li><a href="#四分析实现">四、分析实现</a><ul>
+        <li><a href="#qpickdate">1、QPickDate</a></li>
+        <li><a href="#qdatepanel">2、QDatePanel</a></li>
+        <li><a href="#qdatewidgetqdatecontent">3、QDateWidget、QDateContent</a></li>
+        <li><a href="#调度绘制">4、 调度绘制</a></li>
+        </ul></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11783045.html">自定义日历(四)-区间选择控件</a></p>
+<h2 id="一概述">一、概述</h2>
+<p>很早很早以前，写过几篇关于日历的文章，不同于Qt原生的控件，这些控件都是博主使用自绘的方式进行完成，因此可定制性更强一些，感兴趣的可以参考<a href="http://www.cnblogs.com/swarmbees/p/5927823.html">自定义日历(一)</a>、<a href="http://www.cnblogs.com/swarmbees/p/5929000.html">自定义日历(二)</a>和<a href="https://www.cnblogs.com/swarmbees/p/6063295.html">自定义日历(三))</a>。</p>
+<p>本篇文章还是继续来写我们的日历控件，仍然采用自绘的方式，带来更加炫酷的效果。看本文的标题就应该就能明白，这次实现的是一个可以区间选择的日历控件。</p>
+<h2 id="二效果展示">二、效果展示</h2>
+<p>效果图如下，一个简单的效果展示。</p>
+<center>
+    <img src="./images/自定义日历(四)-区间选择控件0.png" />
+</center>
+<p>日历控件与Qt原生的QDateEdit一样，是由一个按钮进行触发，弹出如期选择面板。不同的是这个日历选择面板由2个小的日期面板组成，分别是开始和结束日期，规则如下：</p>
+<ol>
+<li>开始日期必须小于结束日期</li>
+<li>顶部有快速返回按钮</li>
+<li>选中的日期段上有高亮背景色</li>
+<li>选中的日期点上有蓝色圆形标识</li>
+<li>点击确定按钮以后日期选择面板关闭</li>
+</ol>
+<h2 id="三整体结构">三、整体结构</h2>
+<p>开始讲解具体内容之前，先来看下整体的结构划分，实现这个日期段选择控件，总共需要以下4个类，下图是工程结构</p>
+<center>
+    <img src="./images/自定义日历(四)-区间选择控件1.png" />
+</center>
+<p>以下是4个类的说明</p>
+<ol>
+<li>QDateContent：单个日历窗口</li>
+<li>QDateWidget：包含了年月选择的单个日历窗口</li>
+<li>QDatePanel：日期段选择面板</li>
+<li>QPickDate：日期选择按钮，用于呼出日期选择面板</li>
+</ol>
+<p>其中QPickDate类就是对外使用的类，使用也很简单，可能像下面这样</p>
+<pre><code>QPickDate * pickDate = new QPickDate;
+pickDate-&gt;SetQuickValue(QDatePanel::DAY_ONE);</code></pre>
+<p>意思是构造一个日期段选择空间，然后初始时为选择当天。有了一个大致的了解后，下面开始详细的讲解每个类的实现过程</p>
+<h2 id="四分析实现">四、分析实现</h2>
+<h3 id="qpickdate">1、QPickDate</h3>
+<p>QPickDate类是对外导出类，也是我们使用的时候需要了解的类，他的头文件实现如下</p>
+<pre><code>class QPickDate : public QPushButton
+{
+    Q_OBJECT
+
+public:
+    QPickDate(QWidget * parent = nullptr);
+    ~QPickDate();
+
+signals:
+    void PickSuccess();//选择日期成功时调用
+
+public:
+    void SetQuickValue(QDatePanel::QuickPick pick);
+    void GetStartDate(unsigned short year, unsigned short month, unsigned short day);
+    void GetEndDate(unsigned short year, unsigned short month, unsigned short day);
+
+private slots:
+    void OnClicked();
+
+private:
+    void InitializeUI();
+
+private:
+    QDatePanel::QuickPick m_ePick = QDatePanel::DAY_CUSTOM;
+    QDatePanel * m_pPanel = nullptr;
+};</code></pre>
+<p>接口看起来也比较简单，SetQuickValue接口上一小节使用过，主要是用来初始化日期控件状态。GetStartDate和GetEndDate接口主要就是获取日期段的开始时间和结束时间。其中的实现具体的日期数据是从成员变量QDatePanel中获取。</p>
+<h3 id="qdatepanel">2、QDatePanel</h3>
+<p>如下是QDatePanel的头文件声明，由于代码量的问题，其中精简了一部分，QDatePanel这个类就是日期选择面板，垂直方向由三部分组成，分别是<code>快速选择</code>、<code>日期选择</code>和<code>操作按钮</code></p>
+<pre><code>class QDatePanel : public QFrame
+{
+    ...
+public:
+    enum QuickPick
+    {
+        DAY_ONE,//今天
+        DAY_WEEK,//近一周
+        DAY_MONTH,//近一月
+        DAY_YEAR,//近一年
+        DAY_CUSTOM,//自定义
+    };
+
+signals:
+    void PickSuccess(QuickPick, const QString &amp;);
+    ...
+public:
+    QString GetQuickName(QuickPick pick);
+    void SetQuickValue(QuickPick pick);
+    void GetStartDate(unsigned short year, unsigned short month, unsigned short day);
+    void GetEndDate(unsigned short year, unsigned short month, unsigned short day);
+
+private:
+    ...
+};</code></pre>
+<p><strong>快速选择</strong>：可以快速选择一日、一周、一月和一年时间段</p>
+<p><strong>日期选择</strong>：分为左右结构，左侧时其实日期，右侧时结束日期</p>
+<p><strong>操作按钮</strong>：选择好日期后，可以通过点击确定或者取消来关闭面板</p>
+<h3 id="qdatewidgetqdatecontent">3、QDateWidget、QDateContent</h3>
+<p>上边说了QDatePanel是日期选择面板，其中<code>日期选择</code>部分就是由左右两部分组成，其实分别就是一个QDateWidget，如下图所示</p>
+<center>
+    <img src="./images/自定义日历(四)-区间选择控件2.png" />
+</center>
+<p>QDateContent类是主要的日期计算和绘制类，被QDateWidget包裹了一层，并添加上了年和月的操作按钮。</p>
+<p>下面主要介绍下QDateContent类的实现，首先来看下声明文件</p>
+<blockquote>
+<p>由于篇幅原因还是注释了一大部分代码</p>
+</blockquote>
+<pre><code>class QDateContent : public QWidget
+{
+    ...
+signals:
+    void DateClicked(unsigned short year, unsigned short month, unsigned short day);
+
+public:
+    void SetSelectDate(unsigned short year, unsigned short month, unsigned short day);
+    void GetSelectDate(unsigned short &amp; year, unsigned short &amp; month, unsigned short &amp; day);
+    void SetDate(unsigned short year, unsigned short month, unsigned short day);
+    void GetDate(unsigned short &amp; year, unsigned short &amp; month, unsigned short &amp; day);
+
+    //设置关联日期
+    void SetRelationDate(QDateContent * content);
+
+public slots :
+    void PreviousMonth();//上一月
+    void NextMonth();//下一月
+    void PreviousYear();//上一年
+    void NextYear();//下一年
+    ...
+private:
+    struct QDateContentPrivate;
+    QDateContentPrivate * d_ptr;
+};</code></pre>
+<p>切换月份和年份的接口代码中已经包含了注释，其他Set和Get接口看名称基本也能明白，QDateContent类的代码量还是比较大的，下面我们主要来看绘制部分，其中有3个比较重要的点<code>绘制头</code>、<code>绘制数字</code>和<code>绘制选中</code>。</p>
+<p><strong>绘制头</strong></p>
+<p>该绘制模块主要是绘制表头，也就是周日、周一这样的字段，绘制的位置时通过私有函数GetColumnLeft和GetColumnRight获取。</p>
+<pre><code>void QDateContent::DrawWeek(QPainter &amp; painter)
+{
+    //  QString aText[7] = { STR(&quot;周日&quot;), STR(&quot;周一&quot;), STR(&quot;周二&quot;), STR(&quot;周三&quot;), STR(&quot;周四&quot;), STR(&quot;周五&quot;), STR(&quot;周六&quot;) };
+    QString aText[7] = { STR(&quot;日&quot;), STR(&quot;一&quot;), STR(&quot;二&quot;), STR(&quot;三&quot;), STR(&quot;四&quot;), STR(&quot;五&quot;), STR(&quot;六&quot;) };
+
+    painter.save();
+    painter.setFont(d_ptr-&gt;weekFont);
+    QFontMetrics fm(d_ptr-&gt;weekFont);
+    int height = fm.height();
+
+    //painter.fillRect(d_ptr-&gt;GetColumnLeft(0), d_ptr-&gt;topBorder, d_ptr-&gt;GetColumnRight(6) - 3, d_ptr-&gt;topBorder + height, QColor(20, 22, 23));
+
+    for (int i = 0; i &lt; 7; ++i)
+    {
+        int left = d_ptr-&gt;GetColumnLeft(i);
+        int right = d_ptr-&gt;GetColumnRight(i);
+        QRect rect(left, d_ptr-&gt;topBorder, right - left, height);
+        painter.setPen(QColor(&quot;#838D9E&quot;));
+
+        painter.drawText(rect, Qt::AlignCenter, aText[i]);
+    }
+
+    painter.restore();
+}</code></pre>
+<p><strong>绘制数字</strong></p>
+<p>绘制数字和绘制标题原理基本一致，位置信息都是使用GetColumnLeft和GetColumnRight获取，不同的是，绘制数字时还需要绘制额外的选中状态、悬浮状态</p>
+<p>由于是绘制函数，因此有一些数据计算是通过整理好的，比如说需要<code>绘制的数字</code>，<code>当前行数</code>和<code>当月第一天周几</code>等等</p>
+<blockquote>
+<p>由于绘制篇幅原因，还是只保留主要逻辑</p>
+</blockquote>
+<pre><code>void QDateContent::DrawDay(QPainter &amp; painter)
+{
+    painter.save();
+
+    for (int column = 0; column &lt; d_ptr-&gt;m_column_count; ++column)
+    {
+        int column_left = d_ptr-&gt;GetColumnLeft(column);
+        int column_right = d_ptr-&gt;GetColumnRight(column);
+        for (int row = 0; row &lt; d_ptr-&gt;m_row_count; ++row)
+        {
+            int index = row * d_ptr-&gt;m_column_count + column;
+            QRect &amp; rcTmp = d_ptr-&gt;m_aRect[index];
+            tDayFlag &amp; flag = d_ptr-&gt;m_aDayFlag[index];
+            flag.m_chEnable = (column != 0 &amp;&amp; column != 6) ? true : false;
+
+            bool selected = d_ptr-&gt;MatchRealDate(flag);
+            if (selected)
+            {
+                QPainterPath path;
+                path.addEllipse(QRectF(rcTmp).center(), 12, 12);
+                painter.fillPath(path, QColor(&quot;#218CF2&quot;));
+            }
+
+            painter.drawText(rcTmp, Qt::AlignCenter, QString::number(flag.m_chFlagD));
+
+            painter.restore();
+        }
+    }
+
+    painter.restore();
+}</code></pre>
+<p><strong>绘制选中</strong></p>
+<p>以下代码是绘制选中时的水平背景色，绘制代码比较简单，复杂的地方主要有2个：</p>
+<ol>
+<li>计算当前日期是否在选择日期段当中，返回status</li>
+<li>修正第一步返回的status</li>
+</ol>
+<blockquote>
+<p>由于绘制篇幅原因，还是只保留主要逻辑</p>
+</blockquote>
+<p>以下代码是精简过后的绘制选中背景色，看起来还是很长，不过大体上是分下面这几步</p>
+<ol>
+<li>根据当前年月日返回status，表示当前day是否在选择的开始和选择的结束日期之间</li>
+<li>根据所处列和day修改第一步返回的status</li>
+<li>根据status调整要绘制的形状</li>
+<li>绘制背景色</li>
+</ol>
+<p>下面是主要的绘制流程，代码就不细讲了，大家可以自行阅读</p>
+<pre><code>void QDateContent::DrawSelectedBackground(QPainter &amp; painter)
+{
+    painter.save();
+
+    for (int column = 0; column &lt; d_ptr-&gt;m_column_count; ++column)
+    {
+        for (int row = 0; row &lt; d_ptr-&gt;m_row_count; ++row)
+        {
+            tDayFlag &amp; flag = d_ptr-&gt;m_aDayFlag[index];
+
+            if (little)
+            {
+                status = d_ptr-&gt;GetSelectedStatus(d_ptr-&gt;m_wYear, d_ptr-&gt;m_wMonth, d_ptr-&gt;m_wDay, d_ptr-&gt;m_sYear
+                    , d_ptr-&gt;m_sMonth, flag.m_chFlagD, year, month, day);
+            }
+            else
+            {
+                status = d_ptr-&gt;GetSelectedStatus(year, month, day, d_ptr-&gt;m_sYear
+                    , d_ptr-&gt;m_sMonth, flag.m_chFlagD, d_ptr-&gt;m_wYear, d_ptr-&gt;m_wMonth, d_ptr-&gt;m_wDay);
+            }
+
+            //修正数据
+            CorrentStatus(status, column, flag.m_chFlagD);
+
+            if (status == 0)
+            {
+                continue;
+            }
+            QRect rect = rcTmp.adjusted(0, 3, 0, -3);
+            if (rect.height() &lt; 15)
+            {
+                rect.setHeight(15);
+                rect.moveCenter(rcTmp.center());
+            }
+            if (status == 2)
+            {
+                rect.adjust(-4, 0, 4, 0);
+                painter.drawRect(rect);
+            }
+            else if (status == 1)//只有左半边
+            {
+                rect.adjust(-4, 0, -4, 0);
+                painter.drawRoundedRect(rect, rect.height() / 2, rect.height() / 2);
+                painter.drawRect(rect.adjusted(0, 0, -rect.height() / 2, 0));
+            }
+            else if (status == 3)
+            {
+                rect.adjust(4, 0, 4, 0);
+                painter.drawRoundedRect(rect, rect.height() / 2, rect.height() / 2);
+                painter.drawRect(rect.adjusted(rect.height() / 2, 0, 0, 0));
+            }
+            else if (status == 5)
+            {
+                rect.adjust(4, 0, -4, 0);
+                painter.drawRoundedRect(rect, rect.height() / 2, rect.height() / 2);
+            }
+        }
+    }
+
+    painter.restore();
+}</code></pre>
+<h3 id="调度绘制">4、 调度绘制</h3>
+<p>最后就是绘制的顺序，这里一定要注意，一定得线绘制背景色，如果是最后绘制的话会挡住当前绘制的文字和选中状态。</p>
+<pre><code>void QDateContent::paintEvent(QPaintEvent * event)
+{
+    QDate date = QDate::currentDate();
+    d_ptr-&gt;m_tYear = date.year();
+    d_ptr-&gt;m_tMonth = date.month();
+    d_ptr-&gt;m_tDay = date.day();
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    //painter.drawRect(rect());
+
+    d_ptr-&gt;ResetDayFlag();
+
+    DrawSelectedBackground(painter);
+
+    DrawWeek(painter);
+
+    DrawDay(painter);
+}</code></pre>
+<h2 id="五相关文章">五、相关文章</h2>
+<p><a href="http://www.cnblogs.com/swarmbees/p/5927823.html">自定义日历(一)</a></p>
+<p><a href="http://www.cnblogs.com/swarmbees/p/5929000.html">自定义日历(二)</a></p>
+<p><a href="https://www.cnblogs.com/swarmbees/p/6063295.html">自定义日历(三))</a></p>
+<p><a href="http://www.cnblogs.com/swarmbees/diary/2016/11/09/6048302.html">Qt之模拟窗口失去焦点隐藏</a></p>
+<hr />
+<p><strong>值得一看的优秀文章：</strong></p>
+<ol>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/6707798.html">财联社-产品展示</a></strong></li>
+<li><strong><a href="https://www.cnblogs.com/swarmbees/p/10836505.html">广联达-产品展示</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95527107">Qt定制控件列表</a></strong></li>
+<li><strong><a href="https://blog.csdn.net/qq_30392343/article/details/95526527">牛逼哄哄的Qt库</a></strong></li>
+</ol>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

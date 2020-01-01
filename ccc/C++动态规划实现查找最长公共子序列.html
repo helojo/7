@@ -1,0 +1,161 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++动态规划实现查找最长公共子序列' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++动态规划实现查找最长公共子序列</center></div><div class='banquan'>原文出处:本文由博客园博主Weisswire提供。<br/>
+原文连接:https://www.cnblogs.com/Jesse-Cavendish/p/11771500.html</div><br>
+    <p><span style="background-color: #ffff00; font-size: 18px;">问题描述：</span></p>
+<p>给定两个序列X={x<sub>1</sub>，x<sub>2</sub>，&hellip;，x<sub>m</sub>}和Y={y<sub>1</sub>，y<sub>2</sub>，&hellip;，y<sub>n</sub>}，找出X和Y的最长公共子序列。（给定两个序列X和Y，当另一序列Z既是X的子序列又是Y的子序列时，称Z是序列X和Y的公共子序列。）</p>
+<p><span style="font-size: 18px; background-color: #ffff00;">细节须知（与之前随笔的对比）：</span></p>
+<p>将由数组存储起来一并输出至文件修改为<span style="background-color: #ffff00;">边运行边输出</span>，增加了程序的鲁棒性。</p>
+<p><span style="font-size: 18px; background-color: #ffff00;">算法原理：</span></p>
+<p>a.最长公共子序列的结构</p>
+<p>对X的所有子序列，检查它是否也是Y的子序列，从而确定它是否为X和Y的公共子序列。并且在检查过程中记录最长的公共子序列。X的所有子序列都检查过后即可求出X和Y的最长公共子序列。X的每个子序列相应于下标集{1,2，&hellip;，m}的一个子集。</p>
+<p>b.子问题的递归结构</p>
+<p>要找出X和Y的最长公共子序列，可按以下方式递归计算：当x<sub>m</sub>=y<sub>n</sub>时，找出X<sub>m-1</sub>和Y<sub>n-1</sub>的最长公共子序列，然后在其尾部加上x<sub>m</sub>（=y<sub>n</sub>）即可得到X和Y的最长公共子序列。当x<sub>m</sub>&ne;y<sub>n</sub>时，必须解两个子问题，即找出X<sub>m-1</sub>和Y的一个最长公共子序列及X和Y<sub>n-1</sub>的一个最长公共子序列。这两个公共子序列中较长者即为X和Y的最长公共子序列。</p>
+<p>c.计算最优值</p>
+<p>利用动态规划算法自底向上地计算最优值。</p>
+<p>d.构造最长公共子序列</p>
+<p>首先从b[m][n]开始，依其值在数组b中搜索。当b[i][j]=1时，表示X<sub>i</sub>和Y<sub>j</sub>的最长公共子序列</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> #include&lt;cstdio&gt;
+<span style="color: #008080;">  2</span> #include&lt;cstring&gt;
+<span style="color: #008080;">  3</span> #include&lt;stack&gt;
+<span style="color: #008080;">  4</span> #include&lt;ctime&gt;
+<span style="color: #008080;">  5</span> #include&lt;iostream&gt;
+<span style="color: #008080;">  6</span> #include&lt;fstream&gt;
+<span style="color: #008080;">  7</span> #include&lt;algorithm&gt;
+<span style="color: #008080;">  8</span> #include&lt;windows.h&gt;
+<span style="color: #008080;">  9</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 10</span> LARGE_INTEGER nFreq;<span style="color: #008000;">//</span><span style="color: #008000;">LARGE_INTEGER在64位系统中是LONGLONG，在32位系统中是高低两个32位的LONG，在windows.h中通过预编译宏作定义</span>
+<span style="color: #008080;"> 11</span> LARGE_INTEGER nBeginTime;<span style="color: #008000;">//</span><span style="color: #008000;">记录开始时的计数器的值</span>
+<span style="color: #008080;"> 12</span> LARGE_INTEGER nEndTime;<span style="color: #008000;">//</span><span style="color: #008000;">记录停止时的计数器的值</span>
+<span style="color: #008080;"> 13</span> <span style="color: #0000ff;">#define</span> N 10000
+<span style="color: #008080;"> 14</span> <span style="color: #008000;">//</span><span style="color: #008000;">const int SIZE_CHAR = 10000; </span><span style="color: #008000;">//</span><span style="color: #008000;">生成32 + 1位C Style字符串</span>
+<span style="color: #008080;"> 15</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> CCH[] = <span style="color: #800000;">"</span><span style="color: #800000;">_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 16</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> dp[N][N];
+</span><span style="color: #008080;"> 17</span> <span style="color: #0000ff;">char</span><span style="color: #000000;"> c;
+</span><span style="color: #008080;"> 18</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">void</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 19</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 20</span>     <span style="color: #008000;">//</span><span style="color: #008000;">char a[N];
+</span><span style="color: #008080;"> 21</span>     <span style="color: #008000;">//</span><span style="color: #008000;">char b[N];
+</span><span style="color: #008080;"> 22</span>     <span style="color: #008000;">//</span><span style="color: #008000;">char a[SIZE_CHAR+2];
+</span><span style="color: #008080;"> 23</span>     <span style="color: #008000;">//</span><span style="color: #008000;">char b[SIZE_CHAR+2];</span>
+<span style="color: #008080;"> 24</span> <span style="color: #000000;">    ofstream fout;
+</span><span style="color: #008080;"> 25</span>     <span style="color: #0000ff;">int</span> m = <span style="color: #800080;">0</span>,i = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 26</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> SIZE_CHAR;
+</span><span style="color: #008080;"> 27</span>     cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">Please enter the number of times you want to run the program:</span><span style="color: #800000;">"</span>;        <span style="color: #008000;">//</span><span style="color: #008000;">输入程序运行次数</span>
+<span style="color: #008080;"> 28</span>     cin&gt;&gt;<span style="color: #000000;">m;
+</span><span style="color: #008080;"> 29</span>     <span style="color: #008000;">//</span><span style="color: #008000;">int SIZE[m];</span>
+<span style="color: #008080;"> 30</span>     <span style="color: #0000ff;">double</span><span style="color: #000000;"> cost;
+</span><span style="color: #008080;"> 31</span>     <span style="color: #008000;">//</span><span style="color: #008000;">double runtime[m];</span>
+<span style="color: #008080;"> 32</span> <span style="color: #000000;">    srand((unsigned)time(NULL));
+</span><span style="color: #008080;"> 33</span>     fout.open(<span style="color: #800000;">"</span><span style="color: #800000;">data.txt</span><span style="color: #800000;">"</span><span style="color: #000000;">,ios::app);
+</span><span style="color: #008080;"> 34</span>     <span style="color: #0000ff;">if</span>(!<span style="color: #000000;">fout){
+</span><span style="color: #008080;"> 35</span>         cerr&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">Can not open file 'data.txt' </span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;"> 36</span>         <span style="color: #0000ff;">return</span> -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 37</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 38</span>     fout.setf(ios_base::<span style="color: #0000ff;">fixed</span>,ios_base::floatfield);   <span style="color: #008000;">//</span><span style="color: #008000;">防止输出的数字使用科学计数法</span>
+<span style="color: #008080;"> 39</span>     <span style="color: #0000ff;">for</span>(i = <span style="color: #800080;">0</span>; i &lt; m; i++<span style="color: #000000;">){
+</span><span style="color: #008080;"> 40</span>         <span style="color: #008000;">//</span><span style="color: #008000;">SIZE_CHAR=10000+RAND_MAX*(rand()%300)+rand();           </span><span style="color: #008000;">//</span><span style="color: #008000;">RAND_MAX=32767,随机生成数据量</span>
+<span style="color: #008080;"> 41</span>         SIZE_CHAR = rand() % <span style="color: #800080;">10000</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 42</span>         fout&lt;&lt;SIZE_CHAR&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">,</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 43</span>         <span style="color: #008000;">//</span><span style="color: #008000;"> SIZE[i]=SIZE_CHAR;                                      </span><span style="color: #008000;">//</span><span style="color: #008000;">限定数据规模为10000~9872867</span>
+<span style="color: #008080;"> 44</span>         <span style="color: #0000ff;">char</span> a[SIZE_CHAR + <span style="color: #800080;">1</span>] = {<span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">};
+</span><span style="color: #008080;"> 45</span>         <span style="color: #0000ff;">char</span> b[SIZE_CHAR + <span style="color: #800080;">1</span>] = {<span style="color: #800000;">'</span><span style="color: #800000;">\0</span><span style="color: #800000;">'</span><span style="color: #000000;">};
+</span><span style="color: #008080;"> 46</span>         cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆The </span><span style="color: #800000;">"</span>&lt;&lt;i+<span style="color: #800080;">1</span>&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">th test's string size is:</span><span style="color: #800000;">"</span>&lt;&lt;SIZE_CHAR&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;"> 47</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; SIZE_CHAR; ++<span style="color: #000000;">i){
+</span><span style="color: #008080;"> 48</span>             <span style="color: #0000ff;">int</span> x = rand() / (RAND_MAX / (<span style="color: #0000ff;">sizeof</span>(CCH) - <span style="color: #800080;">1</span><span style="color: #000000;">));
+</span><span style="color: #008080;"> 49</span>             a[i] =<span style="color: #000000;"> CCH[x];
+</span><span style="color: #008080;"> 50</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 51</span>         cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">The first random sting is:</span><span style="color: #800000;">"</span> &lt;&lt;a &lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;"> 52</span>         <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; SIZE_CHAR; ++<span style="color: #000000;">i){
+</span><span style="color: #008080;"> 53</span>             <span style="color: #0000ff;">int</span> x = rand() / (RAND_MAX / (<span style="color: #0000ff;">sizeof</span>(CCH) - <span style="color: #800080;">1</span><span style="color: #000000;">));
+</span><span style="color: #008080;"> 54</span>             b[i] =<span style="color: #000000;"> CCH[x];
+</span><span style="color: #008080;"> 55</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 56</span>         cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">The second random string is:</span><span style="color: #800000;">"</span> &lt;&lt;b &lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;"> 57</span>         cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">The longest common subsequence is:</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 58</span>         QueryPerformanceFrequency(&amp;nFreq);<span style="color: #008000;">//</span><span style="color: #008000;">获取系统时钟频率</span>
+<span style="color: #008080;"> 59</span>         QueryPerformanceCounter(&amp;nBeginTime);<span style="color: #008000;">//</span><span style="color: #008000;">获取开始时刻计数值</span>
+<span style="color: #008080;"> 60</span>         <span style="color: #0000ff;">int</span> la=<span style="color: #000000;">strlen(a);
+</span><span style="color: #008080;"> 61</span>         <span style="color: #0000ff;">int</span> lb=<span style="color: #000000;">strlen(b);
+</span><span style="color: #008080;"> 62</span>         memset(dp,<span style="color: #800080;">0</span>,<span style="color: #0000ff;">sizeof</span><span style="color: #000000;">(dp));
+</span><span style="color: #008080;"> 63</span>         <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">1</span>; i&lt;=la; i++<span style="color: #000000;">){
+</span><span style="color: #008080;"> 64</span>             <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> j=<span style="color: #800080;">1</span>; j&lt;=lb; j++<span style="color: #000000;">){
+</span><span style="color: #008080;"> 65</span>                 <span style="color: #0000ff;">if</span>(a[i-<span style="color: #800080;">1</span>]==b[j-<span style="color: #800080;">1</span><span style="color: #000000;">])
+</span><span style="color: #008080;"> 66</span>                     dp[i][j]=dp[i-<span style="color: #800080;">1</span>][j-<span style="color: #800080;">1</span>]+<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 67</span>                 <span style="color: #0000ff;">else</span>
+<span style="color: #008080;"> 68</span>                     dp[i][j]=max(dp[i-<span style="color: #800080;">1</span>][j],dp[i][j-<span style="color: #800080;">1</span><span style="color: #000000;">]);
+</span><span style="color: #008080;"> 69</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 70</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 71</span>         <span style="color: #0000ff;">int</span> i=la,j=<span style="color: #000000;">lb;
+</span><span style="color: #008080;"> 72</span>         stack&lt;<span style="color: #0000ff;">char</span>&gt;<span style="color: #000000;">s;
+</span><span style="color: #008080;"> 73</span>         <span style="color: #0000ff;">while</span><span style="color: #000000;">(dp[i][j]){
+</span><span style="color: #008080;"> 74</span>             <span style="color: #0000ff;">if</span>(dp[i][j]==dp[i-<span style="color: #800080;">1</span>][j]){<span style="color: #008000;">//</span><span style="color: #008000;">来自于左方向</span>
+<span style="color: #008080;"> 75</span>                 i--<span style="color: #000000;">;
+</span><span style="color: #008080;"> 76</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 77</span>             <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(dp[i][j]==dp[i][j-<span style="color: #800080;">1</span>]){<span style="color: #008000;">//</span><span style="color: #008000;">来自于上方向</span>
+<span style="color: #008080;"> 78</span>                 j--<span style="color: #000000;">;
+</span><span style="color: #008080;"> 79</span> <span style="color: #000000;">            }
+</span><span style="color: #008080;"> 80</span>             <span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span>(dp[i][j]&gt;dp[i-<span style="color: #800080;">1</span>][j-<span style="color: #800080;">1</span>]){<span style="color: #008000;">//</span><span style="color: #008000;">来自于左上方向</span>
+<span style="color: #008080;"> 81</span>                 i--<span style="color: #000000;">;
+</span><span style="color: #008080;"> 82</span>                 j--<span style="color: #000000;">;
+</span><span style="color: #008080;"> 83</span>                 s.push(a[i]);         <span style="color: #008000;">//</span><span style="color: #008000;">压栈以便倒序输出</span>
+<span style="color: #008080;"> 84</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 85</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 86</span>     <span style="color: #0000ff;">while</span>(!<span style="color: #000000;">s.empty())
+</span><span style="color: #008080;"> 87</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 88</span>         c=<span style="color: #000000;">s.top();
+</span><span style="color: #008080;"> 89</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">%c</span><span style="color: #800000;">"</span><span style="color: #000000;">,c);
+</span><span style="color: #008080;"> 90</span> <span style="color: #000000;">        s.pop();
+</span><span style="color: #008080;"> 91</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 92</span>     cout&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;"> 93</span>     QueryPerformanceCounter(&amp;nEndTime);<span style="color: #008000;">//</span><span style="color: #008000;">获取停止时刻计数值</span>
+<span style="color: #008080;"> 94</span>     cost=(<span style="color: #0000ff;">double</span>)(nEndTime.QuadPart - nBeginTime.QuadPart) / (<span style="color: #0000ff;">double</span><span style="color: #000000;">)nFreq.QuadPart;
+</span><span style="color: #008080;"> 95</span>     fout&lt;&lt;cost&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;"> 96</span>     <span style="color: #008000;">//</span><span style="color: #008000;">runtime[i]=cost;</span>
+<span style="color: #008080;"> 97</span>     cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">The running time is：</span><span style="color: #800000;">"</span>&lt;&lt;cost&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;"> s</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;"> 98</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 99</span> <span style="color: #000000;">    fout.close();
+</span><span style="color: #008080;">100</span>     cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">Success!</span><span style="color: #800000;">"</span>&lt;&lt;<span style="color: #000000;">endl;
+</span><span style="color: #008080;">101</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">102</span> }</pre>
+</div>
+<p><span style="background-color: #ffff00; font-size: 18px;">程序设计思路：</span></p>
+<p>设序列X={x<sub>1</sub>，x<sub>2</sub>，&hellip;，x<sub>m</sub>}和Y={y<sub>1</sub>，y<sub>2</sub>，&hellip;，y<sub>n</sub>}的最长公共子序列为Z={z<sub>1</sub>，z<sub>2</sub>，&hellip;，z<sub>k</sub>}，则</p>
+<p>a.若x<sub>m</sub>=y<sub>n</sub>，则z<sub>k</sub>=x<sub>m</sub>=y<sub>n</sub>，且Z<sub>k-1</sub>是X<sub>m-1</sub>和Y<sub>n-1</sub>的最长公共子序列。</p>
+<p>b.若x<sub>m</sub>&ne;y<sub>n</sub>，且z<sub>k</sub>&ne;x<sub>m</sub>，则Z是X<sub>m-1</sub>和Y的最长公共子序列。</p>
+<p>c.若x<sub>m</sub>&ne;y<sub>n</sub>，且z<sub>k</sub>&ne;y<sub>n</sub>，则Z是X和Y<sub>n-1</sub>的最长公共子序列。</p>
+<p>其中，X<sub>m-1</sub>={x<sub>1</sub>，x<sub>2</sub>，&hellip;，x<sub>m-1</sub>}；Y<sub>m-1</sub>={y<sub>1</sub>，y<sub>2</sub>，&hellip;，y<sub>n-1</sub>}；Z<sub>k-1</sub>={z<sub>1</sub>，z<sub>2</sub>，&hellip;，z<sub>k-1</sub>}。</p>
+<p>② 子问题的递归结构</p>
+<p>首先建立子问题最优值的递归关系。用c[i][j]记录序列X<sub>i</sub>和Y<sub>j</sub>的最长公共子序列的长度。其中，X={x<sub>1</sub>，x<sub>2</sub>，&hellip;，x<sub>m</sub>}；Y={y<sub>1</sub>，y<sub>2</sub>，&hellip;，y<sub>n</sub>}。当i=0或j=0时，空序列是X<sub>i</sub>和Y<sub>j</sub>的最长公共子序列，故此时c[i][j]=0。在其他情况下，由最优子结构性质课件里递归关系如下：</p>
+<p><img style="display: block; margin-left: auto; margin-right: auto;" src="./images/C++动态规划实现查找最长公共子序列0.png" alt="" /></p>
+<p>③计算最优值</p>
+<p>以序列X和Y作为输入。输出两个数组c和b。其中c[i][j]存储X<sub>i</sub>和Y<sub>j</sub>的最长公共子序列的长度，b[i][j]记录c[i][j]的值是由哪一个子问题的解得到的，这在构造最长公共子序列时要用到。问题的最优值，即X和Y的最长公共子序列的长度记录与c[m][n]中。</p>
+<p>④构造最长公共子序列</p>
+<p>首先从b[m][n]开始，依其值在数组b中搜索。当b[i][j]=1时，表示X<sub>i</sub>和Y<sub>j</sub>的最长公共子序列是由X<sub>i-1</sub>和Y<sub>j-1</sub>的最长公共子序列在尾部加上x<sub>i</sub>所得到的子序列；当b[i][j]=2时，表示X<sub>i</sub>和Y<sub>j</sub>的最长公共子序列与X<sub>i-1</sub>和Y<sub>j</sub>的最长公共子序列相同；当b[i][j]=3时，表示X<sub>i</sub>和Y<sub>j</sub>的最长公共子序列与X<sub>i</sub>和Y<sub>j-1</sub>的最长公共子序列相同。</p>
+<p><span style="background-color: #ffff00; font-size: 18px;">时间复杂性分析：</span></p>
+<p>a.计算最优值</p>
+<p>由于每个数组单元的计算耗费<em>O</em>（1）的时间，此部分算法耗时为<span style="background-color: #ffff00;"><em>O</em>（mn）。</span></p>
+<p>b.构造最长公共子序列</p>
+<p>该算法每一次递归调用使i或j减1，因此算法的计算时间为<span style="background-color: #ffff00;"><em>O</em>（m+n）。</span></p>
+<p><span style="background-color: #ffff00;">生成的数据可导入EXCEL中进行数据分析生成分析图表。</span></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

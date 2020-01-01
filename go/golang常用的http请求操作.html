@@ -1,0 +1,324 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang常用的http请求操作' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang常用的http请求操作</center></div><div class='banquan'>原文出处:本文由博客园博主python修行路提供。<br/>
+原文连接:https://www.cnblogs.com/zhaof/p/11346412.html</div><br>
+    <p>之前用python写各种网络请求的时候写的非常顺手，但是当打算用golang写的时候才发现相对来说还是python的那种方式用的更加顺手，习惯golang的用法之后也就差别不大了，下面主要整理了常用的通过golang发起的GET请求以及POST请求的代码例子</p>
+<h2 id="golang发起get请求" data-source-line="3">golang发起GET请求</h2>
+<h3 id="基本的get请求" data-source-line="5">基本的GET请求</h3>
+<div class="cnblogs_code">
+<pre><code>//<span style="color: #000000;">基本的GET请求
+package main
+
+import (
+    </span>"fmt"
+    "io/ioutil"
+    "net/http"<span style="color: #000000;">
+)
+
+func main() {
+    resp, err :</span>= http.Get("http://httpbin.org/get"<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        fmt.Println(err)
+        return
+    }
+    defer resp.Body.Close()
+    body, err :</span>=<span style="color: #000000;"> ioutil.ReadAll(resp.Body)
+    fmt.Println(string(body))
+    fmt.Println(resp.StatusCode)
+    </span><span style="color: #0000ff;">if</span> resp.StatusCode == 200<span style="color: #000000;"> {
+        fmt.Println(</span>"ok"<span style="color: #000000;">)
+    }
+}</span></pre>
+</div>
+<h3 id="带参数的get请求" data-source-line="34">带参数的Get请求</h3>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span>"fmt"
+    "io/ioutil"
+    "net/http"<span style="color: #000000;">
+)
+
+func main(){
+    resp, err :</span>= http.Get("http://httpbin.org/get?name=zhaofan&amp;age=23"<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        fmt.Println(err)
+        return
+    }
+    defer resp.Body.Close()
+    body, _ :</span>=<span style="color: #000000;"> ioutil.ReadAll(resp.Body)
+    fmt.Println(string(body))
+
+}</span></pre>
+</div>
+<p>但是如果我们想要把一些参数做成变量而不是直接放到url中怎么操作，代码例子如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span>"fmt"
+    "io/ioutil"
+    "net/http"
+    "net/url"<span style="color: #000000;">
+)
+
+func main(){
+    params :</span>=<span style="color: #000000;"> url.Values{}
+    Url, err :</span>= url.Parse("http://httpbin.org/get"<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        return
+    }
+    params.Set(</span>"name","zhaofan"<span style="color: #000000;">)
+    params.Set(</span>"age","23"<span style="color: #000000;">)
+    </span>//<span style="color: #000000;">如果参数中有中文参数,这个方法会进行URLEncode
+    Url.RawQuery </span>=<span style="color: #000000;"> params.Encode()
+    urlPath :</span>=<span style="color: #000000;"> Url.String()
+    fmt.Println(urlPath) </span>// https://httpbin.org/get?age=23&amp;name=<span style="color: #000000;">zhaofan
+    resp,err :</span>=<span style="color: #000000;"> http.Get(urlPath)
+    defer resp.Body.Close()
+    body, _ :</span>=<span style="color: #000000;"> ioutil.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}</span></pre>
+</div>
+<h3 id="解析json类型的返回结果" data-source-line="93">解析JSON类型的返回结果</h3>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span>"encoding/json"
+    "fmt"
+    "io/ioutil"
+    "net/http"<span style="color: #000000;">
+)
+
+type result struct {
+    Args string `json:</span>"args"<span style="color: #000000;">`
+    Headers map[string]string `json:</span>"headers"<span style="color: #000000;">`
+    Origin string `json:</span>"origin"<span style="color: #000000;">`
+    Url string `json:</span>"url"<span style="color: #000000;">`
+}
+
+func main() {
+    resp, err :</span>= http.Get("http://httpbin.org/get"<span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        return
+    }
+    defer resp.Body.Close()
+    body, _ :</span>=<span style="color: #000000;"> ioutil.ReadAll(resp.Body)
+    fmt.Println(string(body))
+    var res result
+    _ </span>= json.Unmarshal(body,&amp;<span style="color: #000000;">res)
+    fmt.Printf(</span>"%#v"<span style="color: #000000;">, res)
+}</span></pre>
+</div>
+<h3 id="get请求添加请求头" data-source-line="127">GET请求添加请求头</h3>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span>"fmt"
+    "io/ioutil"
+    "net/http"<span style="color: #000000;">
+)
+
+func main() {
+    client :</span>= &amp;<span style="color: #000000;">http.Client{}
+    req,_ :</span>= http.NewRequest("GET","http://httpbin.org/get"<span style="color: #000000;">,nil)
+    req.Header.Add(</span>"name","zhaofan"<span style="color: #000000;">)
+    req.Header.Add(</span>"age","3"<span style="color: #000000;">)
+    resp,_ :</span>=<span style="color: #000000;"> client.Do(req)
+    body, _ :</span>=<span style="color: #000000;"> ioutil.ReadAll(resp.Body)
+    fmt.Printf(string(body))
+}</span></pre>
+</div>
+<p>从上述的结果可以看出我们设置的头是成功了：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">{
+  </span>"args"<span style="color: #000000;">: {}, 
+  </span>"headers"<span style="color: #000000;">: {
+    </span>"Accept-Encoding": "gzip"<span style="color: #000000;">, 
+    </span>"Age": "3"<span style="color: #000000;">, 
+    </span>"Host": "httpbin.org"<span style="color: #000000;">, 
+    </span>"Name": "zhaofan"<span style="color: #000000;">, 
+    </span>"User-Agent": "Go-http-client/1.1"<span style="color: #000000;">
+  }, 
+  </span>"origin": "211.138.20.170, 211.138.20.170"<span style="color: #000000;">, 
+  </span>"url": "https://httpbin.org/get"<span style="color: #000000;">
+}</span></pre>
+</div>
+<h2 id="golang-发起post请求" data-source-line="168">golang 发起POST请求</h2>
+<h3 id="基本的post使用" data-source-line="170">基本的POST使用</h3>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span>"fmt"
+    "io/ioutil"
+    "net/http"
+    "net/url"<span style="color: #000000;">
+)
+
+func main() {
+    urlValues :</span>=<span style="color: #000000;"> url.Values{}
+    urlValues.Add(</span>"name","zhaofan"<span style="color: #000000;">)
+    urlValues.Add(</span>"age","22"<span style="color: #000000;">)
+    resp, _ :</span>= http.PostForm("http://httpbin.org/post"<span style="color: #000000;">,urlValues)
+    body, _ :</span>=<span style="color: #000000;"> ioutil.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}</span></pre>
+</div>
+<p>结果如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">{
+  </span>"args"<span style="color: #000000;">: {}, 
+  </span>"data": ""<span style="color: #000000;">, 
+  </span>"files"<span style="color: #000000;">: {}, 
+  </span>"form"<span style="color: #000000;">: {
+    </span>"age": "22"<span style="color: #000000;">, 
+    </span>"name": "zhaofan"<span style="color: #000000;">
+  }, 
+  </span>"headers"<span style="color: #000000;">: {
+    </span>"Accept-Encoding": "gzip"<span style="color: #000000;">, 
+    </span>"Content-Length": "19"<span style="color: #000000;">, 
+    </span>"Content-Type": "application/x-www-form-urlencoded"<span style="color: #000000;">, 
+    </span>"Host": "httpbin.org"<span style="color: #000000;">, 
+    </span>"User-Agent": "Go-http-client/1.1"<span style="color: #000000;">
+  }, 
+  </span>"json": <span style="color: #0000ff;">null</span><span style="color: #000000;">, 
+  </span>"origin": "211.138.20.170, 211.138.20.170"<span style="color: #000000;">, 
+  </span>"url": "https://httpbin.org/post"<span style="color: #000000;">
+}</span></pre>
+</div>
+<p>另外一种方式</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span>"fmt"
+    "io/ioutil"
+    "net/http"
+    "net/url"
+    "strings"<span style="color: #000000;">
+)
+
+func main() {
+    urlValues :</span>=<span style="color: #000000;"> url.Values{
+        </span>"name":{"zhaofan"<span style="color: #000000;">},
+        </span>"age":{"23"<span style="color: #000000;">},
+    }
+    reqBody:</span>=<span style="color: #000000;"> urlValues.Encode()
+    resp, _ :</span>= http.Post("http://httpbin.org/post", "text/html"<span style="color: #000000;">,strings.NewReader(reqBody))
+    body,_:</span>=<span style="color: #000000;"> ioutil.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}</span></pre>
+</div>
+<p>结果如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">{
+  </span>"args"<span style="color: #000000;">: {}, 
+  </span>"data": "age=23&amp;name=zhaofan"<span style="color: #000000;">, 
+  </span>"files"<span style="color: #000000;">: {}, 
+  </span>"form"<span style="color: #000000;">: {}, 
+  </span>"headers"<span style="color: #000000;">: {
+    </span>"Accept-Encoding": "gzip"<span style="color: #000000;">, 
+    </span>"Content-Length": "19"<span style="color: #000000;">, 
+    </span>"Content-Type": "text/html"<span style="color: #000000;">, 
+    </span>"Host": "httpbin.org"<span style="color: #000000;">, 
+    </span>"User-Agent": "Go-http-client/1.1"<span style="color: #000000;">
+  }, 
+  </span>"json": <span style="color: #0000ff;">null</span><span style="color: #000000;">, 
+  </span>"origin": "211.138.20.170, 211.138.20.170"<span style="color: #000000;">, 
+  </span>"url": "https://httpbin.org/post"<span style="color: #000000;">
+}</span></pre>
+</div>
+<h3 id="发送json数据的post请求" data-source-line="265">发送JSON数据的post请求</h3>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span>"bytes"
+    "encoding/json"
+    "fmt"
+    "io/ioutil"
+    "net/http"<span style="color: #000000;">
+)
+
+func main() {
+    client :</span>= &amp;<span style="color: #000000;">http.Client{}
+    data :</span>=<span style="color: #000000;"> make(map[string]interface{})
+    data[</span>"name"] = "zhaofan"<span style="color: #000000;">
+    data[</span>"age"] = "23"<span style="color: #000000;">
+    bytesData, _ :</span>=<span style="color: #000000;"> json.Marshal(data)
+    req, _ :</span>= http.NewRequest("POST","http://httpbin.org/post"<span style="color: #000000;">,bytes.NewReader(bytesData))
+    resp, _ :</span>=<span style="color: #000000;"> client.Do(req)
+    body, _ :</span>=<span style="color: #000000;"> ioutil.ReadAll(resp.Body)
+    fmt.Println(string(body))
+
+}</span></pre>
+</div>
+<p>结果如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">{
+  </span>"args"<span style="color: #000000;">: {}, 
+  </span>"data": "{\"age\":\"23\",\"name\":\"zhaofan\"}"<span style="color: #000000;">, 
+  </span>"files"<span style="color: #000000;">: {}, 
+  </span>"form"<span style="color: #000000;">: {}, 
+  </span>"headers"<span style="color: #000000;">: {
+    </span>"Accept-Encoding": "gzip"<span style="color: #000000;">, 
+    </span>"Content-Length": "29"<span style="color: #000000;">, 
+    </span>"Host": "httpbin.org"<span style="color: #000000;">, 
+    </span>"User-Agent": "Go-http-client/1.1"<span style="color: #000000;">
+  }, 
+  </span>"json"<span style="color: #000000;">: {
+    </span>"age": "23"<span style="color: #000000;">, 
+    </span>"name": "zhaofan"<span style="color: #000000;">
+  }, 
+  </span>"origin": "211.138.20.170, 211.138.20.170"<span style="color: #000000;">, 
+  </span>"url": "https://httpbin.org/post"<span style="color: #000000;">
+}</span></pre>
+</div>
+<h3 id="不用client的post请求" data-source-line="315">不用client的post请求</h3>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span>"bytes"
+    "encoding/json"
+    "fmt"
+    "io/ioutil"
+    "net/http"<span style="color: #000000;">
+)
+
+func main() {
+    data :</span>=<span style="color: #000000;"> make(map[string]interface{})
+    data[</span>"name"] = "zhaofan"<span style="color: #000000;">
+    data[</span>"age"] = "23"<span style="color: #000000;">
+    bytesData, _ :</span>=<span style="color: #000000;"> json.Marshal(data)
+    resp, _ :</span>= http.Post("http://httpbin.org/post","application/json"<span style="color: #000000;">, bytes.NewReader(bytesData))
+    body, _ :</span>=<span style="color: #000000;"> ioutil.ReadAll(resp.Body)
+    fmt.Println(string(body))
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

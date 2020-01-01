@@ -1,0 +1,251 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修linux epoll，poll，select' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>linux epoll，poll，select</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11110204.html</div><br>
+    <h3 id="epoll函数用法还有点poll和select">epoll函数用法，还有点poll和select</h3>
+<h4 id="lt的epoll是select和poll函数的改进版">1，LT的epoll是select和poll函数的改进版。</h4>
+<p>特点是，读完缓冲区后，如果缓冲区还有内容的话，epoll_wait函数还会返回，直到把缓冲区全部读完。</p>
+<h4 id="et的epoll阻塞">2，ET的epoll（阻塞）</h4>
+<p>特点是，读完缓冲区后，不管缓冲区还有没有内容，epoll_wait函数都不会再返回，直到对端再一次发送信息过来。估计有的读者朋友会想到用while去读，但是有个致命的问题，因为文件描述符是阻塞的，所以当全部读完后，进程就会阻塞在recv函数那里，就不能够再处理别的连接了。</p>
+<h4 id="et的epoll非阻塞效率最高的使用方法"><font color=red>3，ET的epoll（非阻塞），效率最高的使用方法。</font></h4>
+<p>特点是，读完缓冲区后，不管缓冲区还有没有内容，epoll_wait函数都不会再返回，直到对端再一次发送信息过来。但是可以事先用fcntl把文件描述符设置成非阻塞的方式，让后用while一直去读，当全部读完后，recv函数也不会阻塞。</p>
+<p>ET的epoll（非阻塞）的例子：</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+#include &lt;sys/epoll.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;errno.h&gt;
+
+int main(int argc, char** argv){
+
+  int port = atoi(argv[1]);
+  int lfd = socket(AF_INET, SOCK_STREAM, 0);
+
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr.s_addr = INADDR_ANY;
+
+  bind(lfd, (struct sockaddr*)&amp;addr, sizeof(addr));
+  listen(lfd, 5);
+
+  int efd = epoll_create(10);
+
+  struct epoll_event re;
+  re.events = EPOLLIN;
+  re.data.fd = lfd;
+
+  epoll_ctl(efd, EPOLL_CTL_ADD, lfd, &amp;re);
+
+  struct epoll_event events[100];
+  
+  while(1){
+    int ret = epoll_wait(efd, events, 100, -1);
+    printf(&quot;======================wait=======\n&quot;);
+    if(ret == -1){
+      perror(&quot;epoll_wait&quot;);
+      exit(1);
+    }
+
+    for(int i = 0; i &lt; ret; ++i){
+      if(events[i].data.fd == lfd){
+        int cfd = accept(lfd, NULL, NULL);
+
+        int flags = fcntl(cfd, F_GETFL);
+        flags |= O_NONBLOCK;
+        fcntl(cfd, F_SETFL, flags);
+    
+        struct epoll_event re;
+        re.events = EPOLLIN | EPOLLET;
+        re.data.fd = cfd;
+        epoll_ctl(efd, EPOLL_CTL_ADD, cfd, &amp;re);
+        break;
+      }
+      char buf[3];
+
+      int ret;
+      while((ret = recv(events[i].data.fd, buf, sizeof buf, 0)) &gt; 0){
+        write(STDOUT_FILENO, buf, ret);
+      }
+      
+      if(ret == 0){
+        epoll_ctl(efd, EPOLL_CTL_DEL, events[i].data.fd, NULL);
+        close(events[i].data.fd);
+        printf(&quot;client disconnet\n&quot;);
+      }
+      else if(ret == -1 &amp;&amp; errno == EAGAIN){
+        printf(&quot;read over\n&quot;);  
+      }
+    }
+  }
+}</code></code></pre>
+<p>poll函数例子：</p>
+<pre><code><code>#include &lt;stdio.h&gt;
+#include &lt;poll.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdlib.h&gt;
+
+int main(int argc, char** argv){
+
+  int port = atoi(argv[1]);
+  int lfd = socket(AF_INET, SOCK_STREAM, 0);
+
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr.s_addr = INADDR_ANY;
+
+  bind(lfd, (struct sockaddr*)&amp;addr, sizeof(addr));
+  listen(lfd, 5);
+
+  struct pollfd pfd[1024];
+  for(int i = 0; i &lt; 1024; ++i){
+    pfd[i].fd = -1;
+  }
+  pfd[0].fd = lfd;
+  pfd[0].events = POLLIN;
+  nfds_t maxfd = 0;
+  
+  while(1){
+    int ret = poll(pfd, maxfd + 1, -1);
+    printf(&quot;--------------poll------\n&quot;);
+    if(pfd[0].revents &amp; POLLIN){
+      int cfd = accept(lfd, NULL, NULL);
+      for(int i = 0; i &lt; 1024; ++i){
+        if(pfd[i].fd == -1){
+          pfd[i].fd = cfd;
+          pfd[i].events = POLLIN;
+          maxfd++;
+          break;
+        }
+      }
+      continue;
+    }
+
+    for(int i = 0; i &lt;= maxfd; ++i){
+      if(pfd[i].revents &amp; POLLIN){
+        char buf[64];
+        int ret = recv(pfd[i].fd, buf, sizeof buf, 0);
+        if(ret == 0){
+          pfd[i].fd = -1;
+          close(pfd[i].fd);
+          printf(&quot;client is disconnet\n&quot;);
+        }
+        else{
+          write(STDOUT_FILENO, buf, ret);
+        }
+      }
+    } 
+    
+  }
+}
+</code></code></pre>
+<h3 id="通过对比epoll和poll的例子可以看出来"><font color=red>通过对比epoll和poll的例子可以看出来：</h3>
+<ul>
+<li>epoll不需要事先决定数组的大小。poll需要。</li>
+<li>epoll内部是用红黑树实现的效率，不会随着连接的增多，而明显的变低。poll是用链表实现的，所以性能随着连接的增多而降低。poll还不能在windows下使用。epoll是跨平台的。</li>
+<li>顺便说下，select是用数组实现的，数组的大小由内核代码写死了，就是1024，所以想增大，只能重新编译内核。但是select是在跨平台的。</li>
+</ul>
+<p></font></p>
+<h3 id="关于epollout的补足内核检查写的缓冲区如果写缓冲区未满处于可写的状态epoll_wait函数就会返回否则阻塞"><font color=blue>关于EPOLLOUT的补足：内核检查写的缓冲区，如果写缓冲区未满，处于可写的状态，epoll_wait函数就会返回。否则阻塞。</h3>
+<ul>
+<li>水平模式：如果写缓冲区未满，epoll_wait会一直返回。</li>
+<li>边缘模式：epoll_wait会先返回一次；然后，写缓冲区从满的状态变成了未满的状态，epoll_wait返回。<br />
+-注意点：调用send等函数的时候，如果写缓冲区满了的话，套接字如果是阻塞的，程序就费了，不再能相应任何事件。如果是非阻塞的话，send就会失败，有些数据就丢失了。所以，正确的做法是，当监听到EPOLLIN事件的时候，把数据读出来后，不要直接调用send等函数，要：把当前节点从树上删掉，然后加入一个EPOLLOUT的节点上去，等待epoll_wait的下一次返回，epoll_wait返回了，说明肯定可写。<br />
+</font></li>
+</ul>
+<h3 id="select函数例子">select函数例子</h3>
+<pre><code><code>#include &lt;sys/types.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;sys/time.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(){
+
+  int fd = socket(AF_INET, SOCK_STREAM, 0);
+  
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = INADDR_ANY;
+  addr.sin_port = htons(12345);
+  bind(fd, (struct sockaddr*)&amp;addr, sizeof(addr));
+
+  listen(fd, 5);
+
+  fd_set readers, temp;
+  FD_ZERO(&amp;readers);
+  FD_ZERO(&amp;temp);
+
+  FD_SET(fd, &amp;readers);
+
+  int maxfd = fd;
+
+  int selret = 0;
+
+  char rbuf[1024] = {0};
+  while(1){
+    temp = readers;
+    selret = select(maxfd + 1, &amp;temp, NULL, NULL, NULL); 
+
+    
+    if(FD_ISSET(fd, &amp;temp)){
+      //server
+      int cfd = accept(fd, NULL, 0);
+      maxfd = cfd;
+      FD_SET(cfd, &amp;readers);
+      maxfd = maxfd &lt; cfd ? cfd : maxfd;
+      continue;
+    }
+
+    //client
+    for(int i = fd + 1; i &lt;= maxfd; ++i){
+      if(FD_ISSET(i, &amp;temp)){
+    
+    int ret = read(i, rbuf, sizeof(rbuf));
+    printf(&quot;recv:%s\n&quot;, rbuf);
+    if(ret == 0){
+      FD_CLR(i, &amp;readers);
+    }
+    ret = write(i, rbuf, sizeof(rbuf));
+      }
+    }
+  }
+
+}
+</code></code></pre>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/linux epoll，poll，select0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

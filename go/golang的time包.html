@@ -1,0 +1,181 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang的time包' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang的time包</center></div><div class='banquan'>原文出处:本文由博客园博主j_x_x提供。<br/>
+原文连接:https://www.cnblogs.com/jiangxiangxiang/p/11102103.html</div><br>
+    <ul>
+<li>Time对象转换为string和时间戳调用Time对象的方法
+<ul>
+<li>转换为string：Time.Format(输出的格式)</li>
+<li>转换为时间戳 ：Time.Unix()</li>
+</ul></li>
+<li>两者转换为Time对象的时候调用的是time包的方法
+<ul>
+<li>string转换：time.Parse(&quot;输出格式&quot;，string字符串)</li>
+<li>时间戳对象转换：time.unix(秒，纳秒)</li>
+</ul></li>
+<li><p>Duration代表两个时间点之间经过的时间，以纳秒为单位。可表示的最长时间段大约290年，也就是说如果两个时间点相差超过 290 年，会返回 290 年，也就是 minDuration(-1 &lt;&lt; 63) 或 maxDuration(1 &lt;&lt; 63 - 1)。类型定义：type Duration int64。将 Duration 类型直接输出时，因为实现了 fmt.Stringer 接口，会输出人类友好的可读形式，如：72h3m0.5</p></li>
+<li><p>time.Time的定义为</p>
+<pre><code><code>type Time struct {
+  sec int64
+  nsec int32
+  loc *Location
+}
+//sec表示从公元1年1月1日00:00:00UTC到要表示的整数秒数,
+//nsec表示余下的纳秒数, 它必须在[0,999999999]范围内。
+//loc表示时区. sec和nsec处理没有歧义的时间值, loc处理偏移量.</code></pre></li>
+</ul>
+<pre><code><code>package main
+
+import (
+    &quot;github.com/golang/glog&quot;
+    &quot;time&quot;
+    &quot;fmt&quot;
+)
+
+func main()  {
+    fmt.Println(time.Now().AddDate(0,0,100).Unix())
+    // 获取当前时间，返回time.Time对象
+    fmt.Println(time.Now())
+    /*
+    输出：2019-06-12 22:21:37.7036 +0800 CST m=+0.000255350
+    其中CST可视为美国，澳大利亚，古巴或中国的标准时间
+    +0800表示比UTC时间快8个小时
+    */
+
+    // 获取当前时间戳,单位是秒
+    fmt.Println(time.Now().Unix())
+
+    // 精确到纳秒，通过纳秒就可以计算出毫秒和微妙
+    fmt.Println(time.Now().UnixNano())
+
+    //fmt.Println(time.Now().AddDate(0,0,30).Unix())
+
+    // 获取当前时间，进行格式化
+    /*
+    月份 1,01,Jan,January
+    日　 2,02,_2
+    时　 3,03,15,PM,pm,AM,am
+    分　 4,04
+    秒　 5,05
+    年　 06,2006
+    周几 Mon,Monday
+    时区时差表示 -07,-0700,Z0700,Z07:00,-07:00,MST
+    时区字母缩写 MST
+    */
+    fmt.Println(&quot;=============月份===========&quot;)
+    fmt.Println(time.Now().Format(&quot;2006-01-02 15:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-1-02 15:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-Jan-02 15:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-January-02 15:04:05&quot;))
+
+
+    fmt.Println(&quot;==================日期==============&quot;)
+    fmt.Println(time.Now().Format(&quot;2006-01-02 15:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-01-2 15:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-01-_2 15:04:05&quot;))
+
+    fmt.Println(&quot;==================小时==============&quot;)
+    fmt.Println(time.Now().Format(&quot;2006-01-02 3:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-01-02 03:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-01-02 15:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-01-02 3:04:05 PM&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-01-02 3:04:05 pm&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-01-02 15:04:05 AM&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-01-02 15:04:05 am&quot;))
+
+    fmt.Println(&quot;==================分==============&quot;)
+    fmt.Println(time.Now().Format(&quot;2006-01-02 15:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-01-02 15:4:05&quot;))
+
+    fmt.Println(&quot;==================秒==============&quot;)
+    fmt.Println(time.Now().Format(&quot;2006-01-02 15:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;2006-01-02 15:4:5&quot;))
+
+
+    fmt.Println(&quot;==================年==============&quot;)
+    fmt.Println(time.Now().Format(&quot;2006-01-02 15:04:05&quot;))
+    fmt.Println(time.Now().Format(&quot;06-01-02 15:04:05&quot;))
+
+
+    fmt.Println(time.Now().Format(&quot;02/01/2006 15:04:05 PM&quot;))
+
+    //第一个参数是时间戳的秒，第二个参数是时间戳的纳秒
+    fmt.Println(time.Unix(1560350574,999748000).Format(&quot;2006-01-02 15:04:05&quot;))
+    //2019-06-12 22:42:54
+    </code></pre>
+<p>time包提供了Before、After和Equal方法比较time对象。Sub方法让两个时间点相减，生成一个Duration类型值（代表时间段）。Add方法给一个时间点加上一个时间段，生成一个新的Time类型时间点。</p>
+<pre><code><code>    time1 := time.Now()
+    time2 := time1.AddDate(0,0,1)
+    time3 := time1.Add(0)
+    fmt.Println(time2.Sub(time1)) // 24h0m0s
+    fmt.Println(time1.Before(time2)) //true
+    fmt.Println(time1.After(time2))//false
+    fmt.Println(time1.Equal(time2))//false
+    fmt.Println(time1.Equal(time3)) //true</code></pre>
+<p>获取当天当月当年开始的时间</p>
+<pre><code><code>    
+    now := time.Now()
+
+    //根据时间戳获取当日开始的时候的时间戳 过程：时间戳-&gt;Time对象-&gt;string-&gt;Time对象-&gt;时间戳,年月类似
+    
+    //对于解析，要特别注意时区问题
+    t:= time.Unix(1560350574,999748000)
+    time1 := t.Format(&quot;2006-01-02&quot;)
+    t,err := time.Parse(&quot;2006-01-02&quot;,time1)  //time.Parse 解析出来的时区却是 time.UTC
+    if err!= nil {
+        glog.Error(err)
+    }
+    fmt.Println(t.Unix())
+    t1 := time.Date(t.Year(),t.Month(),t.Day(),0,0,0,0,time.UTC)//1560297600,注意时区问题
+    fmt.Println(t1.Unix())
+
+    //time 包提供了 Location 的两个实例：Local 和 UTC。Local 代表当前系统本地时区；UTC 代表通用协调时间，也就是零时区。 time 包默认（为显示提供时区）使用 UTC 时区。
+    //所以，一般的，我们应该总是使用 time.ParseInLocation 来解析时间，并给第三个参数传递 time.Local
+    t2, _ := time.ParseInLocation(&quot;2006-01-02&quot;,t.Format(&quot;2006-01-02&quot;),time.Local)//1560268800
+    fmt.Println(t2.Unix())
+    t3 := time.Date(t.Year(),t.Month(),t.Day(),0,0,0,0,time.Local)//1560268800
+    fmt.Println(t3.Unix())
+
+    // 获取年初时间
+    fmt.Println(time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location()))
+    // 获取当前小时时间如下，获取零时时间， 获取月初时间类似
+    fmt.Println(time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), 0, 0, 0, now.Location()))
+    
+
+    //time包给我们提供了专门的方法，功能更强大，性能也更好，这就是 Round(取最接近的) 和 Trunate(向下取整)
+    // 整点（向下取整）
+    fmt.Println(now.Truncate(1 * time.Hour).Unix())
+    // 整点（最接近）
+    fmt.Println(now.Round(1 * time.Hour).Unix())
+
+    // 整分（向下取整）
+    fmt.Println(now.Truncate(1 * time.Minute).Unix())
+    // 整分（最接近）
+    fmt.Println(now.Round(1 * time.Minute).Unix())
+    
+    // 整秒（向下取整）
+    fmt.Println(now.Truncate(1 * time.Second).Unix())
+    // 整秒（最接近）
+    fmt.Println(now.Round(1 * time.Second).Unix())</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,212 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修Go 修改map slice  array元素值' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>Go 修改map slice  array元素值</center></div><div class='banquan'>原文出处:本文由博客园博主周伯通的麦田提供。<br/>
+原文连接:https://www.cnblogs.com/phpper/p/12060512.html</div><br>
+    <p>在&ldquo;range&rdquo;语句中生成的数据的值其实是集合元素的拷贝。它们不是原有元素的引用。<br />这就意味着更新这些值将不会修改原来的数据。我们来直接看段示例：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func main() {
+    data :</span>= []<span style="color: #0000ff;">int</span>{<span style="color: #800080;">1</span>, <span style="color: #800080;">2</span>, <span style="color: #800080;">3</span><span style="color: #000000;">}
+    </span><span style="color: #0000ff;">for</span> _, v :=<span style="color: #000000;"> range data {
+        v </span>*= <span style="color: #800080;">10</span> <span style="color: #008000;">//</span><span style="color: #008000;">原始元素未更改</span>
+<span style="color: #000000;">    }
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">data:</span><span style="color: #800000;">"</span>, data) <span style="color: #008000;">//</span><span style="color: #008000;">输出 data: [1 2 3]</span>
+}</pre>
+</div>
+<p>如果我们需要更新原有集合中的数据，使用索引操作符来获得数据即可：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func main() {
+    data :</span>= []<span style="color: #0000ff;">int</span>{<span style="color: #800080;">1</span>, <span style="color: #800080;">2</span>, <span style="color: #800080;">3</span><span style="color: #000000;">}
+    </span><span style="color: #0000ff;">for</span> i, _ :=<span style="color: #000000;"> range data {
+        data[i] </span>*= <span style="color: #800080;">10</span><span style="color: #000000;">
+    }
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">data:</span><span style="color: #800000;">"</span>, data) <span style="color: #008000;">//</span><span style="color: #008000;">输出 data: [10 20 30]</span>
+}</pre>
+</div>
+<p>好，重点来了!重点来了!重点来了!,重要的话说三遍，大部分博友们可能会踩坑.</p>
+<p><strong>这里我提前总结下：</strong></p>
+<p>多个slice可以引用同一个数据。比如，当你从一个已有的slice创建一个新的slice时(比如通过索引截取)，这就会发生。</p>
+<p>如果你的应用功能需要这种行为，那么你将需要留意下slice的"坑"。</p>
+<p><em>在某些情况下，在一个slice中添加新的数据，在原有数组无法保持更多新的数据时，将导致分配一个新的数组。</em></p>
+<p><em>而其他的slice还指向老的数组（或者是老的数据）</em>。</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+func main() {
+    s1 :</span>= []<span style="color: #0000ff;">int</span>{<span style="color: #800080;">1</span>, <span style="color: #800080;">2</span>, <span style="color: #800080;">3</span><span style="color: #000000;">}
+    fmt.Println(len(s1), cap(s1), s1) </span><span style="color: #008000;">//</span><span style="color: #008000;">输出 3 3 [1 2 3]</span>
+    s2 := s1[<span style="color: #800080;">1</span>:] <span style="color: #008000;">//</span><span style="color: #008000;">索引从第二个元素截取开始</span>
+    fmt.Println(len(s2), cap(s2), s2) <span style="color: #008000;">//</span><span style="color: #008000;">输出 2 2 [2 3]</span>
+    <span style="color: #0000ff;">for</span> i :=<span style="color: #000000;"> range s2 {
+        s2[i] </span>+= <span style="color: #800080;">20</span><span style="color: #000000;">
+    }
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">仍然引用同一数组</span>
+    fmt.Println(s1) <span style="color: #008000;">//</span><span style="color: #008000;">s1 在s2修改了后面2个元素，所以s1也是更新了。输出 [1 22 23]</span>
+    fmt.Println(s2) <span style="color: #008000;">//</span><span style="color: #008000;">输出 [22 23]</span>
+    s2 = append(s2, <span style="color: #800080;">4</span>) <span style="color: #008000;">//</span><span style="color: #008000;"> 注意s2的容量是2，追加新元素后将导致分配一个新的数组 [22 23 4]</span>
+    <span style="color: #0000ff;">for</span> i :=<span style="color: #000000;"> range s2 {
+        s2[i] </span>+= <span style="color: #800080;">10</span><span style="color: #000000;">
+    }
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">s1 仍然是更新后的历史老数据</span>
+    fmt.Println(s1) <span style="color: #008000;">//</span><span style="color: #008000;">输出 [1 22 23]</span>
+    fmt.Println(s2) <span style="color: #008000;">//</span><span style="color: #008000;">输出 [32 33 14]</span>
+}</pre>
+</div>
+<p>所以，大家在使用中特别注意。容量不足，追加新元素不影响历史数据。因为重新分配了变量了。</p>
+<p>另外，继续聊下高级一点滴技巧：</p>
+<p><strong>使用指针接收方法的值</strong></p>
+<p>只要值是可取址的，那在这个值上调用指针接收方法是没问题的。</p>
+<p>然而并不是所有的变量是可取址的。Map的元素就不是。通过interface引用的变量也不是。我们接着看下面一段代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type user </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func (p </span>*<span style="color: #000000;">user) print() {
+    fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">排名:</span><span style="color: #800000;">"</span><span style="color: #000000;">, p.name)
+}
+
+type printer </span><span style="color: #0000ff;">interface</span><span style="color: #000000;"> {
+    print()
+}
+
+func main() {
+    u :</span>= user{<span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span><span style="color: #000000;">}
+    u.print()                    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 输出 排名: 乔峰</span>
+    <span style="color: #0000ff;">var</span> <span style="color: #0000ff;">in</span> printer = user{<span style="color: #800000;">"</span><span style="color: #800000;">鸠摩智</span><span style="color: #800000;">"</span>} <span style="color: #008000;">//</span><span style="color: #008000;">error</span>
+    <span style="color: #0000ff;">in</span><span style="color: #000000;">.print()
+    m :</span>= map[<span style="color: #0000ff;">string</span>]user{<span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>: user{<span style="color: #800000;">"</span><span style="color: #800000;">风清扬</span><span style="color: #800000;">"</span><span style="color: #000000;">}}
+    m[</span><span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>].print() <span style="color: #008000;">//</span><span style="color: #008000;">error</span>
+}</pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">cannot use user literal (type user) as type printer in assignment:
+        user does </span><span style="color: #0000ff;">not</span><span style="color: #000000;"> implement printer (print method has pointer receiver)
+cannot call pointer method on m[</span><span style="color: #808080;">"</span><span style="color: #808080;">one"]</span>
+cannot take the address of m[<span style="color: #808080;">"</span><span style="color: #808080;">one"]</span></pre>
+</div>
+<p>大致意思是：不能在赋值中使用数据文本（类型数据）作为类型指针，user未执行指针调用（指针方法具有指针接收器)，</p>
+<p>无法对m[&ldquo;one&rdquo;]调用指针方法，不能取m的地址[&ldquo;one&rdquo;]。</p>
+<p>上面我们看到有一个struct值的map，我们无法更新单个的struct值。比如错误的代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+type user </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func main() {
+    m :</span>= map[<span style="color: #0000ff;">string</span>]user{<span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>: {<span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span><span style="color: #000000;">}}
+    m[</span><span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>].name = <span style="color: #800000;">"</span><span style="color: #800000;">风清扬</span><span style="color: #800000;">"</span> <span style="color: #008000;">//</span><span style="color: #008000;">输出  cannot assign to struct field m["one"].name in map</span>
+}</pre>
+</div>
+<p>错误意思是：在map中，无法分配给结构字段m["one"].name。这个操作无效是因为map元素是无法取址的。</p>
+<p>上面我们提到:slice元素是可以取地址滴：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type user </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func main() {
+    one :</span>= user{<span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span><span style="color: #000000;">}
+    u :</span>=<span style="color: #000000;"> []user{one}
+    u[</span><span style="color: #800080;">0</span>].name = <span style="color: #800000;">"</span><span style="color: #800000;">风清扬</span><span style="color: #800000;">"</span> <span style="color: #008000;">//</span><span style="color: #008000;">ok</span>
+    fmt.Println(u)    <span style="color: #008000;">//</span><span style="color: #008000;">输出: [{风清扬}]</span>
+}</pre>
+</div>
+<p>当然我们还有更好的解决办法：</p>
+<p>第一个有效的方法是使用一个临时变量：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type user </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func main() {
+    m :</span>= map[<span style="color: #0000ff;">string</span>]user{<span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>: {<span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span><span style="color: #000000;">}}
+    u :</span>= m[<span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>] <span style="color: #008000;">//</span><span style="color: #008000;">使用临时变量</span>
+    u.name = <span style="color: #800000;">"</span><span style="color: #800000;">风清扬</span><span style="color: #800000;">"</span><span style="color: #000000;">
+    m[</span><span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>] =<span style="color: #000000;"> u
+    fmt.Printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">%v\n</span><span style="color: #800000;">"</span>, m) <span style="color: #008000;">//</span><span style="color: #008000;">输出: map[one:{风清扬}]</span>
+}</pre>
+</div>
+<p>另一个有效的方法是使用指针的map：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type user </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func main() {
+    m :</span>= map[<span style="color: #0000ff;">string</span>]*user{<span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>: {<span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span><span style="color: #000000;">}}
+    m[</span><span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>].name = <span style="color: #800000;">"</span><span style="color: #800000;">风清扬</span><span style="color: #800000;">"</span> <span style="color: #008000;">//</span><span style="color: #008000;">ok</span>
+    fmt.Println(m[<span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>]) <span style="color: #008000;">//</span><span style="color: #008000;">输出: &amp;{风清扬}</span>
+}</pre>
+</div>
+<p>说到这里，顺便再提一下。继续看下面一段代码：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package main
+
+import </span><span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+type user </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    name </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func main() {
+    m :</span>= map[<span style="color: #0000ff;">string</span>]*user{<span style="color: #800000;">"</span><span style="color: #800000;">one</span><span style="color: #800000;">"</span>: {<span style="color: #800000;">"</span><span style="color: #800000;">乔峰</span><span style="color: #800000;">"</span><span style="color: #000000;">}}
+    m[</span><span style="color: #800000;">"</span><span style="color: #800000;">two</span><span style="color: #800000;">"</span>].name = <span style="color: #800000;">"</span><span style="color: #800000;">鸠摩智</span><span style="color: #800000;">"</span> <span style="color: #008000;">//</span><span style="color: #008000;">新增自定义键名值</span>
+    fmt.Println(m[<span style="color: #800000;">"</span><span style="color: #800000;">two</span><span style="color: #800000;">"</span>]) <span style="color: #008000;">//</span><span style="color: #008000;">error</span>
+}</pre>
+</div>
+<p>输出：</p>
+<div class="cnblogs_code">
+<pre><code>panic: runtime error: invalid memory address <span style="color: #0000ff;">or</span> nil pointer dereference</pre>
+</div>
+<p>无效的内存地址或取消引用空指针？原因在于Go无法动态给结构体添加字段，我们可以间接使用make(map[string]interface{})实现。</p>
+<p>好吧，就说这么多了，有不足之处欢迎广大博友留言指正。。。。。。。</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

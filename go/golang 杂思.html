@@ -1,0 +1,312 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修golang 杂思' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>golang 杂思</center></div><div class='banquan'>原文出处:本文由博客园博主喜欢兰花山丘提供。<br/>
+原文连接:https://www.cnblogs.com/life2refuel/p/10631774.html</div><br>
+    <h1 id="正文">正文</h1>
+<pre><code><code>这里给大家总结一些 Go player 开发小技巧. 欢迎批评和交流, 望大家喜欢. </code></pre>
+<h3 id="配置管理">1. 配置管理</h3>
+<pre><code><code>推荐一种简单粗暴的配置管理方式 [配置 映射 内部结构]. 
+例如有个配置文件 config.online.yaml</code></pre>
+<pre class="yaml"><code># 常量
+pi: 3.14159265358
+
+# 即表示网址属性值
+uri: https://www.google.com
+
+# 即表示 server.host 属性的值
+server:
+    host: http://www.youtube.com
+
+# 数组, 即表示 server 为 [a, b, c]
+host:
+    - 172.217.161.132
+    - 216.58.220.206
+    - 8.8.8.8</code></pre>
+<pre><code><code>我们可以在代码直接写映射规则.</code></pre>
+<pre class="go"><code>var C = struct {
+    PI float64 `yaml:&quot;pi&quot;`
+    URL `yaml:&quot;uri&quot;`
+    Server struct {
+        Host `yaml:&quot;host&quot;`
+    } `yaml:&quot;server&quot;`
+    Host []string `yaml:&quot;host&quot;`
+}{}</code></pre>
+<pre><code><code>程序启动时候, 通过 func init() {} 初始化. 使用时只需要使用 config.C.PI, 
+是不是很方便. 再补充一个更好的配置文件协议 toml.</code></pre>
+<p><a href="https://github.com/toml-lang/toml">toml</a></p>
+<pre><code><code>如果换用 toml 配置(config.online.toml)的内容更好理解</code></pre>
+<pre class="toml"><code>pi  = 3.14159265358
+uri = https://www.google.com
+
+[server]
+host = http://www.youtube.com
+
+host = [
+    &quot;172.217.161.132&quot;,
+    &quot;216.58.220.206&quot;,
+    &quot;8.8.8.8&quot;
+]</code></pre>
+<pre><code><code>真的, 看见 toml 的第一眼就喜欢上了. 好舒服 ~ 让人觉得好舒服, 就应该这样的雕琢.</code></pre>
+<h3 id="fmt.sprintf">2. fmt.Sprintf</h3>
+<pre><code><code>有时候我们看见这样的代码片段</code></pre>
+<pre class="go"><code>    if len(v) &gt; 0 {
+        errMessage = fmt.Sprintf(t, v...)
+    } else {
+        errMessage = t
+    }</code></pre>
+<pre><code><code>其实对于 fmt.Sprintf 是画蛇添足, 可以直接</code></pre>
+<pre class="go"><code>    errMessage = fmt.Sprintf(t, v...)</code></pre>
+<h3 id="乒乓结构">3. 乒乓结构</h3>
+<pre><code><code>(说的很轻巧, 推荐有所思考) 普通的读写操作代码有</code></pre>
+<pre class="go"><code>var lastMd5sLock   = sync.RWMutex{}
+var lastMd5s map[string]map[string]string
+
+func ClearCache() {
+    lastMd5sLock.Lock()
+    defer lastMd5sLock.Unlock()
+    lastMd5s = make(map[string]map[string]string)
+}</code></pre>
+<pre><code><code>这里分享个干掉 RWMutex 的无锁技巧. 运用新旧两份配置, 使用空间换时间技巧.</code></pre>
+<pre class="go"><code>var nowIndex uint32
+var dataConf [2]map[string]map[string]string
+
+// ClearCache conf map clear
+func ClearCache() {
+    lastConf := make(map[string]map[string]string)
+    lastIndex := 1 - atomic.LoadUint32(&amp;nowIndex)
+    dataConf[lastIndex] = lastConf
+    atomic.StoreUint32(&amp;nowIndex, lastIndex)
+}</code></pre>
+<pre><code><code>我们来讲解代码, 原先的 ClearCache 那段代码加了写锁. 写锁能够做到两件事情
+1&#39; 临界情况有人在单条读取, 清除会让其等待
+2&#39; 临界情况有人在单条写入, 清除会让其等待
+
+假如我们不对 ClearCache 加写锁, 采用原子交换技巧.
+
+由于此刻内存中存在 dataConf[1] new 和 dataConf[0] old 两个配置对象.
+临界情况指读取和写入都在进行, 但此刻触发清除操作
+1&#39; 临界情况有人在单条读取, 写方将 nowIndex 指向了 1, 但读取的仍然是 dataConf[0] old
+2&#39; 临界情况有人在单条写入, 写入的还是 dataConf[0] old
+
+上面行为和加锁后产出结果一样. 因而清除函数, 可以用原子技巧替代锁.
+
+通过这个原理, 我们做配置更新或者同步时候可以采用下面步骤获取最优性能
+1&#39; 解析配置, 生成一个新的配置对象 map 填充到 dataConf[lastIndex]
+2&#39; 新的配置对象读取索引原子赋值给当前的读取索引 lastIndex = lastIndex
+
+为什么说这么多呢. 因为锁是一个我们需要慎重对待的点.
+
+而对于那些不加锁, 也没有原子操作的乒乓结构, 可以自行利用 go -race 分析. 
+其读写一致性无法保证(读写撕裂, 脏读), 而且无法保证编译器不做优化. 有时候那种写法线上居然
+不出问题, 但是一旦出了问题就是莫名其妙, 很难追查. 这里就不表那种错误的乒乓写法, 来污染同
+行代码.</code></pre>
+<h3 id="配置库解析">4. 配置库解析</h3>
+<pre><code><code>说起配置库, 我看有的同学通过这样代码做配置文件内容提取和分割.</code></pre>
+<pre class="go"><code>content, err := ioutil.ReadFile(file)
+if err != nil {
+    // ...
+}
+
+for _, line := range strings.Split(string(content), &quot;\n&quot;) {
+    // ...
+}</code></pre>
+<pre><code><code>上面代码存在两个潜在问题
+1&#39; 大文件内存会炸
+2&#39; 不同平台换行符不统一 mac \r linux \n windows \r\n
+
+一个稳健漂亮代码模板推荐用下面</code></pre>
+<pre class="go"><code>    fin, err := os.Open(path)
+    if err != nil {
+        // Error ...
+    }
+    defer fin.Close()
+
+    // create a Reader
+    var buf bytes.Buffer
+    reader := bufio.NewReader(fin)
+    for {
+        line, isPrefix, err := reader.ReadLine()
+        if len(line) &gt; 0 {
+            buf.Write(line)
+            if !isPrefix {
+                // 完整的行并且不带 \r\n, 运行独立的业务代码 ~
+                lins := string(buf.Bytes())
+
+                buf.Reset()
+            }
+        }
+
+        if err != nil {
+            break
+        }
+    }</code></pre>
+<pre><code><code>强烈推荐!! 各位保存这个套路模板.</code></pre>
+<h3 id="go-md5">5. Go MD5</h3>
+<pre><code><code>这种高频出现代码片段, 强烈建议统一封装. 保证出口统一. 这里带大家封装两个.</code></pre>
+<pre class="go"><code>// MD5String md5 hash
+func MD5String(str string) string {
+    data := md5.Sum([]byte(str))
+    return fmt.Sprintf(&quot;%x&quot;, data)
+}</code></pre>
+<pre class="go"><code>// MD5File 文件 MD5
+func MD5File(path string) (string, error) {
+    fin, err := os.Open(path)
+    if err != nil {
+        return &quot;&quot;, err
+    }
+    defer fin.Close()
+
+    m := md5.New()
+
+    // 文件读取解析, 并设置缓冲缓冲大小
+    const blockSize = 4096
+    buf := make([]byte, blockSize)
+    for {
+        n, err := fin.Read(buf)
+        if err != nil {
+            return &quot;&quot;, err
+        }
+
+        // buf[:0] == []
+        m.Write(buf[:n])
+
+        if n &lt; blockSize {
+            break
+        }
+    }
+
+    return fmt.Sprintf(&quot;%x&quot;, m.Sum(nil)), nil
+}</code></pre>
+<pre><code><code>不要问为什么那么麻烦, 因为那叫专业. 小点游戏包片段 4G, 你来个 md5 试试 </code></pre>
+<h3 id="github.comspf13cast">6. github.com/spf13/cast</h3>
+<pre><code><code>不要用这个库, 性能全是呵呵呵.
+Go 中类型转换代码其实很健全(实在没办法可以自行写反射), 举例如下</code></pre>
+<pre class="go"><code>// ParseBool returns the boolean value represented by the string.
+// It accepts 1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.
+// Any other value returns an error.
+func ParseBool(str string) (bool, error)
+
+// ParseFloat converts the string s to a floating-point number
+// with the precision specified by bitSize: 32 for float32, or 64 for float64.
+// When bitSize=32, the result still has type float64, but it will be
+// convertible to float32 without changing its value.
+func ParseFloat(s string, bitSize int) (float64, error)
+
+// ParseInt interprets a string s in the given base (0, 2 to 36) and
+// bit size (0 to 64) and returns the corresponding value i.
+func ParseInt(s string, base int, bitSize int) (i int64, err error)</code></pre>
+<pre><code><code>可以看看 github.com/spf13/cast 源码设计水平线 ~</code></pre>
+<pre class="go"><code>// ToBoolE casts an empty interface to a bool.
+func ToBoolE(i interface{}) (bool, error) {
+
+    i = indirect(i)
+
+    switch b := i.(type) {
+    case bool:
+        return b, nil
+    case nil:
+        return false, nil
+    case int:
+        if i.(int) != 0 {
+            return true, nil
+        }
+        return false, nil
+    case string:
+        return strconv.ParseBool(i.(string))
+    default:
+        return false, fmt.Errorf(&quot;Unable to Cast %#v to bool&quot;, i)
+    }
+}</code></pre>
+<pre><code><code>首先看到的是 b := i.(type) 断言, 触发一次反射. 
+随后可能到 case int 分支 i.(int) or case string 分支 i.(string) 触发二次反射. 
+非常浪费. 因为 b 就是反射后的值了. 猜测作者当时喝了点酒.
+
+其实作者写的函数还有个商榷地方在于调用 indirect 函数找到指针指向的原始类型.</code></pre>
+<pre class="go"><code>// From html/template/content.go
+// Copyright 2011 The Go Authors. All rights reserved.
+// indirect returns the value, after dereferencing as many times
+// as necessary to reach the base type (or nil).
+func indirect(a interface{}) interface{} {
+    if a == nil {
+        return nil
+    }
+    if t := reflect.TypeOf(a); t.Kind() != reflect.Ptr {
+        // Avoid creating a reflect.Value if it&#39;s not a pointer.
+        return a
+    }
+    v := reflect.ValueOf(a)
+    for v.Kind() == reflect.Ptr &amp;&amp; !v.IsNil() {
+        v = v.Elem()
+    }
+    return v.Interface()
+}</code></pre>
+<pre><code><code>这个函数引自 Go 标准库 html/template/content.go 中. 
+用于将非 nil 指针转成指向类型. 提高代码兼容性. 
+这是隐藏的反射. 个人觉得用在这里很浪费 ~
+
+Go 开发中反射是低效的保证. 反射性能损耗在
+    1&#39; 运行时安全检查
+    2&#39; 调用底层的类型转换函数
+不到非用不可, 请不要用反射. 和锁一样都需要慎重
+
+外部库太多容易造成版本管理复杂, 而且生产力和效率也不一定提升. 例如上面的包 ~
+
+... ...
+
+其实我们的协议层, 是太爱客户端了. int, number, string 全都兼容. 
+把原本 json 协议要做的事情, 抛给了运行时问题. 这方面, 强烈推荐 json 协议语义明确. 
+方便我们后端做参数健壮性过滤. 避免部分 CC 攻击.</code></pre>
+<h3 id="mysql-相关讨论">7. MySQL 相关讨论</h3>
+<pre><code><code>在数据业务设计时. 顺带同大家交流下 MySQL 设计过程中小技巧(模板)</code></pre>
+<pre class="sql"><code>create table [table_nane] (
+    id bigint unsigned NOT NULL AUTO_INCREMENT PRIMARY KEY COMMENT &#39;物理主键&#39;,
+    update_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT &#39;更新时间&#39;,
+    create_time timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT &#39;创建时间&#39;,
+    [delete_time timestamp DEFAULT NULL COMMENT &#39;删除时间&#39;]
+
+    [template]
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;</code></pre>
+<pre><code><code>问题 1: 物理主键 id 为什么是 unsigned ?
+回答  : 
+    1&#39; 性能更好, unsigned 不涉及 反码和补码 转码消耗
+    2&#39; 表示物理主键更广 [-2^63, 2^63-1] -&gt; [0, 2^64-1]
+    3&#39; mysql 优化会更好. select * from * where id &lt; 250;
+        原先是 select * from * where -2^63 &lt;= id and id &lt; 250;
+        现在是 select * from * where 0 &lt;= id and id &lt; 250;
+
+问题 2: 为什么用 timestamp 表示时间?
+回答  :
+    1&#39; timestamp 和 int 一样都是 4字节. 用它表示时间戳更友好.
+    2&#39; 业务不再关心时间的创建和更新相关业务代码. 省心, 省代码
+
+问题 3: 为什么是 utf8mb4 而不是 utf8? 
+回答  : 
+    mysql 的 utf8 不是标准的 utf8. unicode 编码定义是使用 1-6 字节表示一个字符. 
+    但 mysql utf8 只使用了 1-3 字节表示一个字符, 那么遇到 4字节编码以上的字符(表情符号)
+    会发生意外. 所以 mysql 在 5.5 之后版本推出了 utf8mb4 编码, 完全兼容以前的 utf8. </code></pre>
+<h2 id="后记">后记</h2>
+<p><a href="https://music.163.com/#/song?id=31421394">渴望光荣</a> - <a href="https://music.163.com/#/song?id=31421394" class="uri">https://music.163.com/#/song?id=31421394</a></p>
+<p><img src="./images/golang 杂思0.png" alt="Golang" /></p>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

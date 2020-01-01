@@ -1,0 +1,285 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修高仿富途牛牛-组件化(一)-支持页签拖拽、增删、小工具' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>高仿富途牛牛-组件化(一)-支持页签拖拽、增删、小工具</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11027429.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一概述">一、概述</a></li>
+        <li><a href="#二效果展示">二、效果展示</a></li>
+        <li><a href="#三实现方案分析">三、实现方案分析</a><ul>
+        <li><a href="#第一阶段">1、第一阶段</a></li>
+        <li><a href="#第二阶段">2、第二阶段</a></li>
+        <li><a href="#第三阶段">3、第三阶段</a></li>
+        </ul></li>
+        </ul>
+    </div>
+</div>
+<h2 id="一概述">一、概述</h2>
+<p>好久没有做业务相关的UI功能了，比较炫酷的交互效果也写的少了，最近花了2天时间写了一个简易的高仿富途牛牛组件化的功能，当然了这只是一个初步的效果，而且没有做贴图、美化等工作，但是基本的功能已经有了。本篇文章只是作为组件化的一个开始，后续还会陆续引入更多关于组件化的介绍，相信功能也会越来越丰富。<strong>除此之外，富途牛牛的一些其他高级功能也会陆续引入，不乏有k线、分时、五日、指标、自选这样的复杂功能。</strong></p>
+<blockquote>
+<p>自选和k线这些东西我已经有成型的效果了，可以参考<a href="https://www.cnblogs.com/swarmbees/p/6707798.html">效果展示</a>，并且已经被我封装成控件，来需求即可定制</p>
+</blockquote>
+<h2 id="二效果展示">二、效果展示</h2>
+<p>说的再多，也不如贴一张效果图来的实在，下边的图展示了附图牛牛组件化的一个简单demo，虽然没有数据，但是该有的基础交互流程已经都有了。用过富途牛牛的人应该都知道。</p>
+<html>
+<center>
+<div>
+    <img src="./images/高仿富途牛牛-组件化(一)-支持页签拖拽、增删、小工具0.png" />
+</div>
+</center>
+</html>
+<p>可能有一些人不是特别了解这个功能，这里我简单的说一下：</p>
+<ul>
+<li>主窗口TemplateLayout是一个基础的页签定制页面，上边的页签可以被拖拽，支持在自身组件化页面交换位置，如果出了自身组件页面时，它会自动生成一个新的TemplateLayout组件页面。</li>
+<li>新的组件页面支持页签栏移动窗口，注意主组件页面不支持(需求限制)</li>
+<li>页签栏的最左侧是一个工具按钮，点击可以唤醒工具箱</li>
+<li>工具箱里边有各种小工具，当我们点击时，就会弹出小窗口subWindow</li>
+<li>小窗口subWindow支持选中高亮</li>
+<li>不同页签下弹出的小窗口subWindow是独立的，切换页签时，subWindow不会跟随，也就是说在不同页签创建的小窗口只显示在该页签下</li>
+<li>不同组件化页面(TemplateLayout)之间的页签是支持互相拖拽</li>
+<li>小工具窗口和TemplateLayout窗口是一一对应关系，并且支持移动联动，主窗口移动时，小工具自动移动；小工具移动时，主窗口不动</li>
+</ul>
+<h2 id="三实现方案分析">三、实现方案分析</h2>
+<p>写这个demo，我基本上用了2天的时间，而且写的过程中，代码结构也有一些变动，达到现在这个效果</p>
+<h3 id="第一阶段">1、第一阶段</h3>
+<p>当时只考虑了一个主组件化界面TemplateLayout的实现，把这个页面总共分了这么几个部门：主Frame、顶部工具条、页签窗体(支持拖拽)、中心内容窗体、工具箱、小窗体subWindow。</p>
+<p><strong>其中值得注意的有这么几个地方</strong></p>
+<ul>
+<li>工具箱和主窗口的联动</li>
+<li>页签的拖拽效果</li>
+</ul>
+<p>除过上述两个问题以外，第一阶段暂时没有其他比较棘手的问题，简单的页面编写我这里就不做过多介绍，主要分析下上边两个问题的处理过程，也是比较重要的处理过程</p>
+<h4 id="a工具箱和主窗口的联动">a、工具箱和主窗口的联动</h4>
+<p>这个问题，说实话，当时真是想了好几个小时，花费了比较长的事件。</p>
+<p>自开始的想法就是重写父窗口的moveEvent函数，当窗体移动时，我把移动的偏移量告知工具箱，这样工具箱就可以进行联动了，后来进行实现，发现工具箱移动的总是很慢，<strong>哎！moveEvent肯定是优化了一些调用，真是坑爹啊</strong></p>
+<p>想了一会儿了，到了吃饭时间了，算了，还是换换脑子，或许吃完饭回来就有方案了，哈哈哈，事实上还就是这样，锁屏去吃饭啦！！！</p>
+<p>程序员即是闲不下来，去吃饭的路上又开始想了，不过这次我想到了方案，我们之前都是考虑怎么传递变化量到工具箱，那么反过来我们如果只告诉工具箱主窗口位置发生变化了呢！！！，让工具箱自己去移动，只要保证和之前的主窗口的相对位置不变即可。<strong>你说什么？相对位置不变！，大家伙是不是也想到了呢，对了，就是这么简单了，我们只需要在工具箱自己移动的时候更新这个相对位置即可，当主窗口移动时，我们仍然是要保证相对位置不变。</strong></p>
+<p>就是这么简单！就是这么任性！</p>
+<pre><code>void ToolBoxDialog::LinkMove()
+{
+    if (QWidget * parent = parentWidget())
+    {
+        QPoint globalPos = parent-&gt;mapToGlobal(m_relativePos);
+        move(globalPos);
+    }
+}</code></pre>
+<h4 id="b页签拖拽">b、页签拖拽</h4>
+<p>在做这个组件化拖拽之前，我也简单的做过一些拖拽功能，因此这里做这个东西也不困难。首先就是我们的技术方案选择了，Qt他为我们提供了一些拖拽上的功能实现，但是定制化不强，一旦我们想做的更美观，交互上更丰富一些，使用原有的操作逻辑就会遇到一些困难，因此这里我们完全自己实现一个拖拽的效果</p>
+<p><strong>看这里-我们通过过滤鼠标的3种事件，来模拟拖拽。哪三种事件呢？鼠标按下、鼠标移动和鼠标抬起</strong></p>
+<p>下面我们分析下具体的事件处理流程，既然我们想要过滤这三种事件，那么我们就必须要找一个过滤对象，来过滤所有的页签按钮事件，这里很自然的我就想到了他们的父窗口DragTabWidget，了解Qt的事件循环的人应该都知道接下来我要干什么了，2个步骤：</p>
+<ol>
+<li>把页签的事件按钮的父窗口中</li>
+<li>重写父类的EventFilter函数</li>
+</ol>
+<p>代码可能会像下面这样</p>
+<pre><code>//按钮把自己的事件先让父类处理 this这里表示父窗口
+tabButton-&gt;installEventFilter(this);
+
+//父类重写eventFilter函数
+bool DragTabWidget::eventFilter(QObject * watched, QEvent * event)
+{
+    TabButton * button = dynamic_cast&lt;TabButton *&gt;(watched);
+    if (button &amp;&amp; m_buttonMaps.contains(button-&gt;GetID()))
+    {
+    }
+    
+    return __super::eventFilter(watched, event);
+}</code></pre>
+<p>有了上面这个步骤之后，我们接下来只需要专心的处理鼠标事件即可</p>
+<p>1、鼠标按下<br />
+鼠标按下时，我们这里需要记录鼠标按下的位置，方便后续移动我们的页签。</p>
+<pre><code>if (event-&gt;type() == QEvent::MouseButtonPress)
+{
+    QMouseEvent * mouseEvent = static_cast&lt;QMouseEvent *&gt;(event);
+    m_pressGlobalPos = button-&gt;mapToGlobal(mouseEvent-&gt;pos());
+    m_pressButtonPos = button-&gt;pos();
+}</code></pre>
+<p>2、鼠标移动<br />
+当鼠标被按下时，并且进行了移动，这个时候的处理过程就比较复杂了，这里我们涉及到2种效果</p>
+<p><strong>首先</strong>就是我们的页签在自身的工具栏种移动，这样的情况比较好处理一些，我们只需要把根据当前的鼠标位置移动我们的<code>占用控件</code>和被拖拽的页签，</p>
+<p><strong>占位控件</strong>：就是效果展示图中，我们看到的空白区域，主要是告诉使用者，当鼠标抬起时，控件将会在被移动到这个地方</p>
+<p>这里边有一个<strong>小技巧</strong>：就是我们拖拽页签的时候，我们构造一个被拖拽页签的图片，跟随鼠标移动即可，这样省时、省力又省心，最主要还是bug少。</p>
+<p><strong>其次呢</strong>当我们的鼠标移除工具栏时，我们的页签也是要跟着被拖出原有的组件化页面的，也就是原有的TemplateLayout。移除的过程可能像下面这样</p>
+<ol>
+<li>隐藏被拖拽的按钮上的占位控件</li>
+<li>移除对应的面板，即中心内容窗口</li>
+<li>让面板跟随鼠标进行移动，位置在拖拽的页签下方</li>
+</ol>
+<pre><code>if (event-&gt;type() == QEvent::MouseMove)
+{
+    if (IsMoveTab())
+    {
+        //移动当前选中按钮
+        MoveIn(button);
+        MoveSnapSeat(button);
+    }
+    else
+    {
+        //把当前选中按钮拖出布局
+        MoveOut(button);
+    }
+}</code></pre>
+<p>3、鼠标抬起<br />
+当我们移动页签时，无非就三种情况</p>
+<ul>
+<li>原有工具栏移动</li>
+<li>新建一个组件化页面</li>
+<li>移动到另一个组件化页面</li>
+</ul>
+<p>处理代码如下，这是第一个阶段的代码，有点儿问题，不支持第三种情况。</p>
+<p><strong>仔细回想下</strong>我们把按钮的事件都安装给了自己的父窗口DragTabWidget，可想而知不同DragTabWidget之间可能也不能进行交互了，因为他们走的都是自己的事件循环、和处理逻辑。</p>
+<pre><code>if (event-&gt;type() == QEvent::MouseButtonRelease)
+{
+    if (IsMoveTab())
+    {
+        //移动拖拽的按钮到占位位置
+        MoveDragButton();
+    }
+    else
+    {
+        //添加新的独立窗口
+        //button 添加到新的TemplateLayout布局中
+        emit ButtonMoveOutCompleted(button-&gt;GetID());
+
+        //原有布局中 如果只剩下一个按钮 关闭按钮将不让使用
+        if (m_buttonMaps.size() == 1)
+        {
+            m_buttonMaps.values().first()-&gt;SetCloseEanble(false);
+        }
+    }
+}</code></pre>
+<p>这不第一个版本有了解决不了的问题，这里我才进行了适当的重构，引入第二个版本。</p>
+<p><strong>第二个版本的修改主要是，按钮的事件不在交给父窗口去优先处理了，而是交给一个第三者，这个第三者接收了所有的按钮事件，包括不同DragTabWidget窗体中的按钮，这样事件就达到了统一。</strong></p>
+<h3 id="第二阶段">2、第二阶段</h3>
+<p>为了解决不同工具栏之间可以相互拖拽页签，这里我们引入了第三方类TabMoveManager，这个类专门负责处理所有的按钮事件，处理过程和第一阶段类型，这里我把关键部分的代码贴出来</p>
+<pre><code>bool TabMoveManager::eventFilter(QObject * watched, QEvent * event)
+{
+    TabButton * button = dynamic_cast&lt;TabButton *&gt;(watched);
+    if (button &amp;&amp; m_tabButtonMap.contains(button-&gt;GetID()))
+    {
+        if (event-&gt;type() == QEvent::MouseButtonPress)
+        {
+            QMouseEvent * mouseEvent = static_cast&lt;QMouseEvent *&gt;(event);
+            m_pressGlobalPos = mouseEvent-&gt;globalPos();
+            m_pressButtonPos = button-&gt;mapToParent(QPoint(0, 0));
+            
+            //记录从当前被拖拽的tab和模板
+            ResolveDragTab(button);
+        }
+        else if (event-&gt;type() == QEvent::MouseMove)
+        {
+            if (IsMoveTab())
+            {
+                //移动当前选中按钮
+                MoveIn(button);
+                MoveSnapSeat(button);
+            }
+            else
+            {
+                //把当前选中按钮拖出布局
+                MoveOut(button);
+            }
+        }
+        else if (event-&gt;type() == QEvent::MouseButtonRelease)
+        {
+            if (IsMoveTab())
+            {
+                //移动拖拽的按钮到候选模板占位位置
+                MoveDragButton();
+            }
+            else //空白处 释放鼠标 需要新构造一个TemplateLayout
+            {
+                emit NeedNewTemplateLayout(button-&gt;GetID());
+            }
+            //清理原有模板布局
+            if (m_pDragTemplate != m_pCandidateTemplate &amp;&amp; m_pCandidateTemplate != nullptr)
+            {
+                m_pDragTemplate-&gt;CleanUP(button-&gt;GetID());
+            }
+
+            //原有布局中 如果只剩下一个按钮 关闭按钮将不让使用
+            if (m_pDragTabWidget-&gt;GetButtonCount() == 1)
+            {
+                m_pDragTabWidget-&gt;GetToolButton()-&gt;SetCloseEanble(false);
+            }
+            ···
+        }
+    }
+
+    return __super::eventFilter(watched, event);
+}</code></pre>
+<p>除了处理拖拽事件以外，他还起到了一个容器的作用，所有的subPanel我都注册到这个类中，其他的地方都可以通过这个类来获取指定Panel</p>
+<pre><code>void RegisterSubPanel(const QString &amp;, SubContentWidget *);
+void UnregisterSybPanel(const QString &amp;);
+
+SubContentWidget * GetSubPanel(const QString &amp;) const;</code></pre>
+<h3 id="第三阶段">3、第三阶段</h3>
+<p>前两个阶段已经把主要的功能基本都实现了，但是代码结构上，包括一些类负责的功能上还是有一些问题。</p>
+<p>第三阶段主要对代码进行了细微的重构，工程代码结构下图所示</p>
+<html>
+<center>
+<div>
+    <img src="./images/高仿富途牛牛-组件化(一)-支持页签拖拽、增删、小工具1.png" />
+</div>
+</center>
+</html>
+<p>下面是工程中包含的所有类：</p>
+<ul>
+<li>ContentPanel:中心窗口，里边包含了一个个SubPanel，每个SubPanel对应一个页签。该类的内存中记录了很多窗体指针，但只负责内存维护，不对窗体的打开、关闭进行操作</li>
+<li>DragTabWidget：页签所属窗体，支持移动整个组件化窗口</li>
+<li>DragToolBar：工具栏，内部包括调出工具箱的按钮和DragTabWidget</li>
+<li>SmallWidget：小窗体，支持各种小工具页面</li>
+<li>TabButton：页签</li>
+<li>TabMoveManager：静态单例，负责处理页签移动事件</li>
+<li>TemplateLayout：组件化窗口</li>
+<li>ToolBoxDialog：工具箱</li>
+<li>TemplateDefine：头文件，定义了很多变量</li>
+</ul>
+<p><br><br><br />
+<strong>以上代码基本把视线组件化功能的主要逻辑讲完了，具体的代码量比较大，而且是一个不成形的demo，暂时就不往外放了。</strong></p>
+<html>
+    <div style='font-weight:600;'>
+    如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！
+    </div>
+<center>
+    <div>
+        <table>
+        <tr>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td>
+            <td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td>
+        </tr>
+        </table>
+    </div>
+</center>
+</html>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,160 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修CUDA 与 OpenGL 的互操作' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>CUDA 与 OpenGL 的互操作</center></div><div class='banquan'>原文出处:本文由博客园博主茶飘香~提供。<br/>
+原文连接:https://www.cnblogs.com/chen9510/p/11530567.html</div><br>
+    <p>&nbsp;</p>
+<p>　　CUDA 与 OpenGL 的互操作一般是使用CUDA生成数据，然后在OpenGL中渲染数据对应的图形。这两者的结合有两种方式：</p>
+<p>　　　　1、使用OpenGL中的PBO（像素缓冲区对象）。CUDA生成像素数据，OpenGL直接渲染即可。</p>
+<p>　　　　2、使用OpenGL中的FBO（顶点缓冲区对象）。CUDA生成顶点数据，OpenGL渲染。</p>
+<p>　　这两种方法的核心都是将OpenGL中的缓冲区对象映射到CUDA内存空间中（让CUDA的内存指针指向OpenGL的缓冲区），这样就不需要将缓冲区中的数据传输至CUDA内存中，然后利用CUDA的高并行计算性能加速计算，最后直接使用OpenGL渲染。</p>
+<p>　　</p>
+<p>　　一个例子，使用CUDA根据时间动态生成16个点，在屏幕上显示。</p>
+<p>　　步骤：</p>
+<p>　　1、设置与OpenGL互操作的设备</p>
+<div class="cnblogs_code">
+<pre>status=cudaGLSetGLDevice(<span style="color: #800080;">0</span>);</pre>
+</div>
+<p>　　2、在CUDA中注册缓冲区对象</p>
+<div class="cnblogs_code">
+<pre>status = cudaGLRegisterBufferObject(<span style="color: #0000ff;">this</span>-&gt;VBO);</pre>
+</div>
+<p>　　3、映射缓冲区对象：让CUDA内存指针指向缓冲区对象对应的空间</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;"> 映射缓冲对象</span>
+    float4*<span style="color: #000000;"> position;
+    status</span>=cudaGLMapBufferObject((<span style="color: #0000ff;">void</span>**)&amp;position, <span style="color: #0000ff;">this</span>-&gt;VBO);</pre>
+</div>
+<p>　　4、运行核函数</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;"> 运行核函数</span>
+    dim3 dimBlock(<span style="color: #800080;">4</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">1</span><span style="color: #000000;">);
+    dim3 dimGrid(</span><span style="color: #800080;">1</span><span style="color: #000000;">);
+    KernelFunc</span>&lt;&lt;&lt;dimGrid, dimBlock&gt;&gt;&gt;(position, clock(), <span style="color: #800080;">4</span>, <span style="color: #800080;">4</span><span style="color: #000000;">);
+    cudaThreadSynchronize(); </span><span style="color: #008000;">//</span><span style="color: #008000;">同步线程</span></pre>
+</div>
+<p>　　5、取消映射</p>
+<div class="cnblogs_code">
+<pre>status=cudaGLUnmapBufferObject(<span style="color: #0000ff;">this</span>-&gt;VBO);</pre>
+</div>
+<p>　效果图：</p>
+<p>　　<img src="./images/CUDA 与 OpenGL 的互操作0.png" alt="" /></p>
+<p>　　注意：当CUDA的kernel函数修改CUDA指针指向的空间超出OpenGL缓冲对象大小时，会导致后面出现取消映射失败。（这里所说的CUDA指针是映射到OpenGL缓冲对象的）</p>
+<p>　　完整代码如下：</p>
+<ul>
+<li>.cuh文件</li>
+</ul>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">cuda_runtime.h</span><span style="color: #800000;">"</span> <span style="color: #008000;">//</span><span style="color: #008000;">CUDA运行时API</span>
+#include <span style="color: #800000;">"</span><span style="color: #800000;">device_launch_parameters.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span>&lt;cuda.h&gt;<span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">GL/glew.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span>&lt;cuda_gl_interop.h&gt;<span style="color: #000000;">
+#include </span>&lt;iostream&gt;<span style="color: #000000;">
+#include </span>&lt;stdio.h&gt;
+
+<span style="color: #0000ff;">class</span><span style="color: #000000;"> GenVertex
+{
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    GenVertex();
+    </span>~<span style="color: #000000;">GenVertex();
+    </span><span style="color: #0000ff;">void</span> setVBO(unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> vbo);
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> createVtxWithCuda();
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    unsigned </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> VBO;
+
+</span><span style="color: #0000ff;">private</span><span style="color: #000000;">:
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> setup();
+};</span></pre>
+</div>
+<ul>
+<li>.cu文件</li>
+</ul>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">GenVertex.cuh</span><span style="color: #800000;">"</span><span style="color: #000000;">
+#include </span>&lt;time.h&gt;<span style="color: #000000;">
+
+
+__global__ </span><span style="color: #0000ff;">void</span> KernelFunc(float4* position, <span style="color: #0000ff;">float</span> time, unsigned <span style="color: #0000ff;">int</span> width, unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> height)
+{
+    unsigned </span><span style="color: #0000ff;">int</span> x = blockIdx.x*blockDim.x +<span style="color: #000000;"> threadIdx.x;
+    unsigned </span><span style="color: #0000ff;">int</span> y = blockIdx.y*blockDim.y +<span style="color: #000000;"> threadIdx.y;
+    </span><span style="color: #0000ff;">float</span> u = x / (<span style="color: #0000ff;">float</span><span style="color: #000000;">)width;
+    </span><span style="color: #0000ff;">float</span> v = y / (<span style="color: #0000ff;">float</span><span style="color: #000000;">)height;
+    u </span>= u*<span style="color: #800080;">2.0f</span> - <span style="color: #800080;">1.0f</span><span style="color: #000000;">;
+    v </span>= v*<span style="color: #800080;">2.0f</span> - <span style="color: #800080;">1.0f</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">float</span> freq = <span style="color: #800080;">4.0f</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">float</span> w = sinf(u*freq + time*<span style="color: #800080;">0.001f</span>)*cosf(v*freq + time*<span style="color: #800080;">0.001f</span>)*<span style="color: #800080;">0.5f</span><span style="color: #000000;">;
+    position[y</span>*width + x] = make_float4(u*<span style="color: #800080;">10</span>, w*<span style="color: #800080;">10</span>, v*<span style="color: #800080;">10</span>, <span style="color: #800080;">1.0f</span><span style="color: #000000;">);
+}
+
+GenVertex::GenVertex()
+{
+    </span><span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">setup();
+}
+
+GenVertex::</span>~<span style="color: #000000;">GenVertex()
+{
+}
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> GenVertex::setup() {
+    cudaError_t status;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">设备设置</span>
+    status=cudaGLSetGLDevice(<span style="color: #800080;">0</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">if</span> (status !=<span style="color: #000000;"> cudaSuccess) {
+        puts(</span><span style="color: #800000;">"</span><span style="color: #800000;">setup Device failed!</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+}
+
+</span><span style="color: #0000ff;">void</span> GenVertex::setVBO(unsigned <span style="color: #0000ff;">int</span><span style="color: #000000;"> vbo) {
+    </span><span style="color: #0000ff;">this</span>-&gt;VBO =<span style="color: #000000;"> vbo;
+    cudaError_t status;
+    status </span>= cudaGLRegisterBufferObject(<span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">VBO);
+    </span><span style="color: #0000ff;">if</span> (status !=<span style="color: #000000;"> cudaSuccess) {
+        puts(</span><span style="color: #800000;">"</span><span style="color: #800000;">Register buffer object failed!</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+}
+
+
+</span><span style="color: #0000ff;">void</span><span style="color: #000000;"> GenVertex::createVtxWithCuda()
+{
+    cudaError_t status;
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 映射缓冲对象</span>
+    float4*<span style="color: #000000;"> position;
+    status</span>=cudaGLMapBufferObject((<span style="color: #0000ff;">void</span>**)&amp;position, <span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">VBO);
+    </span><span style="color: #0000ff;">if</span> (status !=<span style="color: #000000;"> cudaSuccess) {
+        puts(</span><span style="color: #800000;">"</span><span style="color: #800000;">map buffer object failed!</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+    </span><span style="color: #008000;">//</span><span style="color: #008000;"> 运行核函数</span>
+    dim3 dimBlock(<span style="color: #800080;">4</span>, <span style="color: #800080;">4</span>, <span style="color: #800080;">1</span><span style="color: #000000;">);
+    dim3 dimGrid(</span><span style="color: #800080;">1</span><span style="color: #000000;">);
+    KernelFunc</span>&lt;&lt;&lt;dimGrid, dimBlock&gt;&gt;&gt;(position, clock(), <span style="color: #800080;">4</span>, <span style="color: #800080;">4</span><span style="color: #000000;">);
+    cudaThreadSynchronize(); </span><span style="color: #008000;">//</span><span style="color: #008000;">同步线程</span>
+    status=cudaGLUnmapBufferObject(<span style="color: #0000ff;">this</span>-&gt;<span style="color: #000000;">VBO);
+    </span><span style="color: #0000ff;">if</span> (status !=<span style="color: #000000;"> cudaSuccess) {
+        puts(</span><span style="color: #800000;">"</span><span style="color: #800000;">unmap buffer object failed!</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+    }
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

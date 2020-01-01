@@ -1,0 +1,193 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修GO基础之异常处理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>GO基础之异常处理</center></div><div class='banquan'>原文出处:本文由博客园博主小禾点点提供。<br/>
+原文连接:https://www.cnblogs.com/jalja/p/11817447.html</div><br>
+    <h3>一、异常</h3>
+<p>1、 错误指程序中出现不正常的情况，从而导致程序无法正常执行。<br />&bull;大多语言中使用try... catch... finally语句执行。<br />假设我们正在尝试打开一个文件，文件系统中不存在这个文件。这是一个异常情况，它表示为一个错误。<br />2、 Go语言中没有try...catch</p>
+<ul>
+<li>&bull; Go语言通过内置的错误类型提供了非常简单的错误处理机制。</li>
+<li>&bull;错误值可以存储在变量中，通过函数中返回。</li>
+<li>如果一个函数或方法返回一个错误，按照惯例，它必须是函数返回的最后一个值。</li>
+<li>&bull;处理错误的惯用方式是将返回的错误与nil进行比较。</li>
+<li>nil值表示没有发生错误，而非nil值表示出现错误。</li>
+<li>&bull;如果不是nil,需打印输出错误。</li>
+</ul>
+<p><strong>go中error的源码</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">package errors
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> New returns an error that formats as the given text.
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> Each call to New returns a distinct error value even if the text is identical.</span>
+func New(text <span style="color: #0000ff;">string</span><span style="color: #000000;">) error {
+    </span><span style="color: #0000ff;">return</span> &amp;<span style="color: #000000;">errorString{text}
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;"> errorString is a trivial implementation of error.</span>
+type errorString <span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    s </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+func (e </span>*errorString) Error() <span style="color: #0000ff;">string</span><span style="color: #000000;"> {
+    </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> e.s
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<h3>二、go中的异常处理</h3>
+<p><img src="./images/GO基础之异常处理0.png" alt="" width="561" height="144" /></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('39734e44-8b99-4604-8f81-39b538daa551')"><img id="code_img_closed_39734e44-8b99-4604-8f81-39b538daa551" class="code_img_closed" src="./images/GO基础之异常处理1.png" alt="" /><img id="code_img_opened_39734e44-8b99-4604-8f81-39b538daa551" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('39734e44-8b99-4604-8f81-39b538daa551',event)" src="./images/GO基础之异常处理2.png" alt="" />
+<div id="cnblogs_code_open_39734e44-8b99-4604-8f81-39b538daa551" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">math</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">os</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">github.com/pkg/errors</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+func main() {
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">    异常情况1</span>
+    res := math.Sqrt(-<span style="color: #800080;">100</span><span style="color: #000000;">)
+    fmt.Println(res)
+
+    res , err :</span>= Sqrt(-<span style="color: #800080;">100</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        fmt.Println(err)
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        fmt.Println(res)
+    }
+
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">异常情况2
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">res = 100 / 0
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">fmt.Println(res)</span>
+    res , err = Divide(<span style="color: #800080;">100</span> , <span style="color: #800080;">0</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        fmt.Println(err.Error())
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        fmt.Println(res)
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">异常情况3</span>
+    f, err := os.Open(<span style="color: #800000;">"</span><span style="color: #800000;">/abc.txt</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        fmt.Println(err)
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        fmt.Println(f.Name() , </span><span style="color: #800000;">"</span><span style="color: #800000;">该文件成功被打开！</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    }
+
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">定义平方根运算函数</span>
+<span style="color: #000000;">func Sqrt(f float64)(float64 , error) {
+    </span><span style="color: #0000ff;">if</span> f&lt;<span style="color: #800080;">0</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span> , errors.New(<span style="color: #800000;">"</span><span style="color: #800000;">负数不可以获取平方根</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> math.Sqrt(f) , nil
+    }
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">定义除法运算函数</span>
+<span style="color: #000000;">func Divide(dividee float64 , divider float64)(float64 , error) {
+    </span><span style="color: #0000ff;">if</span> divider == <span style="color: #800080;">0</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span> , errors.New(<span style="color: #800000;">"</span><span style="color: #800000;">出错：除数不可以为0！</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">return</span> dividee /<span style="color: #000000;"> divider , nil
+    }
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p><strong>go中error的创建方式</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008000;">//</span><span style="color: #008000;">error创建方式一</span>
+<span style="color: #000000;">func Sqrt(f float64)(float64 , error) {
+    </span><span style="color: #0000ff;">if</span> f&lt;<span style="color: #800080;">0</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span> , errors.New(<span style="color: #800000;">"</span><span style="color: #800000;">负数不可以获取平方根</span><span style="color: #800000;">"</span><span style="color: #000000;">)
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;"> math.Sqrt(f) , nil
+    }
+}
+</span><span style="color: #008000;">//</span><span style="color: #008000;">error创建方式二；设计一个函数：验证年龄。如果是负数，则返回error</span>
+func checkAge(age <span style="color: #0000ff;">int</span>) (<span style="color: #0000ff;">string</span><span style="color: #000000;">, error) {
+    </span><span style="color: #0000ff;">if</span> age &lt; <span style="color: #800080;">0</span><span style="color: #000000;"> {
+        err :</span>= fmt.Errorf(<span style="color: #800000;">"</span><span style="color: #800000;">您的年龄输入是：%d ， 该数值为负数，有错误！</span><span style="color: #800000;">"</span><span style="color: #000000;">, age)
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800000;">""</span><span style="color: #000000;">, err
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">return</span> fmt.Sprintf(<span style="color: #800000;">"</span><span style="color: #800000;">您的年龄输入是：%d </span><span style="color: #800000;">"</span><span style="color: #000000;">, age), nil
+    }
+}</span></pre>
+</div>
+<h3>四、自定义错误</h3>
+<p>&bull; 1、定义一个结构体，表示自定义错误的类型<br />&bull; 2、让自定义错误类型实现error接口的方法：Error() string<br />&bull; 3、定义一个返回error的函数。根据程序实际功能而定。</p>
+<div class="cnblogs_code" onclick="cnblogs_code_show('5c145742-92d3-41bb-9431-1aa6198c021b')"><img id="code_img_closed_5c145742-92d3-41bb-9431-1aa6198c021b" class="code_img_closed" src="./images/GO基础之异常处理1.png" alt="" /><img id="code_img_opened_5c145742-92d3-41bb-9431-1aa6198c021b" class="code_img_opened" style="display: none;" onclick="cnblogs_code_hide('5c145742-92d3-41bb-9431-1aa6198c021b',event)" src="./images/GO基础之异常处理2.png" alt="" />
+<div id="cnblogs_code_open_5c145742-92d3-41bb-9431-1aa6198c021b" class="cnblogs_code_hide">
+<pre><code><span style="color: #000000;">package main
+
+import (
+    </span><span style="color: #800000;">"</span><span style="color: #800000;">time</span><span style="color: #800000;">"</span>
+    <span style="color: #800000;">"</span><span style="color: #800000;">fmt</span><span style="color: #800000;">"</span><span style="color: #000000;">
+)
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">1、定义结构体，表示自定义错误的类型</span>
+type MyError <span style="color: #0000ff;">struct</span><span style="color: #000000;"> {
+    When time.Time
+    What </span><span style="color: #0000ff;">string</span><span style="color: #000000;">
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">2、实现Error()方法</span>
+func (e MyError) Error() <span style="color: #0000ff;">string</span><span style="color: #000000;"> {
+    </span><span style="color: #0000ff;">return</span> fmt.Sprintf(<span style="color: #800000;">"</span><span style="color: #800000;">%v : %v</span><span style="color: #800000;">"</span><span style="color: #000000;">, e.When, e.What)
+}
+
+</span><span style="color: #008000;">//</span><span style="color: #008000;">3、定义函数，返回error对象。该函数求矩形面积</span>
+<span style="color: #000000;">func getArea(width, length float64) (float64, error) {
+    errorInfo :</span>= <span style="color: #800000;">""</span>
+    <span style="color: #0000ff;">if</span> width &lt; <span style="color: #800080;">0</span> &amp;&amp; length &lt; <span style="color: #800080;">0</span><span style="color: #000000;"> {
+        errorInfo </span>= fmt.Sprintf(<span style="color: #800000;">"</span><span style="color: #800000;">长度：%v, 宽度：%v ， 均为负数</span><span style="color: #800000;">"</span><span style="color: #000000;">, length, width)
+    } </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> length &lt; <span style="color: #800080;">0</span><span style="color: #000000;"> {
+        errorInfo </span>= fmt.Sprintf(<span style="color: #800000;">"</span><span style="color: #800000;">长度：%v, 出现负数 </span><span style="color: #800000;">"</span><span style="color: #000000;">, length)
+    } </span><span style="color: #0000ff;">else</span> <span style="color: #0000ff;">if</span> width &lt; <span style="color: #800080;">0</span><span style="color: #000000;"> {
+        errorInfo </span>= fmt.Sprintf(<span style="color: #800000;">"</span><span style="color: #800000;">宽度：%v ， 出现负数</span><span style="color: #800000;">"</span><span style="color: #000000;">, width)
+    }
+    </span><span style="color: #0000ff;">if</span> errorInfo != <span style="color: #800000;">""</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">, MyError{time.Now(), errorInfo}
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        </span><span style="color: #0000ff;">return</span> width *<span style="color: #000000;"> length, nil
+    }
+}
+
+func main() {
+    res , err :</span>= getArea(-<span style="color: #800080;">4</span>, -<span style="color: #800080;">5</span><span style="color: #000000;">)
+    </span><span style="color: #0000ff;">if</span> err !=<span style="color: #000000;"> nil {
+        fmt.Printf(err.Error())
+    } </span><span style="color: #0000ff;">else</span><span style="color: #000000;"> {
+        fmt.Println(</span><span style="color: #800000;">"</span><span style="color: #800000;">面积为：</span><span style="color: #800000;">"</span><span style="color: #000000;"> , res)
+    }
+}</span></pre>
+</div>
+<span class="cnblogs_code_collapse">View Code</span></div>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

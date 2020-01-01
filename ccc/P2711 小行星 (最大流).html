@@ -1,0 +1,108 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修P2711 小行星 (最大流)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>P2711 小行星 (最大流)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/10798180.html</div><br>
+    <h2 id="题目">题目</h2>
+<p><a href="https://www.luogu.org/problemnew/show/P2711">P2711 小行星</a></p>
+<h2 id="解析">解析</h2>
+<p>这道题挺巧妙的，乍一看是空间上的，无从下手，稍微转换一下就可以了。</p>
+<p>看到题目，求消除这些行星的最少次数，就是求最小割，也就是求最大流，考虑怎样建图。</p>
+<p>考虑当我们消去一个面上的所有点时，我们消去这个面后，这个面就不会再被消了，<strong>也就是只能被消一次</strong>，比如我们消去与<span class="math inline">\(\texttt{x=1}\)</span>垂直的面上的点后，与<span class="math inline">\(\texttt{x=1}\)</span>垂直的这个面就不会被再消一次，<span class="math inline">\(\texttt{y,z}\)</span>同理。<br />
+但在这个面上的某些点（<span class="math inline">\(\texttt{x}\)</span>相同，<span class="math inline">\(\texttt{y}\)</span>，<span class="math inline">\(\texttt{z}\)</span>不同的点）还会在另一些平面上，可能还会被再消。</p>
+<p>直接连点的话会超时，我们考虑用点来代表面(例如<span class="math inline">\(\texttt{x}\)</span>中的1号点就代表与<span class="math inline">\(\texttt{x=1}\)</span>垂直的面)，三个面就可以确定一个点，所以我们让<span class="math inline">\(\texttt{x}\)</span>与<span class="math inline">\(\texttt{y}\)</span>与<span class="math inline">\(\texttt{z}\)</span>相连，表示这个点。<br />
+我们这样建图<br />
+建立一个超级汇点<span class="math inline">\(\texttt{s}\)</span>和超级源点<span class="math inline">\(\texttt{t}\)</span>，<span class="math inline">\(\texttt{s}\)</span>向所有<span class="math inline">\(\texttt{x}\)</span>连边，<span class="math inline">\(\texttt{x}\)</span>向<span class="math inline">\(\texttt{y}\)</span>连边，<span class="math inline">\(\texttt{y}\)</span>拆一下子点，拆完点出来向<span class="math inline">\(\texttt{z}\)</span>连边，所有<span class="math inline">\(\texttt{z}\)</span>向<span class="math inline">\(\texttt{t}\)</span>连边。<br />
+<img src="./images/P2711 小行星 (最大流)0.png" alt="未命名.PNG" /><br />
+当我们某一条<span class="math inline">\(\texttt{s-&gt;x}\)</span>的边流满时，就代表与<span class="math inline">\(\texttt{x}\)</span>垂直的这个面被消掉了，<span class="math inline">\(\texttt{y-&gt;y&#39;}\)</span>流满时表示与<span class="math inline">\(\texttt{y}\)</span>垂直的这个面被消了，<span class="math inline">\(\texttt{z-&gt;t}\)</span>流满时表示与<span class="math inline">\(\texttt{z}\)</span>垂直的这个面被消了，因为我们要求最小割，所以跑一遍最大流就行了。</p>
+<h2 id="代码">代码</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N = 1e6 + 10;
+const int INF = 0x3f3f3f3f;
+int n, m, s, t, num = 1;
+int head[N], cur[N], dep[N];
+class node {
+    public :
+        int v, nx, w;
+} e[N];
+
+template&lt;class T&gt;inline void read(T &amp;x) {
+    x = 0; int f = 0; char ch = getchar();
+    while (!isdigit(ch)) f |= (ch == &#39;-&#39;), ch = getchar();
+    while (isdigit(ch)) x = x * 10 + ch - &#39;0&#39;, ch = getchar();
+    x = f ? -x : x;
+    return ;
+}
+
+inline void add(int u, int v, int w) {
+    e[++num].nx = head[u], e[num].v = v, e[num].w = w, head[u] = num;
+    e[++num].nx = head[v], e[num].v = u, e[num].w = 0, head[v] = num;
+}
+
+queue&lt;int&gt;q;
+bool bfs() {
+    memset(dep, 0, sizeof dep);
+    memcpy(cur, head, sizeof cur);
+    dep[s] = 1;
+    q.push(s);
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        for (int i = head[u]; ~i; i = e[i].nx) {
+            int v = e[i].v;
+            if (!dep[v] &amp;&amp; e[i].w) dep[v] = dep[u] + 1, q.push(v);
+        }
+    }
+    return dep[t];
+}
+
+int dfs(int u, int flow) {
+    if (u == t) return flow;
+    int use = 0;
+    for (int &amp;i = cur[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (e[i].w &amp;&amp; dep[v] == dep[u] + 1) {
+            int di = dfs(v, min(flow, e[i].w));
+            e[i].w -= di, e[i ^ 1].w += di;
+            use += di, flow -= di;
+            if (flow &lt;= 0) break;
+        }
+    }
+    return use;
+}
+
+int dinic() {
+    int ans = 0;
+    while (bfs()) ans += dfs(s, INF);
+    return ans;
+}
+
+int main() {
+    memset(head, -1, sizeof head);
+    read(n), read(m);
+    for (int i = 1, x, y, z; i &lt;= n; ++i) read(x), read(y), read(z), add(x, y, z);
+    s = 1, t = m;
+    printf(&quot;%d\n&quot;, dinic());
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

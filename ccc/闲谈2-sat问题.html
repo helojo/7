@@ -1,0 +1,159 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修闲谈2-sat问题' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>闲谈2-sat问题</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/2-sat.html</div><br>
+    <h1 id="问题简介">问题简介</h1>
+<blockquote>
+<p>在计算机科学中，布尔可满足性问题（有时称为命题可满足性问题，缩写为SATISFIABILITY或SAT）是确定是否存在满足给定布尔公式的解释的问题。换句话说，它询问给定布尔公式的变量是否可以一致地用值TRUE或FALSE替换，公式计算结果为TRUE。如果是这种情况，公式称为可满足。另一方面，如果不存在这样的赋值，则对于所有可能的变量赋值，公式表示的函数为FALSE，并且公式不可满足。例如，公式“a AND NOT b”是可以满足的，因为可以找到值a = TRUE且b = FALSE，这使得（a AND NOT b）= TRUE。相反，“a AND NOT a”是不可满足的。——百度百科</p>
+</blockquote>
+<p>在每个限制中牵扯到的最多的元素假设是<span class="math inline">\(k\)</span>，我们就称为<span class="math inline">\(k-sat\)</span>问题。可以证明当<span class="math inline">\(k \ge 3\)</span>时为<span class="math inline">\(np\)</span>完全问题。下面只讨论<span class="math inline">\(k=2\)</span>的情况。</p>
+<h1 id="引入">引入</h1>
+<p>从一个最简单的<span class="math inline">\(2-sat\)</span>问题开始今天的讨论</p>
+<blockquote>
+<p>有n对夫妻被邀请参加一个聚会，因为场地的问题，每对夫妻中只有1人可以列席。在2n 个人中，某些人之间有着很大的矛盾（当然夫妻之间是没有矛盾的），有矛盾的2个人是不会同时出现在聚会上的。有没有可能会有n 个人同时列席？——hdu3062</p>
+</blockquote>
+<p>对于每对夫妻，我们可以将丈夫去看作<span class="math inline">\(1\)</span>，妻子去看作<span class="math inline">\(0\)</span>。要求给每对夫妻确定一个值，使得满足这<span class="math inline">\(m\)</span>个限制。</p>
+<p>这就是最简单的<span class="math inline">\(2-sat\)</span>模型。</p>
+<h2 id="构图">构图</h2>
+<p>先观察这些限制,假设A中的丈夫不能和B中的妻子一起去(？？？)。那么也就是说，A中的丈夫只能和B中的丈夫一起去。也就是说，如果A中的丈夫去，那么B中的丈夫也<strong>必须去</strong>。同理，如果B中的妻子去，那么A中的妻子也<strong>必须去</strong>。<br />
+我们就从A中的丈夫向B中的丈夫连一条边，从B中的妻子向A中的妻子连一条边，表示这些&quot;必须&quot;的条件。</p>
+<p>显然我们就可以得到这样一个结论:如果一个点被选了，那么这个点所能到达的所有点也必须被选择。如果一个点没选，那么所有可以到达这个点的点都不能选。出现矛盾当且仅当某对夫妻的丈夫和妻子都必须去。</p>
+<h1 id="算法">算法</h1>
+<h2 id="暴力解法">暴力解法</h2>
+<p>我们枚举每一个人选或者不选，然后去查看是否会出现矛盾。<br />
+如果一对夫妻中两个人不论选择谁都会出现矛盾。那么问题必定无解。</p>
+<h2 id="优化">优化</h2>
+<p>继续推一些结论。<br />
+对于同一个<strong>强连通分量</strong>里的点，如果选择其中一个，那么这个强连通分量中的点必须全部选择。这样我们可以先<span class="math inline">\(tarjan\)</span>缩点。如果一对夫妻出现在了同一个强连通分量里面肯定无解。否则一定有解。<br />
+找可行解可以先拓扑排序一下，然后自底向上的顺序推导。</p>
+<h1 id="证明">证明</h1>
+<p>观察我们的构图方式可以发现构出来的图有<strong>对称性</strong>。<br />
+啥是对称性？？<br />
+<img src="./images/闲谈2-sat问题0.png" /><br />
+如图。我们观察其中的一组点，比如<span class="math inline">\(c\)</span><br />
+<img src="./images/闲谈2-sat问题1.png" /><br />
+发现可以到达<span class="math inline">\(c_0\)</span>的点是<span class="math inline">\(a_0\)</span>,<span class="math inline">\(c_0\)</span>可以到达的点是<span class="math inline">\(d_0\)</span>,而可以到达<span class="math inline">\(c_1\)</span>的点是<span class="math inline">\(d_1\)</span>,<span class="math inline">\(c_1\)</span>可以到达的点是<span class="math inline">\(a_1\)</span>。刚好对称。也就是说我们只要保证<span class="math inline">\(c_0\)</span>可以到达的不会矛盾，那么就可以保证可以到达<span class="math inline">\(c_1\)</span>的点不会矛盾。我们如果选择了<span class="math inline">\(c_0\)</span>，那么就一定选择<span class="math inline">\(d_0\)</span>，这时把<span class="math inline">\(c_1\)</span>和<span class="math inline">\(d_1\)</span>都删去。<strong>按照这种思路，我们每次找到一个未确定的点<span class="math inline">\(x\)</span>，使得<span class="math inline">\(x\)</span>到达的点中没有<span class="math inline">\(x&#39;\)</span>(即x的对立点)。</strong><br />
+这样我们一定可以找到一组解。而无解的情况也就是找不到这种点的时候。即一对点存在于同一个强连通分量中。<br />
+然后思考求解的过程，因为要使得“<span class="math inline">\(x\)</span>到达的点中没有<span class="math inline">\(x&#39;\)</span>(即x的对立点)。”<br />
+所以可以<strong>拓扑排序</strong>。然后就<strong>自底向上</strong>的找答案。<br />
+有一种更加简单的找可行解的方法。</p>
+<blockquote>
+<p>注意到<span class="math inline">\(Tarjan\)</span>算法的本质是一次<span class="math inline">\(dfs\)</span>，他在回溯时会优先取出有向图&quot;底部&quot;的<span class="math inline">\(scc\)</span>进行标记。故<span class="math inline">\(Tarjan\)</span>算法得到的<span class="math inline">\(scc\)</span>编号本身就已经满足缩点后的有向无环图中&quot;自底向上&quot;的拓扑序。——《算法竞赛进阶指南》</p>
+</blockquote>
+<p>得出结论：直接比较缩点之后编号的大小就可以得出答案，较小的为1，较大的为0。</p>
+<h1 id="资料">资料</h1>
+<p>我讲的不好？？<br />
+没关系，再看些资料吧。<br />
+<a href="https://blog.csdn.net/qq_24451605/article/details/47126143" class="uri">https://blog.csdn.net/qq_24451605/article/details/47126143</a><br />
+<a href="https://wenku.baidu.com/view/afd6c436a32d7375a41780f2.html">由对称性解2-sat问题</a></p>
+<h1 id="代码">代码</h1>
+<pre><code>/*
+* @Author: wxyww
+* @Date:   2019-04-28 18:50:21
+* @Last Modified time: 2019-04-28 19:59:02
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 2010;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+struct node{
+    int v,nxt;
+}e[1000000];
+int n,m,ejs,head[N];
+void add(int u,int v) {
+    e[++ejs].v = v;e[ejs].nxt = head[u];head[u] = ejs;
+}
+int vis[N],tot,dfn[N],low[N],sta[N],coljs,top,col[N];
+void tarjan(int u) {
+    dfn[u] = low[u] = ++tot;
+    sta[++top] = u;vis[u] = 1;
+    for(int i = head[u];i;i = e[i].nxt) {
+        int v = e[i].v;
+        if(!dfn[v]) {
+            tarjan(v);
+            low[u] = min(low[u],low[v]);
+        }
+        else if(vis[v]) low[u] = min(low[u],low[v]);
+    }
+    if(low[u] == dfn[u]) {
+        ++coljs;
+        do {
+            int x = sta[top--];
+            col[x] = coljs;
+            vis[x] = 0;
+        }while(sta[top + 1] != u);
+    }
+}
+int main() {    
+    while(~scanf(&quot;%d%d&quot;,&amp;n,&amp;m)) {
+   memset(head,0,sizeof(head));
+   ejs = 0;
+   coljs = 0;
+   memset(dfn,0,sizeof(dfn));memset(low,0,sizeof(low));
+   tot = 0;top = 0;
+    
+    for(int i = 1;i &lt;= m;++i) {
+        int x = read() + 1,y = read() + 1;
+        int c1 = read(),c2 = read();
+        if(c1) {
+            if(c2) add(x + n, y),add(y + n,x);
+            else add(x + n,y + n),add(y,x);
+        }
+        else {
+            if(c2) add(x, y),add(y + n,x + n);
+            else add(x,y + n),add(y,x + n);
+        }
+    }
+
+    for(int i = 1;i &lt;= n + n;++i) if(!dfn[i]) tarjan(i);
+    int bz = 0;
+    for(int i = 1;i &lt;= n;++i) {
+        if(col[i] == col[i + n]) {
+            bz = 1;break;
+        }
+    }
+    puts(bz ? &quot;NO&quot; : &quot;YES&quot;);
+}
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

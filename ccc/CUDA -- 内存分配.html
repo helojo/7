@@ -1,0 +1,101 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修CUDA -- 内存分配' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>CUDA -- 内存分配</center></div><div class='banquan'>原文出处:本文由博客园博主茶飘香~提供。<br/>
+原文连接:https://www.cnblogs.com/chen9510/p/11506146.html</div><br>
+    <p>&nbsp;</p>
+<p>　　CUDA可以认为是一个由软件和硬件构成的并行计算系统，其依赖于GPU的并行计算单元，CUDA有类C的API，方便程序编写。其依赖于CPU和GPU的异构体系，通过在CPU上串行执行环境初始化、内存分配、数据传输，然后在GPU上执行并行计算。</p>
+<p><strong>内存分配</strong></p>
+<p><strong>　　1、一维</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">int</span> *dev_ans = <span style="color: #800080;">0</span><span style="color: #000000;">;
+cudaMalloc((</span><span style="color: #0000ff;">void</span>**)&amp;dev_ans, d.y * <span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">int</span>));</pre>
+</div>
+<p>　　参数1：显存中开辟的空间的指针（术语：GPU设备端数据指针）</p>
+<p>　　参数2：空间大小，字节为单位</p>
+<p>　　<strong>2、二维</strong></p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">int</span> *dev_mat = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #0000ff;">int</span><span style="color: #000000;"> pitch;
+cudaMallocPitch((</span><span style="color: #0000ff;">void</span>**)&amp;dev_mat, (size_t *)&amp;pitch, d.x * <span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">int</span>), d.y);</pre>
+</div>
+<p>　　参数1：GPU设备端数据指针</p>
+<p>　　参数2：一行数据的真实空间大小（字节）【此参数是获取返回值】，GPU中从256字节对齐的地址（address=0,256,512&hellip;&hellip;）连续访问最有效率，故每行实际分配的大小要大于需要分配的大小</p>
+<p>　　参数3：每行需要分配的空间大小</p>
+<p>　　参数4：矩阵行数</p>
+<p>&nbsp;</p>
+<p><strong>内存拷贝</strong></p>
+<p><strong>　　1、一维</strong></p>
+<div class="cnblogs_code">
+<pre>cudaMemcpy(ans, dev_ans, d.y * <span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">int</span>), cudaMemcpyDeviceToHost);</pre>
+</div>
+<p>　　参数1：目标数据地址</p>
+<p>　　参数2：源数据地址</p>
+<p>　　参数3：数据大小</p>
+<p>　　参数4：拷贝类型（主机至主机，主机至设备，设备至主机，设备至设备）</p>
+<p>　　<strong>2、二维</strong></p>
+<div class="cnblogs_code">
+<pre>cudaMemcpy2D(dev_mat, pitch, mat, d.x*<span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">int</span>), d.x*<span style="color: #0000ff;">sizeof</span>(<span style="color: #0000ff;">int</span>), d.y, cudaMemcpyHostToDevice);</pre>
+</div>
+<p>　　参数1：目标数据地址</p>
+<p>　　参数2：pitch，分配空间的行宽（字节单位）</p>
+<p>　　参数3：源数据地址</p>
+<p>　　参数4：pitch，分配空间的行宽（字节单位）</p>
+<p>　　参数5：需要拷贝数据的真实行宽（字节单位）</p>
+<p>　　参数6：数据的行数（非字节单位哦！）</p>
+<p>　　参数7：数据拷贝类型</p>
+<p><strong>　　注：pitch是线性存储空间的行宽不是数据的行宽，在设备端 pitch大于等于数据行宽，在主机端pitch==数据行宽。</strong></p>
+<p>&nbsp;</p>
+<p><strong>内存访问</strong></p>
+<p><strong>　　</strong>主机中的内存访问就是c++的访存没什么好说的，现在看看显存中的访问方式（也就是在kernel中的访存）。</p>
+<div class="cnblogs_code">
+<pre>__global__ <span style="color: #0000ff;">void</span> addKernel(<span style="color: #0000ff;">int</span> *mat, <span style="color: #0000ff;">int</span> *<span style="color: #000000;">ans, size_t pitch)
+{
+    </span><span style="color: #0000ff;">int</span> bid =<span style="color: #000000;"> blockIdx.x;
+    </span><span style="color: #0000ff;">int</span> tid =<span style="color: #000000;"> threadIdx.x;
+    __shared__ </span><span style="color: #0000ff;">int</span> data[<span style="color: #800080;">8</span><span style="color: #000000;">];
+    </span><span style="color: #0000ff;">int</span> *row = (<span style="color: #0000ff;">int</span>*)((<span style="color: #0000ff;">char</span>*)mat + bid*<span style="color: #000000;">pitch);
+    data[tid] </span>=<span style="color: #000000;"> row[tid];
+    __syncthreads();
+    </span><span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">4</span>; i &gt; <span style="color: #800080;">0</span>; i /= <span style="color: #800080;">2</span><span style="color: #000000;">) {
+        </span><span style="color: #0000ff;">if</span> (tid &lt;<span style="color: #000000;"> i)
+            data[tid] </span>= data[tid] + data[tid +<span style="color: #000000;"> i];
+        __syncthreads();
+    }
+    </span><span style="color: #0000ff;">if</span> (tid == <span style="color: #800080;">0</span><span style="color: #000000;">)
+        ans[bid] </span>= data[<span style="color: #800080;">0</span><span style="color: #000000;">];
+}</span></pre>
+</div>
+<p>　　一维：</p>
+<p>　　　　ans[index]直接访问</p>
+<p>　　二维：</p>
+<p>　　　　先计算访问的行的初始地址　int *row = (int*)((char*)mat + bid*pitch)</p>
+<p>　　　　然后访问此行的对应元素 row[index]</p>
+<p>&nbsp;</p>
+<p><strong>内存<strong>释放</strong></strong></p>
+<div class="cnblogs_code">
+<pre>cudaFree(dev_mat)</pre>
+</div>
+<p>&nbsp;</p>
+<p>　　</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

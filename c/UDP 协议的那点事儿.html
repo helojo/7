@@ -1,0 +1,46 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修UDP 协议的那点事儿' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>UDP 协议的那点事儿</center></div><div class='banquan'>原文出处:本文由博客园博主tobe的呓语提供。<br/>
+原文连接:https://www.cnblogs.com/tobe98/p/11946353.html</div><br>
+    <p>最近在回顾计算机网络的知识，以前上课没有认真学，只记得几个高大上的术语，所以趁着这次回顾，把学到的知识用博客的形式记录下来，一来加深自己的印象，二来希望让你对这些基础知识有一个更深入的了解。当然，我会尽量把 UDP 协议讲清楚，讲明白，让你“不虚此行”。</p>
+<hr />
+<p>UDP（ User Datagram Protocol ）协议，翻译过来就是<strong>用户数据报协议</strong> ，跟 TCP 协议一样，都是位于 OSI 模型的传输层。不过比起 TCP 协议，UDP 协议就显得简单多了，因为它没有「流量控制」、「拥塞控制」等复杂的处理机制。它甚至没有重传机制，也就是说，如果你的数据包半路走丢了，那就是真找不回来了，所以说 UDP 协议是不可靠的。当然了，<strong>这个重传机制是针对传输层而言的</strong>，你完全可以在<strong>应用层</strong>写一个协议来进行丢包处理，比如说像 TCP 一样，增加 ACK 和序列号机制。</p>
+<p>那你可能会疑惑了，为什么放着可靠的 TCP 协议不用，而选择 UDP 协议？</p>
+<h3 id="udp-报文段结构">UDP 报文段结构</h3>
+<p>这当然要根据应用的需求来，不过在说这个话题之前，我们先来详细了解一下 UDP 协议。</p>
+<p><img src="./images/UDP 协议的那点事儿0.png" /></p>
+<p>说实话，UDP 的报文段结构比 TCP 报文段简洁多了（见下图），毕竟 UDP 协议就没有什么多余的机制。</p>
+<p><img src="./images/UDP 协议的那点事儿1.png" /></p>
+<p>言归正传，报文段里的「源端口号」和「目的端口号」是为了告诉传输层，我这个报文是从哪儿（哪个进程）来的，要到哪儿（哪个进程）去。但要注意一点：一个 UDP 套接字是由一个<strong>二元组</strong>标识的，这个二元组指的是<strong>目的 IP 地址和目的端口号</strong>，也就是说，服务器上对应的进程，不在乎你是从哪个客户端来的，我都放进一个套接字处理，处理完了再根据源端口号和源 IP 地址，把应答信息发送给客户端。相较而言，TCP 套接字需要一个<strong>四元组</strong>来标识：<strong>源 IP 地址，源端口号，目的 IP 地址和目的端口号</strong>。这一点在讲 TCP 协议的时候还会细讲，所以这里就不赘述了。</p>
+<p>PS：你可能会问，这报文段里怎么没有 IP 地址啊？这是因为<strong>IP 地址保存在网络层的 IP 协议段里</strong>，传输层的报文段里当然就没有了。</p>
+<h3 id="无连接">无连接</h3>
+<p>每次提到 TCP 协议，我们最先想到的就是<strong>三次握手和四次挥手</strong>，对 UDP 协议来说，这都是没有的事儿~ 使用 UDP 协议的时候，如果客户端要发送报文段给服务端，<strong>不用握手</strong>，直接就发出去了，也正因为这样，UDP 协议被称为是<strong>无连接</strong>的。</p>
+<p>很容易想到，<strong>不需要握手这一过程的话，就没有因为建立连接而造成的时延</strong>，一个字，快！这也是 DNS（域名系统）运行在 UDP 协议之上的很大一部分原因。</p>
+<p>但是 UDP 协议不可靠啊，传输过程中丢包了怎么办？最简单的做法就是——忽略它！（否则就得像文章开头说的那样，在应用层实现重传机制）就拿 DNS 来说吧，如果数据包丢失，客户端重发就是了（有超时机制），而且在正常情况下，丢包的概率很低。但如果使用 TCP 协议的话，因为要建立连接，域名查询就会慢很多，除此之外，<strong>使用 UDP 协议的网络开销更小——UDP 报文段有 8 个字节的首部开销，而 TCP 协议有 20 字节的开销</strong>（看前面的关于报文段的两张图）。 网络开销小，意味着 DNS 服务器能接受更多客户端的请求。</p>
+<p>还有一个方面，<strong>TCP 协议有拥塞控制机制，它会在网络拥塞时遏制 TCP 发送方，以至于延迟报文段的传送</strong>，所以对于一些要求<strong>传输延迟小，且能够容忍一些数据丢失的实时程序</strong>来说，UDP 协议可能是一个更好的选择。路由选择协议（RIP）、 网络管理协议（SNMP） 也都选择了 UDP 来作为底层的传输协议。</p>
+<p>最后，这是一张客户端与服务端利用 UDP 协议通信的流程图：</p>
+<p><img src="./images/UDP 协议的那点事儿2.png" /></p>
+<p>​</p>
+<p>UDP 协议要讲的内容不多，下次要讲的 TCP 协议，就比较烧脑了，做好准备吧！</p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,82 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修基于STM32F103ZET6 HC_SR04超声波测距模块' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>基于STM32F103ZET6 HC_SR04超声波测距模块</center></div><div class='banquan'>原文出处:本文由博客园博主朱智磊提供。<br/>
+原文连接:https://www.cnblogs.com/zzlloveyty/p/10696656.html</div><br>
+    <p><img src="./images/基于STM32F103ZET6 HC_SR04超声波测距模块0.png" alt="" /></p>
+<p>这是最后的实验现象，改变不同的角度即可测得距离</p>
+<p><span style="font-size: 18pt; color: #ff0000;">板子 PZ6806L 超声波模块 HC_SR04</span></p>
+<p><span style="font-size: 18pt;">HC_SR04模块讲解</span></p>
+<p><span style="font-size: 14px;">通过该超声波模块说明书，可明白供电需VCC 5V &nbsp;还需GND &nbsp;ECHO(回响信号) &nbsp;TRIG(触发信号)</span></p>
+<p><span style="font-size: 14px;">也就是说总共需要4根线，其中VCC和GND只需要接到开发板上的5V电源和GND即可</span></p>
+<p><span style="color: #000000;">这是我的接线图</span></p>
+<p><span style="color: #000000;"><img src="./images/基于STM32F103ZET6 HC_SR04超声波测距模块1.png" alt="" width="503" height="878" /></span></p>
+<p>&nbsp;</p>
+<p>&nbsp;ECHO 使用的是PC3引脚,TRIG 使用的是PC2引脚</p>
+<p>PC3和PC2只是普通的引脚，没任何特殊性，可凭自己想法配置不同的引脚</p>
+<p><img src="./images/基于STM32F103ZET6 HC_SR04超声波测距模块2.png" alt="" width="252" height="54" /></p>
+<p>&nbsp;</p>
+<p><img src="./images/基于STM32F103ZET6 HC_SR04超声波测距模块3.png" alt="" width="443" height="216" /></p>
+<p>从超声波时序图看出，若想能够使用该模块，</p>
+<p>1 使用你要触发信号拉高10us以上</p>
+<p>&nbsp;<img src="./images/基于STM32F103ZET6 HC_SR04超声波测距模块4.png" alt="" /></p>
+<p>2 接着模块内部自己发出8个40khz脉冲，不需要管，接着模块会输出回响信号，而回响信号高电平的</p>
+<p>脉冲宽度，与距离成正比</p>
+<p>&nbsp;</p>
+<p>以上知道这些就可以正常使用，至于距离公式后面会再解释</p>
+<p><span style="color: #ff0000;">注意</span>：<img src="./images/基于STM32F103ZET6 HC_SR04超声波测距模块5.png" alt="" width="462" height="78" /></p>
+<p>&nbsp;</p>
+<p>接着就是代码部分，主函数最后再介绍</p>
+<p><span style="color: #993300;"><em><strong><span style="font-size: 18pt;">HC_SR04配置函数及ECHO高电平时间</span></strong></em></span></p>
+<p>首先是头文件</p>
+<p><img src="./images/基于STM32F103ZET6 HC_SR04超声波测距模块6.png" alt="" /></p>
+<p>配置一个变量 time，用于存储回响信号高电平的时间</p>
+<p>void hc_sr04_init(void); 该函数是引脚的配置函数</p>
+<p>float &nbsp;Get_hcsr04length(void);该函数是用来发送触发信号，并得到回响信号的高电平时间</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>void hc_sr04_init(void)<br />{</p>
+<p>	GPIO_InitTypeDef GPIO_InitStructure;<br />	<br />	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC ,ENABLE);//打开GPIOC的时钟<br />	<br />	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;//配置引脚2，trig触发信号<br />	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;<br />	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;//配置为推挽输出<br />	GPIO_Init(GPIOC, &amp;GPIO_InitStructure);<br />	GPIO_ResetBits(GPIOC,GPIO_Pin_2);//触发信号，首先把它拉低，避免额外影响<br />	<br />	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;//配置引脚3，echo回响信号<br />	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;//配置为模拟输入<br />	GPIO_Init(GPIOC, &amp;GPIO_InitStructure);//echo信号<br />	GPIO_ResetBits(GPIOC,GPIO_Pin_3);//也同样拉低<br />}</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>float Get_hcsr04length(void)<br />{<br />	GPIO_SetBits(GPIOC,GPIO_Pin_2);<br />	delay_us(20);<br />	GPIO_ResetBits(GPIOC,GPIO_Pin_2); //TRIG发送触发信号，延时10us以上就可以了<br />	<br />	while(PCI(3)==0) //当echo一直是低电平的时候，就清空，并且关闭计时器<br />	{<br />		TIM_SetCounter(TIM2, 0);<br />		TIM_Cmd(TIM2,DISABLE);<br />	}<br />	while(PCI(3)==1)//一旦echo被拉高了，就说明模块传需要的数据回来了，打开计时器<br />	{<br />		TIM_Cmd(TIM2,ENABLE);<br />	}<br />	time=TIM_GetCounter(TIM2);//当被拉高的echo再次变回低电平时，将计时器的值赋给time<br />	return time;//返回time<br />}</p>
+<p>&nbsp;</p>
+<p><strong><em><span style="font-size: 18pt; color: #993300;">计时器函数的配置</span></em></strong></p>
+<p>&nbsp;</p>
+<p>void TIM_Counter(void)<br />{<br />		TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure;<br />		RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2,ENABLE);//使能TIM2的时钟<br />		<br />		TIM_TimeBaseStructure.TIM_Period = 65535;<br />		TIM_TimeBaseStructure.TIM_Prescaler = 71;//72MHx/72=1us,<br />		TIM_TimeBaseStructure.TIM_ClockDivision = 0x0;<br />		TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;//向上计数模式<br />		TIM_TimeBaseInit(TIM2, &amp; TIM_TimeBaseStructure);	<br />		TIM_Cmd(TIM2,DISABLE);//关闭，需要的时候再打开<br />}</p>
+<p>&nbsp;</p>
+<p><em><strong><span style="color: #993300; font-size: 18pt;">部分主函数</span></strong></em></p>
+<p>&nbsp;</p>
+<p>int main(void)<br />{</p>
+<p>float Distance=0;//存储距离<br />	delay_init(72); //配置滴答计时器<br />	RCC_Configuration();//时钟配置<br />	GPIO_Configuration();//GPIO配置，只是PC0（LED0），用来提示系统正常运行<br />	TIM_Counter();//计时器的配置<br />	USART1_Configuration();//串口配置，<br />	hc_sr04_init();//HC_SR04初始化配置好（即PC2,PC3的配置）<br />	<br />	<br />	　　while(1)<br />	　　{<br />		GPIO_ResetBits(GPIOC,GPIO_Pin_0);//提示系统正常运行进该循环</p>
+<p>&nbsp;</p>
+<p>		<br />		Distance =(Get_hcsr04length()*340/2/1000);//从函数得到距离值，340是声音的速度，除于2，是因为声波发出到接收，是一次来回，除于1000，是将距离定为mm（毫米），该函数返回的就是之前time的值<br />		printf("距离是%.2f\r\n",Distance);<br />		delay_ms(1000);//延时1秒钟，这样不会输出太过频繁<br />	　　}<br />}</p>
+<p>&nbsp;</p>
+<p><span style="font-size: 18pt; color: #ff00ff;">这是我的工程文件</span></p>
+<p>&nbsp;</p>
+<p>百度网盘 &nbsp;密码&nbsp;v3y7</p>
+<p>https://pan.baidu.com/s/1MNVf70_gnZ5aqSm6XInrMA</p>
+<p>&nbsp;</p>
+<p>如有需要，可结合自己板子修改下代码即可使用，欢迎交流，咱们共同进步</p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

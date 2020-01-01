@@ -1,0 +1,211 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C++中的智能指针实现' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C++中的智能指针实现</center></div><div class='banquan'>原文出处:本文由博客园博主子宇24提供。<br/>
+原文连接:https://www.cnblogs.com/dishengAndziyu/p/10913800.html</div><br>
+    <p align="left">1，本文介绍智能指针，为了避免内存泄漏问题；</p>
+<p align="left">&nbsp;</p>
+<p align="left">2，永恒的话题，内存泄漏（臭名昭著的 Bug ）：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，动态申请堆空间，用完后不归还；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，C++ 语言中没有垃圾回收的机制；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，Java、C# 语言中都引入了垃圾回收机制，定期检测内存，发现没有使用，则回收；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，垃圾回收机制可以很好的避免内存泄漏；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，C++ 中的动态内存申请和归还完全依赖开发者，所以必然会出错；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，大型软件公司采用编码流程和代码规范，来解决包括内存泄漏的问题；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，提交代码需要小组内部人员审核代码是否准许了编码流程和代码规范，效率低下，也包括熟读代码规范；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，效率低下，产品上市受影响；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，指针无法控制所指堆空间的生命周期；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，操作动态内存空间的时候，都是基于指针，而指针就是一个变量，指针可以指向动态空间，但是却不能够控制动态内存空间的生命周期；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，也就是指针和动态内存空间没有必然联系，指针变量销毁了，动态内存空间还可以存在；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，上述两点就是本质问题；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">3，内存泄漏编程实验：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，main.cpp 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;"> 9</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">10</span>     Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> i)
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">12</span>         <span style="color: #0000ff;">this</span>-&gt;i =<span style="color: #000000;"> i;
+</span><span style="color: #008080;">13</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">14</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> value()
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">16</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;">17</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">18</span>     ~<span style="color: #000000;">Test()
+</span><span style="color: #008080;">19</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">21</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">22</span> 
+<span style="color: #008080;">23</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">24</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">25</span>     <span style="color: #0000ff;">for</span>(<span style="color: #0000ff;">int</span> i=<span style="color: #800080;">0</span>; i&lt;<span style="color: #800080;">5</span>; i++<span style="color: #000000;">)
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">27</span>         Test* p = <span style="color: #0000ff;">new</span> Test(i); <span style="color: #008000;">//</span><span style="color: #008000;">p 指向堆空间，但是下面没有归还，同时 p 是一个局部变量，for 循环结束后就销毁了，但是所指向的堆空间并没有销毁，没人可以使用这片空间，内存就泄漏了；</span>
+<span style="color: #008080;">28</span>         
+<span style="color: #008080;">29</span>         cout &lt;&lt; p-&gt;value() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">30</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">31</span>     
+<span style="color: #008080;">32</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">33</span> }</pre>
+</div>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">4，深度分析，我们需要什么：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，需要一个特殊的指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，智能指针对象，通过类的普通构造函数完成；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，指针生命周期结束时主动释放堆空间；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，这是最主要的一点，通过类的析构函数完成；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，一片堆空间最多只能由一个指针标识；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，避免多次释放内存，通过拷贝构造函数和赋值操作符完成；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，杜绝指针运算和指针比较；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，杜绝指针运算可以避免指针越界和野指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2，上面的第三个需求都满足了，指针比较就没有意义了；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3，通过不重载类的运算符自行完成；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;</p>
+<p align="left">5，智能指针分析：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，解决方案：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　1，重载指针特征操作符（-&gt; 和 *）；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; 　　1，通过操作符重载模拟指针的行为；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　　2，定义一个对象，让这个对象通过操作符重载模拟真正的指针行为；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　　3，-&gt; 和 * 是 C++ 中的操作符，所以我们必然可以重载；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　　4，遵循下面三点重载规则；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　2，只能通过类的成员函数重载；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　　1，能切仅能通过类的成员函数重载；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　3，重载函数不能使用参数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　　1，两者都是单目运算符；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　4，只能定义一个重载函数；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　　1，和第三点是一件事；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，通过指针的特征操作符来使用对象替代指针，这个对象&nbsp; 就称为智能指针， 或者通过类对象模拟指针的行为，这个类对象称为智能指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，智能指针编程实验：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　1，main.cpp 文件：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> #include &lt;iostream&gt;
+<span style="color: #008080;"> 2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;"> 3</span> 
+<span style="color: #008080;"> 4</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std;
+</span><span style="color: #008080;"> 5</span> 
+<span style="color: #008080;"> 6</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Test
+</span><span style="color: #008080;"> 7</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 8</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;"> 9</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">10</span>     Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> i)
+</span><span style="color: #008080;">11</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">12</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">Test(int i)</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">13</span>         <span style="color: #0000ff;">this</span>-&gt;i =<span style="color: #000000;"> i;
+</span><span style="color: #008080;">14</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">15</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> value()
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">17</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> i;
+</span><span style="color: #008080;">18</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">19</span>     ~<span style="color: #000000;">Test()
+</span><span style="color: #008080;">20</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">21</span>         cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">~Test()</span><span style="color: #800000;">"</span> &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">22</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">23</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">24</span> 
+<span style="color: #008080;">25</span> <span style="color: #0000ff;">class</span><span style="color: #000000;"> Pointer
+</span><span style="color: #008080;">26</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">27</span>     Test*<span style="color: #000000;"> mp;
+</span><span style="color: #008080;">28</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;">29</span>     <span style="color: #008000;">/*</span><span style="color: #008000;"> 满足需求分析的第一点 </span><span style="color: #008000;">*/</span>
+<span style="color: #008080;">30</span>     Pointer(Test* p =<span style="color: #000000;"> NULL)
+</span><span style="color: #008080;">31</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">32</span>         mp =<span style="color: #000000;"> p;
+</span><span style="color: #008080;">33</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">34</span> 
+<span style="color: #008080;">35</span>    <span style="color: #008000;">/*</span><span style="color: #008000;"> 以下两个函数做了需求分析的第三点 </span><span style="color: #008000;">*/</span> 
+<span style="color: #008080;">36</span> 
+<span style="color: #008080;">37</span>     Pointer(<span style="color: #0000ff;">const</span> Pointer&amp;<span style="color: #000000;"> obj)
+</span><span style="color: #008080;">38</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">39</span>       <span style="color: #008000;">//</span><span style="color: #008000;"> delete mp; </span><span style="color: #008000;">//</span><span style="color: #008000;"> 还在拷贝构造，这个时候 mp 还是野指针；</span>
+<span style="color: #008080;">40</span>         mp = obj.mp;  <span style="color: #008000;">//</span><span style="color: #008000;"> 传递堆空间的控制； </span>
+<span style="color: #008080;">41</span>         const_cast&lt;Pointer&amp;&gt;(obj).mp = NULL;<span style="color: #008000;">//</span><span style="color: #008000;">初始化对象不管之前的；堆空间了，做所有权的转移，保证堆空间最多只能由一个对象被标识；</span>
+<span style="color: #008080;">42</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">43</span>     Pointer&amp; <span style="color: #0000ff;">operator</span> = (<span style="color: #0000ff;">const</span> Pointer&amp;<span style="color: #000000;"> obj)
+</span><span style="color: #008080;">44</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">45</span>         <span style="color: #0000ff;">if</span>( <span style="color: #0000ff;">this</span> != &amp;<span style="color: #000000;">obj )
+</span><span style="color: #008080;">46</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">47</span>             <span style="color: #0000ff;">delete</span><span style="color: #000000;"> mp;
+</span><span style="color: #008080;">48</span>             mp =<span style="color: #000000;"> obj.mp;
+</span><span style="color: #008080;">49</span>             const_cast&lt;Pointer&amp;&gt;(obj).mp =<span style="color: #000000;"> NULL;
+</span><span style="color: #008080;">50</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">51</span>         
+<span style="color: #008080;">52</span>         <span style="color: #0000ff;">return</span> *<span style="color: #0000ff;">this</span><span style="color: #000000;">;
+</span><span style="color: #008080;">53</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">54</span>     Test* <span style="color: #0000ff;">operator</span> -&gt; ()  <span style="color: #008000;">//</span><span style="color: #008000;"> 返回指针，准备指示；</span>
+<span style="color: #008080;">55</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">56</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> mp;
+</span><span style="color: #008080;">57</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">58</span>     Test&amp; <span style="color: #0000ff;">operator</span> * ()  <span style="color: #008000;">//</span><span style="color: #008000;"> 解引用，返回对象；</span>
+<span style="color: #008080;">59</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">60</span>         <span style="color: #0000ff;">return</span> *<span style="color: #000000;">mp;
+</span><span style="color: #008080;">61</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">62</span>     <span style="color: #0000ff;">bool</span><span style="color: #000000;"> isNull()
+</span><span style="color: #008080;">63</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">64</span>         <span style="color: #0000ff;">return</span> (mp ==<span style="color: #000000;"> NULL);
+</span><span style="color: #008080;">65</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">66</span>     ~Pointer()   <span style="color: #008000;">//</span><span style="color: #008000;"> 释放成员指针指向的堆空间，需求分析的第二点；</span>
+<span style="color: #008080;">67</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">68</span>         <span style="color: #0000ff;">delete</span><span style="color: #000000;"> mp;
+</span><span style="color: #008080;">69</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">70</span> <span style="color: #000000;">};
+</span><span style="color: #008080;">71</span> 
+<span style="color: #008080;">72</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> main()
+</span><span style="color: #008080;">73</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">74</span>     Pointer p1 = <span style="color: #0000ff;">new</span> Test(<span style="color: #800080;">0</span>);  <span style="color: #008000;">//</span><span style="color: #008000;"> ==&gt; Test* p1 = new Test(0);</span>
+<span style="color: #008080;">75</span>     
+<span style="color: #008080;">76</span>     cout &lt;&lt; p1-&gt;value() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">77</span>     
+<span style="color: #008080;">78</span>     Pointer p2 = p1;  <span style="color: #008000;">//</span><span style="color: #008000;"> 这里对象拷贝构造函数；</span>
+<span style="color: #008080;">79</span>     
+<span style="color: #008080;">80</span>     cout &lt;&lt; p1.isNull() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">81</span>     
+<span style="color: #008080;">82</span>     cout &lt;&lt; p2-&gt;value() &lt;&lt;<span style="color: #000000;"> endl;
+</span><span style="color: #008080;">83</span>     
+<span style="color: #008080;">84</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">85</span> }</pre>
+</div>
+<p align="left">　　　2，输出结果：</p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">1</span> Test(<span style="color: #0000ff;">int</span><span style="color: #000000;"> i) </span></span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">2</span> <span style="color: #800080;">0</span> </span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">3</span> <span style="color: #800080;">1</span> </span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">4</span> <span style="color: #800080;">0</span> </span></p>
+<p align="left"><span class="cnblogs_code"><span style="color: #008080;">5</span> ~Test()</span>&nbsp;</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;　&nbsp;3，智能指针没有定义对象运算和对象比较的操作符，所以就满足了需求分&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 析的第四点；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，智能指针使用军规：</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 　1，只能用来指向堆空间中的对象或者变量；</p>
+<p align="left">&nbsp; &nbsp; &nbsp; &nbsp; （2），不能使用智能指针指向栈空间中的对象；</p>
+<p align="left">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+<p align="left">6，小结：</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 1，指针特征操作符（-&gt; 和 *）可以被重载；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 2，重载指针特征符能够使对象代替指针；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 3，智能指针只能用于指向堆空间中的内存；</p>
+<p align="left">&nbsp;&nbsp;&nbsp; 4，智能指针的意义在于最大程度的避免内存问题；</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1，使用智能指针代替 C 中的原生指针，这是智能指针的工程意义；</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

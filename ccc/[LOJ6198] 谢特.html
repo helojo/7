@@ -1,0 +1,136 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[LOJ6198] 谢特' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[LOJ6198] 谢特</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/11182222.html</div><br>
+    <blockquote>
+<p>之乎者助得甚？</p>
+</blockquote>
+<p>给定字符串<span class="math inline">\(s\)</span>和序列<span class="math inline">\(w\)</span>，试求<br />
+<span class="math display">\[
+\max_{1\le i&lt;j\le n} lcp(i,j)+(w_i\veebar w_j)
+\]</span><br />
+似乎这样的东西都能很好的用SA(height)+启发式合并来完成？</p>
+<p>可以联系<a href="https://www.cnblogs.com/nosta/p/11179681.html">这题</a>思考。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N=1e5+10;
+
+int n,w[N],sa[N],ht[N],rc[N];
+char s[N];
+
+void buildSa() {
+    static int c[N];
+    int i,p,k,m=128,*x=ht,*y=rc;
+    for(i=0; i&lt;=m; ++i) c[i]=0;
+    for(i=1; i&lt;=n; ++i) c[x[i]=s[i]]++;
+    for(i=1; i&lt;=m; ++i) c[i]+=c[i-1];
+    for(i=n; i&gt;=1; --i) sa[c[x[i]]--]=i;
+    for(k=1; k&lt;n; k&lt;&lt;=1) {
+        for(i=n-k+1,p=0; i&lt;=n; ++i) y[++p]=i;
+        for(i=1; i&lt;=n; ++i) if(sa[i]&gt;k) y[++p]=sa[i]-k;
+        for(i=1; i&lt;=m; ++i) c[i]=0;
+        for(i=1; i&lt;=n; ++i) c[x[y[i]]]++;
+        for(i=1; i&lt;=m; ++i) c[i]+=c[i-1];
+        for(i=n; i&gt;=1; --i) sa[c[x[y[i]]]--]=y[i];
+        swap(x,y), x[sa[1]]=p=1;
+        for(i=2; i&lt;=n; ++i) x[sa[i]]=
+            y[sa[i]]==y[sa[i-1]]&amp;&amp;y[sa[i]+k]==y[sa[i-1]+k]?p:++p;
+        if((m=p)&gt;=n) break;
+    }
+    for(i=1; i&lt;=n; ++i) rc[sa[i]]=i;
+    for(i=1,k=0; i&lt;=n; ++i) {
+        p=sa[rc[i]-1]; if(k) k--; 
+        while(s[p+k]==s[i+k]) k++;
+        ht[rc[i]]=k;
+    }
+}
+
+int tot,top,stk[N*18];
+int ll[N],rr[N],bl[N],siz[N],ch[N*18][2];
+pair&lt;int,int&gt; h[N];
+
+int newNode() {
+    return top?stk[top--]:++tot;
+}
+void fuckNode(int x) {
+    stk[++top]=x; 
+    ch[x][0]=ch[x][1]=0;
+}
+void insert(int x,int w) {
+    for(int i=16; ~i; --i) {
+        if(!ch[x][(w&gt;&gt;i)&amp;1]) ch[x][(w&gt;&gt;i)&amp;1]=newNode();
+        x=ch[x][(w&gt;&gt;i)&amp;1];
+    }
+}
+int ans,tmp;
+void query(int x,int y,int d,int now) {
+    if(d&lt;0) {
+        tmp=max(tmp,now);
+        return;
+    }
+    for(int k=0; k&lt;2; ++k) if(ch[x][k]) {
+        if(ch[y][k^1]) query(ch[x][k],ch[y][k^1],d-1,now|(1&lt;&lt;d));
+        else query(ch[x][k],ch[y][k],d-1,now);
+    }
+}
+void merge(int x,int y,int d) {
+    if(d&lt;0) return;
+    for(int k=0; k&lt;2; ++k) if(ch[x][k]) {
+        if(!ch[y][k]) ch[y][k]=newNode();
+        merge(ch[x][k],ch[y][k],d-1);
+        fuckNode(ch[x][k]);
+    }
+}
+
+int main() {
+//  freopen(&quot;C:/Users/HSY/Downloads/2.in&quot;,&quot;r&quot;,stdin);
+    
+    scanf(&quot;%d%s&quot;,&amp;n,s+1);
+    for(int i=1; i&lt;=n; ++i) 
+        scanf(&quot;%d&quot;,w+i),newNode();
+    buildSa();
+    for(int i=2; i&lt;=n; ++i) h[i-1]=make_pair(-ht[i],i);
+    for(int i=1; i&lt;=n; ++i) {
+        ll[i]=rr[i]=bl[i]=i; siz[i]=1;
+        insert(i,w[sa[i]]);
+    }
+    sort(h+1,h+n);
+    for(int i=1; i&lt;n; ++i) {
+        int len=-h[i].first;
+        int x=bl[h[i].second];
+        int y=bl[h[i].second-1];
+        if(siz[x]&gt;siz[y]) swap(x,y);
+        tmp=0; 
+        query(x,y,16,0);
+        ans=max(ans,tmp+len);
+        for(int j=ll[x]; j&lt;=rr[x]; ++j) bl[j]=y;
+        ll[y]=min(ll[x],ll[y]);
+        rr[y]=max(rr[x],rr[y]);
+        siz[y]+=siz[x];
+        merge(x,y,16);
+    }
+    printf(&quot;%d\n&quot;,ans);
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

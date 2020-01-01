@@ -1,0 +1,340 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修类型转换函数' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>类型转换函数</center></div><div class='banquan'>原文出处:本文由博客园博主原野追逐提供。<br/>
+原文连接:https://www.cnblogs.com/songhe364826110/p/11586920.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#转换构造函数">1. 转换构造函数</a></li>
+        <li><a href="#explicit关键字">2. explicit关键字</a></li>
+        <li><a href="#类型转换函数">3. 类型转换函数</a></li>
+        </ul>
+    </div>
+</div>
+<h1 id="转换构造函数">1. 转换构造函数</h1>
+<p>类的构造函数可以定义不同类型的参数，<font color=red>当参数满足下列条件时，就可称其为转换构造函数。</font></p>
+<ul>
+<li>函数<font color=magenta>仅有一个参数</font></li>
+<li>参数是<font color=blue>基本类型</font>或者<font color=blue>其他类类型</font></li>
+</ul>
+<p>其中，有一种特殊情形，也可构成转换构造函数。</p>
+<ul>
+<li>函数<font color=irange>有多个参数，但除了第一个参数外，其余都是默认参数</font></li>
+<li><font color=blue>第一个参数是基本类型或者其他类类型</font></li>
+<li><font color=orange>函数调用时只使用一个参数</font></li>
+</ul>
+<p>C++编译器在进行编译工作时，会尽力尝试让源码通过编译，因此如果碰到了这样的代码<code>Test t = 100</code>，编译器不会立即报错，而是进行以下尝试：</p>
+<ul>
+<li>查找类中是否有定义转换构造函数</li>
+<li>如果定义了Test(int i)，则<font color=red>先调用Test(100)将int类型隐式转换为Test类型，再赋值给t，</font>编译通过</li>
+<li>如果没有定义，编译才报错</li>
+</ul>
+<pre><code>#include &lt;iostream&gt;
+
+using namespace std;
+
+class Test
+{
+    int mValue;
+public:
+    Test()
+    {
+        mValue = 0;
+    }
+
+    //转换构造函数
+    Test(int i)
+    {
+        mValue = i;
+    }
+
+    //当仅以第一个参数调用时，该函数等价于Test(int i)，也是转换构造函数
+    /*Test(int i, int j = 0, int k = 0)
+    {
+        mValue = i;
+    }*/
+
+    Test operator + (const Test &amp;p)
+    {
+        Test ret(mValue + p.mValue);
+
+        return ret;
+    }
+
+    int value()
+    {
+        return mValue;
+    }
+};
+
+int main()
+{
+    Test t = 5;      // Test t = Test(5);
+    Test r = t + 10; // Test r = t + Test(10);
+
+    cout &lt;&lt; &quot;t.value = &quot; &lt;&lt; t.value() &lt;&lt; endl;
+    cout &lt;&lt; &quot;r.value = &quot; &lt;&lt; r.value() &lt;&lt; endl;
+
+    return 0;
+}</code></pre>
+<p><img src="./images/类型转换函数0.png" /></p>
+<p>可以看到，当定义了转换构造函数时，<font color=blue>编译器尽力尝试的结果是隐式类型转换，</font>而隐式类型转换</p>
+<ul>
+<li>有可能会让程序以意想不到的方式工作</li>
+<li><font color=orange>是工程中BUG的重要来源，应该尽力避免</font></li>
+</ul>
+<h1 id="explicit关键字">2. explicit关键字</h1>
+<ul>
+<li>在工程中可以<font color=magenta>使用explicit关键字修饰转换构造函数</font>，从而<font color=magenta>杜绝</font>编译器的转换尝试</li>
+<li>转换构造函数被explicit修饰时<font color=irange>只能使用显式的强制类型转换</font></li>
+<li><font color=red><strong>作为编程的一般性原则，建议给所有的构造函数都加上explicit关键字</strong></font></li>
+</ul>
+<pre><code>#include &lt;iostream&gt;
+
+using namespace std;
+
+class Test
+{
+    int mValue;
+public:
+    explicit Test()
+    {
+        mValue = 0;
+    }
+
+    explicit Test(int i)
+    {
+        mValue = i;
+    }
+
+    //当仅以第一个参数调用时, 该函数等价于Test(int i), 也是转换构造函数, explicit有效且有必要
+    /*explicit Test(int i, int j = 0, int k = 0)
+    {
+        mValue = i;
+    }*/
+
+    Test operator + (const Test &amp;p)
+    {
+        Test ret(mValue + p.mValue);
+
+        return ret;
+    }
+
+    int value()
+    {
+        return mValue;
+    }
+};
+
+int main()
+{
+    //Test t = 5;      // Error
+    //Test r = t + 10; // Error
+
+    Test t = static_cast&lt;Test&gt;(5);
+    Test r = t + static_cast&lt;Test&gt;(10);
+
+    cout &lt;&lt; &quot;t.value = &quot; &lt;&lt; t.value() &lt;&lt; endl;
+    cout &lt;&lt; &quot;r.value = &quot; &lt;&lt; r.value() &lt;&lt; endl;
+
+    return 0;
+}</code></pre>
+<p><img src="./images/类型转换函数1.png" /></p>
+<p>当使用了explicit关键字后，如果main()使用40-41行替换43-44行，编译会直接报错</p>
+<p><img src="./images/类型转换函数2.png" /></p>
+<h1 id="类型转换函数">3. 类型转换函数</h1>
+<p>转换构造函数可以将其他类型转换为类类型，而<font color=red>类型转换函数则可以将类类型转换到其他类型，包括普通类型和其他类类型。</font></p>
+<ul>
+<li><font color=blue>类型转换函数是转换构造函数的逆过程，它们具有同等的地位</font></li>
+<li><font color=irange>编译器也能够使用类型转换函数进行隐式转换</font>，从而尽力让源码通过编译</li>
+<li>当目标类型是其他类类型时，类型转换函数可能与转换构造函数冲突</li>
+</ul>
+<p>定义类型转换函数需要用到operator关键字，其语法规则为</p>
+<pre><code>operator TargetType ()
+{
+    TargetType ret;
+    //......
+    return ret;
+}</code></pre>
+<p>当编译器遇到<code>Test t(1);  int i = t;</code>这样的代码时，不会立即报错，而是进行以下尝试</p>
+<ul>
+<li>查看Test类中是否有定义类型转换函数<code>operator int ()</code></li>
+<li>如果有定义，则进行隐式转换，<font color=magenta>先调用类型转换函数将t转换为int，再赋值给i，</font>编译通过</li>
+<li>如果没有定义，编译才报错</li>
+</ul>
+<pre><code>#include &lt;iostream&gt;
+
+using namespace std;
+
+class Test;
+
+class Value
+{
+    int mValue;
+public:
+    Value(int i = 0)
+    {
+        mValue = i;
+    }
+
+    //如果不加explicit，会与Test中的operator Value ()冲突，产生二义性
+    explicit Value(Test &amp;t)
+    {
+
+    }
+
+    int value()
+    {
+        return mValue;
+    }
+};
+
+class Test
+{
+private:
+    int mValue;
+public:
+    Test(int i = 0)
+    {
+        mValue = i;
+    }
+
+    int value()
+    {
+        return mValue;
+    }
+
+    operator int ()
+    {
+        return mValue;
+    }
+
+    operator Value ()
+    {
+        Value ret(mValue);
+
+        return ret;
+    }
+};
+
+int main()
+{
+    Test t(100);
+    int i = t;
+    Value v = t;
+
+    cout &lt;&lt; &quot;i = &quot; &lt;&lt; i &lt;&lt; endl;
+    cout &lt;&lt; &quot;v.value = &quot; &lt;&lt; v.value() &lt;&lt; endl;
+
+    return 0;
+}</code></pre>
+<p><img src="./images/类型转换函数3.png" /></p>
+<p>和转换构造函数不同，类型转换函数没有类似explicit这种杜绝机制，也就是说，<font color=orange>只要定义了类型转换函数，我们就无法抑制编译器的隐式调用。</font><br />
+<font color=red><strong>因此，在工程中，通常不会使用类型转换函数，而是以toType()的public成员函数来代替类型转换函数。</strong></font></p>
+<pre><code>#include &lt;iostream&gt;
+
+using namespace std;
+
+class Test;
+
+class Value
+{
+    int mValue;
+public:
+    Value(int i = 0)
+    {
+        mValue = i;
+    }
+
+    //如果不加explicit，会与Test中的operator Value ()冲突，产生二义性
+    explicit Value(Test &amp;t)
+    {
+
+    }
+
+    int value()
+    {
+        return mValue;
+    }
+};
+
+class Test
+{
+private:
+    int mValue;
+public:
+    Test(int i = 0)
+    {
+        mValue = i;
+    }
+
+    int value()
+    {
+        return mValue;
+    }
+
+    /*
+     * 工程中不用且不推荐的方式
+    */
+    /*operator int ()
+    {
+        return mValue;
+    }
+
+    operator Value ()
+    {
+        Value ret(mValue);
+
+        return ret;
+    }*/
+
+    /*
+     * 工程中常用且推荐的方式：提供toType()的public成员函数
+    */
+    int toInt()
+    {
+        return mValue;
+    }
+
+    Value toValue()
+    {
+        Value ret(mValue);
+
+        return ret;
+    }
+};
+
+int main()
+{
+    Test t(100);
+    int i = t.toInt();
+    Value v = t.toValue();
+
+    cout &lt;&lt; &quot;i = &quot; &lt;&lt; i &lt;&lt; endl;
+    cout &lt;&lt; &quot;v.value = &quot; &lt;&lt; v.value() &lt;&lt; endl;
+
+    return 0;
+}</code></pre>
+<p><img src="./images/类型转换函数4.png" /></p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

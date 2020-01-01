@@ -1,0 +1,246 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修xorm-删除和软删除实例' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>xorm-删除和软删除实例</center></div><div class='banquan'>原文出处:本文由博客园博主j_x_x提供。<br/>
+原文连接:https://www.cnblogs.com/jiangxiangxiang/p/10937723.html</div><br>
+    <ul>
+<li>删除数据Delete方法，参数为struct的指针并且成为查询条件。注意：当删除时，如果user中包含有bool,float64或者float32类型，有可能会使删除失败</li>
+</ul>
+<pre><code><code>package main
+
+import (
+  &quot;fmt&quot;
+  _ &quot;github.com/go-sql-driver/mysql&quot;
+  &quot;github.com/go-xorm/xorm&quot;
+  &quot;log&quot;
+)
+
+var engine *xorm.Engine
+
+type User struct {
+  Name      string    `xorm:&quot;varchar(25) &#39;name&#39;&quot;`
+  Id        int       `xorm:&quot;pk &#39;id&#39; autoincr&quot;`
+}
+
+func main() {
+  var err error
+  engine, err = xorm.NewEngine(&quot;mysql&quot;, &quot;root:123456@/test&quot;)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+  //创建表和插入数据
+  /*err = engine.CreateTables(User{})
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+
+  u := make([]User, 3)
+  u[0].Name = &quot;u0&quot;
+  u[1].Name = &quot;u1&quot;
+  u[2].Name = &quot;u2&quot;
+
+  _, err = engine.Insert(u)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }*/
+
+  uu := new(User)
+  has ,err :=engine.Id(2).Get(uu)
+  if err !=nil {
+      log.Fatal(err)
+      return
+  }
+  if has {
+      fmt.Println(&quot;删除Deleted,用户名：&quot;,uu.Name)
+  }else {
+      fmt.Println(&quot;该数据现在已经不存在&quot;)
+  }
+
+  affected, err := engine.Id(2).Delete(uu)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+  fmt.Println(&quot;删除Delete，受影响的行数：&quot;, affected)
+  fmt.Println()
+
+
+  has ,err =engine.Id(2).Get(uu)
+  if err !=nil {
+      log.Fatal(err)
+      return
+  }
+  if has {
+      fmt.Println(&quot;删除Deleted,用户名：&quot;,uu.Name,&quot;deleteAt：&quot;)
+  }else {
+      fmt.Println(&quot;该数据现在已经不存在&quot;)
+  }
+
+
+  affected, err = engine.Id(2).Delete(uu)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+  fmt.Println(&quot;删除Delete，受影响的行数：&quot;, affected)
+  fmt.Println()
+
+
+/*
+  输出：
+  删除Deleted,用户名： u1
+  删除Delete，受影响的行数： 1
+
+  该数据现在已经不存在
+  删除Delete，受影响的行数： 0
+*/
+
+}</code></pre>
+<ul>
+<li><p>软删除Deleted, Deleted可以让您不真正的删除数据，而是标记一个删除时间。使用此特性需要在xorm标记中使用deleted标记，对应的字段必须为time.Time类型。在Delete()时，deleted标记的字段将会被自动更新为当前时间而不是去删除该条记录</p>
+<pre><code><code>package main
+
+import (
+  &quot;fmt&quot;
+  _ &quot;github.com/go-sql-driver/mysql&quot;
+  &quot;github.com/go-xorm/xorm&quot;
+  &quot;log&quot;
+  &quot;time&quot;
+)
+
+var engine *xorm.Engine
+
+type User struct {
+  Name      string    `xorm:&quot;varchar(25) &#39;name&#39;&quot;`
+  Id        int       `xorm:&quot;pk &#39;id&#39; autoincr&quot;`
+  Version   int       `xorm:&quot;version&quot;`
+  UpdatedAt time.Time `xorm:&quot;updated&quot;`
+  DeletedAt time.Time `xorm:&quot;deleted&quot;`
+}
+
+func main() {
+  var err error
+  engine, err = xorm.NewEngine(&quot;mysql&quot;, &quot;root:123456@/test&quot;)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+  //创建表和插入数据
+/*    err = engine.CreateTables(User{})
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+
+  u := make([]User, 3)
+  u[0].Name = &quot;u0&quot;
+  u[1].Name = &quot;u1&quot;
+  u[2].Name = &quot;u2&quot;
+
+  _, err = engine.Insert(u)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }*/
+
+  uu := new(User)
+  has ,err :=engine.Id(2).Get(uu)
+  if err !=nil {
+      log.Fatal(err)
+      return
+  }
+  if has {
+      fmt.Println(&quot;软删除Deleted,用户名：&quot;,uu.Name,&quot;deleteAt：&quot;,uu.DeletedAt)
+  }else {
+      fmt.Println(&quot;该数据现在已经不存在&quot;)
+  }
+
+  affected, err := engine.Id(2).Delete(uu)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+  fmt.Println(&quot;软删除Delete，受影响的行数：&quot;, affected)
+  fmt.Println()
+
+
+  has ,err =engine.Id(2).Get(uu)
+  if err !=nil {
+      log.Fatal(err)
+      return
+  }
+  if has {
+      fmt.Println(&quot;软删除Deleted,用户名：&quot;,uu.Name,&quot;deleteAt：&quot;,uu.DeletedAt)
+  }else {
+      fmt.Println(&quot;该数据现在已经不存在&quot;)
+  }
+
+
+  affected, err = engine.Id(2).Delete(uu)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+  fmt.Println(&quot;软删除Delete，受影响的行数：&quot;, affected)
+  fmt.Println()
+
+
+  //那么如果记录已经被标记为删除后，要真正的获得该条记录或者真正的删除该条记录，需要启用Unscoped，如下所示：
+  // 此时将可以获得记录,此时将可以真正的删除记录
+
+  has ,err =engine.Id(2).Unscoped().Get(uu)
+  if err !=nil {
+      log.Fatal(err)
+      return
+  }
+  if has {
+      fmt.Println(&quot;启用Unscoped,用户名：&quot;,uu.Name,&quot;deleteAt：&quot;,uu.DeletedAt)
+  }else {
+      fmt.Println(&quot;该数据现在已经不存在&quot;)
+  }
+
+  affected, err = engine.Id(2).Unscoped().Delete(uu)
+  if err != nil {
+      log.Fatal(err)
+      return
+  }
+  fmt.Println(&quot;启用Unscoped，受影响的行数：&quot;, affected)
+
+/*
+输出：
+  软删除Deleted,用户名： u1 deleteAt： 0001-01-01 00:00:00 +0000 UTC
+  软删除Deleted，受影响的行数： 1
+
+  该数据现在已经不存在
+  软删除Deleted，受影响的行数： 0
+
+  启用Unscoped,用户名： u1 deleteAt： 2019-05-28 15:12:38 +0800 CST
+  启用Unscoped，受影响的行数： 1
+*/
+
+}</code></pre></li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

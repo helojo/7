@@ -1,0 +1,184 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修cannot convert from pointer to base class &#39;QObject&#39; to pointer to derived class &#39;subClass&#39; via virtual base &#39;baseClass&#39;' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>cannot convert from pointer to base class &#39;QObject&#39; to pointer to derived class &#39;subClass&#39; via virtual base &#39;baseClass&#39;</center></div><div class='banquan'>原文出处:本文由博客园博主Mike Von提供。<br/>
+原文连接:https://www.cnblogs.com/crazyghostvon/p/moc_signals_failed.html</div><br>
+    <p>QT 编译不过的另一个问题：</p>
+<p>1. 新建一个console工程</p>
+<div class="cnblogs_code">
+<pre>QT -=<span style="color: #000000;"> gui
+
+CONFIG </span>+= c++<span style="color: #800080;">11</span><span style="color: #000000;"> console
+CONFIG </span>-=<span style="color: #000000;"> app_bundle
+
+# The following define makes your compiler emit warnings </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> you use
+# any feature of Qt </span><span style="color: #0000ff;">which</span><span style="color: #000000;"> as been marked deprecated (the exact warnings
+# depend on your compiler). Please consult the documentation of the
+# deprecated API </span><span style="color: #0000ff;">in</span><span style="color: #000000;"> order to know how to port your code away from it.
+DEFINES </span>+=<span style="color: #000000;"> QT_DEPRECATED_WARNINGS
+
+# You can also </span><span style="color: #0000ff;">make</span> your code fail to compile <span style="color: #0000ff;">if</span><span style="color: #000000;"> you use deprecated APIs.
+# In order to </span><span style="color: #0000ff;">do</span><span style="color: #000000;"> so, uncomment the following line.
+# You can also </span><span style="color: #0000ff;">select</span><span style="color: #000000;"> to disable deprecated APIs only up to a certain version of Qt.
+#DEFINES </span>+= QT_DISABLE_DEPRECATED_BEFORE=<span style="color: #800080;">0x060000</span>    # disables all the APIs deprecated before Qt <span style="color: #800080;">6.0</span>.<span style="color: #800080;">0</span><span style="color: #000000;">
+
+SOURCES </span>+=<span style="color: #000000;"> \
+        main.</span><span style="color: #0000ff;">cpp</span><span style="color: #000000;"> \
+    baseclass.</span><span style="color: #0000ff;">cpp</span><span style="color: #000000;"> \
+    subclass.</span><span style="color: #0000ff;">cpp</span><span style="color: #000000;"> \
+    subclass2.</span><span style="color: #0000ff;">cpp</span><span style="color: #000000;">
+    #grandclass.</span><span style="color: #0000ff;">cpp</span><span style="color: #000000;">
+
+# Default rules </span><span style="color: #0000ff;">for</span><span style="color: #000000;"> deployment.
+qnx: target.path </span>= /tmp/$${TARGET}/<span style="color: #000000;">bin
+</span><span style="color: #0000ff;">else</span>: unix:!android: target.path = /opt/$${TARGET}/<span style="color: #000000;">bin
+</span>!isEmpty(target.path): INSTALLS +=<span style="color: #000000;"> target
+
+HEADERS </span>+=<span style="color: #000000;"> \
+    baseclass.h \
+    subclass.h \
+    subclass2.h
+    #grandclass.h</span></pre>
+</div>
+<p>2. 添加baseClass</p>
+<p>baseclass.h</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">#ifndef BASECLASS_H
+</span><span style="color: #0000ff;">#define</span> BASECLASS_H<span style="color: #000000;">
+
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">QObject</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+class baseClass: public QObject
+{
+    Q_OBJECT
+
+public:
+    baseClass(QObject </span>* p = <span style="color: #800080;">0</span><span style="color: #000000;">);
+    virtual </span>~<span style="color: #000000;">baseClass() {}
+
+    virtual void vMethod(</span><span style="color: #0000ff;">int</span>) = <span style="color: #800080;">0</span><span style="color: #000000;">;
+
+signals:
+    void signal1();
+
+
+};
+
+</span><span style="color: #0000ff;">#endif</span> <span style="color: #008000;">//</span><span style="color: #008000;"> BASECLASS_H</span></pre>
+</div>
+<p>baseclass.cpp</p>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">baseclass.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+baseClass::baseClass(QObject </span>*<span style="color: #000000;"> p) : QObject(p)
+{
+
+}</span></pre>
+</div>
+<p>3. 添加subClass</p>
+<p>subclass.h</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">#ifndef SUBCLASS_H
+</span><span style="color: #0000ff;">#define</span> SUBCLASS_H<span style="color: #000000;">
+
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">baseclass.h</span><span style="color: #800000;">"</span>
+
+<span style="color: #0000ff;">class</span> subClass: <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">public</span><span style="color: #000000;"> baseClass
+{
+    Q_OBJECT
+
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    subClass(QObject </span>* p = <span style="color: #800080;">0</span><span style="color: #000000;">);
+    </span><span style="color: #0000ff;">virtual</span> ~<span style="color: #000000;">subClass() {};
+    </span><span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span> vMethod(<span style="color: #0000ff;">int</span>) = <span style="color: #800080;">0</span><span style="color: #000000;">;
+
+signals:
+    </span><span style="color: #0000ff;">void</span><span style="color: #000000;"> signal2();
+
+};
+
+</span><span style="color: #0000ff;">#endif</span> <span style="color: #008000;">//</span><span style="color: #008000;"> SUBCLASS_H</span></pre>
+</div>
+<p>subclass.cpp</p>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">subclass.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+subClass::subClass(QObject </span>*<span style="color: #000000;"> p) : baseClass (p)
+{
+
+}</span></pre>
+</div>
+<p>4. 添加subClass2</p>
+<p>subclass2.h</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">#ifndef SUBCLASS2_H
+</span><span style="color: #0000ff;">#define</span> SUBCLASS2_H<span style="color: #000000;">
+
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">baseclass.h</span><span style="color: #800000;">"</span>
+
+<span style="color: #0000ff;">class</span> subClass2 : <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">public</span><span style="color: #000000;"> baseClass
+{
+    Q_OBJECT
+
+</span><span style="color: #0000ff;">public</span><span style="color: #000000;">:
+    subClass2(QObject * p = 0);
+
+    </span><span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">void</span> vMethod(<span style="color: #0000ff;">int</span>) = <span style="color: #800080;">0</span><span style="color: #000000;">;
+
+};
+
+</span><span style="color: #0000ff;">#endif</span> <span style="color: #008000;">//</span><span style="color: #008000;"> SUBCLASS2_H</span></pre>
+</div>
+<p>subclass2.cpp</p>
+<div class="cnblogs_code">
+<pre>#include <span style="color: #800000;">"</span><span style="color: #800000;">subclass2.h</span><span style="color: #800000;">"</span><span style="color: #000000;">
+
+subClass2::subClass2(QObject </span>*<span style="color: #000000;"> p) : baseClass (p)
+{
+
+}</span></pre>
+</div>
+<p>5 main.cpp</p>
+<div class="cnblogs_code">
+<pre>#include &lt;QCoreApplication&gt;<span style="color: #000000;">
+#include </span><span style="color: #800000;">"</span><span style="color: #800000;">subclass.h</span><span style="color: #800000;">"</span>
+<span style="color: #008000;">//</span><span style="color: #008000;">#include "grandclass.h"</span>
+
+<span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span> *<span style="color: #000000;">argv[])
+{
+    QCoreApplication a(argc, argv);
+
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">grandClass * sub = new grandClass();</span>
+
+    <span style="color: #0000ff;">return</span><span style="color: #000000;"> a.exec();
+}</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>编译报错：/build-testQtSignalBug-Qt5_9_4_zynq-Debug/moc_subclass.cpp:68: error: cannot convert from pointer to base class 'QObject' to pointer to derived class 'subClass' via virtual base 'baseClass'</p>
+<p> subClass *_t = static_cast&lt;subClass *&gt;(_o);<br />                                                  ^</p>
+<p>&nbsp;<img src="./images/cannot convert from pointer to base class &#39;QObject&#39; to pointer to derived class &#39;subClass&#39; via virtual base &#39;baseClass&#39;0.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>解决方法： 将subclass里的signals 删掉， 即不在subclass里声明信号量。</p>
+<p>原因：不详。</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

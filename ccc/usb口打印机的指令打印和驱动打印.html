@@ -1,0 +1,53 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修usb口打印机的指令打印和驱动打印' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>usb口打印机的指令打印和驱动打印</center></div><div class='banquan'>原文出处:本文由博客园博主小霸霸提供。<br/>
+原文连接:https://www.cnblogs.com/zhoubiao20170424/p/11139414.html</div><br>
+    <p>打印机简介：是计算机的输出设备之一，用于将计算机处理结果打印在相关介质上。</p>
+<p>打印机类型：激光打印机、喷墨打印机、针式打印机、热敏打印机等。</p>
+<p>计算机和打印机之间的连接方式：usb口、串口、并口、网口、蓝牙等。</p>
+<p>由于工作中使用的是usb口的热敏打印机，所以就以此类型做介绍。（目前市场上常用的是usb口打印机）</p>
+<p>热敏打印机工作原理：是打印头上安装有半导体加热元件，打印头加热并接触热敏打印纸后就可以打印出需要的图案，其原理与热敏式传真机类似。图象是通过加热，在热敏纸的膜中产生化学反应而生成的。这种热敏打印机化学反应是在一定的温度下进行的。高温会加速这种化学反应。当温度低于60℃时，纸需要经过相当长，甚至长达几年的时间才能变成深色；而当温度为200℃时，这种反映会在几微秒内完成。所以要想使热敏打印机打印出图形和文字，就必须满足两个条件,热敏纸和高温，是不需要墨的。</p>
+<p>usb口热敏打印机打印分为两种：</p>
+<p>1，指令打印（也叫直接打印），是直接将esc指令通过程序发送给打印机。当然这要看此款打印机是否支持esc指令，如何确定可以查看打印机的官网。作者测试时使用的一款icod（研科）的T58K，官方网址：<a href="http://www.szicod.com/products-show.asp?id=87">http://www.szicod.com/products-show.asp?id=87</a>&nbsp; &nbsp; &nbsp;后文会介绍如何写c/c++程序来直接给打印机发送打印指令。</p>
+<p>2，驱动打印，是在windows系统的帮助下，使用到gdi模块、驱动模块将要打印的内容进行图片话，以图片的格式打印。后文会详细介绍打印的临时文件SPL，并且可以从SPL文件中分析出EMF文件。EMF文件是一个图片格式的文件，可以直接在windows系统双击打开的。</p>
+<p>&nbsp;</p>
+<p>下面详细介绍下指令打印和驱动打印：</p>
+<p>指令打印：顾名思义，是直接将esc指令发送到打印机，打印机就能解析并进行相应的执行。那么我想先聊下，我们平常用记事本、word、pdf等软件打印时为什么不需要考虑这些，而是直接就能让打印机打印呢？原因是记事本、word、pdf这些软件已经实现了打印功能，他们具体是使用指令打印还是驱动打印我们是不清楚的，需要看他们的源代码才能确定。那么如果你不想通过这些软件来打印，那你就得自己去考虑使用哪种方式实现。后文会有我的一个MFC工程，包含了指令打印和驱动打印的简单例子。大家有兴趣可以看看。</p>
+<p>驱动打印：驱动打印的过程比较复杂。会使用到windows系统的gdi模块、驱动模块。win32 api有相关的接口。主要使用CPrintDialog、StartDoc、StartPage、TextOut等接口实现。这些接口很明显是屏蔽了具体的打印机的，应用程序不需要关注打印机的实现细节，只要按照win32 api的打印接口调用即可实现打印。应用程序打印会产生一个打印作业，被放入打印后台处理程序（spoolsv.exe），并且在C:\Windows\System32\spool\PRINTERS\&nbsp; &nbsp;目录下产生一个SPL临时文件。我们可以分析改SPL，并将其转换为EMF文件。然后EMF文件被驱动程序翻译成esc指令，最终将esc指令发往打印机实现打印。那既然两种打印方式最终到打印机那边都是esc指令，那为啥还要分指令打印和驱动打印呢？其实这两种打印方式是有区别的，指令打印时直接打印，比如你打印"123abc"，那么最终的esc指令是使用字符串方式打印，所以截获数据就能截获到打印内容。而如果是驱动打印，是将原来的数据当成是图片来打印，比如同样你打印"123abc"，那么最终的esc指令是使用图片方式打印，所以截获的数据是还原不了打印内容的。</p>
+<p>针对EMF文件：理论上，我们可以将得到的EMF文件解析，并还原出原始的打印数据的。但是如果上层应用设置了ETO_GLYPH_INDEX选项，会使得分析出来的数据并不是字符编码，而是某字库的索引。这样的话要想通过EMF文件解析出原始打印数据也是非常困难的。</p>
+<p>&nbsp;</p>
+<p>测试工程所在的百度网盘链接及提取码：</p>
+<p>链接: https://pan.baidu.com/s/1EA8Os3W8l_vlC8AjLQRL9A 提取码: kjwm&nbsp;</p>
+<p>csdn下载链接：</p>
+<p><a href="https://download.csdn.net/download/weixin_29071533/11286829">https://download.csdn.net/download/weixin_29071533/11286829</a></p>
+<p>&nbsp;</p>
+<p>相关连接：</p>
+<p>EMF解析相关：<a href="https://www.cnblogs.com/snaildev/p/7693189.html">https://www.cnblogs.com/snaildev/p/7693189.html</a></p>
+<p><a href="https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/91c257d7-c39d-4a36-9b1f-63e3f73d30ca">https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-emf/91c257d7-c39d-4a36-9b1f-63e3f73d30ca</a></p>
+<p>&nbsp;</p>
+<p>打印机数据截获相关：</p>
+<p><a href="https://www.cnblogs.com/MrDing/tag/">https://www.cnblogs.com/MrDing/tag/</a></p>
+<p><a href="https://www.cnblogs.com/we-hjb/p/5596880.html">https://www.cnblogs.com/we-hjb/p/5596880.html</a></p>
+<p><a href="http://www.doc88.com/p-2062378632507.html">http://www.doc88.com/p-2062378632507.html</a></p>
+<pre></pre>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

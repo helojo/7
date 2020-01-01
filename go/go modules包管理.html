@@ -1,0 +1,87 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修go modules包管理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>go modules包管理</center></div><div class='banquan'>原文出处:本文由博客园博主typeck提供。<br/>
+原文连接:https://www.cnblogs.com/typeck/p/11898422.html</div><br>
+    <p>记录一下go工程迁移go modules的过程。</p>
+<h4 id="go-mod">go mod</h4>
+<p>golang从1.11版本之后引入了包管理-go mod，并通过环境变量GO111MODULE 设置：</p>
+<ul>
+<li>默认GO111MODULE 为auto 在gopath路径下会从gopath 或者vendor中寻找依赖包,在外部会使用go module的方式寻找依赖包。</li>
+<li>GO111MODULE =on 只会使用go module的方式寻找依赖包。</li>
+<li><p>GO111MODULE =off 只会从gopath中寻找依赖包。</p>
+<h4 id="go-mod-命令">go mod 命令</h4>
+go mod提供了以下的命令：</li>
+</ul>
+<pre><code><code>        download    download modules to local cache
+        edit        edit go.mod from tools or scripts
+        graph       print module requirement graph
+        init        initialize new module in current directory
+        tidy        add missing and remove unused modules
+        vendor      make vendored copy of dependencies
+        verify      verify dependencies have expected content
+        why         explain why packages or modules are needed</code></pre>
+<h4 id="go-mod新建工程步骤">go mod新建工程步骤</h4>
+<ul>
+<li>在工程根目录下（如果GO111MODULE 为auto则工程不可以在gopath中）<code>go mod init [module name]</code>。在工程根目录下会产生一个go.mod文件。<br />
+go mod 初始化的时候会自动导入vendor目录中的包。<br />
+goland也支持使用go mod管理包，配置如图：<br />
+<img src="./images/go modules包管理0.png" /><br />
+go mod 会贯穿go tool工具链，go test, go vet, go build等工具都会先检查依赖。go mod会自动工作。</li>
+<li>执行 <code>go build main.go</code>会依次下载依赖包到gopath/pkg/mod中，并在go.mod中进行管理。<br />
+执行<code>go mod vendor</code>会将所有的依赖包复制到工程vendor目录中。<br />
+go.mod示例：</li>
+</ul>
+<pre><code><code>module server
+go 1.12
+require (      
+github.com/360EntSecGroup-Skylar/excelize/v2 v2.0.2      
+github.com/YoungPioneers/blog4go v0.5.9      
+github.com/a8m/kinesis-producer v0.2.0      
+github.com/antlr/antlr4 v0.0.0-20191115170859-54daca92f7b0 // 
+indirect      
+github.com/apache/thrift v0.13.0     
+github.com/astaxie/beego v1.12.0      
+github.com/aws/aws-dax-go v1.0.1      
+github.com/aws/aws-sdk-go v0.0.0-20180828194226-46ffe7480c9d      
+github.com/fortytw2/leaktest v1.3.0 // indirect
+)</code></pre>
+<p>go mod 会默认拉取最新的relase tag，如果没有，便拉取最新的commit记录。并支持版本控制。<br />
+indirect表明是间接引用。<br />
+<strong>注意：</strong><br />
+&quot;If an old package and a new package have the same import path, the new package must be backwards compatible with the old package.&quot;<br />
+“如果旧软件包和新软件包具有相同的导入路径，则新软件包必须与旧软件包向后兼容。”</p>
+<ul>
+<li><strong>If the module is version v2 or higher, the major version of the module must be included as a <code>/vN </code>at the end of the module paths used in go.mod files (e.g., <code>module github.com/my/mod/v2, require github.com/my/mod/v2 v2.0.1</code>) and in the package import path (e.g., <code>import &quot;github.com/my/mod/v2/mypkg</code>&quot;).</strong> This includes the paths used in go get commands (e.g., <code>go get github.com/my/mod/v2@v2.0.1</code>. Note there is both a /v2 and a @v2.0.1 in that example. One way to think about it is that the module name now includes the /v2, so include /v2 whenever you are using the module name).</li>
+<li>If the module is version v0 or v1, do not include the major version in either the module path or the import path.</li>
+<li>In general, packages with different import paths are different packages. For example, math/rand is a different package than crypto/rand. This is also true if different import paths are due to different major versions appearing in the import path. <strong>Thus <code>example.com/my/mod/mypkg</code> is a different package than <code>example.com/my/mod/v2/mypkg</code>, and both may be imported in a single build, which among other benefits helps with diamond dependency problems and also allows a v1 module to be implemented in terms of its v2 replacement or vice versa.</strong><br />
+来自于<a href="https://github.com/golang/go/wiki/Modules#semantic-import-versioning">golang wiki</a>。<br />
+如果导入了不兼容的高版本的包时，需要在import时表明版本。例<code>import(&quot;github.com/360EntSecGroup-Skylar/excelize/v2&quot;)</code>(restful 风格)。</li>
+<li>如果需要导入本地包，可以编辑go.mod文件，添加<code>replace github.com/gohouse/goroom =&gt; /path/to/go/src/goroom</code><br />
+,<strong>并且需要在本地包根目录下执行<code>go mod init [package name]</code></strong><br />
+否则go mod在本地包目录中找不到go.mod会报错。<br />
+也可以是用<code>go mod edit</code>编辑。</li>
+<li>执行<code>go mod tidy</code> 增加丢失的module，去掉未用的module。</li>
+<li>配置好以后最后再执行<code>go build main.go</code>便会编译成功。</li>
+</ul>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

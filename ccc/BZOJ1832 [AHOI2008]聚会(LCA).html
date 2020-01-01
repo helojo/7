@@ -1,0 +1,101 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修BZOJ1832 [AHOI2008]聚会(LCA)' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>BZOJ1832 [AHOI2008]聚会(LCA)</center></div><div class='banquan'>原文出处:本文由博客园博主Chrety提供。<br/>
+原文连接:https://www.cnblogs.com/lykkk/p/11379217.html</div><br>
+    <h2 id="题目">题目：</h2>
+<p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=1832">1832: [AHOI2008]聚会</a></p>
+<h2 id="解析">解析：</h2>
+<p>偶尔做做水题挺爽的<br />
+两两之间先求出LCA，发现至少有两个LCA是相同的，这个重复LCA也是深度最浅的那个，那我们就选择那个不重复的LCA，因为若选这个重复的LCA的话，这个重复的LCA到另一个LCA的路径会走两遍，反之只会走一遍<br />
+三点间的距离就是<br />
+<span class="math inline">\(dis[x] + dis[y] + dis[z] - dis[LCA(x, y)]- dis[LCA(x, z)]- dis[LCA(y, z)]\)</span></p>
+<h2 id="代码">代码：</h2>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+const int N = 1e6 + 10;
+int n, m, num;
+int head[N], dep[N], f[N], size[N], top[N], son[N];
+struct node {
+    int v, nx;
+} e[N];
+
+template&lt;class T&gt;inline void read(T &amp;x) {
+    x = 0; int f = 0; char ch = getchar();
+    while (!isdigit(ch)) f |= (ch == &#39;-&#39;), ch = getchar();
+    while (isdigit(ch)) x = x * 10 + ch - &#39;0&#39;, ch = getchar();
+    x = f ? -x : x;
+    return ;
+}
+
+inline void add(int u, int v) {
+    e[++num].nx = head[u], e[num].v = v, head[u] = num;
+}
+
+void dfs1(int u, int fa) {
+    size[u] = 1;
+    for (int i = head[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (v != fa) {
+            dep[v] = dep[u] + 1;
+            f[v] = u;
+            dfs1(v, u);
+            size[u] += size[v];
+            if (size[v] &gt; size[son[u]]) son[u] = v;
+        }
+    }
+}
+
+void dfs2(int u, int t) {
+    top[u] = t;
+    if (son[u]) dfs2(son[u], t);
+    for (int i = head[u]; ~i; i = e[i].nx) {
+        int v = e[i].v;
+        if (v != f[u] &amp;&amp; v != son[u]) dfs2(v, v);
+    }
+}
+
+int lca(int x, int y) {
+    int fx = top[x], fy = top[y];
+    while (fx != fy) {
+        if (dep[fx] &lt; dep[fy]) swap(x, y), swap(fx, fy);
+        x = f[fx], fx = top[x];
+    }
+    return dep[x] &lt; dep[y] ? x : y;
+}
+
+int main() {
+    memset(head, -1, sizeof(head));
+    read(n), read(m);
+    for (int i = 1, x, y; i &lt; n; ++i) read(x), read(y), add(x, y), add(y, x);
+    f[1] = 0, dep[1] = 1;
+    dfs1(1, 0);
+    dfs2(1, 1);
+    for (int i = 1, x, y, z; i &lt;= m; ++i) {
+        read(x), read(y), read(z);
+        int a = lca(x, y), b = lca(x, z), c = lca(y, z);
+        int tmp = (dep[a] == dep[b]) ? c : ((dep[a] == dep[c]) ? b : a);
+        printf(&quot;%d %d\n&quot;, tmp, dep[x] + dep[y] + dep[z] - dep[a] - dep[b] - dep[c]);
+    }
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

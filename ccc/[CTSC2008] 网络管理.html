@@ -1,0 +1,132 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[CTSC2008] 网络管理' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[CTSC2008] 网络管理</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/10999070.html</div><br>
+    <p>树上路径带修第k大问题，没有强制在线。</p>
+<p><del>主体</del>思想：l[x]为点x的dfs序，r[x]为子树x中最后一个节点的dfs序，sum[i]为dfs序为1~i的节点的某种和，d为x,y的lca，则路径x~y的和=sum[l[x]]+sum[l[y]]-sum[l[d]]-sum[l[fa[d]]]。单点修改是对子树范围差分即l[x]处+=w,r[x]+1处-=w。</p>
+<p>这道题sum用主席树维护，查询时值域上二分即可。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+#define trvl(x,i,y) for(int i=ehd[x],y; y=to[i],i; i=lst[i]) 
+using namespace std;
+const int N=8e4+10;
+const int M=8e6+10;
+
+int n,m,T,a[N],b[N*2];
+int ect,ehd[N],to[N*2],lst[N*2];
+int cid,lid[N],rid[N],fa[N][20],dep[N];
+int cnt,rt[N],siz[M],lc[M],rc[M];
+
+void insert(int x,int y) {
+    to[++ect]=y,lst[ect]=ehd[x],ehd[x]=ect;
+    to[++ect]=x,lst[ect]=ehd[y],ehd[y]=ect;
+}
+void dfs(int x,int p) {
+    lid[x]=++cid;
+    dep[x]=dep[fa[x][0]=p]+1;
+    for(int i=1; (1&lt;&lt;i)&lt;=dep[x]; ++i) fa[x][i]=fa[fa[x][i-1]][i-1];
+    trvl(x,i,y) if(y!=p) dfs(y,x);
+    rid[x]=cid;
+}
+int get_lca(int x,int y) {
+    if(dep[x]&lt;dep[y]) swap(x,y);
+    int dif=dep[x]-dep[y];
+    for(int i=19; ~i; --i) if((dif&gt;&gt;i)&amp;1) x=fa[x][i];
+    if(x==y) return x;
+    for(int i=19; ~i; --i) if(fa[x][i]!=fa[y][i]) 
+        x=fa[x][i],y=fa[y][i];
+    return fa[x][0];
+}
+void mdf(int&amp;x,int l,int r,int p,int w) {
+    if(!x) x=++cnt; 
+    siz[x]+=w; if(l==r) return;
+    int mid=(l+r)&gt;&gt;1; 
+    if(p&lt;=mid) mdf(lc[x],l,mid,p,w);
+    else mdf(rc[x],mid+1,r,p,w);
+}
+void mdf(int x,int p,int w) {
+    for(; x&lt;=n; x+=x&amp;-x) mdf(rt[x],1,T,p,w);
+}
+int top[2],d[2][N];
+int kth(int l,int r,int k) {
+    if(l==r) return l;
+    int mid=(l+r)&gt;&gt;1,s=0;
+    for(int i=1; i&lt;=top[0]; ++i) s+=siz[lc[d[0][i]]];
+    for(int i=1; i&lt;=top[1]; ++i) s-=siz[lc[d[1][i]]];
+//  printf(&quot;&lt;%d,%d,%d&gt; %d\n&quot;,l,r,k,s);
+    
+    if(k&lt;=s) {
+        for(int i=1; i&lt;=top[0]; ++i) d[0][i]=lc[d[0][i]];
+        for(int i=1; i&lt;=top[1]; ++i) d[1][i]=lc[d[1][i]];
+        return kth(l,mid,k);
+    } else {
+        for(int i=1; i&lt;=top[0]; ++i) d[0][i]=rc[d[0][i]];
+        for(int i=1; i&lt;=top[1]; ++i) d[1][i]=rc[d[1][i]];
+        return kth(mid+1,r,k-s);
+    }
+}
+
+int qK[N],qA[N],qB[N];
+
+int main() {
+    scanf(&quot;%d%d&quot;,&amp;n,&amp;m); T=n;
+    for(int i=1; i&lt;=n; ++i) scanf(&quot;%d&quot;,a+i),b[i]=a[i];
+    for(int x,y,i=n; --i; ) scanf(&quot;%d%d&quot;,&amp;x,&amp;y),insert(x,y);
+    for(int i=1; i&lt;=m; ++i) {
+        scanf(&quot;%d%d%d&quot;,qK+i,qA+i,qB+i);
+        if(!qK[i]) b[++T]=qB[i];
+    }
+    dfs(1,0);
+    sort(b+1,b+T+1);
+    T=unique(b+1,b+T+1)-b-1;
+    for(int i=1; i&lt;=n; ++i) {
+        a[i]=lower_bound(b+1,b+T+1,a[i])-b;
+        mdf(lid[i],a[i],1);
+        mdf(rid[i]+1,a[i],-1);
+    }
+    for(int i=1; i&lt;=m; ++i) {
+        if(!qK[i]) {
+            int x=qA[i];
+            mdf(lid[x],a[x],-1);
+            mdf(rid[x]+1,a[x],1);
+            a[x]=lower_bound(b+1,b+T+1,qB[i])-b;
+            mdf(lid[x],a[x],1);
+            mdf(rid[x]+1,a[x],-1);
+        } else {
+            top[0]=top[1]=0;
+            int lca=get_lca(qA[i],qB[i]);
+            
+//          printf(&quot;%d,%d,%d,%d\n&quot;,qA[i],qB[i],lca,fa[lca][0]);
+            
+            for(int x=lid[qA[i]]; x; x-=x&amp;-x) d[0][++top[0]]=rt[x];
+            for(int x=lid[qB[i]]; x; x-=x&amp;-x) d[0][++top[0]]=rt[x];
+            for(int x=lid[lca]; x; x-=x&amp;-x) d[1][++top[1]]=rt[x];
+            for(int x=lid[fa[lca][0]]; x; x-=x&amp;-x) d[1][++top[1]]=rt[x];
+            int s=dep[qA[i]]+dep[qB[i]]-dep[lca]-dep[fa[lca][0]];
+            if(s&lt;qK[i]) puts(&quot;invalid request!&quot;);
+            else printf(&quot;%d\n&quot;,b[kth(1,T,s-qK[i]+1)]);
+        }
+    }
+    return 0;
+}</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

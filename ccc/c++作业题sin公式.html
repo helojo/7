@@ -1,0 +1,143 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++作业题sin公式' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++作业题sin公式</center></div><div class='banquan'>原文出处:本文由博客园博主redstone_torch提供。<br/>
+原文连接:https://www.cnblogs.com/redstone-torch/p/11746740.html</div><br>
+    <p>今日 有一位同样读大一的朋友向我求助有关c++的作业题 他说他的程序逻辑正确 但是结果的精度不对</p>
+<p>题目如下:<br /><img src="./images/c++作业题sin公式0.png" alt="" /><br /><br /></p>
+<p><img src="./images/c++作业题sin公式1.png" alt="" /></p>
+<p>这是一道看起来十分简单的作业题 我按照要求快速地写了一个版本 不出所料 一样遇到了精度问题</p>
+<p>为什么会出现这种问题?</p>
+<p>首先 计算机中的浮点数是不够精确的 这是为了运算速度所做的牺牲</p>
+<p>在我写的代码中 使用的是double 为了使结果精确 要能尽量减少不必要的计算过程</p>
+<p>而我用了cmath头文件中的pow函数 这使得double会被计算很多次导致结果精度降低</p>
+<p>于是我决定写一个无pow版本 从公式出发 思路如下:</p>
+<p>原式化简:</p>
+<div class="cnblogs_Highlighter">
+<pre>sin(x) = x/1! - x^3/(1!*2*3) + x^5/(3!*4*5) - x^7/(5!*6*7) ...</pre>
+</div>
+<p>拆分:</p>
+<div class="cnblogs_Highlighter">
+<pre>sin(x)= x/1!
+	- x^3/(1!*2*3)
+	+ x^5/(3!*4*5)
+	- x^7/(5!*6*7)
+	...
+</pre>
+</div>
+<p>拆分之后我们可以尝试用一个变量去替换其中的数字:</p>
+<div class="cnblogs_Highlighter">
+<pre>sin(x)= x/1!
+[i=1] - x^3/(i!*(i+1)*(i+2))
+[i=3] + x^5/(i!*(i+1)*(i+2))
+[i=5] - x^7/(i!*(i+1)*(i+2))
+[i=n] ...
+</pre>
+</div>
+<p>引入一个变量p 替换幂:</p>
+<div class="cnblogs_Highlighter">
+<pre>p=x
+sin(x)= p/1!
+[i=1,p=p*x*x] - p/(i!*(i+1)*(i+2))
+[i=3,p=p*x*x] + p/(i!*(i+1)*(i+2))
+[i=5,p=p*x*x] - p/(i!*(i+1)*(i+2))
+[i=n,p=p*x*x] ...</pre>
+</div>
+<p>再引入一个变量f 替换阶乘:</p>
+<div class="cnblogs_Highlighter">
+<pre>f=1
+p=x
+sin(x)= p/f
+[i=1,p=p*x*x,f=f*(i+1)*(i+2)] - p/f
+[i=3,p=p*x*x,f=f*(i+1)*(i+2)] + p/f
+[i=5,p=p*x*x,f=f*(i+1)*(i+2)] - p/f
+[i=n,p=p*x*x,f=f*(i+1)*(i+2)] ...
+</pre>
+</div>
+<p>再引入一个变量n 替换其中的负号:</p>
+<div class="cnblogs_Highlighter">
+<pre>n=1
+f=1
+p=x
+sin(x)= p/f
+[i=1,p=p*x*x,f=f*(i+1)*(i+2),n=-n] + n*p/f
+[i=3,p=p*x*x,f=f*(i+1)*(i+2),n=-n] + n*p/f
+[i=5,p=p*x*x,f=f*(i+1)*(i+2),n=-n] + n*p/f
+[i=n,p=p*x*x,f=f*(i+1)*(i+2),n=-n] ...
+</pre>
+</div>
+<p>现在每项的式子完全相同了 只需将其转换成对应的程序<br />我们要考虑结束条件 即当其中一项的绝对值小于1.0e-7时 结束这个循环</p>
+<p>最终答案 :</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">double</span><span style="color: #000000;"> x;
+</span><span style="color: #008080;"> 2</span> cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">请输入角度值:</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 3</span> cin &gt;&gt;<span style="color: #000000;"> x;
+</span><span style="color: #008080;"> 4</span> 
+<span style="color: #008080;"> 5</span> x = x * <span style="color: #800080;">3.141592654</span> / <span style="color: #800080;">180</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 6</span> 
+<span style="color: #008080;"> 7</span> <span style="color: #0000ff;">double</span> n = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 8</span> <span style="color: #0000ff;">double</span> f = <span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 9</span> <span style="color: #0000ff;">double</span> p =<span style="color: #000000;"> x;
+</span><span style="color: #008080;">10</span> <span style="color: #0000ff;">double</span> i = -<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">11</span> 
+<span style="color: #008080;">12</span> <span style="color: #0000ff;">double</span> term = <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">13</span> <span style="color: #0000ff;">double</span> result = p /<span style="color: #000000;"> f;
+</span><span style="color: #008080;">14</span> 
+<span style="color: #008080;">15</span> <span style="color: #0000ff;">while</span> (<span style="color: #800080;">1</span><span style="color: #000000;">)
+</span><span style="color: #008080;">16</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">17</span>     i += <span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">18</span>     p = p * x *<span style="color: #000000;"> x;
+</span><span style="color: #008080;">19</span>     f = f * (i + <span style="color: #800080;">1</span>) * (i + <span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">20</span>     n = -<span style="color: #000000;">n;
+</span><span style="color: #008080;">21</span>     term = p /<span style="color: #000000;"> f;
+</span><span style="color: #008080;">22</span>     <span style="color: #0000ff;">if</span> (term &lt; <span style="color: #800080;">1.0e-7</span><span style="color: #000000;">)
+</span><span style="color: #008080;">23</span>         <span style="color: #0000ff;">break</span><span style="color: #000000;">;
+</span><span style="color: #008080;">24</span>     result = result + n *<span style="color: #000000;"> term;
+</span><span style="color: #008080;">25</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">26</span> cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">对应的sin值为:</span><span style="color: #800000;">"</span> &lt;&lt; result &lt;&lt; endl;</pre>
+</div>
+<p>结果正确:<br /><img src="./images/c++作业题sin公式2.png" alt="" /></p>
+<p>&nbsp;</p>
+<p>再看看朋友的代码:</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;"> 1</span> <span style="color: #0000ff;">double</span> angel,term,sum=<span style="color: #800080;">0</span>,i=<span style="color: #800080;">1</span>,multi=<span style="color: #800080;">1</span>,sign=-<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 2</span> <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">double</span> pi=<span style="color: #800080;">3.141592654</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 3</span> cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">请输入角度值:</span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 4</span> cin&gt;&gt;<span style="color: #000000;">angel;
+</span><span style="color: #008080;"> 5</span> angel=angel*pi/<span style="color: #800080;">180</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 6</span> term=<span style="color: #000000;">angel;
+</span><span style="color: #008080;"> 7</span> <span style="color: #0000ff;">while</span>(term&gt;=<span style="color: #800080;">1.0e-7</span>||term&lt;=-<span style="color: #800080;">1.0e-7</span><span style="color: #000000;">)
+</span><span style="color: #008080;"> 8</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 9</span>     sum+=<span style="color: #000000;">term;
+</span><span style="color: #008080;">10</span>     angel*=angel*<span style="color: #000000;">angel;
+</span><span style="color: #008080;">11</span>     multi*=(i+<span style="color: #800080;">1</span>)*(i+<span style="color: #800080;">2</span><span style="color: #000000;">);
+</span><span style="color: #008080;">12</span>     term=sign*angel/<span style="color: #000000;">multi;
+</span><span style="color: #008080;">13</span>     sign*=-<span style="color: #800080;">1</span><span style="color: #000000;">;
+</span><span style="color: #008080;">14</span>     i+=<span style="color: #800080;">2</span><span style="color: #000000;">;
+</span><span style="color: #008080;">15</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">16</span> cout&lt;&lt;<span style="color: #800000;">"</span><span style="color: #800000;">对应的sin值为:</span><span style="color: #800000;">"</span>&lt;&lt;sum&lt;&lt;endl;</pre>
+</div>
+<p>结果:</p>
+<p><img src="./images/c++作业题sin公式3.png" alt="" /></p>
+<p>思路大致和我相同 但是其中一步 angel*=angel*angel; 不对<br />在我的代码中 这一步对应的是 p = p * x * x; 其中x是不变的 他代码的这一部分并不等效于sin公式</p>
+<p>END</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

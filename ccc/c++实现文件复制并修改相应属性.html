@@ -1,0 +1,671 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修c++实现文件复制并修改相应属性' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>c++实现文件复制并修改相应属性</center></div><div class='banquan'>原文出处:本文由博客园博主LightningStar提供。<br/>
+原文连接:https://www.cnblogs.com/harrypotterjackson/p/12041311.html</div><br>
+    <h2 id="问题描述">问题描述</h2>
+<p>完成一个目录复制命令mycp，包括目录下的文件和子目录, 运行结果如下：</p>
+<pre><code>beta@bugs.com [~/]# ls –la sem
+
+total 56
+
+drwxr-xr-x  3 beta beta 4096 Dec 19 02:53 ./
+
+drwxr-xr-x  8 beta beta 4096 Nov 27 08:49 ../
+
+-rw-r--r--  1 beta beta  128 Nov 27 09:31 Makefile
+
+-rwxr-xr-x  1 beta beta 5705 Nov 27 08:50 consumer*
+
+-rw-r--r--  1 beta beta  349 Nov 27 09:30 consumer.c
+
+drwxr-xr-x  2 beta beta 4096 Dec 19 02:53 subdir/
+
+beta@bugs.com [~/]# mycp sem target
+
+beta@bugs.com [~/]# ls –la target
+
+total 56
+
+drwxr-xr-x  3 beta beta 4096 Dec 19 02:53 ./
+
+drwxr-xr-x  8 beta beta 4096 Nov 27 08:49 ../
+
+-rw-r--r--  1 beta beta  128 Nov 27 09:31 Makefile
+
+-rwxr-xr-x  1 beta beta 5705 Nov 27 08:50 consumer*
+
+-rw-r--r--  1 beta beta  349 Nov 27 09:30 consumer.c
+
+drwxr-xr-x  2 beta beta 4096 Dec 19 02:53 subdir/</code></pre>
+<h2 id="思路">思路</h2>
+<p>这道题目主要涉及文件读写操作和属性修改。需要支持文件夹复制、文件复制，在Linux下还要支持软链接的复制。</p>
+<p>思路如下：</p>
+<ul>
+<li>获取待复制目录的绝对路径</li>
+<li>根据绝对路径进行dfs或者bfs搜索所有子目录项</li>
+<li>判断子目录是属于什么类型：文件夹、普通文件、软链接</li>
+<li>分别对三种（Windows下只有文件夹和文件）进行复制操作</li>
+<li>修改目标文件属性与源文件保持一致</li>
+</ul>
+<p>使用到的函数主要有：</p>
+<h3 id="linux">Linux</h3>
+<h4 id="判断文件类型">判断文件类型</h4>
+<ol>
+<li><p><code>int lstat(const char *pathname, struct stat *statbuf);</code></p>
+<ul>
+<li><code>const char *pathname</code> 需要判断的文件的路径</li>
+<li><code>struct stat *statbuf</code> 用于保存文件属性</li>
+<li><code>return int</code> 0成功，-1失败</li>
+</ul></li>
+<li><p>判断</p>
+<table>
+<thead>
+<tr class="header">
+<th>文件类型</th>
+<th>说明</th>
+<th>判断函数</th>
+<th>例子</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>普通文件</td>
+<td>一般意义上的文件</td>
+<td>S_ISREG()</td>
+<td>hello.c</td>
+</tr>
+<tr class="even">
+<td>目录文件</td>
+<td>可包含其他文件或者目录</td>
+<td>S_ISDIR()</td>
+<td>/etc/</td>
+</tr>
+<tr class="odd">
+<td>字符设备文件</td>
+<td>以无缓冲方式，提供对于设备的可变长度访问</td>
+<td>S_ISCHR()</td>
+<td>/dev/tty</td>
+</tr>
+<tr class="even">
+<td>块设备文件</td>
+<td>以带缓冲方式，提供对于设备的固定长度访问</td>
+<td>S_ISBLK()</td>
+<td>/dev/sda</td>
+</tr>
+<tr class="odd">
+<td>符号链接文件</td>
+<td>指向另一个文件</td>
+<td>S_ISLNK()</td>
+<td>/dev/cdrom</td>
+</tr>
+<tr class="even">
+<td>命名管道文件</td>
+<td>用于进程间通信</td>
+<td>S_ISFIFO()</td>
+<td>/dev/inictl</td>
+</tr>
+<tr class="odd">
+<td>网络套接字文件</td>
+<td>用于进程间的网络通信</td>
+<td>S_ISSOCK()</td>
+<td>/dev/log</td>
+</tr>
+</tbody>
+</table>
+<p>值得注意的是，需要先判断是不是符号链接文件。对符号链接文件进行<code>S_ISREG()</code>判断时会出现将其判断为普通文件的情况。可能是由于他判断的是链接文件所指向的文件的类型。因此需要先判断是不是链接文件。</p></li>
+</ol>
+<h4 id="遍历文件目录">遍历文件目录</h4>
+<ol>
+<li><p><code>DIR *opendir(const char *name);</code></p>
+<ul>
+<li><code>const char *name</code> 待打开的目录路径</li>
+<li><code>return DIR</code> 返回目录数据结构</li>
+</ul></li>
+<li><p><code>struct dirent *readdir(DIR *dirp);</code></p>
+<ul>
+<li><p>```<code>DIR *dirp</code> 待读取的目录</p></li>
+<li><p><code>return struct dirent*</code> 返回顺序读取的该目录下的目录项</p>
+<p>注意，第一个目录项是<code>.</code>， 第二个目录项是<code>..</code></p></li>
+</ul></li>
+</ol>
+<h4 id="复制文件">复制文件</h4>
+<ol>
+<li><code>int open(const char *pathname, int flags, mode_t mode);</code>
+<ul>
+<li><code>const char* pathname</code> 待打开的文件路径</li>
+<li><code>int flags</code> <code>O_RDONLY, O_WRONLY,  or  O_RDWR</code></li>
+<li><code>mode_t mode</code></li>
+<li><code>return int</code> 返回值是打开的文件描述符</li>
+</ul></li>
+<li><code>int creat(const char *pathname, mode_t mode);</code>
+<ul>
+<li><code>const char* pathname</code> 待创建的文件名（可以包含路径）</li>
+<li><code>mode_t mode</code> 创建属性</li>
+<li><code>return int</code> 待创建文件描述符</li>
+</ul></li>
+<li><code>ssize_t read(int fd, void *buf, size_t count);</code>
+<ul>
+<li><code>int fd</code> 待读取的文件的描述符</li>
+<li><code>void* buf</code> 读取的内容存放缓冲区。尽管这里是<code>void*</code> ，<code>buf</code>在创建的时候应该是```char*``````</li>
+<li>​ ```<code>size_t count</code> 要读取的内容的大小。如果大于<code>fd</code>中的数目，则读取相应大小内容</li>
+<li><code>return ssize_t</code> 返回实际读取的内容的数目。失败返回-1</li>
+</ul></li>
+<li><code>ssize_t write(int fd, const void *buf, size_t count);</code>
+<ul>
+<li><code>int fd</code> 要写入的文件的描述符</li>
+<li><code>const void *buf</code> 要写入的内容。</li>
+<li><code>size_t count</code> 要写入的内容大小</li>
+<li><code>return ssize_t</code> 成功返回实际写入的数目。失败返回-1</li>
+</ul></li>
+</ol>
+<h4 id="复制文件夹">复制文件夹</h4>
+<p>复制文件夹就是创建同名文件夹</p>
+<ol>
+<li><code>int mkdir(const char *pathname, mode_t mode);</code>
+<ul>
+<li><code>const char* pathname</code> 待创建的目录项的地址</li>
+<li><code>mode_t mode</code> 创建目录项的属性</li>
+<li><code>return int</code> 如果成功返回为0，否则返回-1</li>
+</ul></li>
+</ol>
+<h4 id="复制软链接">复制软链接</h4>
+<ol>
+<li><code>ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);</code>
+<ul>
+<li><code>const cha* pathname</code> 待读取软链接的路径</li>
+<li><code>char* buf</code> 软链接中的内容保存到<code>buf</code>中</li>
+<li><code>size_t bufsiz</code> <code>buf</code>缓冲区的大小</li>
+<li><code>return ssize_t</code> 返回值是软链接指向路径的长度</li>
+</ul></li>
+<li><code>int symlink(const char *target, const char *linkpath);</code>
+<ul>
+<li><code>const char* target</code> 待创建的软链接的路径</li>
+<li><code>const char* linkpath</code> 待创建的软链接所指向的路径</li>
+<li><code>return int</code> 成功返回0，否则返回-1</li>
+</ul></li>
+</ol>
+<h4 id="获取属性">获取属性</h4>
+<ol>
+<li><p><code>int lstat(const char *pathname, struct stat *statbuf);</code></p>
+<ul>
+<li><code>const char *pathname</code> 需要提取属性的文件或者文件夹的路径</li>
+<li><code>struct stat *statbuf</code> 获取到的属性存储缓冲区</li>
+<li><code>return int</code> 成功返回0，否则-1</li>
+</ul></li>
+<li><p><code>int chmod(const char *pathname, mode_t mode);</code></p>
+<ul>
+<li><code>const char *pathname</code> 待修改属性的文件的路径</li>
+<li><code>mode_t mode</code> 将待修改文件修改改为该属性</li>
+<li><code>return int</code> 若成功返回0，否则返回-1</li>
+</ul></li>
+<li><p><code>int chown(const char *pathname, uid_t owner, gid_t group);</code></p>
+<ul>
+<li><code>const char* pathname</code> 待更改的目录路径</li>
+<li><code>uid_t owner</code> 如果是-1则不改变属性</li>
+<li><code>gid_t group</code> 如果是-1则不改变属性</li>
+</ul></li>
+<li><p><code>int lutimes(const char *filename, const struct timeval tv[2]);</code></p>
+<p>这个命令用于修改目标文件的<code>access_time</code> <code>modify_time</code> 。<code>lutimes</code>可以修改软链接的属性。</p>
+<ul>
+<li><code>const char *filename</code> 待修改的文件路径</li>
+<li><code>const struct timeval tv[2]</code> <code>tv[0]</code> 是<code>access_time</code> ， <code>tv[1]</code> 是<code>modify_time</code></li>
+<li><code>return int</code> 如果成功返回0，否则返回-1</li>
+</ul></li>
+</ol>
+<h3 id="windows">Windows</h3>
+<p>这里主要列出所用到的函数，有需要的话可以详细去查相关的函数说明：</p>
+<p><code>FindFirstFile</code></p>
+<p><code>FindNextFile</code></p>
+<p><code>CreateFile</code></p>
+<p><code>GetFileSize</code></p>
+<p><code>ReadFile</code></p>
+<p><code>WriteFile</code></p>
+<p><code>_wmkdir</code></p>
+<p><code>GetFileAttributes</code></p>
+<p><code>SetFileAttributes</code></p>
+<p><code>GetFileTime</code></p>
+<p><code>FileTimeToSystemTime</code></p>
+<p><code>SetFileTime</code></p>
+<h2 id="源代码实现">源代码实现</h2>
+<h3 id="linux-1">Linux</h3>
+<pre class="cpp"><code>#include &lt;unistd.h&gt;
+#include &lt;string.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;dirent.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;utime.h&gt;
+#include &lt;time.h&gt; 
+#include &lt;sys/time.h&gt;
+//文件夹复制采用dfs或者bfs进行搜索是等价的
+void search_dfs(char *src_path, char *dest_path);
+//复制文件
+void copy_file(const char *src_file, const char *dst_file);
+//复制文件夹
+void copy_dir(const char *src_dir, const char *dst_dir);
+//复制软链接
+void copy_sln(const char *src_file, const char *dst_file);
+//修改文件属性与源文件保持一致
+void changeAttr(const char *src, const char *dst);
+//修改路径
+void change_path(char *src, char *cat)
+{
+    strcat(src, (char *)&quot;/&quot;);
+    strcat(src, cat);
+}
+
+int main(int argc, char const *argv[])
+{
+    if (argc &lt; 3)
+    {
+        printf(&quot;No file or directory specified\n&quot;);
+        exit(-1);
+    }
+    if (argc &gt; 3)
+    {
+        printf(&quot;Too many arguments\n&quot;);
+        exit(-1);
+    }
+
+    char src[1024], dest[1024];
+    char *current_dir = getcwd(NULL, 0);
+
+    struct stat state_of_entry;
+    lstat(argv[1], &amp;state_of_entry);
+    if (S_ISDIR(state_of_entry.st_mode)) //目录
+    {
+        if (chdir(argv[1])) //目录错误
+        {
+            perror(&quot;chdir&quot;);
+            exit(-1);
+        }
+        strcpy(src, getcwd(NULL, 0)); //获取源文件夹绝对路径
+        chdir(current_dir);
+        lstat(argv[2], &amp;state_of_entry);
+        if (S_ISDIR(state_of_entry.st_mode)) //目录
+        {
+            if (chdir(argv[2])) //目录错误
+            {
+                perror(&quot;chdir&quot;);
+                exit(-1);
+            }
+            strcpy(dest, getcwd(NULL, 0)); //获取目标文件夹绝对路径
+            chdir(current_dir);
+            chdir(dest);
+            // printf(&quot;SRC: %s\n&quot;, src);
+            // printf(&quot;DEST: %s\n&quot;, dest);
+            chdir(src);
+            search_dfs(src, dest);
+        }
+        else
+        {
+            printf(&quot;error. No destination directory.\n&quot;);
+            exit(-1);
+        }
+    }
+
+    else //文件直接复制
+    {
+        char dest[1024];
+        lstat(argv[2], &amp;state_of_entry);
+        if (S_ISDIR(state_of_entry.st_mode)) //目录
+        {
+            strcpy(dest, getcwd(NULL, 0)); //获取目标文件夹绝对路径
+        }
+        else
+        {
+            strcpy(dest, &quot;./&quot;);
+            strcat(dest, argv[2]);
+        }
+        copy_file(argv[1], argv[2]);
+    }
+
+    return 0;
+}
+
+void search_dfs(char *src_path, char *dest_path)
+{
+    // printf(&quot;Searching directory:    %s\n&quot;, getcwd(NULL, 0));
+    DIR *src_dir = opendir(src_path);
+    DIR *dest_dir = opendir(dest_path);
+    struct dirent *entry = NULL;
+    struct stat state_of_entry;
+    while ((entry = readdir(src_dir)) != NULL)
+    {
+        lstat(entry-&gt;d_name, &amp;state_of_entry);
+        if (strcmp(entry-&gt;d_name, &quot;.&quot;) == 0 || strcmp(entry-&gt;d_name, &quot;..&quot;) == 0)
+            continue;
+        // printf(&quot;entry-&gt;d_name: %s\n&quot;, entry-&gt;d_name);
+        if (S_ISLNK(state_of_entry.st_mode)) //符号链接
+        {
+            char src_file[1024];
+            char dest_file[1024];
+            strcpy(src_file, src_path);
+            change_path(src_file, entry-&gt;d_name);
+            strcpy(dest_file, dest_path);
+            change_path(dest_file, entry-&gt;d_name);
+            // printf(&quot;src file: %s\n&quot;, src_file);
+            // printf(&quot;dest file: %s\n&quot;, dest_file);
+            copy_sln(src_file, dest_file);
+        }
+        else if (S_ISREG(state_of_entry.st_mode)) //普通文件
+        {
+            char src_file[1024];
+            char dest_file[1024];
+            strcpy(src_file, src_path);
+            change_path(src_file, entry-&gt;d_name);
+            strcpy(dest_file, dest_path);
+            change_path(dest_file, entry-&gt;d_name);
+            // printf(&quot;src file: %s\n&quot;, src_file);
+            // printf(&quot;dest file: %s\n&quot;, dest_file);
+            copy_file(src_file, dest_file);
+        }
+        else if (S_ISDIR(state_of_entry.st_mode)) //目录
+        {
+            char src[1024];
+            char dest[1024];
+            strcpy(src, src_path);
+            change_path(src, entry-&gt;d_name);
+            strcpy(dest, dest_path);
+            change_path(dest, entry-&gt;d_name);
+            // printf(&quot;src dir: %s\n&quot;, src);
+            // printf(&quot;dest dir: %s\n&quot;, dest);
+            copy_dir(src, dest);
+            search_dfs(src, dest);
+        }
+    }
+}
+
+void copy_file(const char *src_file, const char *dest_file)
+{
+    int src_fd = open(src_file, O_RDONLY);
+    int dest_fd = creat(dest_file, O_WRONLY);
+
+    unsigned char buf[1024];
+    while (read(src_fd, buf, sizeof(buf)) &gt; 0)
+    {
+        write(dest_fd, buf, sizeof(buf));
+    }
+
+    changeAttr(src_file, dest_file);
+
+    close(src_fd);
+    close(dest_fd);
+}
+
+void copy_dir(const char *src_dir, const char *dst_dir)
+{
+    mkdir(dst_dir, 0777);
+    changeAttr(src_dir, dst_dir);
+}
+
+void copy_sln(const char *src_file, const char *dst_file)
+{
+    char buf[1024];
+    memset(buf, 0, sizeof(buf));
+    int len = 0;
+    if ((len = readlink(src_file, buf, sizeof(buf))) &gt; 0)
+    {
+        printf(&quot;%s\n&quot;, buf);
+        if (symlink(buf, dst_file) == -1)
+        {
+            perror(&quot;symlink&quot;);
+        }
+    }
+    changeAttr(src_file, dst_file);
+}
+
+void changeAttr(const char *src, const char *dst)
+{
+    struct stat attr_of_src;
+    lstat(src, &amp;attr_of_src);
+    //修改文件属性
+    chmod(dst, attr_of_src.st_mode);
+    //修改文件用户组
+    chown(dst, attr_of_src.st_uid, attr_of_src.st_gid);
+
+    //修改文件访问、修改时间
+    struct timeval time_buf[2];
+    time_buf[1].tv_sec = attr_of_src.st_mtime;
+    time_buf[0].tv_sec = attr_of_src.st_atime;
+    if(lutimes(dst, time_buf) == -1)
+    {
+        printf(&quot;%s\n&quot;, dst);
+        perror(&quot;lutimes&quot;);
+    }
+
+    struct utimbuf tbuf;
+    tbuf.actime = attr_of_src.st_atime;
+    tbuf.modtime = attr_of_src.st_mtime;
+    utime(dst, &amp;tbuf);
+
+    struct stat dst_attr_of_src;
+    lstat(dst, &amp;dst_attr_of_src);
+    if (dst_attr_of_src.st_mtime != attr_of_src.st_mtime)
+        printf(&quot;%s : %d\n&quot;, dst, attr_of_src.st_mtime);
+}</code></pre>
+<h3 id="windows-1">Windows</h3>
+<pre class="cpp"><code>#define _CRT_SECURE_NO_WARNINGS
+#include &lt;iostream&gt;
+#include &lt;Windows.h&gt;
+#include &lt;cstring&gt;
+#define BUF_SIZE 1024
+using namespace std;
+
+//文件夹复制采用dfs或者bfs进行搜索是等价的
+void search_dfs(wchar_t* src_path, wchar_t* dest_path);
+//复制文件
+void copy_file(const wchar_t* src_file, const wchar_t* dst_file);
+//复制文件夹
+void copy_dir(const wchar_t* src_dir, const wchar_t* dst_dir);
+//修改文件属性与源文件保持一致
+void change_attr(const wchar_t* src_name, const wchar_t* dst_name, HANDLE h_src, HANDLE h_dst);
+
+int wmain(int argc, wchar_t* argv[])
+{
+    setlocale(LC_ALL, &quot;&quot;);
+    wchar_t* src_path = new wchar_t[BUF_SIZE];
+    wchar_t* dst_path = new wchar_t[BUF_SIZE];
+    ZeroMemory(src_path, BUF_SIZE);
+    ZeroMemory(dst_path, BUF_SIZE);
+    wcscpy(src_path, argv[1]);
+    wcscat(src_path, L&quot;\\*&quot;);
+    wcscpy(dst_path, argv[2]);
+    wcout &lt;&lt; L&quot;src_path&quot; &lt;&lt; src_path &lt;&lt; endl;
+    wcout &lt;&lt; L&quot;dst_path&quot; &lt;&lt; dst_path &lt;&lt; endl;
+    //wcscpy(src_path, L&quot;E:\\薪火培训\\*&quot;);
+    //wcscpy(dst_path, L&quot;E:\\2333&quot;);
+    search_dfs(src_path, dst_path);
+    delete[] src_path;
+    delete[] dst_path;
+    return 0;
+}
+
+//复制文件
+void copy_file(const wchar_t* src_file, const wchar_t* dst_file)
+{
+    HANDLE h_src = ::CreateFile(
+            src_file, 
+            GENERIC_READ | GENERIC_WRITE, 
+            0, 
+            NULL, 
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, 
+            NULL);
+    HANDLE h_dst = ::CreateFile(
+            dst_file,
+            GENERIC_WRITE | GENERIC_READ,
+            0,
+            NULL,
+            CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+    if (h_src == INVALID_HANDLE_VALUE || h_dst == INVALID_HANDLE_VALUE)
+    {
+        printf(&quot;Open file error!\n&quot;);
+        CloseHandle(h_src);
+        CloseHandle(h_dst);
+        exit(-1);
+    }
+    DWORD all_bytes = GetFileSize(h_src, NULL);
+    char* buffer = new char[all_bytes + 1];
+    ZeroMemory(buffer, all_bytes + 1);
+
+    DWORD bytes = 0;
+    ReadFile(h_src, buffer, all_bytes, &amp;bytes, NULL);
+    WriteFile(h_dst, buffer, all_bytes, &amp;bytes, NULL);
+
+    change_attr(src_file, dst_file, h_src, h_dst);
+
+    CloseHandle(h_src);
+    CloseHandle(h_dst);
+    delete[] buffer;
+    return;
+}
+
+//复制文件夹
+void copy_dir(const wchar_t* src_dirr, const wchar_t* dst_dir)
+{
+    wchar_t* src_dir = new wchar_t[BUF_SIZE];
+    wcscpy(src_dir, src_dirr);
+    src_dir[wcslen(src_dir) - 2] = &#39;\0&#39;;
+    _wmkdir(dst_dir);
+    HANDLE h_src = CreateFile(
+        src_dir,
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_DELETE,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        NULL
+    );
+    if (h_src == INVALID_HANDLE_VALUE)
+    {
+        printf(&quot;Open src directory error!\n&quot;);
+        CloseHandle(h_src);
+        exit(-1);
+    }
+    HANDLE h_dst = CreateFile(
+        dst_dir,
+        GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_DELETE,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        NULL
+    );
+    
+    if (h_dst == INVALID_HANDLE_VALUE)
+    {
+        printf(&quot;Open dst directory error!\n&quot;);
+        CloseHandle(h_dst);
+        exit(-1);
+    }
+    change_attr(src_dir, dst_dir, h_src, h_dst);
+    CloseHandle(h_src);
+    CloseHandle(h_dst);
+    return;
+}
+
+
+void search_dfs(wchar_t* src_path, wchar_t* dst_path)
+{
+    HANDLE h_find;
+    WIN32_FIND_DATA find_data;
+    LARGE_INTEGER size;
+    h_find = FindFirstFile(src_path, &amp;find_data);
+    if (h_find == INVALID_HANDLE_VALUE)
+    {
+        cout &lt;&lt; &quot;Fail to find first file&quot; &lt;&lt; endl;
+        return;
+    }
+    copy_dir(src_path, dst_path);
+    do
+    {
+        wcout &lt;&lt; find_data.cFileName &lt;&lt; endl;
+        if (wcscmp(find_data.cFileName, L&quot;.&quot;) == 0 || wcscmp(find_data.cFileName, L&quot;..&quot;) == 0)
+        {
+            continue;
+        }
+        if (find_data.dwFileAttributes &amp; FILE_ATTRIBUTE_DIRECTORY)//是目录
+        {
+            wchar_t n_src_path[BUF_SIZE];
+            wcscpy(n_src_path, src_path);
+            n_src_path[wcslen(n_src_path) - 1] = &#39;\0&#39;;
+            wcscat(n_src_path, find_data.cFileName);
+            wcscat(n_src_path, L&quot;\\*&quot;);
+
+            wchar_t n_dst_path[BUF_SIZE];
+            wcscpy(n_dst_path, dst_path);
+            wcscat(n_dst_path, L&quot;\\&quot;);
+            wcscat(n_dst_path, find_data.cFileName);
+
+            copy_dir(n_src_path, n_dst_path);
+            search_dfs(n_src_path, n_dst_path);
+        }
+        else
+        {
+            //size.LowPart = find_data.nFileSizeLow;
+            //size.HighPart = find_data.nFileSizeHigh;
+            //wcout &lt;&lt; find_data.cFileName &lt;&lt; &quot;\t&quot; &lt;&lt; size.QuadPart &lt;&lt; &quot; bytes&quot; &lt;&lt; endl;
+            
+            wchar_t n_src_path[BUF_SIZE];
+            wcscpy(n_src_path, src_path);
+            n_src_path[wcslen(n_src_path) - 1] = &#39;\0&#39;;
+            wcscat(n_src_path, find_data.cFileName);
+
+            wchar_t n_dst_path[BUF_SIZE];
+            wcscpy(n_dst_path, dst_path);
+            wcscat(n_dst_path, L&quot;\\&quot;);
+            wcscat(n_dst_path, find_data.cFileName);
+
+            copy_file(n_src_path, n_dst_path);
+        }
+
+    } while (FindNextFile(h_find, &amp;find_data));
+    return;
+}
+
+//修改文件属性与源文件保持一致
+void change_attr(const wchar_t* src_name, const wchar_t* dst_name, HANDLE h_src, HANDLE h_dst)
+{
+    DWORD attr = GetFileAttributes(src_name);
+    SetFileAttributes(dst_name, attr);
+    FILETIME t_create, t_access, t_write;
+    SYSTEMTIME syst_create, syst_access, syst_write;
+    GetFileTime(h_src, &amp;t_create, &amp;t_access, &amp;t_write);
+
+    FileTimeToSystemTime(&amp;t_create, &amp;syst_create);
+    //cout &lt;&lt; syst_create.wDay &lt;&lt; endl;
+
+    SetFileTime(h_dst, &amp;t_create, &amp;t_access, &amp;t_write);
+
+    GetFileTime(h_dst, &amp;t_create, &amp;t_access, &amp;t_write);
+    FileTimeToSystemTime(&amp;t_create, &amp;syst_create);
+    //cout &lt;&lt; syst_create.wDay &lt;&lt; endl;
+}
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

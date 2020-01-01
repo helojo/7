@@ -1,0 +1,303 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修QRowTable表格控件(三)-效率优化之-合理使用QStandardItem' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>QRowTable表格控件(三)-效率优化之-合理使用QStandardItem</center></div><div class='banquan'>原文出处:本文由博客园博主朝十晚八提供。<br/>
+原文连接:https://www.cnblogs.com/swarmbees/p/11220396.html</div><br>
+    <div class="toc">
+    <p class="toc-title">目录</p>
+    <div class="toc-list">
+        <ul>
+        <li><a href="#一开心一刻">一、开心一刻</a></li>
+        <li><a href="#二概述">二、概述</a></li>
+        <li><a href="#三效果展示">三、效果展示</a></li>
+        <li><a href="#四qstandarditem">四、QStandardItem</a><ul>
+        <li><a href="#qstandarditem是什么鬼">1、QStandardItem是什么鬼</a></li>
+        <li><a href="#性能分析">2、性能分析</a></li>
+        <li><a href="#qstandarditem使用上的坑">3、QStandardItem使用上的坑</a></li>
+        </ul></li>
+        <li><a href="#五相关文章">五、相关文章</a></li>
+        </ul>
+    </div>
+</div>
+<p><strong>原文链接：</strong><a href="https://www.cnblogs.com/swarmbees/p/11220396.html">QRowTable表格控件(三)-效率优化之-合理使用QStandardItem</a></p>
+<h2 id="一开心一刻">一、开心一刻</h2>
+<blockquote>
+<p>砖家在河边看到两只乌龟缩着一动不动，问一农民：“它们在干吗？”。</p>
+</blockquote>
+<blockquote>
+<p>农民说：“在比赛！”。</p>
+</blockquote>
+<blockquote>
+<p>砖家不解：“动都没动过，比什么赛？”。</p>
+</blockquote>
+<blockquote>
+<p>农民：“在比装死！”。</p>
+</blockquote>
+<blockquote>
+<p>砖家：“可是壳上有甲骨文的那只，早就死了啊？”。</p>
+</blockquote>
+<blockquote>
+<p>这时，一只乌龟猛然探出头来骂道：“MD，死了也不吭一声！”。</p>
+</blockquote>
+<blockquote>
+<p>突然另一只也伸出头来：“傻子！砖家的话你也信，你输了 ！”。</p>
+</blockquote>
+<h2 id="二概述">二、概述</h2>
+<blockquote>
+<p>最近换了一家新单位，工作的内容也发了一些变化。接触了一些大牛，也让我对Qt有了一个新的认识。</p>
+</blockquote>
+<p><strong>不看源码真他妈不行呀</strong></p>
+<p>这不今天就给大家说一说我最近工作中遇到的一个坑，而这个坑只有看了源码后才明白。</p>
+<p>上一篇<a href="https://www.cnblogs.com/swarmbees/p/11204600.html">QRowTable表格控件(二)-红涨绿跌</a>文章讲到了我们怎么往表格中添加数据，并且是了一个简单的股票组件。可以存放各种行情数据、持仓和订单等等。</p>
+<p>下面问题就来了，我这个demo中的数据只有不到10行，当你真的把这个控件投入的生产环境时就会发现，<strong>demo就是demo，它就是个demo而已</strong>。</p>
+<p><strong>博主自己大概测试了下把数据调到10000行，等了几分钟界面还没有出来，就放弃了。</strong></p>
+<p><strong>测试代码如下：</strong></p>
+<pre><code>int rate = 10000;
+model-&gt;setRowCount(rate * itemVec.size());
+
+for (int j = 0; j &lt; rate; ++j)
+{
+    for (int i = 0; i &lt; itemVec.size(); ++i)
+    {
+        const OptionalMarketItem &amp; info = itemVec.at(i);
+
+        QStandardItem * item_price = new QStandardItem;
+        item_price-&gt;setText(QString::number(info.price));
+        item_price-&gt;setData(int(Qt::AlignRight | Qt::AlignVCenter), Qt::TextAlignmentRole);
+        model-&gt;setItem(i, 0, item_price);
+        
+        ...
+    }
+}</code></pre>
+<p><strong>既然代码性能不行，我们当然需要去找更好的实现方式了，总不能就这么上线吧。</strong></p>
+<p>于是乎，有了如下代码，30000行数据1-2s即可初始化完毕，<strong>震惊脸</strong>。</p>
+<pre><code>int rate = 10000;
+model-&gt;setRowCount(rate * itemVec.size());
+
+for (int j = 0; j &lt; rate; ++j)
+{
+    for (int i = 0; i &lt; itemVec.size(); ++i)
+    {
+        const OptionalMarketItem &amp; info = itemVec.at(i);
+
+        int row = i + j * itemVec.size();
+
+        QModelIndex index = model-&gt;index(row, 0);
+        model-&gt;setData(index, QString::number(info.price), Qt::DisplayRole);
+        model-&gt;setData(index, int(Qt::AlignRight | Qt::AlignVCenter),Qt::TextAlignmentRole);
+    }
+}</code></pre>
+<p><strong>我槽，上述两种书写方式有球区别，怎么会差别如此之大，下面让我为大家细细道来。</strong></p>
+<h2 id="三效果展示">三、效果展示</h2>
+<p>以下是红涨绿跌效果图，demo中展示了30000数据，应该算是比较多，可以满足大多数的应用场景。</p>
+<p><strong>腹黑版</strong><br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/QRowTable表格控件(三)-效率优化之-合理使用QStandardItem0.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<h2 id="四qstandarditem">四、QStandardItem</h2>
+<h3 id="qstandarditem是什么鬼">1、QStandardItem是什么鬼</h3>
+<p>Qt的帮助文档是一个好东西，打开assisant.exe，搜索QStandardItem类，可以搜索如下提示信息。<br />
+<html><br />
+<center><br />
+<div><br />
+<img src="./images/QRowTable表格控件(三)-效率优化之-合理使用QStandardItem1.png" /><br />
+</div><br />
+</center><br />
+</html></p>
+<p>什么意思呢！</p>
+<p>为了阅读起来更流畅，我这里就行中文内容的意译。</p>
+<p><strong>虽然英文解释很多，但是意译成中文后就很简单了，毕竟帮助文档要说的很清晰、场景囊括的会比较全一些</strong></p>
+<p><strong>意译</strong>：QStandardItem是一个数据结构，他可以存储一个cell的各种信息，比如文本、图标、是否可选、字体、别景色、前景色等等。并且QStandardItem可以有孩子和兄弟，他是为model提供数据存储的节点。</p>
+<p>这里我在补充一些内容，让大家对QStandardItem右更进一步的了解。</p>
+<p>QTableView：作为表格cell时，有一个作为根节点的QStandardItem，其他节点都是QStandardItem节点的孩子节点，并且都是兄弟节点(这里暂时不考虑多列的情况)。</p>
+<p>QTreeView：作为树节点cell时，有一个作为根节点的QStandardItem，其他节点都是他的孩子节点，但是其他节点也可以作为父节点存在(这里暂时不考虑多列的情况)。</p>
+<h3 id="性能分析">2、性能分析</h3>
+<h4 id="aqstandarditem构造慢">a、QStandardItem构造慢？</h4>
+<p>简单了解QStandardItem对象后，下面开始从代码上分析性能问题到底出现在了哪里。</p>
+<pre><code>//优化前代码
+QStandardItem * item_price = new QStandardItem;
+item_price-&gt;setText(QString::number(info.price));
+item_price-&gt;setData(int(Qt::AlignRight | Qt::AlignVCenter), Qt::TextAlignmentRole);
+model-&gt;setItem(i, 0, item_price);
+            
+//优化后代码
+int row = i + j * itemVec.size();
+
+QModelIndex index = model-&gt;index(row, 0);
+model-&gt;setData(index, QString::number(info.price), Qt::DisplayRole);
+model-&gt;setData(index, int(Qt::AlignRight | Qt::AlignVCenter),Qt::TextAlignmentRole);</code></pre>
+<p>仔细比较以上代码，优化前的diamante是我们自己构造了QStandardItem，然后设置数据并存储到QStandardItemModel中，而优化后的代码我们直接把数据通过QStandardItemModel进行了设置。</p>
+<p><strong>这两种方式到底有何区别？？？</strong></p>
+<p><strong>解决这种问题，Qt给我们提供了很好的问题解决方式，直接跟踪源码即可。想要把Qt了解透彻，源码是唯一的途径。其他什么各种搜索引擎都弱爆了。</strong></p>
+<html>
+<center>
+<div>
+    <img src="./images/QRowTable表格控件(三)-效率优化之-合理使用QStandardItem2.png" />
+</div>
+</center>
+</html>
+<p>如上图所示，跟踪Qt的源码发现，当我们通过Model设置数据项时，Qt内部也是为我们构造了一个QStandardItem对象，然后把数据放到这个对象上的。</p>
+<blockquote>
+<p>说明QStandardItem对象的构造并不是性能所在，性能问题还需要进一步分析。</p>
+</blockquote>
+<p><strong>很重要：Qt的Model中把数据又单独封装了一层，数据存储在QStandardItem对象中。本篇文章主要分析的性能瓶颈在QStandardItem对象的使用上，如果想要极致的性能体验，还有比本篇文章更容易的方式，只是需要自己写的代码就会变得更多，如果有需要的话可自行搜索自定义Model，然后自己对数据进行管理，这样就少了QStandardItem对象的构造和很多数据类型的转换</strong></p>
+<blockquote>
+<p>由于博主使用的场景，表格数据不会超过100行，因此轻量级的处理已经可以满足需求，没有进一步去重写Model数据源管理。</p>
+</blockquote>
+<blockquote>
+<p><strong>百度不到的话，欢迎评论区留言，后续博主有时间进一步优化。</strong></p>
+</blockquote>
+<h4 id="bsetdata有问题">b、setData有问题？</h4>
+<p><strong>先抛出答案，问题确实处在setData上</strong></p>
+<p>如下两种图是QStandardItem在设置数据孩子数据时很重要的一个调用，把参数中的item设置为当前节点的孩子节点。</p>
+<p>仔细看图中红色框圈起来的内容，有一个emitChanged变量控制了3个信号的触发。</p>
+<html>
+<center>
+<div>
+    <img src="./images/QRowTable表格控件(三)-效率优化之-合理使用QStandardItem3.png" />
+</div>
+</center>
+</html>
+<html>
+<center>
+<div>
+    <img src="./images/QRowTable表格控件(三)-效率优化之-合理使用QStandardItem4.png" />
+</div>
+</center>
+</html>
+<p><strong>问题就出现在这个emitChanged变量上，他的意思就是说当前item是否发现了变化。</strong></p>
+<p>仔细回想我们优化前的代码，QStandardItem对象是不是我们自己构造的，然后设置给了Model，这是不是搬起石头砸自己的脚。</p>
+<p><strong>仔细一分析</strong>：好像是这么回事，优化前的代码在行数较少时不会有明细问题，可是当数据量很大时，其实这是有问题的。</p>
+<h4 id="c性能根源">c、性能根源</h4>
+<p>既然知道是多发送了3个信号导致了性能问题，那么接下来就是分析这3个信号都干了什么。</p>
+<p><strong>下面按触发顺序来分别解释每一个信号</strong></p>
+<p>1、layoutAboutToBeChanged</p>
+<p>如下图是帮助文档描述</p>
+<p><strong>意译</strong>：该信号的触发在model的布局即将发生变化时触发。model还有布局，这是什么鬼，其实就是说model中的item发现了变化。</p>
+<p>这个信号其实还提供了参数，可以方便我们对某一些节点进行刷新，当我们指定了父节点和刷新策略时生效。</p>
+<p><strong>QStandardItem的setData这里没有指定参数，表示全量刷新，使用时需要非常注意。</strong></p>
+<html>
+<center>
+<div>
+    <img src="./images/QRowTable表格控件(三)-效率优化之-合理使用QStandardItem5.png" />
+</div>
+</center>
+</html>
+<p>2、layoutChanged</p>
+<p>如下图是帮助文档描述</p>
+<p><strong>意译</strong>：该信号的触发在model的布局发生变化之后，也就说需要全量刷新model时，可以通过触发该信号达到目的。</p>
+<blockquote>
+<p>比如重新排序、数据源发送变化等。</p>
+</blockquote>
+<blockquote>
+<p>这个信号不建议大家主动调用，数据量大时会导致性能问题</p>
+</blockquote>
+<blockquote>
+<p>如果非要调用，也应该到信号的参数带上这样就是局部刷新</p>
+</blockquote>
+<p>博主之前做过一个控件，是优化QTreeview控件相关的，意思是说想让QTreeView的行高可以自定义。</p>
+<blockquote>
+<p>做过这块内容的同学可能都知道，Model在通过data函数获取数据时有一个字段role，这个字段表示了他想获取什么样的数据，解决办法也就在这里了，当role等于Qt::SizeHintRole时，表示我们想要获取的行高，我们通过这里设置一个合适的行高即可。</p>
+</blockquote>
+<p><strong>Qt为了优化性能，不会每一次都计算树控件的行高，这里做了一个优化，只有第一次也就说Model发现变化时才从QStandardItem中获取行高，然后所有的额行高信息都存储在了视图的ViewItem缓存中，这直接导致了我们在界面上拖拽垂直表头行高，内容行高不会发生变化。</strong></p>
+<p><strong>这里就需要用到layoutChanged信号，当我们给QStandardItem重新设置了行高之后，需要激活Model布局发生变化事件。</strong></p>
+<html>
+<center>
+<div>
+    <img src="./images/QRowTable表格控件(三)-效率优化之-合理使用QStandardItem6.png" />
+</div>
+</center>
+</html>
+<p>3、itemChanged</p>
+<p>如下图所示，看名字就知道itemChanged这个喜好是干嘛使得。</p>
+<html>
+<center>
+<div>
+    <img src="./images/QRowTable表格控件(三)-效率优化之-合理使用QStandardItem7.png" />
+</div>
+</center>
+</html>
+<p>==<strong>分析了以上3个函数，大家心里是不是对QStandardItem有了一个全新的认识。</strong>==</p>
+<p><br></p>
+<hr />
+<p><br></p>
+<p>==<strong>既然自己构造item这么坑，博主建议大家干脆就不要使用new QStandard这句代码了。</strong>==</p>
+<p>凡事总有例外，既然Qt把这个类导出给我们使用了，总是有他的道理，对于一些特殊场景可能需要自定义item，这时候Qt建议我们是这么做的。</p>
+<html>
+<center>
+<div>
+    <img src="./images/QRowTable表格控件(三)-效率优化之-合理使用QStandardItem8.png" />
+</div>
+</center>
+</html>
+<p><strong>如上图，我们需要重写几个函数，这里大家知道就行。大家记住，一般情况下都不需要这么干。</strong></p>
+<p><br></p>
+<hr />
+<p><br></p>
+<h3 id="qstandarditem使用上的坑">3、QStandardItem使用上的坑</h3>
+<p>1、原则上QStandardItem不需要我们去构造，使用Model的index函数访问cell时Qt内部会帮我们构造，特别是对于数据量大时，Qt内部构造会有很大的效率提升。</p>
+<p>2、Model的setItem使用上需要注意，除非一些特殊场景（比如我们自定义item），否则尽量不要使用。</p>
+<blockquote>
+<p>自定义item，需要重写很多东西；设置item时，原有item将会被删除</p>
+</blockquote>
+<p>3、对于需要设置cell自定义窗口用法</p>
+<p>通过指定行列设置</p>
+<pre><code>setCellWidget(int row, int column, QWidget *widget)</code></pre>
+<h2 id="五相关文章">五、相关文章</h2>
+<ol>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11167659.html">Qt实现表格控件-支持多级列表头、多级行表头、单元格合并、字体设置等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11155074.html">Qt高仿Excel表格组件-支持冻结列、冻结行、内容自适应和合并单元格</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11129274.html">属性浏览器控件QtTreePropertyBrowser编译成动态库(设计师插件)</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11117259.html">超级实用的属性浏览器控件--QtTreePropertyBrowser</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/9288902.html">Qt之表格控件蚂蚁线</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11185435.html">QRowTable表格控件-支持hover整行、checked整行、指定列排序等</a></p></li>
+<li><p><a href="https://www.cnblogs.com/swarmbees/p/11204600.html">QRowTable表格控件(二)-红涨绿跌</a></p></li>
+</ol>
+<p><br><br />
+<html><br />
+<div style='font-weight:600;'><br />
+如果您觉得文章不错，不妨给个<span style='font-size:24px;color:blue;'>打赏</span>，写作不易，感谢各位的支持。您的支持是我最大的动力，谢谢！！！<br />
+</div><br />
+<center><br />
+<div><br />
+<table><br />
+<tr><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_weixin_reward.png border=0></td><br />
+<td><img src=https://www.cnblogs.com/images/cnblogs_com/swarmbees/1497876/o_zhifubao_reward.png border=0></td><br />
+</tr><br />
+</table><br />
+</div><br />
+</center><br />
+</html></p>
+<p><br><br></p>
+<hr />
+<p><strong>很重要--转载声明</strong></p>
+<ol>
+<li><p>本站文章无特别说明，皆为原创，版权所有，转载时请用链接的方式，给出原文出处。同时写上原作者：<a href="https://www.cnblogs.com/swarmbees/">朝十晚八</a> or <a href="https://www.jianshu.com/u/7673f8cfb4e6">Twowords</a></p></li>
+<li><p>如要转载，请原文转载，如在转载时修改本文，请事先告知，谢绝在转载时通过修改本文达到有利于转载者的目的。</p></li>
+</ol>
+<hr />
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

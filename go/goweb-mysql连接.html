@@ -1,0 +1,233 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修goweb-mysql连接' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>goweb-mysql连接</center></div><div class='banquan'>原文出处:本文由博客园博主跌倒的小黄瓜提供。<br/>
+原文连接:https://www.cnblogs.com/ygjzs/p/12048375.html</div><br>
+    <h1 id="操作-数据库">操作 数据库</h1>
+<p>Go 语言中的 database/sql 包定义了对数据库的一系列操作。database/sql/driver<br />
+包定义了应被数据库驱动实现的接口，这些接口会被 sql 包使用。但是 Go 语言没有提<br />
+供任何官方的数据库驱动，所以我们需要导入第三方的数据库驱动。不过我们连接数据<br />
+库之后对数据库操作的大部分代码都使用 sql 包。</p>
+<h2 id="获取数据库连接">获取数据库连接</h2>
+<h3 id="open-函数的说明">Open 函数的说明</h3>
+<ul>
+<li>参数 dataSourceName 的格式：<br />
+数据库用户名:数据库密码@[tcp(localhost:3306)]/数据库名</li>
+<li>Open 函数可能只是验证其参数，而不创建与数据库的连接。如果要检查数据<br />
+源的名称是否合法，应调用返回值的 Ping 方法。</li>
+<li>返回的 DB 可以安全的被多个 go 程同时使用，并会维护自身的闲置连接池。<br />
+这样一来，Open 函数只需调用一次。很少需要关闭 DB</li>
+</ul>
+<pre><code><code>package utils
+
+import (
+    &quot;database/sql&quot;
+
+    _ &quot;github.com/go-sql-driver/mysql&quot;
+)
+
+var (
+    Db  *sql.DB
+    err error
+)
+
+func init() {
+    Db, err = sql.Open(&quot;mysql&quot;, &quot;root:ygj1007502524@tcp(localhost:3306)/test&quot;)
+    if err != nil {
+        panic(err.Error())
+    }
+}
+</code></pre>
+<h2 id="增删改操作">增删改操作</h2>
+<h3 id="在连接的-test-数据库中创建一个-users-表">在连接的 test 数据库中创建一个 users 表</h3>
+<pre class="sql"><code>CREATE TABLE users(
+id INT PRIMARY KEY AUTO_INCREMENT,
+username VARCHAR(100) UNIQUE NOT NULL,
+PASSWORD VARCHAR(100) NOT NULL,
+email VARCHAR(100)
+)</code></pre>
+<h3 id="向-users-表中插入记录">向 users 表中插入记录</h3>
+<pre><code><code>package model
+
+import (
+    &quot;fmt&quot;
+    &quot;go_code/go-web/day01/web01_db/utils&quot;
+)
+
+//User 结构体
+type User struct {
+    ID       int
+    Username string
+    Password string
+    Email    string
+}
+
+//AddUser 添加User的方法一
+func (user *User) AddUser() error {
+    //1.写sql语句
+    sqlStr := &quot;insert into users(username,password,email) values(?,?,?)&quot;
+    //2.预编译
+    inStmt, err := utils.Db.Prepare(sqlStr)
+    if err != nil {
+        fmt.Println(&quot;预编译出现异常：&quot;, err)
+        return err
+    }
+    //3.执行
+    _, err2 := inStmt.Exec(&quot;admin&quot;, &quot;123456&quot;, &quot;admin@atguigu.com&quot;)
+    if err2 != nil {
+        fmt.Println(&quot;执行出现异常：&quot;, err2)
+        return err
+    }
+    return nil
+}
+
+//AddUser2 添加User的方法二
+func (user *User) AddUser2() error {
+    //1.写sql语句
+    sqlStr := &quot;insert into users(username,password,email) values(?,?,?)&quot;
+    //2.执行
+    _, err := utils.Db.Exec(sqlStr, &quot;admin2&quot;, &quot;666666&quot;, &quot;admin2@sina.com&quot;)
+    if err != nil {
+        fmt.Println(&quot;执行出现异常：&quot;, err)
+        return err
+    }
+    return nil
+}
+</code></pre>
+<h2 id="单元测试">单元测试</h2>
+<h3 id="简介">简介</h3>
+<p>顾名思义，单元测试( unit test)，就是一种为验证单元的正确性而设置的自动化测<br />
+试，一个单元就是程序中的一个模块化部分。一般来说，一个单元通常会与程序中的一<br />
+个函数或者一个方法相对应，但这并不是必须的。Go 的单元测试需要用到 testing 包<br />
+以及 go test 命令，而且对测试文件也有以下要求<br />
+1) 被测试的源文件和测试文件必须位于同一个包下<br />
+2) 测试文件必须要以_test.go 结尾</p>
+<ul>
+<li>虽然 Go 对测试文件_test.go 的前缀没有强制要求，不过一般我们都设置<br />
+为被测试的文件的文件名，如：要对 user.go 进行测试，那么测试文件的<br />
+名字我们通常设置为 user_test.go<br />
+3) 测试文件中的测试函数为 TestXxx(t *testing.T)</li>
+<li>其中 Xxx 的首字母必须是大写的英文字母</li>
+<li>函数参数必须是 test.T 的指针类型（如果是 Benchmark 测试则参数是<br />
+testing.B 的指针类型）</li>
+</ul>
+<h3 id="测试代码">测试代码：</h3>
+<pre><code><code>package model
+
+import (
+    &quot;fmt&quot;
+    &quot;testing&quot;
+)
+
+//TestMain函数可以在测试函数执行之前做一些其他操作
+func TestMain(m *testing.M) {
+    fmt.Println(&quot;测试开始：&quot;)
+    //通过m.Run()来执行测试函数
+    m.Run()
+}
+
+func TestUser(t *testing.T) {
+    fmt.Println(&quot;开始测试User中的相关方法&quot;)
+    //通过t.Run()来执行子测试函数
+    t.Run(&quot;测试添加用户:&quot;, testAddUser)
+}
+
+//如果函数名不是以Test开头，那么该函数默认不执行，我们可以将它设置成为一个子测试函数
+func testAddUser(t *testing.T) {
+    fmt.Println(&quot;子测试函数执行：&quot;)
+    user := &amp;User{}
+    //调用添加用户的方法
+    user.AddUser()
+    user.AddUser2()
+}
+</code></pre>
+<h3 id="testing-包的说明">testing 包的说明</h3>
+<p>如果一个测试函数的函数名的不是以 Test 开头，那么在使用 go test 命令时默<br />
+认不会执行，不过我们可以设置该函数时一个子测试函数，可以在其他测试函</p>
+<p>我们还可以通过 TestMain(m *testing.M)函数在测试之前和之后做一些其他<br />
+的操作</p>
+<p>a) 测试文件中有 TestMain 函数时，执行 go test 命令将直接运行 TestMain<br />
+函数，不直接运行测试函数，只有在 TestMain 函数中执行 m.Run()时才<br />
+会执行测试函数</p>
+<p>b) 如果想查看测试的详细过程，可以使用 go test -v 命令</p>
+<h3 id="获取一条记录">获取一条记录</h3>
+<pre><code><code>func (user *User) GetUserByID(userId int) (*User, error) {
+//写 sql 语句
+sqlStr := &quot;select id , username , password , email from users where id = ?&quot;
+//执行 sql
+row := utils.Db.QueryRow(sqlStr, userId)
+//声明三个变量
+var username string
+var password string
+var email string
+//将各个字段中的值读到以上三个变量中
+err := row.Scan(&amp;userId, &amp;username, &amp;password, &amp;email)
+if err != nil {
+return nil, err
+}
+//将三个变量的值赋给 User 结构体
+u := &amp;User{
+ID: userId,
+Username: username,
+Password: password,
+Email: email,
+}
+return u, nil
+}</code></pre>
+<h3 id="获取多条记录">获取多条记录</h3>
+<pre><code><code>func (user *User) GetUsers() ([]*User, error) {
+//写 sql 语句
+sqlStr := &quot;select id , username , password , email from users&quot;
+//执行 sql
+rows, err := utils.Db.Query(sqlStr)
+if err != nil {
+return nil, err
+}
+//定义一个 User 切片
+var users []*User
+//遍历
+for rows.Next() {
+//声明四个个变量
+var userID int
+var username string
+var password string
+var email string
+//将各个字段中的值读到以上三个变量中
+err := rows.Scan(&amp;userID, &amp;username, &amp;password, &amp;email)
+if err != nil {
+return nil, err
+}
+//将三个变量的值赋给 User 结构体
+u := &amp;User{
+ID: userID,
+Username: username,
+Password: password,
+Email: email,
+}
+//将 u 添加到 users 切片中
+users = append(users, u)
+}
+return users, nil
+}
+</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

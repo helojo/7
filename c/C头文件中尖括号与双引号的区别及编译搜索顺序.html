@@ -1,0 +1,54 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修C头文件中尖括号与双引号的区别及编译搜索顺序' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>C头文件中尖括号与双引号的区别及编译搜索顺序</center></div><div class='banquan'>原文出处:本文由博客园博主ba哥提供。<br/>
+原文连接:https://www.cnblogs.com/miaoxiong/p/10938136.html</div><br>
+    <p class="section">这两天被问到一个很有意思的问题：C头文件中尖括号与双引号有什么区别，以前只大约知道 &lt;&gt; 常用在系统库文件，"" 常用在自定义的借口文件中，那具体在gcc编译搜索过程中有啥区别，还得仔细查阅一番相关文档。</p>
+<p class="section">针对 &lt;&gt;&nbsp; 与 "" 的区别有如下解释：</p>
+<p class="section"><img src="./images/C头文件中尖括号与双引号的区别及编译搜索顺序0.png" alt="" /></p>
+<p><em>摘抄自：<a href="https://gcc.gnu.org/onlinedocs/cpp/Include-Syntax.html#Include-Syntax">https://gcc.gnu.org/onlinedocs/cpp/Include-Syntax.html#Include-Syntax</a></em></p>
+<p>&nbsp;</p>
+<p class="section">而在搜索时的区别，则做如下优先级排序：</p>
+<p class="section"><img src="./images/C头文件中尖括号与双引号的区别及编译搜索顺序1.png" alt="" /></p>
+<p><em>摘抄自：&nbsp;<a href="https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html#Directory-Options">https://gcc.gnu.org/onlinedocs/gcc/Directory-Options.html#Directory-Options</a></em></p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>简单理解就是：</p>
+<p>1. 尖括号告诉编译器去搜索标准系统目录，可使用&nbsp;<samp>-I</samp>&nbsp;选项添加其它搜索目录</p>
+<p>2. 双引号告诉编译器先搜索以<strong><span style="color: #ff0000;">源文件路径为参考的目录</span></strong>，其次搜索<span style="color: #008000;"><strong>引号目录</strong></span>，最后搜索标准系统目录， -iquote 选项可添加其它目录到<span style="color: #008000;"><strong>引号目录列表</strong></span>中。</p>
+<p>&nbsp;</p>
+<p><span style="color: #ff0000;"><strong>源文件路径为参考的目录</strong></span></p>
+<p>如何理解其含义呢，以实际情况为例，本地存在一个header/目录，其内部目录树结构如下所示：</p>
+<p><img src="./images/C头文件中尖括号与双引号的区别及编译搜索顺序2.png" alt="" width="374" height="272" /></p>
+<p>图中的hello.c文件，是这样包含头文件的：#include "..inc/hello.h"</p>
+<p>&nbsp;</p>
+<p><strong>测试1.</strong> shell 处在 ～/header/src/ 目录，跟踪gcc 的编译搜索过程:&nbsp;strace -f -o log gcc say_hello.c ，查看log输出：</p>
+<p><img src="./images/C头文件中尖括号与双引号的区别及编译搜索顺序3.png" alt="" width="931" height="50" /></p>
+<p>从图中的搜索路径可知：因源文件刚好处在gcc执行目录下，因此在编译时，源文件的相对执行目录为 . ， dot默认可省略，再拼接上#include "../inc/hello.h" 引号内的路径，那么gcc会定位到&nbsp;"../inc/say_hello.h" 去搜索hello.h文件</p>
+<p>&nbsp;</p>
+<p><strong>测试2.</strong> shell处在 ～/header/ 目录，跟踪gcc的编译搜索过程：strace -f -o log gcc ../src/say_hello.c，查看log输出：</p>
+<p><img src="./images/C头文件中尖括号与双引号的区别及编译搜索顺序4.png" alt="" width="935" height="54" /></p>
+<p>从图中搜索路径可知：因源文件在gcc目录的下一级目录，因此在编译时，源文件的相对执行目录为&nbsp; src/ ， 再拼接上 #include "../inc/hello.h" 引号内的路径，那么gcc会定位到 "src/../inc/say_hello.h" 去搜索hello.h文件.</p>
+<p>&nbsp;</p>
+<p>所以从测试结果来看，gcc编译时，以执行目录为参考点来定位源文件的路径，再以源文件为参考点来定位头文件路径。在上述测试中，~/header/src/say_hello.h 文件始终是被忽略的，除非代码中写成&nbsp;#include "say_hello.h" 。</p>
+<p>&nbsp;</p>
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

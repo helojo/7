@@ -1,0 +1,248 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修2019 WebRtc AudioMixer混音流程' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>2019 WebRtc AudioMixer混音流程</center></div><div class='banquan'>原文出处:本文由博客园博主YinKaisheng提供。<br/>
+原文连接:https://www.cnblogs.com/Yinkaisheng/p/11105005.html</div><br>
+    <p>本文简要说明最新版WebRtc AudioMixer混音流程。</p>
+<p>本程序使用4个16KHz 单声道时长均大于10秒的Wav文件作为混音源，只合成前10秒的音频，输出也是16KHz单声道音频。</p>
+<p>输入和输出的采样率都是16000，每10ms音频长度采样点数为160，每个采样点为16bit，两字节大小。</p>
+<p>使用的WebRTC代码日期为2019-05-08。</p>
+<p>代码如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #008080;">  1</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">stdafx.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">  2</span> #include &lt;<span style="color: #0000ff;">string</span>&gt;
+<span style="color: #008080;">  3</span> #include &lt;iostream&gt;
+<span style="color: #008080;">  4</span> #include &lt;memory&gt;
+<span style="color: #008080;">  5</span> #include &lt;thread&gt;
+<span style="color: #008080;">  6</span> #include &lt;chrono&gt;
+<span style="color: #008080;">  7</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">webrtc\modules\audio_mixer\audio_mixer_impl.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">  8</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">webrtc\api\audio\audio_frame.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;">  9</span> #include <span style="color: #800000;">"</span><span style="color: #800000;">webrtc\modules\audio_mixer\output_rate_calculator.h</span><span style="color: #800000;">"</span>
+<span style="color: #008080;"> 10</span> 
+<span style="color: #008080;"> 11</span> <span style="color: #0000ff;">using</span> <span style="color: #0000ff;">namespace</span><span style="color: #000000;"> std::literals::chrono_literals;
+</span><span style="color: #008080;"> 12</span> 
+<span style="color: #008080;"> 13</span> <span style="color: #0000ff;">#define</span> WAV_HEADER_SIZE 44
+<span style="color: #008080;"> 14</span> <span style="color: #0000ff;">#define</span> SAMPLE_RATE 16000
+<span style="color: #008080;"> 15</span> 
+<span style="color: #008080;"> 16</span> int16_t s_buf[<span style="color: #800080;">160</span>] = { <span style="color: #800080;">0</span><span style="color: #000000;"> };
+</span><span style="color: #008080;"> 17</span> 
+<span style="color: #008080;"> 18</span> <span style="color: #0000ff;">class</span> AudioSrc : <span style="color: #0000ff;">public</span><span style="color: #000000;"> webrtc::AudioMixer::Source
+</span><span style="color: #008080;"> 19</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 20</span> <span style="color: #0000ff;">public</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 21</span>     AudioSrc(<span style="color: #0000ff;">int</span> ssrc, <span style="color: #0000ff;">int</span> sample, <span style="color: #0000ff;">const</span> std::<span style="color: #0000ff;">string</span>&amp;<span style="color: #000000;"> file)
+</span><span style="color: #008080;"> 22</span> <span style="color: #000000;">        : mSsrc(ssrc)
+</span><span style="color: #008080;"> 23</span> <span style="color: #000000;">        , mSample(sample)
+</span><span style="color: #008080;"> 24</span> <span style="color: #000000;">        , mFile(nullptr)
+</span><span style="color: #008080;"> 25</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 26</span>         fopen_s(&amp;mFile, file.c_str(), <span style="color: #800000;">"</span><span style="color: #800000;">rb</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 27</span>         
+<span style="color: #008080;"> 28</span>         <span style="color: #0000ff;">if</span><span style="color: #000000;"> (mFile)
+</span><span style="color: #008080;"> 29</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 30</span>             fseek(mFile, <span style="color: #800080;">44</span><span style="color: #000000;">, SEEK_SET);
+</span><span style="color: #008080;"> 31</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 32</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 33</span> 
+<span style="color: #008080;"> 34</span>     <span style="color: #0000ff;">virtual</span> ~<span style="color: #000000;">AudioSrc()
+</span><span style="color: #008080;"> 35</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 36</span>         <span style="color: #0000ff;">if</span><span style="color: #000000;"> (mFile)
+</span><span style="color: #008080;"> 37</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 38</span> <span style="color: #000000;">            fclose(mFile);
+</span><span style="color: #008080;"> 39</span>             mFile =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;"> 40</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 41</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 42</span> 
+<span style="color: #008080;"> 43</span>     <span style="color: #0000ff;">virtual</span> AudioFrameInfo GetAudioFrameWithInfo(<span style="color: #0000ff;">int</span><span style="color: #000000;"> sample_rate_hz,
+</span><span style="color: #008080;"> 44</span>         webrtc::AudioFrame*<span style="color: #000000;"> audio_frame)
+</span><span style="color: #008080;"> 45</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 46</span>         <span style="color: #0000ff;">if</span><span style="color: #000000;"> (mFile)
+</span><span style="color: #008080;"> 47</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;"> 48</span>             fread(s_buf, <span style="color: #800080;">160</span> * <span style="color: #800080;">2</span>, <span style="color: #800080;">1</span>, mFile);<span style="color: #008000;">//</span><span style="color: #008000;">16KHz, 10ms buf</span>
+<span style="color: #008080;"> 49</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;"> 50</span>         
+<span style="color: #008080;"> 51</span>         std::thread::id tid =<span style="color: #000000;"> std::this_thread::get_id();
+</span><span style="color: #008080;"> 52</span>         std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">thread id </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;"> 53</span> <span style="color: #000000;">        tid._To_text(std::cout);
+</span><span style="color: #008080;"> 54</span> 
+<span style="color: #008080;"> 55</span>         <span style="color: #008000;">//</span><span style="color: #008000;">copy s_buf to audio_frame inner buf</span>
+<span style="color: #008080;"> 56</span>         audio_frame-&gt;UpdateFrame(<span style="color: #800080;">0</span>, s_buf, <span style="color: #800080;">160</span>, SAMPLE_RATE, webrtc::AudioFrame::SpeechType::kNormalSpeech, webrtc::AudioFrame::VADActivity::kVadUnknown, <span style="color: #800080;">1</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 57</span>         printf(<span style="color: #800000;">"</span><span style="color: #800000;">,ssrc %d get audio frame, muted: %d, n %d, s %d\n</span><span style="color: #800000;">"</span>, mSsrc, <span style="color: #0000ff;">int</span>(audio_frame-&gt;muted()), audio_frame-&gt;num_channels_, audio_frame-&gt;<span style="color: #000000;">sample_rate_hz_);
+</span><span style="color: #008080;"> 58</span>         
+<span style="color: #008080;"> 59</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> AudioFrameInfo::kNormal;
+</span><span style="color: #008080;"> 60</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 61</span> 
+<span style="color: #008080;"> 62</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> A way for a mixer implementation to distinguish participants.</span>
+<span style="color: #008080;"> 63</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">int</span> Ssrc() <span style="color: #0000ff;">const</span>
+<span style="color: #008080;"> 64</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 65</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> mSsrc;
+</span><span style="color: #008080;"> 66</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 67</span> 
+<span style="color: #008080;"> 68</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> A way for this source to say that GetAudioFrameWithInfo called
+</span><span style="color: #008080;"> 69</span>     <span style="color: #008000;">//</span><span style="color: #008000;"> with this sample rate or higher will not cause quality loss.</span>
+<span style="color: #008080;"> 70</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">int</span> PreferredSampleRate() <span style="color: #0000ff;">const</span>
+<span style="color: #008080;"> 71</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 72</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> mSample;
+</span><span style="color: #008080;"> 73</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 74</span> 
+<span style="color: #008080;"> 75</span> <span style="color: #0000ff;">private</span><span style="color: #000000;">:
+</span><span style="color: #008080;"> 76</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> mSsrc;
+</span><span style="color: #008080;"> 77</span>     <span style="color: #0000ff;">int</span><span style="color: #000000;"> mSample;
+</span><span style="color: #008080;"> 78</span>     FILE*<span style="color: #000000;"> mFile;
+</span><span style="color: #008080;"> 79</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 80</span> 
+<span style="color: #008080;"> 81</span> 
+<span style="color: #008080;"> 82</span> <span style="color: #0000ff;">class</span> AudioOutput : <span style="color: #0000ff;">public</span><span style="color: #000000;"> webrtc::OutputRateCalculator
+</span><span style="color: #008080;"> 83</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 84</span>     <span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> CalculateOutputRate(
+</span><span style="color: #008080;"> 85</span>         <span style="color: #0000ff;">const</span> std::vector&lt;<span style="color: #0000ff;">int</span>&gt;&amp;<span style="color: #000000;"> preferred_sample_rates)
+</span><span style="color: #008080;"> 86</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;"> 87</span>         <span style="color: #0000ff;">return</span><span style="color: #000000;"> SAMPLE_RATE;
+</span><span style="color: #008080;"> 88</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;"> 89</span> 
+<span style="color: #008080;"> 90</span> <span style="color: #000000;">};
+</span><span style="color: #008080;"> 91</span> 
+<span style="color: #008080;"> 92</span> <span style="color: #0000ff;">int</span><span style="color: #000000;"> MixText()
+</span><span style="color: #008080;"> 93</span> <span style="color: #000000;">{
+</span><span style="color: #008080;"> 94</span>     auto mixptr = webrtc::AudioMixerImpl::Create(std::make_unique&lt;AudioOutput&gt;(), <span style="color: #0000ff;">true</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 95</span>     AudioSrc src1(<span style="color: #800080;">1</span>, SAMPLE_RATE, <span style="color: #800000;">"</span><span style="color: #800000;">e:\\Media\\Audio\\16k_1.wav</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 96</span>     AudioSrc src2(<span style="color: #800080;">2</span>, SAMPLE_RATE, <span style="color: #800000;">"</span><span style="color: #800000;">e:\\Media\\Audio\\16k_2.wav</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 97</span>     AudioSrc src3(<span style="color: #800080;">3</span>, SAMPLE_RATE, <span style="color: #800000;">"</span><span style="color: #800000;">e:\\Media\\Audio\\16k_3.wav</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 98</span>     AudioSrc src4(<span style="color: #800080;">4</span>, SAMPLE_RATE, <span style="color: #800000;">"</span><span style="color: #800000;">e:\\Media\\Audio\\16k_4.wav</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;"> 99</span> 
+<span style="color: #008080;">100</span>     mixptr-&gt;AddSource(&amp;<span style="color: #000000;">src1);
+</span><span style="color: #008080;">101</span>     mixptr-&gt;AddSource(&amp;<span style="color: #000000;">src2);
+</span><span style="color: #008080;">102</span>     mixptr-&gt;AddSource(&amp;<span style="color: #000000;">src3);
+</span><span style="color: #008080;">103</span>     mixptr-&gt;AddSource(&amp;<span style="color: #000000;">src4);
+</span><span style="color: #008080;">104</span> 
+<span style="color: #008080;">105</span>     std::thread::id tid =<span style="color: #000000;"> std::this_thread::get_id();
+</span><span style="color: #008080;">106</span>     std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">main thread id: </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">107</span> <span style="color: #000000;">    tid._To_text(std::cout);
+</span><span style="color: #008080;">108</span>     std::cout &lt;&lt;<span style="color: #000000;"> std::endl;
+</span><span style="color: #008080;">109</span> 
+<span style="color: #008080;">110</span> <span style="color: #000000;">    webrtc::AudioFrame frame;
+</span><span style="color: #008080;">111</span> 
+<span style="color: #008080;">112</span>     FILE* fOut =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">113</span>     fopen_s(&amp;fOut, <span style="color: #800000;">"</span><span style="color: #800000;">f:/download/outmix.pcm</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">wb</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+</span><span style="color: #008080;">114</span>     
+<span style="color: #008080;">115</span>     <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">100</span>*<span style="color: #800080;">10</span>; ++i) <span style="color: #008000;">//</span><span style="color: #008000;"> only mix first 10 seconds audio</span>
+<span style="color: #008080;">116</span> <span style="color: #000000;">    {
+</span><span style="color: #008080;">117</span>         mixptr-&gt;Mix(<span style="color: #800080;">1</span>, &amp;<span style="color: #000000;">frame);
+</span><span style="color: #008080;">118</span>         <span style="color: #0000ff;">if</span><span style="color: #000000;"> (fOut)
+</span><span style="color: #008080;">119</span> <span style="color: #000000;">        {
+</span><span style="color: #008080;">120</span>             fwrite(frame.data(), <span style="color: #800080;">160</span> * <span style="color: #800080;">2</span>, <span style="color: #800080;">1</span><span style="color: #000000;">, fOut);
+</span><span style="color: #008080;">121</span> <span style="color: #000000;">        }
+</span><span style="color: #008080;">122</span> <span style="color: #000000;">        std::this_thread::sleep_for(10ms);
+</span><span style="color: #008080;">123</span> <span style="color: #000000;">    }
+</span><span style="color: #008080;">124</span>     
+<span style="color: #008080;">125</span> <span style="color: #000000;">    fclose(fOut);
+</span><span style="color: #008080;">126</span>     fOut =<span style="color: #000000;"> nullptr;
+</span><span style="color: #008080;">127</span> 
+<span style="color: #008080;">128</span>     mixptr-&gt;RemoveSource(&amp;<span style="color: #000000;">src1);
+</span><span style="color: #008080;">129</span>     mixptr-&gt;RemoveSource(&amp;<span style="color: #000000;">src2);
+</span><span style="color: #008080;">130</span>     mixptr-&gt;RemoveSource(&amp;<span style="color: #000000;">src3);
+</span><span style="color: #008080;">131</span>     mixptr-&gt;RemoveSource(&amp;<span style="color: #000000;">src4);
+</span><span style="color: #008080;">132</span> 
+<span style="color: #008080;">133</span>     tid =<span style="color: #000000;"> std::this_thread::get_id();
+</span><span style="color: #008080;">134</span>     std::cout &lt;&lt; <span style="color: #800000;">"</span><span style="color: #800000;">exit main thread id: </span><span style="color: #800000;">"</span><span style="color: #000000;">;
+</span><span style="color: #008080;">135</span> <span style="color: #000000;">    tid._To_text(std::cout);
+</span><span style="color: #008080;">136</span>     std::cout &lt;&lt;<span style="color: #000000;"> std::endl;
+</span><span style="color: #008080;">137</span> 
+<span style="color: #008080;">138</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">139</span> <span style="color: #000000;">}
+</span><span style="color: #008080;">140</span> 
+<span style="color: #008080;">141</span> <span style="color: #0000ff;">int</span> main(<span style="color: #0000ff;">int</span> argc, <span style="color: #0000ff;">char</span>*<span style="color: #000000;"> argv[])
+</span><span style="color: #008080;">142</span> <span style="color: #000000;">{
+</span><span style="color: #008080;">143</span> <span style="color: #000000;">    MixText();
+</span><span style="color: #008080;">144</span> 
+<span style="color: #008080;">145</span>     <span style="color: #0000ff;">return</span> <span style="color: #800080;">0</span><span style="color: #000000;">;
+</span><span style="color: #008080;">146</span> }</pre>
+</div>
+<p>代码大体介绍：</p>
+<p><span>&nbsp;<span class="cnblogs_code"><span style="color: #0000ff;">class</span> AudioSrc : <span style="color: #0000ff;">public</span> webrtc::AudioMixer::Source</span>&nbsp;定义了混音音频源的类，<br /></span></p>
+<p>AudioSrc必须实现基类的三个virtual函数，<br /><br />&nbsp;<span class="cnblogs_code"><span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">int</span> Ssrc() <span style="color: #0000ff;">const</span>;</span>&nbsp;&nbsp;返回混音源的ID, AudioMixer调用此函数用于区分每个音频源，每个音频源的Ssrc必须返回不同的值。</p>
+<p>&nbsp;<span class="cnblogs_code"><span style="color: #0000ff;">virtual</span> <span style="color: #0000ff;">int</span> PreferredSampleRate() <span style="color: #0000ff;">const</span>;</span>&nbsp;返回混音源的音频采样率，这里都是16000，AudioMixer调用此函数得到每个音频源的音频采样率。</p>
+<p>&nbsp;<span class="cnblogs_code"><span style="color: #0000ff;">virtual</span> AudioFrameInfo GetAudioFrameWithInfo(<span style="color: #0000ff;">int</span> sample_rate_hz, webrtc::AudioFrame* audio_frame)</span>&nbsp;获取混音源的10ms长度音频，混音时AudioMixer依次对混音源调用此函数，</p>
+<p>AudioSrc先从wav文件读取10ms音频到s_buf中，用AudioFrame的UpdateFrame函数把刚获取的s_buf中内容更新到AudioFrame中，AudioMixer内部完成混音。</p>
+<p>&nbsp;</p>
+<p>&nbsp;<span class="cnblogs_code"><span style="color: #0000ff;">class</span> AudioOutput : <span style="color: #0000ff;">public</span> webrtc::OutputRateCalculator</span>&nbsp;&nbsp;是用于计算混音输出音频采样率的类，必须实现虚函数CalculateOutputRate，</p>
+<p>参数const std::vector&lt;int&gt;&amp; preferred_sample_rates中元素为每个混音源的音频采样率，返回值为输出音频采样率，这里输出和输入的采样率一样，返回16000。</p>
+<p>&nbsp;</p>
+<p>函数MixText是调用的代码</p>
+<div class="cnblogs_code">
+<pre>auto mixptr = webrtc::AudioMixerImpl::Create(std::make_unique&lt;AudioOutput&gt;(), <span style="color: #0000ff;">true</span>);</pre>
+</div>
+<p>创建了一个AudioMixer智能指针对象mixptr&nbsp;，</p>
+<div class="cnblogs_code">
+<pre>AudioSrc src1(<span style="color: #800080;">1</span>, SAMPLE_RATE, <span style="color: #800000;">"</span><span style="color: #800000;">e:\\Media\\Audio\\16k_1.wav</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+AudioSrc src2(</span><span style="color: #800080;">2</span>, SAMPLE_RATE, <span style="color: #800000;">"</span><span style="color: #800000;">e:\\Media\\Audio\\16k_2.wav</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+AudioSrc src3(</span><span style="color: #800080;">3</span>, SAMPLE_RATE, <span style="color: #800000;">"</span><span style="color: #800000;">e:\\Media\\Audio\\16k_3.wav</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+AudioSrc src4(</span><span style="color: #800080;">4</span>, SAMPLE_RATE, <span style="color: #800000;">"</span><span style="color: #800000;">e:\\Media\\Audio\\16k_4.wav</span><span style="color: #800000;">"</span>);</pre>
+</div>
+<p>创建了4个混音源。</p>
+<div class="cnblogs_code">
+<pre>mixptr-&gt;AddSource(&amp;<span style="color: #000000;">src1);
+mixptr</span>-&gt;AddSource(&amp;<span style="color: #000000;">src2);
+mixptr</span>-&gt;AddSource(&amp;<span style="color: #000000;">src3);
+mixptr</span>-&gt;AddSource(&amp;src4);</pre>
+</div>
+<p>把4个混音源添加到AudioMixer中，</p>
+<div class="cnblogs_code">
+<pre>webrtc::AudioFrame frame;</pre>
+</div>
+<p>创建一个AudioFrame 对象，用于接收混音输出。</p>
+<div class="cnblogs_code">
+<pre>FILE* fOut =<span style="color: #000000;"> nullptr;
+fopen_s(</span>&amp;fOut, <span style="color: #800000;">"</span><span style="color: #800000;">f:/download/outmix.pcm</span><span style="color: #800000;">"</span>, <span style="color: #800000;">"</span><span style="color: #800000;">wb</span><span style="color: #800000;">"</span>);</pre>
+</div>
+<p>打开一个文件，用于写入混音输出。</p>
+<div class="cnblogs_code">
+<pre>    <span style="color: #0000ff;">for</span> (<span style="color: #0000ff;">int</span> i = <span style="color: #800080;">0</span>; i &lt; <span style="color: #800080;">100</span>*<span style="color: #800080;">10</span>; ++i) <span style="color: #008000;">//</span><span style="color: #008000;"> only mix first 10 seconds audio</span>
+<span style="color: #000000;">    {
+        mixptr</span>-&gt;Mix(<span style="color: #800080;">1</span>, &amp;<span style="color: #000000;">frame);
+        </span><span style="color: #0000ff;">if</span><span style="color: #000000;"> (fOut)
+        {
+            fwrite(frame.data(), </span><span style="color: #800080;">160</span> * <span style="color: #800080;">2</span>, <span style="color: #800080;">1</span><span style="color: #000000;">, fOut);
+        }
+        std::this_thread::sleep_for(10ms);
+    }</span></pre>
+</div>
+<p>此循环调用1000次，每次混音10毫秒长度音频，总共混音10秒钟长度的音频，</p>
+<div class="cnblogs_code">
+<pre>mixptr-&gt;Mix(<span style="color: #800080;">1</span>, &amp;frame);</pre>
+</div>
+<p><span><span>Mix是实际执行混音的函数，<br />它内部再依次调用AudioSrc::GetAudioFrameWithInfo再完成混音，把混音输出到frame中。</span></span></p>
+<p><span><span>然后用</span></span>fwrite再把frame.data()中的混音输出写入到输出文件。</p>
+<div class="cnblogs_code">
+<pre>std::this_thread::sleep_for(10ms);</pre>
+</div>
+<p>sleep等待10毫秒。</p>
+<p>混音完成再调用</p>
+<div class="cnblogs_code">
+<pre>    mixptr-&gt;RemoveSource(&amp;<span style="color: #000000;">src1);
+    mixptr</span>-&gt;RemoveSource(&amp;<span style="color: #000000;">src2);
+    mixptr</span>-&gt;RemoveSource(&amp;<span style="color: #000000;">src3);
+    mixptr</span>-&gt;RemoveSource(&amp;src4);</pre>
+</div>
+<p>移除混音源。</p>
+<p>以上就是混音流程。</p>
+<p>注意：由于混音输出写的是PCM文件，没有文件头，一般播放器不能播放，必须用 CoolEdit 或 Audacity 打开PCM播放。</p>
+<p>&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

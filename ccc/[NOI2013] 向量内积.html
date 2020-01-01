@@ -1,0 +1,87 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修[NOI2013] 向量内积' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>[NOI2013] 向量内积</center></div><div class='banquan'>原文出处:本文由博客园博主nosta提供。<br/>
+原文连接:https://www.cnblogs.com/nosta/p/10875713.html</div><br>
+    <p><strong>注意：本文中的一切数字即数字运算均在<span class="math inline">\(k\)</span>的同余系内（即<span class="math inline">\(x\leftarrow x\bmod k\)</span>），<code>*</code>只用于表示向量点积。</strong></p>
+<p>暴力的算法是，从小到大枚举向量<span class="math inline">\(A[x]\)</span>，判定<span class="math inline">\(A[1]\)</span>到<span class="math inline">\(A[x-1]\)</span>中是否存在与<span class="math inline">\(A[x]\)</span>点积为<span class="math inline">\(0\)</span>的向量：若存在，暴力搜索答案；否则枚举下一个向量<span class="math inline">\(A[x+1]\)</span>。</p>
+<p>算法的瓶颈在于“判定”这一部分，即计算<span class="math inline">\(\sum_{y&lt;x}\sigma(A[y]*A[x]\not=0)\)</span>是否等于<span class="math inline">\(x-1\)</span>。<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>
+<p>当<span class="math inline">\(k=2\)</span>时因为<span class="math inline">\(\sigma(w\not=0)=w\)</span>，所以只需判定下式值为<span class="math inline">\(x-1\)</span>即可<br />
+<span class="math display">\[
+\sum_{y&lt;x}A[x]*A[y]=A[x]*\sum_{y&lt;x}A[y]
+\]</span><br />
+然后是<span class="math inline">\(k=3\)</span>的情况，这时因为<span class="math inline">\(\sigma(w\not=0)=w^2\)</span>，所以只需判定下式值为<span class="math inline">\(x-1\)</span>即可<br />
+<span class="math display">\[
+\sum_{y&lt;x}(A[x]*A[y])^2
+=\sum_{y&lt;x}(\sum_iA[x,i]A[y,i])^2=\sum_{y&lt;x}\sum_{i}A[x,i]A[y,i]\sum_jA[x,j]A[y,j]\\
+=\sum_i\sum_jA[x,i]A[x,j]\sum_{y&lt;x}A[y,i]A[y,j]
+\]</span><br />
+两种情况的式子都化简到了能快速处理的形式。</p>
+<pre><code>#include &lt;bits/stdc++.h&gt;
+using namespace std;
+
+int n,m,K,id[100001];
+int a[100001][101],b[101],c[101][101];
+
+int solve(int x) {
+    int tot=0;
+    if(K==2) 
+        for(int i=1; i&lt;=m; b[i]^=a[x][i],i++) tot^=b[i]&amp;a[x][i];
+    else 
+        for(int i=1; i&lt;=m; ++i) 
+        for(int j=1; j&lt;=m; c[i][j]+=a[x][i]*a[x][j],++j) 
+            tot+=c[i][j]*a[x][i]*a[x][j];
+    return tot%K;
+}
+bool check(int x,int y) {
+    int tot=0;
+    for(int i=1; i&lt;=m; ++i) tot+=a[x][i]*a[y][i];
+    return tot%K==0;
+}
+
+int main() {
+    scanf(&quot;%d%d%d&quot;,&amp;n,&amp;m,&amp;K);
+    for(int i=1; i&lt;=n; ++i) 
+    for(int j=1; j&lt;=m; ++j) 
+        scanf(&quot;%d&quot;,&amp;a[i][j]),a[i][j]%=K;
+    for(int i=1; i&lt;=n; ++i) id[i]=i;
+    for(int OVO=5; OVO--; ) {
+        random_shuffle(id+1,id+n+1);
+        K==2?memset(b,0,sizeof b):memset(c,0,sizeof b);
+        for(int i=1; i&lt;=n; ++i) if(solve(id[i])!=(i-1)%K) 
+        for(int j=1; j&lt;i; ++j) if(check(id[i],id[j])) {
+            if(id[i]&gt;id[j]) swap(id[i],id[j]);
+            printf(&quot;%d %d\n&quot;,id[i],id[j]);
+            return 0;
+        }
+    }
+    puts(&quot;-1 -1&quot;);
+    return 0;
+}</code></pre>
+<section class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>这一定正确吗？<del>拿衣服</del> 当然不。注意此时的式子实际上是<span class="math inline">\(\sum\dots\equiv x-1\pmod k\)</span>这样，所以这样判断是存在错判概率的。一个解决办法是把向量顺序打乱多做几次。<a href="#fnref1" class="footnote-back">↩</a></p></li>
+</ol>
+</section>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

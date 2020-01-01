@@ -1,0 +1,316 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修libmxml数据结构（源码分析）' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>libmxml数据结构（源码分析）</center></div><div class='banquan'>原文出处:本文由博客园博主皇家救星提供。<br/>
+原文连接:https://www.cnblogs.com/kingstarer/p/10659709.html</div><br>
+    <p>　　libmxml是一个开源、小巧的C语言xml库。这里简单分析一下它是用什么样的数据结构来保存分析过的xml文档。</p>
+<p>　　mxml关键的结构体mxml_node_t是这样的实现的：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">struct</span> mxml_node_s            <span style="color: #008000;">/*</span><span style="color: #008000;">*** An XML node. @private@ ***</span><span style="color: #008000;">*/</span><span style="color: #000000;">
+{
+  mxml_type_t        type;        </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Node type </span><span style="color: #008000;">*/</span>
+  <span style="color: #0000ff;">struct</span> mxml_node_s    *next;        <span style="color: #008000;">/*</span><span style="color: #008000;"> Next node under same parent </span><span style="color: #008000;">*/</span>
+  <span style="color: #0000ff;">struct</span> mxml_node_s    *prev;        <span style="color: #008000;">/*</span><span style="color: #008000;"> Previous node under same parent </span><span style="color: #008000;">*/</span>
+  <span style="color: #0000ff;">struct</span> mxml_node_s    *parent;    <span style="color: #008000;">/*</span><span style="color: #008000;"> Parent node </span><span style="color: #008000;">*/</span>
+  <span style="color: #0000ff;">struct</span> mxml_node_s    *child;        <span style="color: #008000;">/*</span><span style="color: #008000;"> First child node </span><span style="color: #008000;">*/</span>
+  <span style="color: #0000ff;">struct</span> mxml_node_s    *last_child;    <span style="color: #008000;">/*</span><span style="color: #008000;"> Last child node </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+  mxml_value_t        value;        </span><span style="color: #008000;">/*</span><span style="color: #008000;"> Node value </span><span style="color: #008000;">*/</span>
+  <span style="color: #0000ff;">int</span>            ref_count;    <span style="color: #008000;">/*</span><span style="color: #008000;"> Use count </span><span style="color: #008000;">*/</span>
+  <span style="color: #0000ff;">void</span>            *user_data;    <span style="color: #008000;">/*</span><span style="color: #008000;"> User data </span><span style="color: #008000;">*/</span><span style="color: #000000;">
+};
+
+typedef </span><span style="color: #0000ff;">struct</span> mxml_node_s mxml_node_t;    <span style="color: #008000;">/*</span><span style="color: #008000;">*** An XML node. ***</span><span style="color: #008000;">*/</span></pre>
+</div>
+<p>　　</p>
+<p>&nbsp;　　它使用左孩子右兄弟的树形结构来描述xml报文：即下层节点登记在child链表，兄弟节点登记在next链表。 如果某个节点下面有N个子节点，则child指向第一个子节点，该子节点的next指向下一个同父节点的子节点。 &nbsp;比较特殊的是，mxml把xml节点值也认为是一个子节点。例如&lt;group&gt;value&lt;/group&gt;， 其中value(type是MXML_OPAQUE)是一个独立的子节点，挂载在group节点(type是MXML_ELEMENT)下面。 &nbsp;另外，空白符（空格，回车换行，制表符）和注释，虽然对xml报文无实质意义，但mxml还是把它们做为一个节点存储起来。</p>
+<p>　　<span style="color: #ff0000;">由于mxml只是使用简单的链表存储xml元素，所以元素节点个数比较多时，mxml查找元素效率是比较低的。所以libmxml提供了一个索引查找的函数，它需要先遍历xml元素树，生成一个排序过的数组，加快查找速度。</span></p>
+<p>&nbsp;　　为了方便大家理解，我写了一个函数打印xml结构体。</p>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">void</span> printNode(mxml_node_t *node, <span style="color: #0000ff;">int</span> nNodeSn, <span style="color: #0000ff;">int</span><span style="color: #000000;"> level)
+{
+    </span><span style="color: #0000ff;">static</span> <span style="color: #0000ff;">int</span> currNodeSn = <span style="color: #800080;">0</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">if</span> (node ==<span style="color: #000000;"> NULL)
+    {
+        </span><span style="color: #0000ff;">return</span><span style="color: #000000;">;
+    }
+
+    </span>++currNodeSn; <span style="color: #008000;">//</span><span style="color: #008000;">每遇到一个新节点 则将节点序号递增，做为本节点序号</span>
+    printf(<span style="color: #800000;">"</span><span style="color: #800000;">[%- 3d -&gt; %- 3d] </span><span style="color: #800000;">"</span><span style="color: #000000;">, currNodeSn, nNodeSn);
+
+    </span><span style="color: #0000ff;">switch</span> (node-&gt;<span style="color: #000000;">type)
+    {
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> MXML_ELEMENT:
+        {
+            </span><span style="color: #0000ff;">int</span><span style="color: #000000;"> i;
+            printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">level %d MXML_ELEMENT [%s]</span><span style="color: #800000;">"</span>, level, node-&gt;<span style="color: #000000;">value.element.name);
+            </span><span style="color: #0000ff;">for</span> (i = <span style="color: #800080;">0</span>; i &lt; node-&gt;value.element.num_attrs; ++<span style="color: #000000;">i)
+            {
+                printf(</span><span style="color: #800000;">"</span><span style="color: #800000;"> %s=%s</span><span style="color: #800000;">"</span>, node-&gt;value.element.attrs[i].name, node-&gt;<span style="color: #000000;">value.element.attrs[i].value);
+            }
+            printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">\n</span><span style="color: #800000;">"</span><span style="color: #000000;">);
+        }
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> MXML_INTEGER:
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">level %d MXML_INTEGER %d\n</span><span style="color: #800000;">"</span>, level, node-&gt;<span style="color: #000000;">value.integer);
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> MXML_OPAQUE:
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">level %d MXML_OPAQUE [%s]\n</span><span style="color: #800000;">"</span>, level, node-&gt;<span style="color: #000000;">value.opaque);
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> MXML_REAL:
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">level %d MXML_REAL %lf\n</span><span style="color: #800000;">"</span>, level, node-&gt;<span style="color: #000000;">value.real);
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> MXML_TEXT:
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">level %d MXML_TEXT [%s]\n</span><span style="color: #800000;">"</span>, level, node-&gt;value.text.<span style="color: #0000ff;">string</span><span style="color: #000000;">);
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">case</span><span style="color: #000000;"> MXML_CUSTOM:
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">level %d MXML_CUSTOM\n</span><span style="color: #800000;">"</span><span style="color: #000000;">, level);
+        </span><span style="color: #0000ff;">break</span><span style="color: #000000;">;
+    </span><span style="color: #0000ff;">default</span><span style="color: #000000;">:
+        printf(</span><span style="color: #800000;">"</span><span style="color: #800000;">unknown node type %d\n</span><span style="color: #800000;">"</span>, node-&gt;<span style="color: #000000;">type);
+    }
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">深度优先遍历</span>
+    <span style="color: #0000ff;">if</span> (node-&gt;<span style="color: #000000;">child)
+    {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">访问子节点时把本节点序号做为父节点序号 层级加1</span>
+        printNode(node-&gt;child, currNodeSn, level + <span style="color: #800080;">1</span><span style="color: #000000;">);
+    }
+
+    </span><span style="color: #0000ff;">if</span> (node-&gt;<span style="color: #000000;">next)
+    {
+        </span><span style="color: #008000;">//</span><span style="color: #008000;">访问兄弟节点，直接传父节点序号即可 层级也不用加1</span>
+        printNode(node-&gt;<span style="color: #000000;">next, nNodeSn, level);
+    }
+}</span></pre>
+</div>
+<p>　　运行示例如下：</p>
+<p>　　xml源如下：</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #0000ff;">&lt;?</span><span style="color: #ff00ff;">xml version="1.0" encoding="GBK" </span><span style="color: #0000ff;">?&gt;</span>
+<span style="color: #0000ff;">&lt;</span><span style="color: #800000;">group</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">option</span><span style="color: #0000ff;">&gt;</span><span style="color: #000000;">122334 我们
+        </span><span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>我们<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span><span style="color: #000000;">45677
+        </span><span style="color: #0000ff;">&lt;</span><span style="color: #800000;">keyword </span><span style="color: #ff0000;">type</span><span style="color: #0000ff;">="opaque"</span><span style="color: #0000ff;">&gt;</span>InputSlot<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">keyword</span><span style="color: #0000ff;">&gt;</span>
+        <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">default </span><span style="color: #ff0000;">type</span><span style="color: #0000ff;">="opaque"</span><span style="color: #0000ff;">&gt;</span>Auto<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">default</span><span style="color: #0000ff;">&gt;</span>
+        <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">text</span><span style="color: #0000ff;">&gt;</span>Media Source<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">text</span><span style="color: #0000ff;">&gt;</span>
+        <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">order </span><span style="color: #ff0000;">type</span><span style="color: #0000ff;">="real"</span><span style="color: #0000ff;">&gt;</span>10.000000<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">order</span><span style="color: #0000ff;">&gt;</span>
+        <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">choice</span><span style="color: #0000ff;">&gt;</span>
+            <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">keyword </span><span style="color: #ff0000;">type</span><span style="color: #0000ff;">="opaque"</span><span style="color: #0000ff;">&gt;</span>Auto<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">keyword</span><span style="color: #0000ff;">&gt;</span>
+            <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">text</span><span style="color: #0000ff;">&gt;</span>Auto Tray Selection<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">text</span><span style="color: #0000ff;">&gt;</span>
+            <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">code </span><span style="color: #ff0000;">type</span><span style="color: #0000ff;">="opaque"</span> <span style="color: #0000ff;">/&gt;</span>
+        <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">choice</span><span style="color: #0000ff;">&gt;</span>
+        <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">choice</span><span style="color: #0000ff;">&gt;</span>
+            <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">keyword </span><span style="color: #ff0000;">type</span><span style="color: #0000ff;">="opaque"</span><span style="color: #0000ff;">&gt;</span>Upper<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">keyword</span><span style="color: #0000ff;">&gt;</span>
+            <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">text</span><span style="color: #0000ff;">&gt;</span>Tray 1<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">text</span><span style="color: #0000ff;">&gt;</span>
+            <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">code </span><span style="color: #ff0000;">type</span><span style="color: #0000ff;">="opaque"</span><span style="color: #0000ff;">&gt;</span><span style="color: #ff0000;">&amp;lt;&amp;lt;</span>/MediaPosition 0<span style="color: #ff0000;">&amp;gt;&amp;gt;</span>setpagedevice<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">code</span><span style="color: #0000ff;">&gt;</span>
+        <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">choice</span><span style="color: #0000ff;">&gt;</span>
+        <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">choice</span><span style="color: #0000ff;">&gt;</span>
+            <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">keyword </span><span style="color: #ff0000;">type</span><span style="color: #0000ff;">="opaque"</span><span style="color: #0000ff;">&gt;</span>Lower<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">keyword</span><span style="color: #0000ff;">&gt;</span>
+            <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">text</span><span style="color: #0000ff;">&gt;</span>Tray 2<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">text</span><span style="color: #0000ff;">&gt;</span>
+            <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">code </span><span style="color: #ff0000;">type</span><span style="color: #0000ff;">="opaque"</span><span style="color: #0000ff;">&gt;</span><span style="color: #ff0000;">&amp;lt;&amp;lt;</span>/MediaPosition 1<span style="color: #ff0000;">&amp;gt;&amp;gt;</span>setpagedevice<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">code</span><span style="color: #0000ff;">&gt;</span>
+        <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">choice</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">option</span><span style="color: #0000ff;">&gt;</span><span style="color: #000000;"> 我 12334545 050504550
+    </span><span style="color: #0000ff;">&lt;</span><span style="color: #800000;">integer</span><span style="color: #0000ff;">&gt;</span>123<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">integer</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #0000ff;">&lt;</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span><span style="color: #000000;">Now is the time for all good men to come to the aid of their
+country.</span><span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">string</span><span style="color: #0000ff;">&gt;</span>
+    <span style="color: #008000;">&lt;!--</span><span style="color: #008000;"> this is a comment </span><span style="color: #008000;">--&gt;</span>
+    <span style="color: #0000ff;">&lt;![CDATA[</span><span style="color: #808080;">this is CDATA 0123456789ABCDEF</span><span style="color: #0000ff;">]]&gt;</span>
+<span style="color: #0000ff;">&lt;/</span><span style="color: #800000;">group</span><span style="color: #0000ff;">&gt;</span></pre>
+</div>
+<p>　　用我这个printNode分析结果如下：</p>
+<div class="cnblogs_code">
+<pre>说明：[ <span style="color: #800000;">1</span>  -&gt;  <span style="color: #800000;">0</span><span style="color: #000000;"> ]，代表本节点序号是1，其父节点序号是0，level 0代表本节点是最顶层节点。
+
+[ </span><span style="color: #800000;">1</span>  -&gt;  <span style="color: #800000;">0</span> ] level <span style="color: #800000;">0</span> MXML_ELEMENT [?xml version=<span style="color: #000000; font-weight: bold;">"</span><span style="color: #000000; font-weight: bold;">1.0</span><span style="color: #000000; font-weight: bold;">"</span> encoding=<span style="color: #000000; font-weight: bold;">"</span><span style="color: #000000; font-weight: bold;">GBK</span><span style="color: #000000; font-weight: bold;">"</span> ?<span style="color: #000000;">]
+[ </span><span style="color: #800000;">2</span>  -&gt;  <span style="color: #800000;">1</span> ] level <span style="color: #800000;">1</span><span style="color: #000000;"> MXML_OPAQUE [
+]
+[ </span><span style="color: #800000;">3</span>  -&gt;  <span style="color: #800000;">1</span> ] level <span style="color: #800000;">1</span><span style="color: #000000;"> MXML_ELEMENT [group]
+[ </span><span style="color: #800000;">4</span>  -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span><span style="color: #000000;"> MXML_OPAQUE [
+        ]
+[ </span><span style="color: #800000;">5</span>  -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span><span style="color: #000000;"> MXML_ELEMENT [option]
+[ </span><span style="color: #800000;">6</span>  -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span> MXML_OPAQUE [<span style="color: #800000;">122334</span><span style="color: #000000;"> 我们
+                ]
+[ </span><span style="color: #800000;">7</span>  -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_ELEMENT [string]
+[ </span><span style="color: #800000;">8</span>  -&gt;  <span style="color: #800000;">7</span> ] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [我们]
+[ </span><span style="color: #800000;">9</span>  -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span> MXML_OPAQUE [<span style="color: #800000;">45677</span><span style="color: #000000;">
+                ]
+[ </span><span style="color: #800000;">10</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span> MXML_ELEMENT [keyword] type=<span style="color: #000000;">opaque
+[ </span><span style="color: #800000;">11</span> -&gt;  <span style="color: #800000;">10</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [InputSlot]
+[ </span><span style="color: #800000;">12</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_OPAQUE [
+                ]
+[ </span><span style="color: #800000;">13</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span> MXML_ELEMENT [default] type=<span style="color: #000000;">opaque
+[ </span><span style="color: #800000;">14</span> -&gt;  <span style="color: #800000;">13</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [Auto]
+[ </span><span style="color: #800000;">15</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_OPAQUE [
+                ]
+[ </span><span style="color: #800000;">16</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_ELEMENT [text]
+[ </span><span style="color: #800000;">17</span> -&gt;  <span style="color: #800000;">16</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [Media Source]
+[ </span><span style="color: #800000;">18</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_OPAQUE [
+                ]
+[ </span><span style="color: #800000;">19</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span> MXML_ELEMENT [order] type=<span style="color: #000000;">real
+[ </span><span style="color: #800000;">20</span> -&gt;  <span style="color: #800000;">19</span>] level <span style="color: #800000;">4</span> MXML_OPAQUE [<span style="color: #800000;">10.000000</span><span style="color: #000000;">]
+[ </span><span style="color: #800000;">21</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_OPAQUE [
+                ]
+[ </span><span style="color: #800000;">22</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_ELEMENT [choice]
+[ </span><span style="color: #800000;">23</span> -&gt;  <span style="color: #800000;">22</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                        ]
+[ </span><span style="color: #800000;">24</span> -&gt;  <span style="color: #800000;">22</span>] level <span style="color: #800000;">4</span> MXML_ELEMENT [keyword] type=<span style="color: #000000;">opaque
+[ </span><span style="color: #800000;">25</span> -&gt;  <span style="color: #800000;">24</span>] level <span style="color: #800000;">5</span><span style="color: #000000;"> MXML_OPAQUE [Auto]
+[ </span><span style="color: #800000;">26</span> -&gt;  <span style="color: #800000;">22</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                        ]
+[ </span><span style="color: #800000;">27</span> -&gt;  <span style="color: #800000;">22</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_ELEMENT [text]
+[ </span><span style="color: #800000;">28</span> -&gt;  <span style="color: #800000;">27</span>] level <span style="color: #800000;">5</span><span style="color: #000000;"> MXML_OPAQUE [Auto Tray Selection]
+[ </span><span style="color: #800000;">29</span> -&gt;  <span style="color: #800000;">22</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                        ]
+[ </span><span style="color: #800000;">30</span> -&gt;  <span style="color: #800000;">22</span>] level <span style="color: #800000;">4</span> MXML_ELEMENT [code] type=<span style="color: #000000;">opaque
+[ </span><span style="color: #800000;">31</span> -&gt;  <span style="color: #800000;">22</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                ]
+[ </span><span style="color: #800000;">32</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_OPAQUE [
+                ]
+[ </span><span style="color: #800000;">33</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_ELEMENT [choice]
+[ </span><span style="color: #800000;">34</span> -&gt;  <span style="color: #800000;">33</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                        ]
+[ </span><span style="color: #800000;">35</span> -&gt;  <span style="color: #800000;">33</span>] level <span style="color: #800000;">4</span> MXML_ELEMENT [keyword] type=<span style="color: #000000;">opaque
+[ </span><span style="color: #800000;">36</span> -&gt;  <span style="color: #800000;">35</span>] level <span style="color: #800000;">5</span><span style="color: #000000;"> MXML_OPAQUE [Upper]
+[ </span><span style="color: #800000;">37</span> -&gt;  <span style="color: #800000;">33</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                        ]
+[ </span><span style="color: #800000;">38</span> -&gt;  <span style="color: #800000;">33</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_ELEMENT [text]
+[ </span><span style="color: #800000;">39</span> -&gt;  <span style="color: #800000;">38</span>] level <span style="color: #800000;">5</span> MXML_OPAQUE [Tray <span style="color: #800000;">1</span><span style="color: #000000;">]
+[ </span><span style="color: #800000;">40</span> -&gt;  <span style="color: #800000;">33</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                        ]
+[ </span><span style="color: #800000;">41</span> -&gt;  <span style="color: #800000;">33</span>] level <span style="color: #800000;">4</span> MXML_ELEMENT [code] type=<span style="color: #000000;">opaque
+[ </span><span style="color: #800000;">42</span> -&gt;  <span style="color: #800000;">41</span>] level <span style="color: #800000;">5</span> MXML_OPAQUE [&lt;&lt;/MediaPosition <span style="color: #800000;">0</span>&gt;&gt;<span style="color: #000000;">setpagedevice]
+[ </span><span style="color: #800000;">43</span> -&gt;  <span style="color: #800000;">33</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                ]
+[ </span><span style="color: #800000;">44</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_OPAQUE [
+                ]
+[ </span><span style="color: #800000;">45</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_ELEMENT [choice]
+[ </span><span style="color: #800000;">46</span> -&gt;  <span style="color: #800000;">45</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                        ]
+[ </span><span style="color: #800000;">47</span> -&gt;  <span style="color: #800000;">45</span>] level <span style="color: #800000;">4</span> MXML_ELEMENT [keyword] type=<span style="color: #000000;">opaque
+[ </span><span style="color: #800000;">48</span> -&gt;  <span style="color: #800000;">47</span>] level <span style="color: #800000;">5</span><span style="color: #000000;"> MXML_OPAQUE [Lower]
+[ </span><span style="color: #800000;">49</span> -&gt;  <span style="color: #800000;">45</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                        ]
+[ </span><span style="color: #800000;">50</span> -&gt;  <span style="color: #800000;">45</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_ELEMENT [text]
+[ </span><span style="color: #800000;">51</span> -&gt;  <span style="color: #800000;">50</span>] level <span style="color: #800000;">5</span> MXML_OPAQUE [Tray <span style="color: #800000;">2</span><span style="color: #000000;">]
+[ </span><span style="color: #800000;">52</span> -&gt;  <span style="color: #800000;">45</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                        ]
+[ </span><span style="color: #800000;">53</span> -&gt;  <span style="color: #800000;">45</span>] level <span style="color: #800000;">4</span> MXML_ELEMENT [code] type=<span style="color: #000000;">opaque
+[ </span><span style="color: #800000;">54</span> -&gt;  <span style="color: #800000;">53</span>] level <span style="color: #800000;">5</span> MXML_OPAQUE [&lt;&lt;/MediaPosition <span style="color: #800000;">1</span>&gt;&gt;<span style="color: #000000;">setpagedevice]
+[ </span><span style="color: #800000;">55</span> -&gt;  <span style="color: #800000;">45</span>] level <span style="color: #800000;">4</span><span style="color: #000000;"> MXML_OPAQUE [
+                ]
+[ </span><span style="color: #800000;">56</span> -&gt;  <span style="color: #800000;">5</span> ] level <span style="color: #800000;">3</span><span style="color: #000000;"> MXML_OPAQUE [
+        ]
+[ </span><span style="color: #800000;">57</span> -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span> MXML_OPAQUE [ 我12334545 <span style="color: #800000;">050504550</span><span style="color: #000000;">
+        ]
+[ </span><span style="color: #800000;">58</span> -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span><span style="color: #000000;"> MXML_ELEMENT [integer]
+[ </span><span style="color: #800000;">59</span> -&gt;  <span style="color: #800000;">58</span>] level <span style="color: #800000;">3</span> MXML_OPAQUE [<span style="color: #800000;">123</span><span style="color: #000000;">]
+[ </span><span style="color: #800000;">60</span> -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span><span style="color: #000000;"> MXML_OPAQUE [
+        ]
+[ </span><span style="color: #800000;">61</span> -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span><span style="color: #000000;"> MXML_ELEMENT [string]
+[ </span><span style="color: #800000;">62</span> -&gt;  <span style="color: #800000;">61</span>] level <span style="color: #800000;">3</span> MXML_OPAQUE [Now is the <span style="color: #0000ff;">time</span> <span style="color: #0000ff;">for</span><span style="color: #000000;"> all good men to come to the aid of their
+country</span>.<span style="color: #000000;">]
+[ </span><span style="color: #800000;">63</span> -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span><span style="color: #000000;"> MXML_OPAQUE [
+        ]
+[ </span><span style="color: #800000;">64</span> -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span> MXML_ELEMENT [!-- this is a comment --<span style="color: #000000;">]
+[ </span><span style="color: #800000;">65</span> -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span><span style="color: #000000;"> MXML_OPAQUE [
+        ]
+[ </span><span style="color: #800000;">66</span> -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span> MXML_ELEMENT [!<span style="color: #000000;">[CDATA[this is CDATA 0123456789ABCDEF]]]
+[ </span><span style="color: #800000;">67</span> -&gt;  <span style="color: #800000;">3</span> ] level <span style="color: #800000;">2</span><span style="color: #000000;"> MXML_OPAQUE [
+]</span></pre>
+</div>
+<p>&nbsp;</p>
+<div class="cnblogs_code">
+<pre><code><span style="color: #000000;">xml报文与结构体转换优化
+
+    项目中每个交易都有一个必须的步骤：把请求报文的内容转换到流水结构体。目前的做法是对于流水结构里面的字段，逐个到xml报文（调用XmlGetTextByPath），根据路径在xml报文里面找出对应的值。
+    根据callgrind分析，此类操作在占用了交易的30</span>%<span style="color: #000000;">以上cpu时间，值得优化。为此我提出另一个做法：
+开发新的函数，XmlGetTextByPathMutiple。改变目前每取一个字段就遍历一次xml的操作，一次性将所有需要取出的字段对应的xml路径传给新函数。在遍历过程中检查所需路径是否存在，如果存在则取出。
+    如果遍历完成后还没有遇到的路径，则视为不存在。
+    由于目前我们的请求xml报文都相对比较小，遍历xml开销不大。并且现在每个交易需要从请求xml获取的字段至少十几个以上，新函数理论上可以比原函数更节约时间与资源。
+    为加快遍历过程中检查xml路径是否存在的过程，需要在函数开始前先对所有字段的xml路径做哈希计算。然后把哈希结果放到C99变长数组，再进行排序。
+    数组元素结构说明如下：
+    typedef </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> tagMemInfo
+    {
+        </span><span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *xmlPath; <span style="color: #008000;">//</span><span style="color: #008000;">字段对应的xml路径</span>
+        <span style="color: #0000ff;">void</span> *destBuf; <span style="color: #008000;">//</span><span style="color: #008000;">结果存放区</span>
+        size_t destBufLen; <span style="color: #008000;">//</span><span style="color: #008000;">存放区长度</span>
+        <span style="color: #0000ff;">int</span> destType; <span style="color: #008000;">//</span><span style="color: #008000;">结果类型，目前只支持char数组和double</span>
+        <span style="color: #0000ff;">int</span> isNullAble; <span style="color: #008000;">//</span><span style="color: #008000;">是否可为空</span>
+<span style="color: #000000;">    }MemInfo;
+
+    typedef </span><span style="color: #0000ff;">struct</span><span style="color: #000000;"> tagXmlGetInfo
+    {
+        </span><span style="color: #0000ff;">int</span> pathHashCode; <span style="color: #008000;">//</span><span style="color: #008000;">xml路径对应的哈希值</span>
+        <span style="color: #0000ff;">const</span> <span style="color: #0000ff;">char</span> *xmlPath; <span style="color: #008000;">//</span><span style="color: #008000;">字段对应的xml路径</span>
+        <span style="color: #0000ff;">int</span> isNullFlag; <span style="color: #008000;">//</span><span style="color: #008000;">是否为空，初始化都是1</span>
+        MemInfo *<span style="color: #000000;">memInfo;
+    }XmlGetInfo;
+    遍历过程中，对于每个xml节点，我们先计算其路径的哈希值。根据哈希值二分查找数组，看是否有与该值相同的目标字段。
+    如果找到哈希值相同，并且路径也相同的，则把xml节点值取出来放到指定的缓冲区。
+
+    计算哈希的函数推荐使用glib的g_str_hash，其使用的是DJB算法。这样我们在遍历子路径可以在父节点的哈希值基础上做增量计算，减少哈希值计算的开销。
+
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">伪代码如下：
+    </span><span style="color: #008000;">//</span><span style="color: #008000;">parentHashCode：外部调用统一传5381，递归调用传本节点哈希值</span>
+    <span style="color: #0000ff;">void</span> XmlGetTextByPathMutipleInternal(<span style="color: #0000ff;">const</span> XmlGetInfo *<span style="color: #000000;">xmlGetArr,  size_t arrLen,
+    mxml_t </span>*currNode, <span style="color: #0000ff;">int</span><span style="color: #000000;"> parentHashCode);
+    {
+        </span><span style="color: #0000ff;">int</span> nHashCode =<span style="color: #000000;"> parentHashCode;
+        根据parentHashCode及本节点名称计算nHashCode
+        使用nHashCode在xmlGetArr里面二分查找
+        如果找到符合要求的路径，则将本节点值取出来（即第一个孩子节点）
+
+        </span><span style="color: #0000ff;">for</span> (第一个孩子节点; 兄弟节点 !=<span style="color: #000000;"> NULL; 取出兄弟节点)
+        {
+            如果发现该节点是xml路径节点 </span><span style="color: #008000;">//</span><span style="color: #008000;">可能是文本节点</span>
+<span style="color: #000000;">            则调用函数XmlGetTextByPathMutipleInternal
+        }
+    }
+    
+
+    </span><span style="color: #0000ff;">int</span> XmlGetTextByPathMutipleRel(<span style="color: #0000ff;">const</span> XmlGetInfo *<span style="color: #000000;">xmlGetArr,  size_t arrLen,
+    mxml_t </span>*<span style="color: #000000;">rootNode)
+    {
+        </span><span style="color: #0000ff;">int</span> nHashCode = <span style="color: #800080;">5381</span><span style="color: #000000;">;
+        </span><span style="color: #0000ff;">for</span> (第一个孩子节点; 兄弟节点 !=<span style="color: #000000;"> NULL; 取出兄弟节点)
+        {
+            如果发现该节点是xml路径节点 </span><span style="color: #008000;">//</span><span style="color: #008000;">可能是文本节点</span>
+<span style="color: #000000;">            则调用函数XmlGetTextByPathMutipleInternal
+        }
+        
+        检查xmlGetArr所有不允许为空的成员是否找到对应的路径
+    }
+
+    对于组装报文，我们也可以做类似优化：先将需要修改的xml报文路径及其对应的值缓存起来，
+等到把xml报文值设置好后再统一遍历一次xml报文，根据缓存信息，进行实际的xml报文修改。
+    修改逻辑如下：对缓存以xml路径进行排序，排序后顺序处理。由于路径相似的xml路径排序后肯定在一起，
+可以减少修改过程中对于xml报文的查找。（可以根据待修改值的数量决定是否对当前xml节点构建索引，为保持与之前代码兼容性，建索引时可以考虑使用归并排序，或者使用冒泡法即可）
+
+    相关函数设计：
+    XmlSetTextByPathCopy </span><span style="color: #008000;">//</span><span style="color: #008000;">xml报文值是存在临时变量，需要把值复制出来，暂存。</span>
+    XmlSetTextByPathNoCopy <span style="color: #008000;">//</span><span style="color: #008000;">xml报文值是存在非临时变量</span>
+    XmlSetTextByPathDual <span style="color: #008000;">//</span><span style="color: #008000;">真正对xml报文进行修改</span></pre>
+</div>
+<p>&nbsp;</p>
+<p>　　&nbsp;</p>
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

@@ -1,0 +1,173 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修bzoj3053 The Closest M Points' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>bzoj3053 The Closest M Points</center></div><div class='banquan'>原文出处:本文由博客园博主wxyww提供。<br/>
+原文连接:https://www.cnblogs.com/wxyww/p/bzoj3053.html</div><br>
+    <p><a href="https://www.lydsy.com/JudgeOnline/problem.php?id=3053"><font size=5>题目链接</font></a></p>
+<h1 id="题意">题意</h1>
+<p><img src="./images/bzoj3053 The Closest M Points0.png" /></p>
+<h1 id="思路">思路</h1>
+<p><del>调到哭系列</del></p>
+<p>其实就是kd-tree的模板题。用堆维护出距离最小的m个点。然后在<span class="math inline">\(kd-tree\)</span>上查询。</p>
+<p><img src="./images/bzoj3053 The Closest M Points1.png" /></p>
+<p><img src="./images/bzoj3053 The Closest M Points2.png" /></p>
+<p>这一个小地方从上午9点调到下午4点半。。。。。真的快气哭了。。。</p>
+<h1 id="代码">代码</h1>
+<pre><code>//调的心累呀！！！！
+/*
+* @Author: wxyww
+* @Date:   2019-06-13 09:57:42
+* @Last Modified time: 2019-06-13 16:35:15
+*/
+#include&lt;cstdio&gt;
+#include&lt;iostream&gt;
+#include&lt;cstdlib&gt;
+#include&lt;cstring&gt;
+#include&lt;algorithm&gt;
+#include&lt;queue&gt;
+#include&lt;vector&gt;
+#include&lt;ctime&gt;
+using namespace std;
+typedef long long ll;
+const int N = 500010,INF = 1e9;
+#define ls TR[rt].ch[0]
+#define rs TR[rt].ch[1]
+#define pi pair&lt;int,int&gt;
+ll read() {
+    ll x=0,f=1;char c=getchar();
+    while(c&lt;&#39;0&#39;||c&gt;&#39;9&#39;) {
+        if(c==&#39;-&#39;) f=-1;
+        c=getchar();
+    }
+    while(c&gt;=&#39;0&#39;&amp;&amp;c&lt;=&#39;9&#39;) {
+        x=x*10+c-&#39;0&#39;;
+        c=getchar();
+    }
+    return x*f;
+}
+int D,WDK,tmp[N];
+priority_queue&lt;pi&gt;q;
+struct node {
+    int ch[2],mx[6],mn[6],d[6];
+}TR[N],a[N],TMP;
+int mul(int x) {
+    return x * x;
+}
+void up(int rt) {
+    for(int i = 0;i &lt; WDK;++i) {
+        TR[rt].mx[i] = TR[rt].mn[i] = TR[rt].d[i];
+        if(ls) TR[rt].mx[i] = max(TR[rt].mx[i],TR[ls].mx[i]),
+            TR[rt].mn[i] = min(TR[rt].mn[i],TR[ls].mn[i]);
+        if(rs) TR[rt].mx[i] = max(TR[rt].mx[i],TR[rs].mx[i]),
+            TR[rt].mn[i] = min(TR[rt].mn[i],TR[rs].mn[i]);
+    }
+}
+bool cmp(const node &amp;A,const node &amp;B) {
+    return A.d[D] &lt; B.d[D];
+}
+int build(int l,int r,int now) {
+    if(l &gt; r) return 0;
+    D = now;
+    int mid = (l + r) &gt;&gt; 1;
+    nth_element(a + l ,a + mid,a + r + 1,cmp);
+    int rt = mid;
+    TR[mid] = a[mid];
+     ls = build(l,mid - 1,(now + 1) % WDK);
+     rs = build(mid + 1,r,(now + 1) % WDK);
+    up(rt);
+    return rt;
+}
+int dis(const node &amp;A,const node &amp;B) {
+    int ret = 0;
+    for(int i = 0;i &lt; WDK;++i) ret += mul(A.d[i] - B.d[i]);
+    return ret;
+}
+int get(const node &amp;A,const node &amp;B) {
+    int ret = 0;
+    for(int i = 0;i &lt; WDK;++i)
+        ret += mul(max(0,A.d[i] - B.mx[i])) + mul(max(0,B.mn[i] - A.d[i]));
+    return ret;
+}
+void query(int rt) {
+    if(!rt) return;
+    int K = dis(TR[rt],TMP);
+    if(K &lt; q.top().first) q.pop(),q.push(make_pair(K,rt));
+    int dl = INF,dr = INF;
+    if(ls) dl = get(TMP,TR[ls]);
+    if(rs) dr = get(TMP,TR[rs]);
+    if(dl &lt; dr) {
+        if(dl &lt; q.top().first) query(ls);
+        if(dr &lt; q.top().first) query(rs);
+    }
+    else {
+        if(dr &lt; q.top().first) query(rs);
+        if(dl &lt; q.top().first) query(ls);
+    }
+}
+
+int main() {
+    // freopen(&quot;3053/1.in&quot;,&quot;r&quot;,stdin);
+    // freopen(&quot;m.out&quot;,&quot;w&quot;,stdout);
+    int n;
+    while(~scanf(&quot;%d%d&quot;,&amp;n,&amp;WDK)) {
+        // cout&lt;&lt;n&lt;&lt;&quot; &quot;&lt;&lt;WDK&lt;&lt;endl;
+        for(int i = 0;i &lt; WDK;++i) a[0].mx[i] = -INF,a[0].mn[i] = INF;
+        for(int i = 1;i &lt;= n;++i) { 
+            for(int j = 0;j &lt; WDK;++j) {
+                a[i].d[j] = read();
+            }
+        }
+        int root = build(1,n,0);
+        int T = read();
+        // puts(&quot;!!!&quot;);
+        while(T--) {
+
+            for(int i = 0;i &lt; WDK;++i) TMP.d[i] = read();
+            int m = read();
+            while(!q.empty()) q.pop();
+            for(int i = 1;i &lt;= m;++i) q.push(make_pair(INF,0));
+            query(root);
+            for(int i = 1;i &lt;= m;++i) tmp[i] = q.top().second,q.pop();
+            printf(&quot;the closest %d points are:\n&quot;,m);
+            for(int i = m;i &gt;= 1;--i) {
+                for(int j = 0;j &lt; WDK - 1;++j)
+                    printf(&quot;%d &quot;,a[tmp[i]].d[j]);
+                printf(&quot;%d\n&quot;,a[tmp[i]].d[WDK - 1]);
+            }
+
+        }
+    }
+    return 0;
+}
+/*
+6 2
+2 9
+6 9
+4 4
+7 5
+8 1
+9 6
+1
+5 1
+*/</code></pre>
+
+</div>
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>

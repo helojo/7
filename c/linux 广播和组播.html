@@ -1,0 +1,233 @@
+<html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'>
+<meta name='applicable-device' content='pc'><meta name='keywords' content='电脑,电脑讲解,电脑技术,编程,电脑故障维修linux 广播和组播' />
+<script src='../../highlight/highlight.pack.js'></script>
+<link rel='stylesheet' type='text/css' href='../../highlight/styles/monokai.css'/>
+
+<link rel='stylesheet' href='../../fenxiang/dist/css/share.min.css'>
+<script src='../../fenxiang/src/js/social-share.js'></script>
+<script src='../../fenxiang/src/js/qrcode.js'></script>
+
+</head><body><script>hljs.initHighlightingOnLoad();</script><script>
+var system ={};  
+var p = navigator.platform;       
+system.win = p.indexOf('Win') == 0;  
+system.mac = p.indexOf('Mac') == 0;  
+system.x11 = (p == 'X11') || (p.indexOf('Linux') == 0);     
+if(system.win||system.mac||system.xll){
+document.write("<link href='../css/3.css' rel='stylesheet' type='text/css'>");}else{ document.write("<link href='../css/3wap.css' rel='stylesheet' type='text/css'>");}</script><script src='../../js/3.js'></script><div class='div2'><div class='heading_nav'><ul><div><li><a href='../../index.html'>首页</a></li>
+</div><div onclick='hidden1()' >分享</div>
+</ul></div></div>
+<div id='heading_nav2'> 
+<li class='row' >
+<div class='social-share' data-mode='prepend'><a href='javascript:' class='social-share-icon icon-heart'></a></div></li></div><script charset='utf-8' src='../../3/js/hengfu.js'></script><script charset='utf-8' src='../../3/js/hengfu2.js'></script><hr><div class='div1'><div class='biaoti'><center>linux 广播和组播</center></div><div class='banquan'>原文出处:本文由博客园博主小石王提供。<br/>
+原文连接:https://www.cnblogs.com/xiaoshiwang/p/11115949.html</div><br>
+    <h3 id="广播和组播">广播和组播</h3>
+<h4 id="广播必须使用udp协议是只能在局域网内使用指定接收端的ip为...255后发送的信息局域网内的所有接受端就能够接到信息了">广播，必须使用UDP协议，是只能在局域网内使用，指定接收端的IP为*.*.*.255后，发送的信息，局域网内的所有接受端就能够接到信息了。</h4>
+<p>广播的发送端代码</p>
+<pre><code><code>#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(int agrc, char** argv){
+
+  int fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+  int port = atoi(argv[1]);
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+
+  
+  bind(fd, (struct sockaddr*)&amp;addr, sizeof(addr));
+  
+  int n = 1;
+  int ret =  setsockopt(fd, SOL_SOCKET, SO_BROADCAST,
+            &amp;n, sizeof(n));
+  
+  struct sockaddr_in client;
+  memset(&amp;client, 0, sizeof(client));
+  client.sin_family = AF_INET;
+  client.sin_port = htons(6666);
+  inet_pton(AF_INET, &quot;10.210.65.255&quot;, &amp;client.sin_addr.s_addr);
+  
+  int cnt = 0;
+  while(1){
+    char buf[64] = {0};
+    sprintf(buf, &quot;count=%d&quot;, cnt++);
+    int ret = sendto(fd, buf, sizeof buf, 0, (struct sockaddr*)&amp;client, sizeof(client));
+    if(ret == -1){
+      perror(&quot;sendto -1&quot;);
+    }
+    sleep(1);
+  }
+  
+}
+</code></code></pre>
+<h3 id="注意点"><font color=red>注意点：</h3>
+<ul>
+<li><p>必须用setsockopt函数开通套接字的组播权限。注意n的值不能为0.</p></li>
+<li><p>由于广播的时候，必须指定接收端的端口号，所以接收端必须调用bind函数，显示的指定自己用的端口号。</p>
+<p></font></p></li>
+</ul>
+<p>接收广播发送信息的代码</p>
+<pre><code><code>#include &lt;sys/types.h&gt; 
+#include &lt;sys/socket.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+
+int main(int agrc, char** argv){
+
+  int fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+  struct sockaddr_in addr;
+  memset(&amp;addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(6666);
+  //addr.sin_addr.s_addr = htons(INADDR_ANY);
+  inet_pton(AF_INET, &quot;0.0.0.0&quot;, &amp;addr.sin_addr.s_addr);
+  socklen_t len = sizeof(addr);
+
+  bind(fd, (struct sockaddr*)&amp;addr, sizeof(addr));
+
+  
+  while(1){
+    char buf[64] = {0};
+    int ret = recvfrom(fd, buf, sizeof(buf), 0, NULL, NULL);
+    write(STDOUT_FILENO, buf, ret);
+    sleep(1);
+  }
+}
+</code></code></pre>
+<h3 id="注意点-1"><font color=red>注意点：</h3>
+<ul>
+<li><p>由于广播的时候，必须指定接收端的端口号，所以接收端必须调用bind函数，显示的指定自己用的端口号。</p>
+<p></font></p></li>
+</ul>
+<h4 id="组播必须使用udp协议有专门的组播地址首先发送端要指定一个组播的ip并且接收端也需要指定和发送端一样的组播的ip">组播，必须使用UDP协议。有专门的组播地址。首先发送端要指定一个组播的IP，并且接收端也需要指定和发送端一样的组播的IP。</h4>
+<p>组播的IP介绍：</p>
+<pre><code><code>224.0.0.0～224.0.0.255为预留的组播地址（永久组地址），地址224.0.0.0保留不做分配，其它地址供路由协议使用；
+
+224.0.1.0～224.0.1.255是公用组播地址，可以用于Internet；
+
+224.0.2.0～238.255.255.255为用户可用的组播地址（临时组地址），全网范围内有效；
+
+239.0.0.0～239.255.255.255为本地管理组播地址，仅在特定的本地范围内有效。</code></code></pre>
+<p>组播发送端例子</p>
+<pre><code><code>#include &lt;sys/types.h&gt; 
+#include &lt;sys/socket.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;net/if.h&gt;
+
+int main(int agrc, char** argv){
+
+  int fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+  int port = atoi(argv[1]);
+  struct sockaddr_in addr;
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+
+  
+  bind(fd, (struct sockaddr*)&amp;addr, sizeof(addr));
+ 
+  struct ip_mreqn n;
+  inet_pton(AF_INET, &quot;239.0.0.10&quot;, &amp;n.imr_multiaddr.s_addr);//组播地址
+  inet_pton(AF_INET, &quot;0.0.0.0&quot;, &amp;n.imr_address.s_addr);//本机地址
+  n.imr_ifindex = if_nametoindex(&quot;enp0s3&quot;);//本机的通信用的网卡的物理地址，可以用ifconfig查看
+  
+  int ret =  setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IF,
+            &amp;n, sizeof(n));
+  
+  struct sockaddr_in client;
+  memset(&amp;client, 0, sizeof(client));
+  client.sin_family = AF_INET;
+  client.sin_port = htons(6666);
+  inet_pton(AF_INET, &quot;239.0.0.10&quot;, &amp;client.sin_addr.s_addr);
+  
+  int cnt = 0;
+  while(1){
+    char buf[64] = {0};
+    sprintf(buf, &quot;count=%d&quot;, cnt++);
+    int ret = sendto(fd, buf, sizeof buf, 0, (struct sockaddr*)&amp;client, sizeof(client));
+    if(ret == -1){
+      perror(&quot;sendto -1&quot;);
+    }
+    sleep(1);
+  }
+  
+}
+</code></code></pre>
+<h3 id="注意点-2"><font color=red>注意点：</h3>
+<ul>
+<li><p>必须用setsockopt函数开通套接字的组播权限。发送端使用IPPROTO_IP和IP_MULTICAST_IF</p></li>
+<li><p>函数if_nametoindex的作用是通过网卡的名字，取得网卡的mac地址。</p>
+<p></font></p></li>
+</ul>
+<p>组播接收端例子</p>
+<pre><code><code>#include &lt;sys/types.h&gt; 
+#include &lt;sys/socket.h&gt;
+#include &lt;arpa/inet.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;net/if.h&gt;
+
+int main(int agrc, char** argv){
+
+  int fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+  struct sockaddr_in addr;
+  memset(&amp;addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(6666);
+  //addr.sin_addr.s_addr = htons(INADDR_ANY);
+  inet_pton(AF_INET, &quot;0.0.0.0&quot;, &amp;addr.sin_addr.s_addr);
+  socklen_t len = sizeof(addr);
+
+  bind(fd, (struct sockaddr*)&amp;addr, sizeof(addr));
+
+  struct ip_mreqn n;
+  inet_pton(AF_INET, &quot;239.0.0.10&quot;, &amp;n.imr_multiaddr.s_addr);
+  inet_pton(AF_INET, &quot;0.0.0.0&quot;, &amp;n.imr_address.s_addr);
+  n.imr_ifindex = if_nametoindex(&quot;enp0s3&quot;);
+  
+  int ret =  setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+            &amp;n, sizeof(n));
+  
+  
+  while(1){
+    char buf[64] = {0};
+    int ret = recvfrom(fd, buf, sizeof(buf), 0, NULL, NULL);
+    write(STDOUT_FILENO, buf, ret);
+    sleep(1);
+  }
+}
+</code></code></pre>
+<h3 id="注意点-3"><font color=red>注意点：</h3>
+<ul>
+<li><p>必须用setsockopt函数把接收端的套接字加入到组播的组里。接收端使用IPPROTO_IP和IP_ADD_MEMBERSHIP</p></li>
+<li><p>由于组播的时候，必须指定接收端的端口号，所以接收端必须调用bind函数，显示的指定自己用的端口号</p>
+<p></font></p></li>
+</ul>
+<p></font></p>
+<p><font color="green"></p>
+<h1 id="cc-学习互助qq群877684253">c/c++ 学习互助QQ群：877684253</h1>
+<p><img src="./images/linux 广播和组播0.png" /></p>
+<h1 id="本人微信xiaoshitou5854">本人微信：xiaoshitou5854</h1>
+<p></font></p>
+
+
+</div><hr><script charset='utf-8' src='../../js/sming.js'></script></body></html>
